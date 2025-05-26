@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Chalk';
+  src: url('./fonts/ChalkboardSE-Light.ttf'); 
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+    font-family: Montserrat;
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    src: url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+}
+
+/* Optional chalk styling */
+.chalk-effect {
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+}
