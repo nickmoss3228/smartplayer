@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+
 @import "tailwindcss";
+
+
 
 
 @tailwind base;
@@ -19,9 +26,4 @@
     font-optical-sizing: auto;
     font-style: normal;
     src: url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-}
-
-/* Optional chalk styling */
-.chalk-effect {
-  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
 }

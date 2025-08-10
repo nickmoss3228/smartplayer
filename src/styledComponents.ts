@@ -240,7 +240,7 @@ export const SubtitlesContainer = styled.div<SubtitlesContainterProps>`
   width: 90%; // Add this to control the width
   margin-top: 20px;
   padding: 10px;
-  height: 70px;
+  height: 90px;
   background: #773f3f;
   color:white;  
   border-radius: 4px;
@@ -272,7 +272,7 @@ export const SubtitleText = styled.p`
 export const SubtitlesButton = styled.button<SubtitlesButtonProps>`
   background: ${(props) => (props.$active ?  " #773f3f" : " #8f4c4c")};
   color: ${(props) => (props.$active ? "white" : "#333")};
-  border: 1px solid #ddd;
+  border: 1px solid   ;
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;

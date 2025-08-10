@@ -1,4 +1,7 @@
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 import "../Player.css"
 import WaveformPlayer from '../modules/progressBar';
 import { PlayerProps } from '../types';
@@ -6,46 +9,84 @@ import Quiz from '../modules/Quiz';
 import WaveSurfer from 'wavesurfer.js';
 import { audioTracks } from '../modules/audioData';
 
-const Player: React.FC<PlayerProps> = React.memo(() => {
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
+const Player = React.memo(() => {
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const difficulty = searchParams.get('difficulty') || 'easy';
+  const level = parseInt(searchParams.get('level') || '1');
+  
+  const wavesurferRef = useRef(null);
   const [selectedTrackId, setSelectedTrackId] = useState(audioTracks[0].id);
   const [showQuiz, setShowQuiz] = useState(false);
+  const [quizResults, setQuizResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Мемоизируем выбранный трек
   const audioTrack = useMemo(() => 
     audioTracks.find(track => track.id === selectedTrackId) || audioTracks[0],
     [selectedTrackId]
   );
 
-  // Мемоизируем функцию для прыжков по времени
-  const handleTimeJump = useCallback((time: number) => {
+  const handleTimeJump = useCallback((time) => {
     if (wavesurferRef.current) {
       wavesurferRef.current.seekTo(time / wavesurferRef.current.getDuration());
       wavesurferRef.current.play();
     }
   }, []);
 
-  // Мемоизируем обработчик смены трека
-  const handleTrackChange = useCallback((event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleTrackChange = useCallback((event) => {
     setSelectedTrackId(event.target.value);
     if (wavesurferRef.current) {
       wavesurferRef.current.stop();
     }
   }, []);
 
-  // Мемоизируем функцию маунтинга wavesurfer
-  const handleWavesurferMount = useCallback((wavesurfer: WaveSurfer) => {
+  const handleWavesurferMount = useCallback((wavesurfer) => {
     wavesurferRef.current = wavesurfer;
   }, []);
 
-  // Мемоизируем функцию переключения квиза
   const toggleQuiz = useCallback(() => {
     setShowQuiz(prev => !prev);
   }, []);
 
+  // Функция для сохранения результатов квиза
+  const handleQuizComplete = useCallback(async (results) => {
+    if (!user || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    setQuizResults(results);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:5000/api/progress/complete', {
+        difficulty,
+        level,
+        correctAnswers: results.correctAnswers,
+        totalQuestions: results.totalQuestions
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.completed) {
+        alert('Level completed successfully! 🎉');
+      } else {
+        alert(`Level not completed. You got ${results.correctAnswers}/${results.totalQuestions} correct. Try to get at least ${Math.ceil(results.totalQuestions * 0.7)} correct.`);
+      }
+      
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+      alert('Failed to save your progress. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [user, difficulty, level, isSubmitting]);
+
   return (
     <div className='audio-player-wrapper'>
       <div className="audio-player">
+        <div className="level-info">
+          <h2>Level {level} - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</h2>
+        </div>
+
         <div className="track-selector">
           <label htmlFor="track-select">Select Audio Track: </label>
           <select
@@ -79,7 +120,17 @@ const Player: React.FC<PlayerProps> = React.memo(() => {
           <Quiz
             onTimeJump={handleTimeJump}
             questions={audioTrack.quiz}
+            onQuizComplete={handleQuizComplete}
+            isSubmitting={isSubmitting}
           />
+        )}
+
+        {quizResults && (
+          <div className="quiz-results">
+            <h3>Quiz Results:</h3>
+            <p>Correct: {quizResults.correctAnswers}/{quizResults.totalQuestions}</p>
+            <p>Score: {Math.round((quizResults.correctAnswers / quizResults.totalQuestions) * 100)}%</p>
+          </div>
         )}
       </div>
     </div>
