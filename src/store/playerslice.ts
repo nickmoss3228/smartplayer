@@ -21,7 +21,7 @@ const initialState: PlayerState = {
   isMuted: false,
   playbackRate: 1.0,
   subtitlesVisible: true,
-  isPlayMode: true,
+  isPlayMode: false,
   currentTime: "0:00",
   durationSeconds: 0,
   duration: "0:00",

@@ -75,16 +75,46 @@ export async function login(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
-export async function logout(req, res) {
-  res.json({ message: "Logged out successfully" });
-}
-export async function validateToken(req, res) {
-  res.json({
-    valid: true,
-    user: {
-      id: req.user._id,
-      username: req.user.username,
-      createdAt: req.user.createdAt,
-    },
-  });
-}
+export const logout = async (req, res) => {
+  try {
+    // Since JWT tokens are stateless, we can't actually "invalidate" them on the server
+    // The logout is primarily handled on the frontend by removing the token
+    // But we can still send a success response
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully"
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error during logout"
+    });
+  }
+};
+
+export const validateToken = async (req, res) => {
+  try {
+    // If we reach here, the token is valid (thanks to authenticateToken middleware)
+    // req.user should contain the decoded user info from the JWT
+    
+    // Optionally, you can fetch fresh user data from the database
+    // const user = await User.findById(req.user.id);
+    
+    res.status(200).json({
+      success: true,
+      message: "Token is valid",
+      user: {
+        id: req.user._id,
+        email: req.user.username,
+        // Add any other user fields you want to return
+      }
+    });
+  } catch (error) {
+    console.error("Token validation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error validating token"
+    });
+  }
+};

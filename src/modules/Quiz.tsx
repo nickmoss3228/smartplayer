@@ -34,22 +34,26 @@ const Quiz: React.FC<QuizProps> = ({
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestion] = selectedOption;
     setUserAnswers(newAnswers);
-    
-    if (selectedOption === questions[currentQuestion].correctAnswer) {
-      setScore(score + 1);
-    }
+  
   };
 
-  const handleNext = () => {
+ const handleNext = () => {
+    // Update score for current question
+    let newScore = score;
+    if (selectedAnswer === questions[currentQuestion].correctAnswer) {
+      newScore = score + 1;
+      setScore(newScore);
+    }
+
     if (currentQuestion + 1 < questions.length) {
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(userAnswers[currentQuestion + 1] ?? null);
     } else {
       setShowResults(true);
-      // Automatically submit results to backend when quiz is completed
+      // Submit results to backend when quiz is completed
       if (onQuizComplete) {
         const results = {
-          correctAnswers: score + (selectedAnswer === questions[currentQuestion].correctAnswer ? 1 : 0),
+          correctAnswers: newScore,
           totalQuestions: questions.length
         };
         onQuizComplete(results);
@@ -69,7 +73,16 @@ const Quiz: React.FC<QuizProps> = ({
     setUserAnswers([]);
   };
 
-  const currentScore = score + (selectedAnswer === questions[currentQuestion].correctAnswer ? 1 : 0);
+ // Calculate current score properly
+  const getCurrentScore = () => {
+    let currentScore = score;
+    if (showResults && selectedAnswer === questions[currentQuestion]?.correctAnswer) {
+      currentScore += 1;
+    }
+    return currentScore;
+  };
+
+  const currentScore = showResults ? score : getCurrentScore();
   const passingScore = Math.ceil(questions.length * 0.7);
 
   return (
@@ -161,7 +174,7 @@ const Quiz: React.FC<QuizProps> = ({
             {currentScore >= passingScore ? (
               <div className="success-message">
                 <h3>🎉 Congratulations!</h3>
-                <p>You passed this level! You need at least {passingScore} correct answers to advance.</p>
+                <p>You passed this level!</p>
               </div>
             ) : (
               <div className="failure-message">

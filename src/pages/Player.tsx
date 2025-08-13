@@ -4,9 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import "../Player.css"
 import WaveformPlayer from '../modules/progressBar';
-import { PlayerProps } from '../types';
+// import { PlayerProps } from '../types';
 import Quiz from '../modules/Quiz';
-import WaveSurfer from 'wavesurfer.js';
 import { audioTracks } from '../modules/audioData';
 
 const Player = React.memo(() => {
@@ -16,10 +15,16 @@ const Player = React.memo(() => {
   const level = parseInt(searchParams.get('level') || '1');
   
   const wavesurferRef = useRef(null);
-  const [selectedTrackId, setSelectedTrackId] = useState(audioTracks[0].id);
+  const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResults, setQuizResults] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   useEffect(() => {
+    setSelectedTrackId(level.toString());
+    setShowQuiz(false); // Reset quiz when level changes
+    setQuizResults(null); // Reset quiz results when level changes
+  }, [level]);
 
   const audioTrack = useMemo(() => 
     audioTracks.find(track => track.id === selectedTrackId) || audioTracks[0],
@@ -57,6 +62,7 @@ const Player = React.memo(() => {
     
     try {
       const token = localStorage.getItem('token');
+      
       const response = await axios.post('http://localhost:5000/api/progress/complete', {
         difficulty,
         level,
@@ -65,6 +71,8 @@ const Player = React.memo(() => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('Progress saved successfully:', response.data);
       
       if (response.data.completed) {
         alert('Level completed successfully! 🎉');
@@ -74,6 +82,7 @@ const Player = React.memo(() => {
       
     } catch (error) {
       console.error('Failed to save progress:', error);
+      console.error('Error response:', error.response?.data); // Add this line
       alert('Failed to save your progress. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -85,21 +94,7 @@ const Player = React.memo(() => {
       <div className="audio-player">
         <div className="level-info">
           <h2>Level {level} - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</h2>
-        </div>
-
-        <div className="track-selector">
-          <label htmlFor="track-select">Select Audio Track: </label>
-          <select
-            id="track-select"
-            value={selectedTrackId}
-            onChange={handleTrackChange}
-          >
-            {audioTracks.map(track => (
-              <option key={track.id} value={track.id}>
-                {track.title}
-              </option>
-            ))}
-          </select>
+          <h1></h1>
         </div>
 
         <WaveformPlayer
@@ -140,3 +135,19 @@ const Player = React.memo(() => {
 Player.displayName = 'Player';
 
 export default Player;
+
+
+        {/* <div className="track-selector">
+          <label htmlFor="track-select">Select Audio Track: </label>
+          <select
+            id="track-select"
+            value={selectedTrackId}
+            onChange={handleTrackChange}
+          >
+            {audioTracks.map(track => (
+              <option key={track.id} value={track.id}>
+                {track.title}
+              </option>
+            ))}
+          </select>
+        </div> */}

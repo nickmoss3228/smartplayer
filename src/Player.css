@@ -14,9 +14,12 @@
   border: 2px solid #ddd;
   border-radius: 15px;
   background-color: #3e2626;
-  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
   text-align: center;
   animation: fadeIn 1s ease-in-out forwards;
+}
+
+.level-info {
+  margin-bottom: 30px;
 }
 
 /* .quiz-toggle-button {

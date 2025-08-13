@@ -50,4 +50,4 @@ function App() {
 
 export default App
 
-            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+{/* <Route path="/dashboard" element={<Dashboard />} /> */}

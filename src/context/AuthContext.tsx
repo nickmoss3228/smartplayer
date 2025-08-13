@@ -3,6 +3,8 @@ import axios from 'axios'
 
 const AuthContext = createContext()
 
+const API_BASE_URL = 'http://localhost:5000/api'
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -26,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
 const checkTokenValidity = async (token) => {
   try {
-    const response = await axios.get('http://localhost:5000/validate-token', {
+    const response = await axios.get(`${API_BASE_URL}/validate-token`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     setUser(response.data.user)
@@ -40,7 +42,7 @@ const checkTokenValidity = async (token) => {
 
   const signIn = async (username, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/login', {
+      const response = await axios.post(`${API_BASE_URL}/login`, {
         username,
         password
       })
@@ -58,7 +60,7 @@ const checkTokenValidity = async (token) => {
 
   const signUp = async (username, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/signup', {
+      const response = await axios.post(`${API_BASE_URL}/signup`, {
         username,
         password
       })
@@ -78,7 +80,7 @@ const checkTokenValidity = async (token) => {
     try {
       const token = localStorage.getItem('token')
       if (token) {
-        await axios.post('http://localhost:5000/logout', {}, {
+        await axios.post(`${API_BASE_URL}/logout`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         })
       }

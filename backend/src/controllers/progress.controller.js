@@ -33,13 +33,23 @@ export async function getProgress(req, res) {
 }
 export async function completeLevel(req, res) {
   try {
+    console.log('Request body:', req.body); // Debug line
+    console.log('Request headers:', req.headers); // Debug line
+    
     const { difficulty, level, correctAnswers, totalQuestions } = req.body;
     const userId = req.user._id;
+
+     console.log('Completing level:', { difficulty, level, correctAnswers, totalQuestions, userId }); // Add logging
 
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
     if (!level || correctAnswers === undefined || !totalQuestions)
       return res.status(400).json({ message: "Missing required fields" });
+
+    // Validate that correctAnswers is not greater than totalQuestions
+    if (correctAnswers > totalQuestions) {
+      return res.status(400).json({ message: "Invalid quiz results: correct answers cannot exceed total questions" });
+    }
 
     const minCorrectAnswers = Math.ceil(totalQuestions * 0.7);
     const isCompleted = correctAnswers >= minCorrectAnswers;
@@ -73,6 +83,8 @@ export async function completeLevel(req, res) {
     }
 
     await progress.save();
+
+     console.log('Progress saved:', progress); // Add logging
 
     res.json({
       message: isCompleted
