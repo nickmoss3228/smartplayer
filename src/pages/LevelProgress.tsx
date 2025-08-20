@@ -249,12 +249,12 @@ const LevelProgress = ({
                 </div>
 
                 {/* Level label */}
-                <div className="text-sm font-medium">Level {level}</div>
+                <div className="text-sm font-medium">Level {level} { }</div>
 
                 {/* Completion badge */}
                 {completedLevels.includes(level) && (
                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                    <span className="text-yellow-900 text-lg">★</span>
+                    <span className="text-yellow-900 text-2xl">★</span>
                   </div>
                 )}
 
@@ -272,7 +272,7 @@ const LevelProgress = ({
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
             <div
               className={`text-3xl font-bold ${theme.statColors.completed} mb-2`}
@@ -297,7 +297,7 @@ const LevelProgress = ({
             </div>
             <div className="text-white/80">Progress</div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

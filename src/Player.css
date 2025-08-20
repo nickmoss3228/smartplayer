@@ -8,18 +8,31 @@
   position: relative;
   width: 100%;
   max-width: 1100px;
-  height: 430px;
-  margin: 20px auto;
+  height: 380px;
+  margin: 10px auto;
   padding: 20px;
-  border: 2px solid #ddd;
-  border-radius: 15px;
-  background-color: #3e2626;
+  background-color: transparent;
   text-align: center;
   animation: fadeIn 1s ease-in-out forwards;
 }
 
 .level-info {
-  margin-bottom: 30px;
+  margin-bottom: 50px;
+  background-color: #212121ff;
+  min-height: 60px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.level-name {
+  font-size: 24px;
+  margin-top: -6px;
+}
+
+.level-number {
+  font-size: 14px;
 }
 
 /* .quiz-toggle-button {
@@ -42,7 +55,7 @@
 .quiz-toggle-button:hover {
   background-color: #45a049;
 } */
-.track-selector {
+/* .track-selector {
   margin-bottom: 20px;
   padding: 10px;
   color: rgb(240, 240, 240);
@@ -61,7 +74,7 @@
   font-size: 16px;
   font-weight: bold;
   font-family: inherit;
-}
+} */
 
 @media only screen and (max-width: 670px) {
   .audio-player {
@@ -72,10 +85,10 @@
 
 @keyframes fadeIn {
   0% {
-      opacity: 0;  /* Start state */
+      opacity: 0;  
   }
   100% {
-      opacity: 1;  /* End state */
+      opacity: 1;  
   }
 }
 

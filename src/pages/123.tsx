@@ -348,7 +348,7 @@
 //   return (
 //     <div className="flex justify-center items-center min-h-screen bg-gray-900 p-4">
 //       {/* Enhanced Blackboard */}
-//       <div className="relative w-[800px] h-[600px] bg-gradient-to-br from-green-900 via-green-800 to-green-900 
+//       <div className="relative w-[800px] h-[600px] bg-gradient-to-br from-green-900 via-green-800 to-green-900
 //                       border-8 border-amber-900/80 rounded-sm shadow-2xl overflow-hidden blackboard-texture">
         
 //         {/* Additional chalk dust and wear effects */}
@@ -387,7 +387,7 @@
 
 //         {/* Enhanced Level Numbers with Hover Effects */}
 //         {Object.entries(levelPositions).map(([level, position]) => (
-//           <div 
+//           <div
 //             key={level}
 //             className="absolute group"
 //             style={{
@@ -398,15 +398,15 @@
 //           >
 //             {/* Enhanced hover circle effect */}
 //             <div className={`absolute w-20 h-20 rounded-full transition-all duration-500 -translate-x-1/2 -translate-y-1/2
-//                           ${hoveredLevel === level 
-//                             ? 'bg-[rgb(248_248_242)]/10 shadow-[0_0_30px_rgba(248,248,242,0.3)]' 
+//                           ${hoveredLevel === level
+//                             ? 'bg-[rgb(248_248_242)]/10 shadow-[0_0_30px_rgba(248,248,242,0.3)]'
 //                             : 'bg-[rgb(248_248_242)]/0'}`}></div>
             
 //             {/* Enhanced circle border */}
 //             <div className={`absolute w-16 h-16 rounded-full border-2 transition-all duration-300 chalk-path
 //                           -translate-x-1/2 -translate-y-1/2
-//                           ${hoveredLevel === level 
-//                             ? 'border-[rgb(248_248_242)]/80 shadow-[0_0_25px_rgba(248,248,242,0.4)]' 
+//                           ${hoveredLevel === level
+//                             ? 'border-[rgb(248_248_242)]/80 shadow-[0_0_25px_rgba(248,248,242,0.4)]'
 //                             : 'border-[rgb(248_248_242)]/50'}`}></div>
             
 //             {/* Enhanced level number */}
@@ -414,11 +414,11 @@
 //               onClick={() => handleLevelClick(level)}
 //               onMouseEnter={() => setHoveredLevel(level)}
 //               onMouseLeave={() => setHoveredLevel(null)}
-//               className={`relative text-4xl font-bold cursor-pointer z-10 
+//               className={`relative text-4xl font-bold cursor-pointer z-10
 //                         transition-all duration-300 chalk-text
 //                         select-none active:scale-95
-//                         ${hoveredLevel === level 
-//                           ? 'text-[rgb(248_248_242)] scale-110 chalk-number-glow' 
+//                         ${hoveredLevel === level
+//                           ? 'text-[rgb(248_248_242)] scale-110 chalk-number-glow'
 //                           : 'text-[rgb(248_248_242)]/90'}`}
 //               style={{ fontFamily: 'var(--font-chalk)' }}
 //             >
@@ -427,8 +427,8 @@
             
 //             {/* Add a subtle chalk smudge effect on hover */}
 //             <div className={`absolute w-12 h-12 rounded-full -translate-x-1/2 -translate-y-1/2 transition-all duration-700
-//                           ${hoveredLevel === level 
-//                             ? 'bg-[rgb(248_248_242)]/5 blur-none' 
+//                           ${hoveredLevel === level
+//                             ? 'bg-[rgb(248_248_242)]/5 blur-none'
 //                             : 'bg-[rgb(248_248_242)]/0 blur-sm'}`}></div>
 //           </div>
 //         ))}
@@ -463,7 +463,7 @@
 //         <div className="absolute bottom-20 left-20 w-6 h-2 bg-[rgb(248_248_242)]/25 transform -rotate-45 blur-sm"></div>
         
 //         {/* Chalk tray at the bottom with used chalk pieces */}
-//         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-36 h-3 
+//         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-36 h-3
 //                        bg-amber-800/60 rounded-sm shadow-inner">
 //           <div className="w-14 h-2 bg-[rgb(248_248_242)]/80 rounded-full mt-0.5 ml-2 shadow-sm"></div>
 //           <div className="w-8 h-1.5 bg-[rgb(248_248_242)]/60 rounded-full mt-0.5 ml-18 shadow-sm"></div>
@@ -485,3 +485,233 @@
 // };
 
 // export default Hard;
+
+// import React from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import { useProgress } from '..context/ProgressContext.tsx';
+
+// const DifficultyLevel = ({ difficulty }) => {
+//   const navigate = useNavigate();
+//   const { [difficulty]: levelData, completeLevel } = useProgress();
+  
+//   const { completedLevels, currentLevel, totalLevels } = levelData;
+  
+//   const difficultyConfig = {
+//     easy: {
+//       title: 'Easy Level',
+//       gradient: 'from-green-900 via-emerald-900 to-teal-800',
+//       completedColor: 'from-green-400 to-green-600',
+//       currentColor: 'from-blue-400 to-blue-600',
+//       borderCompleted: 'border-green-300',
+//       borderCurrent: 'border-blue-300'
+//     },
+//     medium: {
+//       title: 'Medium Level',
+//       gradient: 'from-orange-900 via-red-900 to-pink-800',
+//       completedColor: 'from-orange-400 to-orange-600',
+//       currentColor: 'from-yellow-400 to-yellow-600',
+//       borderCompleted: 'border-orange-300',
+//       borderCurrent: 'border-yellow-300'
+//     },
+//     hard: {
+//       title: 'Hard Level',
+//       gradient: 'from-purple-900 via-indigo-900 to-blue-800',
+//       completedColor: 'from-purple-400 to-purple-600',
+//       currentColor: 'from-red-400 to-red-600',
+//       borderCompleted: 'border-purple-300',
+//       borderCurrent: 'border-red-300'
+//     }
+//   };
+
+//   const config = difficultyConfig[difficulty];
+  
+//   const handleLevelClick = (level) => {
+//     if (level <= currentLevel) {
+//       navigate(`/player?difficulty=${difficulty}&level=${level}`);
+//     }
+//   };
+  
+//   const getLevelStatus = (level) => {
+//     if (completedLevels.includes(level)) return 'completed';
+//     if (level === currentLevel) return 'current';
+//     if (level < currentLevel) return 'available';
+//     return 'locked';
+//   };
+  
+//   const getLevelStyles = (level) => {
+//     const status = getLevelStatus(level);
+    
+//     switch (status) {
+//       case 'completed':
+//         return `bg-gradient-to-br ${config.completedColor} text-white shadow-lg transform hover:scale-105 cursor-pointer border-2 ${config.borderCompleted}`;
+//       case 'current':
+//         return `bg-gradient-to-br ${config.currentColor} text-white shadow-lg transform hover:scale-105 cursor-pointer border-2 ${config.borderCurrent} animate-pulse`;
+//       case 'available':
+//         return 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-700 shadow-md transform hover:scale-105 cursor-pointer border-2 border-gray-200';
+//       default:
+//         return 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 cursor-not-allowed border-2 border-gray-100';
+//     }
+//   };
+  
+//   const getLevelIcon = (level) => {
+//     const status = getLevelStatus(level);
+    
+//     switch (status) {
+//       case 'completed':
+//         return '✓';
+//       case 'current':
+//         return '▶';
+//       case 'locked':
+//         return '🔒';
+//       default:
+//         return level;
+//     }
+//   };
+  
+//   return (
+//     <div className={`min-h-screen bg-gradient-to-br ${config.gradient} p-8`}>
+//       <div className="max-w-4xl mx-auto">
+//         {/* Header */}
+//         <div className="text-center mb-12">
+//           <h1 className="text-4xl font-bold text-white mb-4">{config.title} Progress</h1>
+//           <div className="flex items-center justify-center space-x-4 text-white/80">
+//             <div className="flex items-center space-x-2">
+//               <div className="w-4 h-4 bg-green-500 rounded"></div>
+//               <span>Completed</span>
+//             </div>
+//             <div className="flex items-center space-x-2">
+//               <div className="w-4 h-4 bg-blue-500 rounded animate-pulse"></div>
+//               <span>Current</span>
+//             </div>
+//             <div className="flex items-center space-x-2">
+//               <div className="w-4 h-4 bg-gray-400 rounded"></div>
+//               <span>Locked</span>
+//             </div>
+//           </div>
+//         </div>
+        
+//         {/* Progress Overview */}
+//         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8">
+//           <div className="flex items-center justify-between mb-4">
+//             <h2 className="text-xl font-semibold text-white">Overall Progress</h2>
+//             <span className="text-white/80">{completedLevels.length}/{totalLevels} Completed</span>
+//           </div>
+//           <div className="w-full bg-white/20 rounded-full h-3">
+//             <div
+//               className={`bg-gradient-to-r ${config.completedColor} h-3 rounded-full transition-all duration-500`}
+//               style={{ width: `${(completedLevels.length / totalLevels) * 100}%` }}
+//             ></div>
+//           </div>
+//         </div>
+        
+//         {/* Level Grid */}
+//         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+//           {[...Array(totalLevels)].map((_, index) => {
+//             const level = index + 1;
+//             return (
+//               <div
+//                 key={level}
+//                 onClick={() => handleLevelClick(level)}
+//                 className={`
+//                   relative aspect-square rounded-2xl flex flex-col items-center justify-center
+//                   transition-all duration-300 ${getLevelStyles(level)}
+//                 `}
+//               >
+//                 {/* Level icon/number */}
+//                 <div className="text-3xl font-bold mb-2">
+//                   {getLevelIcon(level)}
+//                 </div>
+                
+//                 {/* Level label */}
+//                 <div className="text-sm font-medium">
+//                   Level {level}
+//                 </div>
+                
+//                 {/* Completion badge */}
+//                 {completedLevels.includes(level) && (
+//                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+//                     <span className="text-yellow-900 text-lg">★</span>
+//                   </div>
+//                 )}
+                
+//                 {/* Current level indicator */}
+//                 {level === currentLevel && (
+//                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+//                     <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce"></div>
+//                   </div>
+//                 )}
+//               </div>
+//             );
+//           })}
+//         </div>
+        
+//         {/* Stats Cards */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+//           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+//             <div className="text-3xl font-bold text-green-400 mb-2">{completedLevels.length}</div>
+//             <div className="text-white/80">Levels Completed</div>
+//           </div>
+//           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+//             <div className="text-3xl font-bold text-blue-400 mb-2">{totalLevels - currentLevel + 1}</div>
+//             <div className="text-white/80">Levels Remaining</div>
+//           </div>
+//           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+//             <div className="text-3xl font-bold text-purple-400 mb-2">{Math.round((completedLevels.length / totalLevels) * 100)}%</div>
+//             <div className="text-white/80">Progress</div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default DifficultyLevel;
+
+// import React, { useState } from 'react';
+// import axios from 'axios';
+
+// const LoginForm = () => {
+//   const [username, setUsername] = useState('');
+//   const [password, setPassword] = useState('');
+//   const [token, setToken] = useState(null);
+//   const [cabinetData, setCabinetData] = useState(null);
+
+//   const handleLogin = async () => {
+//     try {
+//       const response = await axios.post('http://localhost:5000/login', { username, password });
+//       setToken(response.data.token);
+//       alert('Login successful!');
+//     } catch (error) {
+//       const errorMessage = error.response ? error.response.data.message : error.message;
+//     alert('Login failed: ' + errorMessage);
+//     }
+//   };
+
+//   const getCabinet = async () => {
+//     if (!token) return alert('Please login first');
+//     try {
+//       const response = await axios.get('http://localhost:5000/cabinet', {
+//         headers: { Authorization: `Bearer ${token}` }
+//       });
+//       setCabinetData(response.data);
+//     } catch (error) {
+//       const errorMessage = error.response ? error.response.data.message : error.message;
+//     alert('Error: ' + errorMessage);
+//     }
+//   };
+
+//   return (
+//     <div>
+//       <h2>Login</h2>
+//       <input type="text" placeholder="Username" onChange={e => setUsername(e.target.value)} />
+//       <input type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
+//       <button onClick={handleLogin}>Login</button>
+
+//       <h2>Cabinet</h2>
+//       <button onClick={getCabinet}>Get Cabinet Data</button>
+//       {cabinetData && <pre>{JSON.stringify(cabinetData, null, 2)}</pre>}
+//     </div>
+//   );
+// };
+
+// export default LoginForm;

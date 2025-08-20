@@ -110,7 +110,7 @@ const Levels = () => {
                     transform group-hover:scale-105 transition-all duration-300
                     group-hover:shadow-lg
                   `}>
-                    ENTER MISSION
+                    Go to the Challenge
                   </div>
                 </div>
               </Link>

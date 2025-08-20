@@ -1,38 +1,69 @@
-//Business logic for signup/login/logout/validate.
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { User } from "../models/User.js";
 import { config } from "../config/env.js";
+import { sendVerificationEmail } from "../utils/emailService.js";
 
 export async function signup(req, res) {
   try {
-    const { username, password } = req.body;
-    if (!username || !password)
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
       return res
         .status(400)
-        .json({ message: "Username and password are required" });
-    if (password.length < 6)
+        .json({ message: "Username, email, and password are required" });
+    }
+    
+    if (password.length < 6) {
       return res
         .status(400)
         .json({ message: "Password must be at least 6 characters long" });
+    }
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser)
-      return res.status(400).json({ message: "Username already exists" });
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
+    
+    if (existingUser) {
+      if (existingUser.username === username) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, password: hashedPassword });
+    
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
+    });
+
+    // Send verification email
+    await sendVerificationEmail(email, verificationToken);
 
     const token = jwt.sign({ userId: user._id }, config.jwtSecret, {
       expiresIn: "7d",
     });
 
     res.status(201).json({
-      message: "User created successfully",
+      message: "User created successfully. Please check your email to verify your account.",
       token,
       user: {
         id: user._id,
         username: user.username,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
       },
     });
@@ -44,18 +75,30 @@ export async function signup(req, res) {
 
 export async function login(req, res) {
   try {
-    const { username, password } = req.body;
-    if (!username || !password)
+    const { usernameOrEmail, password } = req.body;
+    
+    if (!usernameOrEmail || !password) {
       return res
         .status(400)
-        .json({ message: "Username and password are required" });
+        .json({ message: "Username/email and password are required" });
+    }
 
-    const user = await User.findOne({ username });
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    // Find user by username OR email
+    const user = await User.findOne({
+      $or: [
+        { username: usernameOrEmail },
+        { email: usernameOrEmail.toLowerCase() }
+      ]
+    });
+    
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const token = jwt.sign({ userId: user._id }, config.jwtSecret, {
       expiresIn: "7d",
@@ -67,6 +110,8 @@ export async function login(req, res) {
       user: {
         id: user._id,
         username: user.username,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
       },
     });
@@ -75,6 +120,68 @@ export async function login(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
+
+export async function verifyEmail(req, res) {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired verification token",
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.json({
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+export async function resendVerificationEmail(req, res) {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = verificationExpires;
+    await user.save();
+
+    await sendVerificationEmail(email, verificationToken);
+
+    res.json({
+      message: "Verification email sent successfully",
+    });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 export const logout = async (req, res) => {
   try {
     // Since JWT tokens are stateless, we can't actually "invalidate" them on the server

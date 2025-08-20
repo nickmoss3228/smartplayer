@@ -2,35 +2,36 @@ import { Progress } from "../models/Progress.js";
 const difficulties = ["easy", "medium", "hard"];
 const TOTAL_LEVELS = 10;
 
-export async function getProgress(req, res) {
-  try {
-    const { difficulty } = req.params;
-    const userId = req.user._id;
-    if (!difficulties.includes(difficulty))
-      return res.status(400).json({ message: "Invalid difficulty level" });
+  export async function getProgress(req, res) {
+    try {
+      const { difficulty } = req.params;
+      console.log('Requested difficulty:', difficulty || 'undefined');
+      const userId = req.user._id;
+      if (!difficulties.includes(difficulty))
+        return res.status(400).json({ message: "Invalid difficulty level" });
 
-    let progress = await Progress.findOne({ userId, difficulty });
-    if (!progress) {
-      progress = await Progress.create({
-        userId,
-        difficulty,
-        completedLevels: [],
-        currentLevel: 1,
-        levelResults: new Map(),
+      let progress = await Progress.findOne({ userId, difficulty });
+      if (!progress) {
+        progress = await Progress.create({
+          userId,
+          difficulty,
+          completedLevels: [],
+          currentLevel: 1,
+          levelResults: new Map(),
+        });
+      }
+
+      res.json({
+        completedLevels: progress.completedLevels,
+        currentLevel: progress.currentLevel,
+        levelResults: Object.fromEntries(progress.levelResults),
+        totalLevels: TOTAL_LEVELS,
       });
+    } catch (error) {
+      console.error("Get progress error:", error);
+      res.status(500).json({ message: "Server error" });
     }
-
-    res.json({
-      completedLevels: progress.completedLevels,
-      currentLevel: progress.currentLevel,
-      levelResults: progress.levelResults,
-      totalLevels: TOTAL_LEVELS,
-    });
-  } catch (error) {
-    console.error("Get progress error:", error);
-    res.status(500).json({ message: "Server error" });
   }
-}
 export async function completeLevel(req, res) {
   try {
     console.log('Request body:', req.body); // Debug line

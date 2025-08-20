@@ -1,10 +1,10 @@
-// components/auth/SignUp.jsx
 import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const SignUp = () => {
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -32,16 +32,21 @@ const SignUp = () => {
       setError('Password must be at least 6 characters long')
       return
     }
+
+    if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
+      setError('Please enter a valid email address')
+      return
+    }
     
     setIsLoading(true)
 
-    const result = await signUp(username, password); // Изменено: сохраняем результат
+    const result = await signUp(username, email, password)
     if (result.error) {
-      setError(result.error.message);
+      setError(result.error.message)
     }
     
-    setIsLoading(false);
-  };
+    setIsLoading(false)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-500 via-red-400 to-blue-400 flex items-center justify-center p-6">
@@ -70,6 +75,21 @@ const SignUp = () => {
               required
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Choose a username"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your email"
             />
           </div>
 

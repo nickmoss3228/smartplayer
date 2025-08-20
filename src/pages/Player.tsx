@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import "../Player.css"
 import WaveformPlayer from '../modules/progressBar';
-// import { PlayerProps } from '../types';
+import { PlayerProps } from '../types';
 import Quiz from '../modules/Quiz';
 import { audioTracks } from '../modules/audioData';
 
@@ -38,20 +38,10 @@ const Player = React.memo(() => {
     }
   }, []);
 
-  const handleTrackChange = useCallback((event) => {
-    setSelectedTrackId(event.target.value);
-    if (wavesurferRef.current) {
-      wavesurferRef.current.stop();
-    }
-  }, []);
-
   const handleWavesurferMount = useCallback((wavesurfer) => {
     wavesurferRef.current = wavesurfer;
   }, []);
 
-  const toggleQuiz = useCallback(() => {
-    setShowQuiz(prev => !prev);
-  }, []);
 
   // Функция для сохранения результатов квиза
   const handleQuizComplete = useCallback(async (results) => {
@@ -74,15 +64,9 @@ const Player = React.memo(() => {
 
       console.log('Progress saved successfully:', response.data);
       
-      if (response.data.completed) {
-        alert('Level completed successfully! 🎉');
-      } else {
-        alert(`Level not completed. You got ${results.correctAnswers}/${results.totalQuestions} correct. Try to get at least ${Math.ceil(results.totalQuestions * 0.7)} correct.`);
-      }
-      
     } catch (error) {
       console.error('Failed to save progress:', error);
-      console.error('Error response:', error.response?.data); // Add this line
+      console.error('Error response:', error.response?.data);
       alert('Failed to save your progress. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -93,8 +77,8 @@ const Player = React.memo(() => {
     <div className='audio-player-wrapper'>
       <div className="audio-player">
         <div className="level-info">
-          <h2>Level {level} - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</h2>
-          <h1></h1>
+          <h3 className='level-number'>Level {level} - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</h3>
+          <h1 className='level-name'>{audioTrack.title}</h1>
         </div>
 
         <WaveformPlayer
@@ -103,30 +87,23 @@ const Player = React.memo(() => {
           timeMarkers={audioTrack.timeMarkers}
           onWavesurferMount={handleWavesurferMount}
         />
-
+{/* 
         <button
           className="quiz-toggle-button"
           onClick={toggleQuiz}
         >
           {showQuiz ? 'Hide Quiz' : 'Show Quiz'}
-        </button>
+        </button> */}
 
-        {showQuiz && (
+        {/* {showQuiz && ( */}
           <Quiz
             onTimeJump={handleTimeJump}
             questions={audioTrack.quiz}
             onQuizComplete={handleQuizComplete}
             isSubmitting={isSubmitting}
           />
-        )}
+        {/* // )} */}
 
-        {quizResults && (
-          <div className="quiz-results">
-            <h3>Quiz Results:</h3>
-            <p>Correct: {quizResults.correctAnswers}/{quizResults.totalQuestions}</p>
-            <p>Score: {Math.round((quizResults.correctAnswers / quizResults.totalQuestions) * 100)}%</p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -137,6 +114,7 @@ Player.displayName = 'Player';
 export default Player;
 
 
+        // debug menu
         {/* <div className="track-selector">
           <label htmlFor="track-select">Select Audio Track: </label>
           <select
@@ -151,3 +129,10 @@ export default Player;
             ))}
           </select>
         </div> */}
+
+  // const handleTrackChange = useCallback((event) => {
+  //   setSelectedTrackId(event.target.value);
+  //   if (wavesurferRef.current) {
+  //     wavesurferRef.current.stop();
+  //   }
+  // }, []);

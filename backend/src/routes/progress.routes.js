@@ -8,8 +8,11 @@ import {
 
 const router = Router();
 
-router.get("/progress/:difficulty", authenticateToken, getProgress);
+
+
 router.post("/progress/complete", authenticateToken, completeLevel);
 router.get("/progress/overview", authenticateToken, getOverview);
+router.get("/progress/:difficulty", authenticateToken, getProgress);
+// this parametric path piece of shit, as it turned out - we have to put these :fuckshit parametric paths at the end of the list of paths.
 
 export default router;

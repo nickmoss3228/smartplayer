@@ -1,25 +1,6 @@
-/* .quiz-container {
+  /* .quiz-container {
     max-width: 500px;
-    margin: 1rem auto;
-    padding: 1rem;
-    background-color: #f5f5f5;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    top:140px;
-    animation: fadeIn 1s ease-in-out forwards;
-  }
-  
-  .question-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 500px;
-  } */
-
-  .quiz-container {
-    max-width: 500px;
-    width: 90%; /* Change from fixed width to percentage */
+    width: 90%; 
     margin: 1rem auto;
     padding: 1rem;
     background-color: #704b4b;
@@ -34,7 +15,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    width: 100%; /* Change from fixed 500px to 100% */
+    width: 100%;
     max-width: 500px;
     margin: 0 auto;
 }
@@ -53,12 +34,12 @@
     font-size: 16px;
     text-align: center;
     transition: background-color 0.3s;
-    position: fixed; /* Change from absolute to fixed */
+    position: fixed; 
     top: 600px;
     left: 500px;
     font-family: inherit;
     animation: fadeIn 1s ease-in-out forwards;
-    z-index: 1000; /* Ensure button stays on top */
+    z-index: 1000; 
 }
   
   .options-container {
@@ -131,31 +112,24 @@
     border-radius: 5px;
     cursor: pointer;
     margin-top: 1rem;
-  }
+  } */
 
-
-
-/* Mobile-specific styles */
-@media only screen and (max-width: 670px) {
+/* @media only screen and (max-width: 670px) {
     .audio-player {
         max-width: 340px;
         min-height: 500px;
-        padding: 10px; /* Reduce padding for mobile */
+        padding: 10px; 
     }
 
     .quiz-container {
-        /* width: 100%;
-        max-width: 100%;
-        padding: 0.8rem;
-        margin: 0.5rem auto; */
-        top: 200px; /* Adjust top position for mobile */
+        top: 200px; 
     }
 
     .question-container {
-        /* width: 100%; */
+       
         max-width: 340px;
         padding: 0 0.5rem;
-    }
+    } */
 
     /* .quiz-toggle-button {
       position: fixed; 
@@ -170,29 +144,29 @@
       margin: 0;
       font-size: 14px;
   } */
-
+/* 
     .options-container {
-        gap: 0.5rem; /* Reduce gap for mobile */
+        gap: 0.5rem; 
     }
 
     .option-button {
         padding: 0.8rem 0.5rem;
-        font-size: 0.9rem; /* Slightly smaller font for mobile */
+        font-size: 0.9rem;
     }
 
     .reference-button,
     .next-button {
         padding: 0.6rem;
-        width: 100%; /* Full width buttons on mobile */
+        width: 100%;
         margin-top: 0.8rem;
         font-size: 0.9rem;
     }
 
     .quiz-toggle-button {
-        position: relative; /* Change from absolute positioning */
+        position: relative; 
         top: 140px;
         left: 0;
-        width: 80%; /* Make button width relative to container */
+        width: 80%; 
         max-width: 250px;
         margin: 0 auto;
         padding: 15px;
@@ -210,7 +184,7 @@
     }
 
     /* Adjust text sizes for better mobile readability */
-    .h-tag {
+    /* .h-tag {
         font-size: 1.2rem;
         margin-bottom: 0.5rem;
     }
@@ -226,7 +200,6 @@
     }
 }
 
-/* Additional styles for very small screens */
 @media only screen and (max-width: 360px) {
     .audio-player {
         max-width: 280px;
@@ -260,10 +233,9 @@
 
   @keyframes fadeIn {
     0% {
-        opacity: 0;  /* Start state */
+        opacity: 0;  
     }
     100% {
-        opacity: 1;  /* End state */
+        opacity: 1;  
     }
   }
-  

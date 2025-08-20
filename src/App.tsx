@@ -11,8 +11,10 @@ import './App.css'
 import LevelProgress from './pages/LevelProgress';
 import Login from './auth/Login'
 import SignUp from './auth/SignUp'
+import Navbar from './modules/Navbar';
 // import Dashboard from './auth/Dashboard'
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Dashboard from './auth/Dashboard';
 
 const ProtectedRoute = ({children}) => {
   const { user, loading } = useAuth();
@@ -26,10 +28,12 @@ function App() {
       <AuthProvider>
         <Provider store={store}>
           <Router>
+            <Navbar />
             <Routes>
               <Route path="/" element={<Homepage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/dashboard" element={<Dashboard />} />
 
               <Route path="/levels" element={<ProtectedRoute><Levels /></ProtectedRoute>} />
               <Route path="/levels/easy" element={<ProtectedRoute><Easy /></ProtectedRoute>} />
@@ -50,4 +54,3 @@ function App() {
 
 export default App
 
-{/* <Route path="/dashboard" element={<Dashboard />} /> */}

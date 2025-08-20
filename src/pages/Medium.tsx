@@ -21,7 +21,7 @@ const Medium = () => {
    const fetchProgress = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await axios.get('https://localhost:5000/api/progress/medium', {
+      const response = await axios.get('http://localhost:5000/api/progress/medium', {
         headers: {
           Authorization
             : `Bearer ${token}`

@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api", routes);
+// app.use('/api/progress', progressRoutes);
 
 // Error handling middleware should be last
 app.use((err, req, res, next) => {

@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
   
 const Login = () => {
-  const [username, setUsername] = useState('')
+  const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -22,12 +22,12 @@ const Login = () => {
     setError('')
     setIsLoading(true)
 
-   const result = await signIn(username, password); // Изменено: сохраняем результат
-    if (result.error) { // Проверяем на ошибку из signIn
-      setError(result.error.message);
+    const result = await signIn(usernameOrEmail, password)
+    if (result.error) {
+      setError(result.error.message)
     }
     
-    setIsLoading(false);
+    setIsLoading(false)
   }
 
   return (
@@ -46,17 +46,17 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-              Username
+            <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-300 mb-2">
+              Username or Email
             </label>
             <input
-              id="username"
+              id="usernameOrEmail"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={usernameOrEmail}
+              onChange={(e) => setUsernameOrEmail(e.target.value)}
               required
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
             />
           </div>
 
