@@ -32,7 +32,8 @@ const Player = React.memo(() => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-      window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+    console.log(showQuiz)
     }, [location.pathname]);
 
   const themes: Record<Difficulty, { background: string }> = {
@@ -102,6 +103,7 @@ const Player = React.memo(() => {
 
       setIsSubmitting(true);
       setQuizResults(results);
+      console.log(quizResults)
 
       try {
         const token = localStorage.getItem("token");
