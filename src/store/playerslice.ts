@@ -1,5 +1,15 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface Subtitle {
+  startTime: number;
+  endTime: number;
+  text: string;
+}
+
+interface TimeMarker {
+  time: number;
+}
+
 interface PlayerState {
   currentMarkerIndex: number;
   isPlaying: boolean;
@@ -12,6 +22,8 @@ interface PlayerState {
   durationSeconds: number;
   duration: string;
   activeSubtitle: string;
+  subtitles: Subtitle[]; 
+  timeMarkers: (TimeMarker | number)[]; 
 }
 
 const initialState: PlayerState = {
@@ -20,12 +32,14 @@ const initialState: PlayerState = {
   volume: 1,
   isMuted: false,
   playbackRate: 1.0,
-  subtitlesVisible: true,
+  subtitlesVisible: false,
   isPlayMode: false,
   currentTime: "0:00",
   durationSeconds: 0,
   duration: "0:00",
   activeSubtitle: '',
+  subtitles: [],
+  timeMarkers: [], 
 };
 
 const playerSlice = createSlice({
@@ -64,6 +78,12 @@ const playerSlice = createSlice({
     },
     setActiveSubtitle: (state, action: PayloadAction<string>) => {
       state.activeSubtitle = action.payload;
+    },
+    setSubtitles: (state, action: PayloadAction<Subtitle[]>) => {
+      state.subtitles = action.payload;
+    },
+    setTimeMarkers: (state, action: PayloadAction<(TimeMarker | number)[]>) => {
+      state.timeMarkers = action.payload;
     }
   }
 });
@@ -79,7 +99,9 @@ export const {
   setCurrentTime,
   setDurationSeconds,
   setDuration,
-  setActiveSubtitle
+  setActiveSubtitle,
+  setSubtitles,
+  setTimeMarkers 
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
 
 const SignUp = () => {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,22 +21,22 @@ const SignUp = () => {
     return <Navigate to={from} replace />
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(t('signup.errors.passwordMismatch'))
       return
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
+      setError(t('signup.errors.passwordLength'))
       return
     }
 
     if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
-      setError('Please enter a valid email address')
+      setError(t('signup.errors.invalidEmail'))
       return
     }
     
@@ -49,23 +51,23 @@ const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-500 via-red-400 to-blue-400 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="font-inherit max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-white">Join us and start your journey</p>
+          <h1 className="text-3xl font-bold text-black mb-2">{t('signup.title')}</h1>
+          <p className="text-gray-600">{t('signup.subtitle')}</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-white mb-2">
-              Username
+            <label htmlFor="username" className="block text-sm font-medium text-black mb-2">
+              {t('signup.username')}
             </label>
             <input
               id="username"
@@ -73,14 +75,14 @@ const SignUp = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Choose a username"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('signup.usernamePlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
-              Email
+            <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+              {t('signup.email')}
             </label>
             <input
               id="email"
@@ -88,14 +90,14 @@ const SignUp = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your email"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('signup.emailPlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
-              Password
+            <label htmlFor="password" className="block text-sm font-medium text-black mb-2">
+              {t('signup.password')}
             </label>
             <input
               id="password"
@@ -103,14 +105,14 @@ const SignUp = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Create a password"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('signup.passwordPlaceholder')}
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-2">
-              Confirm Password
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-black mb-2">
+              {t('signup.confirmPassword')}
             </label>
             <input
               id="confirmPassword"
@@ -118,8 +120,8 @@ const SignUp = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Confirm your password"
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('signup.confirmPasswordPlaceholder')}
             />
           </div>
 
@@ -128,15 +130,15 @@ const SignUp = () => {
             disabled={isLoading}
             className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Creating Account...' : 'Sign Up'}
+            {isLoading ? t('signup.submitting') : t('signup.submit')}
           </button>
         </form>
 
         <div className="mt-8 text-center">
-          <p className="text-gray-300">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
-              Sign in
+          <p className="text-gray-600">
+            {t('signup.haveAccount')}{' '}
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              {t('signup.signInLink')}
             </Link>
           </p>
         </div>

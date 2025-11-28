@@ -1,0 +1,295 @@
+{
+  "navbar": {
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "language": "Language",
+    "guide": "Guide"
+  },
+  "homepage": {
+    "landing": "Immerse yourself in captivating stories that challenge your mind and spark your imagination",
+    "button1": "Start your journey",
+    "button2": "Log in",
+    "button3": "How does it work?",
+    "account": "Already have an account?"
+  },
+  "levels": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "title": "Choose Your Level",
+    "selectProficiency": "Select Your",
+    "proficiencyLevel": "Proficiency Level",
+    "chooseAppropriate": "Choose the appropriate difficulty level to begin your assessment",
+    "level": "Level",
+    "easySubtitle": "Foundational Level",
+    "mediumSubtitle": "Intermediate Level",
+    "hardSubtitle": "Advanced Level",
+    "easyFeature1": "Clear Audio Quality",
+    "easyFeature2": "Fundamental Vocabulary",
+    "easyFeature3": "Structured Learning",
+    "mediumFeature1": "Standard Pacing",
+    "mediumFeature2": "Diverse Content",
+    "mediumFeature3": "Progressive Difficulty",
+    "hardFeature1": "Complex Material",
+    "hardFeature2": "Accelerated Pace",
+    "hardFeature3": "Professional Standard",
+    "proceedToAssessment": "Proceed to Assessment →",
+    "notSure": "Not sure which level to choose? Start with the foundational level and progress accordingly."
+  },
+  "levelProgress": {
+    "easyTitle": "Easy Mode",
+    "easySubtitle": "Building Foundations",
+    "mediumTitle": "Medium Mode",
+    "mediumSubtitle": "Expanding Horizons",
+    "hardTitle": "Hard Mode",
+    "hardSubtitle": "Master Challenge",
+    "completed": "Completed",
+    "current": "Current",
+    "locked": "Locked",
+    "overallProgress": "Overall Progress",
+    "completedCount": "Completed",
+    "levelLabel": "Level"
+  },
+  "login": {
+    "title": "Welcome!",
+    "subtitle": "Sign in to continue your listening journey.",
+    "usernameOrEmail": "Username or Email",
+    "usernameOrEmailPlaceholder": "Enter your username or email",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot password?",
+    "submit": "Sign In",
+    "submitting": "Signing In...",
+    "noAccount": "Don't have an account?",
+    "signUpLink": "Sign up"
+  },
+  "signup": {
+    "title": "Create Account",
+    "subtitle": "Join us and start your journey",
+    "username": "Username",
+    "usernamePlaceholder": "Choose a username",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "password": "Password",
+    "passwordPlaceholder": "Create a password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Confirm your password",
+    "submit": "Sign Up",
+    "submitting": "Creating Account...",
+    "haveAccount": "Already have an account?",
+    "signInLink": "Sign in",
+    "errors": {
+      "passwordMismatch": "Passwords do not match",
+      "passwordLength": "Password must be at least 6 characters long",
+      "invalidEmail": "Please enter a valid email address"
+    }
+  },
+  "forgotPassword": {
+    "title": "Forgot Password?",
+    "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "Enter your email",
+    "sendButton": "Send Reset Link",
+    "sending": "Sending...",
+    "backToLogin": "Back to Login",
+
+    "emailSent": {
+      "title": "Check Your Email",
+      "message": "We've sent a password reset link to",
+      "instructions": "Please check your inbox and click on the link to reset your password. The link will expire in 1 hour.",
+      "tryAnother": "Try Another Email"
+    },
+
+    "resetPassword": {
+      "title": "Reset Your Password",
+      "subtitle": "Enter your new password below.",
+      "newPasswordLabel": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "confirmPasswordLabel": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submitButton": "Reset Password",
+      "submitting": "Resetting Password..."
+    },
+
+    "resetSuccess": {
+      "title": "Password Reset Successful!",
+      "message": "Your password has been successfully reset.",
+      "redirecting": "Redirecting to login page...",
+      "goToLogin": "Go to Login"
+    },
+
+    "errors": {
+      "passwordMismatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters long",
+      "invalidToken": "Invalid reset token"
+    }
+  },
+  "dashboard": {
+    "loading": "Loading...",
+    "welcome": "Welcome back, {{username}}!",
+    "subtitle": "Everything about your learning journey",
+    "signOut": "Sign Out",
+    "stats": {
+      "overallProgress": "Overall Progress",
+      "completedLevels": "Completed Levels",
+      "totalLevels": "Total Levels",
+      "currentRank": "Current Rank"
+    },
+    "ranks": {
+      "beginner": "Beginner",
+      "novice": "Novice",
+      "apprentice": "Apprentice",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert",
+      "master": "Master",
+      "grandmaster": "Grand Master"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "levelsCompleted": "{{completed}} / {{total}} levels completed",
+    "levelStatus": "Level {{level}} - {{status}}",
+    "status": {
+      "completed": "Completed",
+      "current": "Current",
+      "locked": "Locked"
+    }
+  },
+  "howToUse": {
+    "title": "How to Use This App?",
+    "subtitle": "Master English listening skills with our interactive audio player.",
+
+    "overview": {
+      "title": "What Makes This Player Special?",
+      "description": "This isn't just an ordinary audio player. It's designed specifically to help you improve your English listening skills through interactive, sentence-by-sentence learning."
+    },
+
+    "features": {
+      "sentenceMode": {
+        "title": "Sentence Mode",
+        "description": "Activate this special mode to automatically pause after each sentence. Perfect for focused listening practice.",
+        "learnMore": "Learn More ↓",
+        "showLess": "Show Less ↑",
+        "howItWorks": "How Sentence Mode Works:",
+        "autoPause": "Auto-pause:",
+        "autoPauseDesc": "Audio stops automatically after each sentence",
+        "nextButton": "Next Button:",
+        "nextButtonDesc": "Click or press",
+        "nextButtonDesc2": "(right arrow) to play the next sentence",
+        "repeatButton": "Repeat Button:",
+        "repeatButtonDesc": "Click or press",
+        "repeatButtonDesc2": "to replay the current sentence",
+        "whyHelps": "Why it helps:",
+        "whyHelpsDesc": "Gives you time to process what you heard before moving forward"
+      },
+      "timeMarkers": {
+        "title": "Time Markers",
+        "description": "Visual indicators showing where sentences start and end, helping you navigate through the story efficiently.",
+        "understanding": "Understanding Time Markers:",
+        "point1": "Each marker represents a sentence boundary",
+        "point2": "Some markers group related sentences (complete ideas) together",
+        "point3": "Click on any marker to jump to that part instantly",
+        "point4": "Great for reviewing specific parts of the story"
+      },
+      "speedControl": {
+        "title": "Quiz Game!",
+        "description": "After you listen, make sure you understood everything - take a short quiz on the content.",
+        "speedOptions": "How to Use the Quiz:",
+        "slow": "First Listen:",
+        "slowDesc": "Listen to the story without interruptions to get the overall understanding",
+        "normal": "Second Listen & Quiz:",
+        "normalDesc": "Listen again and answer questions that appear during the story",
+        "fast": "Question Types:",
+        "fastDesc": "Questions may test what you heard (audio recognition) or meaning comprehension",
+        "tip": "Tip:",
+        "tipDesc": "Difficulty level affects question complexity - start with easier levels and progress gradually"
+      },
+      "subtitles": {
+        "title": "Subtitles",
+        "description": "Follow along with text subtitles for all stories. Toggle them on or off based on your learning needs.",
+        "usingEffectively": "Using Subtitles Effectively:",
+        "firstListen": "First listen:",
+        "firstListenDesc": "Try without subtitles to test your comprehension",
+        "secondListen": "Second listen:",
+        "secondListenDesc": "Turn on subtitles to confirm understanding",
+        "thirdListen": "Third listen:",
+        "thirdListenDesc": "Turn off subtitles again to reinforce learning",
+        "allStories": "All 30 stories include full subtitles"
+      }
+    },
+
+    "levelsSection": {
+      "title": "Choose Your Level",
+      "easy": {
+        "title": "Easy",
+        "stories": "10 stories",
+        "description": "Simple vocabulary, clear pronunciation, slower pace"
+      },
+      "medium": {
+        "title": "Medium",
+        "stories": "10 stories",
+        "description": "Moderate vocabulary, natural pace, some idioms"
+      },
+      "hard": {
+        "title": "Hard",
+        "stories": "10 stories",
+        "description": "Advanced vocabulary, fast pace, complex sentences"
+      }
+    },
+
+    "quickStart": {
+      "title": "Quick Start Guide",
+      "step1": {
+        "title": "Select Your Level",
+        "description": "Choose Easy, Medium, or Hard based on your current skills"
+      },
+      "step2": {
+        "title": "Pick a Story",
+        "description": "Browse through 10 stories in your chosen level"
+      },
+      "step3": {
+        "title": "Activate Sentence Mode",
+        "description": "Toggle it on for sentence-by-sentence practice"
+      },
+      "step4": {
+        "title": "Start Listening",
+        "description": "Use → for next, R for repeat"
+      }
+    },
+
+    "keyboardShortcuts": {
+      "title": "⌨️ Keyboard Shortcuts",
+      "next": "Next sentence",
+      "repeat": "Repeat current sentence",
+      "playPause": "Play/Pause"
+    },
+
+    "learningTips": {
+      "title": "💡 Learning Tips",
+      "activeListen": {
+        "title": "Active Listening:",
+        "description": "Focus on understanding, not just hearing"
+      },
+      "repetition": {
+        "title": "Repetition is Key:",
+        "description": "Don't hesitate to replay sentences multiple times"
+      },
+      "progressive": {
+        "title": "Progressive Challenge:",
+        "description": "Start with subtitles, then try without"
+      },
+      "adjustSpeed": {
+        "title": "Adjust Speed:",
+        "description": "Begin slower, increase as you improve"
+      }
+    },
+
+    "cta": {
+      "startLearning": "Start Learning Now",
+      "backHome": "Back to Home"
+    }
+  }
+}

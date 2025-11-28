@@ -1,11 +1,19 @@
 import WaveSurfer from 'wavesurfer.js';
 
-// types.ts
 export interface Subtitle {
     startTime: number;
     endTime: number;
     text: string;
-  }
+}
+  
+export interface AudioTrack {
+  id: string;
+  title: string;
+  audio: string;
+  subtitles: Subtitle[];
+  timeMarkers: TimeMarker[];
+  quiz: QuizQuestion[];
+}
   
   export interface TimeMarker {
     time: number;

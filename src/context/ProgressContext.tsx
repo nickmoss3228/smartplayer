@@ -1,122 +1,155 @@
-// import { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios, { AxiosResponse, AxiosError } from 'axios';
+import { 
+  ProgressData, 
+  ProgressContextValue, 
+  ProgressProviderProps,
+  DifficultyType,
+  ProgressApiResponse,
+  DifficultyProgress
+} from '../types/Progress';
 
-// const ProgressContext = createContext();
+const ProgressContext = createContext<ProgressContextValue | undefined>(undefined);
 
-// const initialState = {
-//   easy: {
-//     completedLevels: [1, 2, 3],
-//     currentLevel: 4,
-//     totalLevels: 10
-//   },
-//   medium: {
-//     completedLevels: [1],
-//     currentLevel: 2,
-//     totalLevels: 15
-//   },
-//   hard: {
-//     completedLevels: [],
-//     currentLevel: 1,
-//     totalLevels: 20
-//   },
-//   totalExperience: 350,
-//   achievements: [
-//     { id: 1, name: 'First Steps', description: 'Complete your first level', earned: true },
-//     { id: 2, name: 'Getting Started', description: 'Complete 3 levels', earned: true },
-//     { id: 3, name: 'Dedicated', description: 'Complete 5 levels', earned: false },
-//   ]
-// };
+export const useProgress = (): ProgressContextValue => {
+  const context = useContext(ProgressContext);
+  if (!context) {
+    throw new Error('useProgress must be used within a ProgressProvider');
+  }
+  return context;
+};
 
-// const progressReducer = (state, action) => {
-//   switch (action.type) {
-//     case 'COMPLETE_LEVEL':
-//       const { difficulty, level } = action.payload;
-//       const updatedDifficulty = {
-//         ...state[difficulty],
-//         completedLevels: [...state[difficulty].completedLevels, level].sort((a, b) => a - b),
-//         currentLevel: Math.max(state[difficulty].currentLevel, level + 1)
-//       };
+const initialDifficultyState: DifficultyProgress = {
+  stats: {
+    solved: 0,
+    total: 0,
+    percentage: 0
+  },
+  completedLevels: [],
+  currentLevel: 1,
+  loading: true
+};
+
+const initialProgressData: ProgressData = {
+  easy: initialDifficultyState,
+  medium: initialDifficultyState,
+  hard: initialDifficultyState,
+  initialLoad: true
+};
+
+export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) => {
+  const [progressData, setProgressData] = useState<ProgressData>(initialProgressData);
+
+  const getAuthHeaders = (): { Authorization: string } | {} => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchAllProgress = async (): Promise<void> => {
+    try {
+      const headers = getAuthHeaders();
       
-//       // Calculate experience based on difficulty
-//       const expGain = difficulty === 'easy' ? 10 : difficulty === 'medium' ? 20 : 30;
+      const [easyResponse, mediumResponse, hardResponse]: AxiosResponse<ProgressApiResponse>[] = await Promise.all([
+        axios.get<ProgressApiResponse>('http://localhost:5000/api/progress/easy', { headers }),
+        axios.get<ProgressApiResponse>('http://localhost:5000/api/progress/medium', { headers }),
+        axios.get<ProgressApiResponse>('http://localhost:5000/api/progress/hard', { headers })
+      ]);
+
+      setProgressData({
+        easy: { ...easyResponse.data, loading: false },
+        medium: { ...mediumResponse.data, loading: false },
+        hard: { ...hardResponse.data, loading: false },
+        initialLoad: false
+      });
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error('Failed to fetch progress:', axiosError.message);
       
-//       return {
-//         ...state,
-//         [difficulty]: updatedDifficulty,
-//         totalExperience: state.totalExperience + expGain
-//       };
+      setProgressData(prev => ({
+        ...prev,
+        easy: { ...prev.easy, loading: false },
+        medium: { ...prev.medium, loading: false },
+        hard: { ...prev.hard, loading: false },
+        initialLoad: false
+      }));
+    }
+  };
+
+  const refreshProgress = async (difficulty: DifficultyType): Promise<void> => {
+    try {
+      setProgressData(prev => ({
+        ...prev,
+        [difficulty]: { ...prev[difficulty], loading: true }
+      }));
+
+      const headers = getAuthHeaders();
+      const response: AxiosResponse<ProgressApiResponse> = await axios.get<ProgressApiResponse>(
+        `http://localhost:5000/api/progress/${difficulty}`, 
+        { headers }
+      );
       
-//     case 'RESET_PROGRESS':
-//       return initialState;
+      setProgressData(prev => ({
+        ...prev,
+        [difficulty]: { ...response.data, loading: false }
+      }));
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error(`Failed to refresh ${difficulty} progress:`, axiosError.message);
       
-//     case 'LOAD_PROGRESS':
-//       return action.payload;
-      
-//     default:
-//       return state;
-//   }
-// };
+      setProgressData(prev => ({
+        ...prev,
+        [difficulty]: { ...prev[difficulty], loading: false }
+      }));
+    }
+  };
 
-// export const ProgressProvider = ({ children }) => {
-//   const [state, dispatch] = useReducer(progressReducer, initialState);
+ // New function: Check if user can access a specific level
+const canAccessLevel = useCallback((difficulty: DifficultyType, level: number): boolean => {
+  const difficultyData = progressData[difficulty];
+  
+  // If data is not loaded yet or doesn't exist, only allow level 1
+  if (!difficultyData || !difficultyData.completedLevels) {
+    return level === 1;
+  }
+  
+  // Level 1 is always accessible
+  if (level === 1) return true;
+  
+  // Check if previous level is completed
+  return difficultyData.completedLevels.includes(level - 1);
+}, [progressData]);
 
-//   // Load progress from localStorage on mount
-//   useEffect(() => {
-//     const savedProgress = localStorage.getItem('audioPlayerProgress');
-//     if (savedProgress) {
-//       dispatch({ type: 'LOAD_PROGRESS', payload: JSON.parse(savedProgress) });
-//     }
-//   }, []);
+// New function: Get highest unlocked level
+const getHighestUnlockedLevel = useCallback((difficulty: DifficultyType): number => {
+  const difficultyData = progressData[difficulty];
+  
+  // If data is not loaded yet or doesn't exist, return level 1
+  if (!difficultyData || difficultyData.currentLevel === undefined) {
+    return 1;
+  }
+  
+  return difficultyData.currentLevel;
+}, [progressData]);
+  useEffect(() => {
+    fetchAllProgress();
+  }, []);
 
-//   // Save progress to localStorage whenever state changes
-//   useEffect(() => {
-//     localStorage.setItem('audioPlayerProgress', JSON.stringify(state));
-//   }, [state]);
+  const refreshAllProgress = async (): Promise<void> => {
+    await fetchAllProgress();
+  };
 
-//   const completeLevel = (difficulty, level) => {
-//     dispatch({ type: 'COMPLETE_LEVEL', payload: { difficulty, level } });
-//   };
+  const contextValue: ProgressContextValue = {
+    progressData,
+    refreshProgress,
+    refreshAllProgress, 
+    isInitialLoad: progressData.initialLoad,
+    canAccessLevel,
+    getHighestUnlockedLevel
+  };
 
-//   const resetProgress = () => {
-//     dispatch({ type: 'RESET_PROGRESS' });
-//   };
-
-//   const getTotalCompletedLevels = () => {
-//     return state.easy.completedLevels.length + 
-//            state.medium.completedLevels.length + 
-//            state.hard.completedLevels.length;
-//   };
-
-//   const getPlayerLevel = () => {
-//     return Math.floor(state.totalExperience / 100) + 1;
-//   };
-
-//   const getExpForNextLevel = () => {
-//     const currentPlayerLevel = getPlayerLevel();
-//     const expForNextLevel = currentPlayerLevel * 100;
-//     const currentExp = state.totalExperience % 100;
-//     return { current: currentExp, needed: 100 };
-//   };
-
-//   const value = {
-//     ...state,
-//     completeLevel,
-//     resetProgress,
-//     getTotalCompletedLevels,
-//     getPlayerLevel,
-//     getExpForNextLevel
-//   };
-
-//   return (
-//     <ProgressContext.Provider value={value}>
-//       {children}
-//     </ProgressContext.Provider>
-//   );
-// };
-
-// export const useProgress = () => {
-//   const context = useContext(ProgressContext);
-//   if (!context) {
-//     throw new Error('useProgress must be used within a ProgressProvider');
-//   }
-//   return context;
-// };
+  return (
+    <ProgressContext.Provider value={contextValue}>
+      {children}
+    </ProgressContext.Provider>
+  );
+};

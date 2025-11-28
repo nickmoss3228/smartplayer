@@ -3,7 +3,7 @@ import styled from "styled-components";
 // #4caf50; - buttons, #f5f5f5 - background color,  hover background color: #45a049;, 
 
 interface SpeedButtonProps {
-  $active: boolean; // $-prefix to avoid DOM attribute warnings
+  $active: boolean; 
 }
 
 interface SubtitlesContainterProps {
@@ -57,6 +57,14 @@ export const HoverEffect = styled.div`
 
   ${WaveformContainer}:hover & {
     opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    height: 80px;
+  }
+
+  @media (max-width: 480px) {
+    height: 60px;
   }
 `;
 
@@ -368,8 +376,7 @@ export const PlayModeContainer = styled.div`
   gap: 20px;
 
   min-width: 200px; // Fixed width to maintain space
-  font-family: Montserrat;
-  font-weight:500;
+  font-weight:600;
   background-color: white;
 
   @media (max-width: 768px) {
@@ -387,7 +394,6 @@ export const PlayModeToggle = styled.button<PlayModeToggleProps>`
   padding: 8px 16px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: inherit;
   background-color: black;
 
   &:hover {
@@ -520,3 +526,29 @@ export const DropdownItem = styled.button<SpeedButtonProps>`
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 `;
+
+// import {
+//   WaveformContainer,
+//   HoverEffect,
+//   Button,
+//   TimeLabel,
+//   VolumeControl,
+//   VolumeIcon,
+//   VolumeSlider,
+//   ControlsContainer,
+//   SubtitlesContainer,
+//   SubtitleText,
+//   SubtitlesButton,
+//   TimeMarkersContainer,
+//   TimeMarkerLine,
+//   TimeMarkerLabel,
+//   PlayModeContainer,
+//   PlayModeToggle,
+//   NavigationControls,
+//   NavButton,
+//   DropdownContainer,
+//   VolumeSpeedContainer,
+//   DropdownButton,
+//   DropdownItem,
+//   DropdownMenu,
+// } from "../styledComponents";

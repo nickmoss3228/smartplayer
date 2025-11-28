@@ -8,8 +8,6 @@ import {
 
 const router = Router();
 
-
-
 router.post("/progress/complete", authenticateToken, completeLevel);
 router.get("/progress/overview", authenticateToken, getOverview);
 router.get("/progress/:difficulty", authenticateToken, getProgress);

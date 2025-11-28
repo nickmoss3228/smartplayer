@@ -34,13 +34,12 @@ const TOTAL_LEVELS = 10;
   }
 export async function completeLevel(req, res) {
   try {
-    console.log('Request body:', req.body); // Debug line
-    console.log('Request headers:', req.headers); // Debug line
-    
+    console.log('Request body:', req.body); // Debug 
+    console.log('Request headers:', req.headers); // Debug
     const { difficulty, level, correctAnswers, totalQuestions } = req.body;
     const userId = req.user._id;
 
-     console.log('Completing level:', { difficulty, level, correctAnswers, totalQuestions, userId }); // Add logging
+     console.log('Completing level:', { difficulty, level, correctAnswers, totalQuestions, userId }); 
 
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
@@ -85,7 +84,7 @@ export async function completeLevel(req, res) {
 
     await progress.save();
 
-     console.log('Progress saved:', progress); // Add logging
+     console.log('Progress saved:', progress); 
 
     res.json({
       message: isCompleted

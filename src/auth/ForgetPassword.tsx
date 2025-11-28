@@ -1,98 +1,271 @@
-// import { useState } from 'react'
-// import { Link } from 'react-router-dom'
-// import { useAuth } from '../context/AuthContext'
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useAuth } from '../context/AuthContext'
 
-// const ForgotPassword = () => {
-//   const [email, setEmail] = useState('')
-//   const [error, setError] = useState('')
-//   const [message, setMessage] = useState('')
-//   const [isLoading, setIsLoading] = useState(false)
-  
-//   const { resetPassword } = useAuth()
+const ForgotPassword = () => {
+  const { t } = useTranslation()
+  const [searchParams] = useSearchParams()
+  const token = searchParams.get('token')
+  const navigate = useNavigate()
+  const { requestPasswordReset, confirmPasswordReset } = useAuth()
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault()
+  // Step 1: Request reset email
+  const [email, setEmail] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
+
+  // Step 2: Reset password with token
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetSuccess, setResetSuccess] = useState(false)
+
+  // Common states
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleRequestReset = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    const result = await requestPasswordReset(email)
     
-//     setIsLoading(true)
-//     setError('')
-//     setMessage('')
+    if (result.error) {
+      setError(result.error.message)
+    } else {
+      setEmailSent(true)
+    }
     
-//     try {
-//       await resetPassword(email)
-//       setMessage('Check your email for password reset instructions')
-//     } catch (error) {
-//       setError(error.message)
-//     } finally {
-//       setIsLoading(false)
-//     }
-//   }
+    setIsLoading(false)
+  }
 
-//   return (
-//     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-//       <div className="max-w-md w-full space-y-8">
-//         <div>
-//           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-//             Reset your password
-//           </h2>
-//           <p className="mt-2 text-center text-sm text-gray-400">
-//             Enter your email address and we'll send you a reset link
-//           </p>
-//         </div>
-        
-//         <div className="bg-gray-800 rounded-lg shadow-xl p-8">
-//           {message && (
-//             <div className="mb-4 p-4 bg-green-900 border border-green-700 rounded-md">
-//               <p className="text-green-200 text-sm">{message}</p>
-//             </div>
-//           )}
-          
-//           {error && (
-//             <div className="mb-4 p-4 bg-red-900 border border-red-700 rounded-md">
-//               <p className="text-red-200 text-sm">{error}</p>
-//             </div>
-//           )}
+  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError('')
 
-//           <form className="space-y-6" onSubmit={handleSubmit}>
-//             <div>
-//               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-//                 Email Address
-//               </label>
-//               <input
-//                 id="email"
-//                 name="email"
-//                 type="email"
-//                 autoComplete="email"
-//                 required
-//                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-700 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-//                 placeholder="Enter your email address"
-//                 value={email}
-//                 onChange={(e) => setEmail(e.target.value)}
-//               />
-//             </div>
+    if (newPassword !== confirmPassword) {
+      setError(t('forgotPassword.errors.passwordMismatch'))
+      return
+    }
 
-//             <div>
-//               <button
-//                 type="submit"
-//                 disabled={isLoading}
-//                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-//               >
-//                 {isLoading ? 'Sending...' : 'Send Reset Link'}
-//               </button>
-//             </div>
-//           </form>
+    if (newPassword.length < 6) {
+      setError(t('forgotPassword.errors.passwordTooShort'))
+      return
+    }
 
-//           <div className="mt-6 text-center">
-//             <Link 
-//               to="/login" 
-//               className="text-blue-400 hover:text-blue-300 font-medium text-sm"
-//             >
-//               Back to Login
-//             </Link>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
+    if (!token) {
+      setError(t('forgotPassword.errors.invalidToken'))
+      return
+    }
 
-// export default ForgotPassword
+    setIsLoading(true)
+
+    const result = await confirmPasswordReset(token, newPassword)
+    
+    if (result.error) {
+      setError(result.error.message)
+    } else {
+      setResetSuccess(true)
+      setTimeout(() => {
+        navigate('/login')
+      }, 3000)
+    }
+    
+    setIsLoading(false)
+  }
+
+  // Reset password form (when token is present in URL)
+  if (token) {
+    if (resetSuccess) {
+      return (
+        <div className="min-h-screen bg-white flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-3xl font-bold text-black mb-2">
+                {t('forgotPassword.resetSuccess.title')}
+              </h1>
+              <p className="text-gray-600">{t('forgotPassword.resetSuccess.message')}</p>
+              <p className="text-gray-600 mt-2">{t('forgotPassword.resetSuccess.redirecting')}</p>
+            </div>
+            <Link
+              to="/login"
+              className="inline-block py-3 px-6 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300"
+            >
+              {t('forgotPassword.resetSuccess.goToLogin')}
+            </Link>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-black mb-2">
+              {t('forgotPassword.resetPassword.title')}
+            </h1>
+            <p className="text-gray-600">{t('forgotPassword.resetPassword.subtitle')}</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            <div>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-black mb-2">
+                {t('forgotPassword.resetPassword.newPasswordLabel')}
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={t('forgotPassword.resetPassword.newPasswordPlaceholder')}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-black mb-2">
+                {t('forgotPassword.resetPassword.confirmPasswordLabel')}
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder={t('forgotPassword.resetPassword.confirmPasswordPlaceholder')}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading 
+                ? t('forgotPassword.resetPassword.submitting') 
+                : t('forgotPassword.resetPassword.submitButton')
+              }
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              {t('forgotPassword.backToLogin')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Request reset email form
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg text-center">
+          <div className="mb-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-black mb-2">
+              {t('forgotPassword.emailSent.title')}
+            </h1>
+            <p className="text-gray-600 mb-4">
+              {t('forgotPassword.emailSent.message')} <span className="font-semibold">{email}</span>
+            </p>
+            <p className="text-gray-500 text-sm">
+              {t('forgotPassword.emailSent.instructions')}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => setEmailSent(false)}
+              className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300"
+            >
+              {t('forgotPassword.emailSent.tryAnother')}
+            </button>
+            <Link
+              to="/login"
+              className="block text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {t('forgotPassword.backToLogin')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-black mb-2">
+            {t('forgotPassword.title')}
+          </h1>
+          <p className="text-gray-600">
+            {t('forgotPassword.subtitle')}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleRequestReset} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
+              {t('forgotPassword.emailLabel')}
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder={t('forgotPassword.emailPlaceholder')}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? t('forgotPassword.sending') : t('forgotPassword.sendButton')}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+            {t('forgotPassword.backToLogin')}
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ForgotPassword
