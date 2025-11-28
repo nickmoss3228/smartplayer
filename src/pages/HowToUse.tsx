@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-import guide2 from "../assets/guide/guide2.png";
+// import guide2 from "../assets/guide/guide2.png";
 // import guide3 from "../assets/guide/guide3.png";
 // import guide5 from "../assets/guide/guide5.png";
 // import guide6 from "../assets/guide/guide6.png";
 // import guide7 from "../assets/guide/guide7.png";
 // // import guide1 from "../assets/guide/guide1.png";
-import guide4 from "../assets/guide/guide4.png";
-import guide8 from "../assets/guide/guide8.png";
-import guide9 from "../assets/guide/guide9.png";
-import guide10 from "../assets/guide/guide10.png";
+// import guide4 from "../assets/guide/guide4.png";
+// import guide8 from "../assets/guide/guide8.png";
+// import guide9 from "../assets/guide/guide9.png";
+// import guide10 from "../assets/guide/guide10.png";
 
 const HowToUse: React.FC = () => {
   const { t } = useTranslation();
