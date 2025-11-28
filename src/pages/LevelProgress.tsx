@@ -12,7 +12,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
   const { refreshProgress } = useProgress();
-  const { pathname } = useLocation();
+  // const { pathname } = useLocation();
   // const { progressData, refreshProgress } = useProgress();
   const {
     difficulty,
