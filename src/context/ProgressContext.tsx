@@ -50,9 +50,9 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) 
       const headers = getAuthHeaders();
       
       const [easyResponse, mediumResponse, hardResponse]: AxiosResponse<ProgressApiResponse>[] = await Promise.all([
-        axios.get<ProgressApiResponse>('smartplayer-production.up.railway.app/api/progress/easy', { headers }),
-        axios.get<ProgressApiResponse>('smartplayer-production.up.railway.app/api/progress/medium', { headers }),
-        axios.get<ProgressApiResponse>('smartplayer-production.up.railway.app/api/progress/hard', { headers })
+        axios.get<ProgressApiResponse>('/api/progress/easy', { headers }),
+        axios.get<ProgressApiResponse>('/api/progress/medium', { headers }),
+        axios.get<ProgressApiResponse>('/api/progress/hard', { headers })
       ]);
 
       setProgressData({
