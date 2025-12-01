@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { OverviewData, DetailedProgressMap, ApiHeaders, Difficulty } from '../types/Dashboard';
 
-const API_BASE = 'http://localhost:5000';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
 
 const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
 

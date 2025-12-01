@@ -109,7 +109,7 @@ const Player = React.memo(() => {
         const token = localStorage.getItem("token");
 
         const response = await axios.post(
-          "http://localhost:5000/api/progress/complete",
+          "smartplayer-production.up.railway.app/api/progress/complete",
           {
             difficulty,
             level,
