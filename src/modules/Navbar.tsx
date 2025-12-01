@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   ChevronDownIcon,
-  CogIcon,
+  // CogIcon,
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from 'react-router-dom';
@@ -44,10 +44,10 @@ const Navbar = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleSettingsClick = () => {
-    setIsDropdownOpen(false);
-    console.log("Navigate to settings");
-  };
+  // const handleSettingsClick = () => {
+  //   setIsDropdownOpen(false);
+  //   console.log("Navigate to settings");
+  // };
 
 const handleLogoClick = () => {
     if (user) {
