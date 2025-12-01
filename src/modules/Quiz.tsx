@@ -213,7 +213,7 @@
 
           {/* Reference Button */}
           <button
-            className="w-full mb-6 px-6 py-3 cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mb-6 px-6 py-3 cursor-pointer bg-[#05df3bff] hover:from-emerald-600 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleReferenceClick}
             disabled={isSubmitting}
           >

@@ -633,7 +633,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             <div className="flex items-center gap-[15px] md:gap-3 sm:gap-2.5 md:justify-center sm:justify-center md:w-full sm:w-full">
               {/* NavButton - Replay */}
               <button
-                className="bg-white border-2 border-[#ddd] rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-black transition-all duration-200 hover:bg-black hover:text-white hover:border-black active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black disabled:hover:border-[#ddd]"
+                className="bg-white border-2 border-[#ddd] rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-black transition-all duration-200 hover:bg-[#05df3bff] hover:text-white hover:border-green-500 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black disabled:hover:border-[#ddd]"
                 disabled={!isPlayMode}
                 onClick={replayCurrentSentence}
               >
@@ -642,7 +642,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
               {/* NavButton - Next */}
               <button
-                className="bg-white border-2 border-[#ddd] rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-black transition-all duration-200 hover:bg-black hover:text-white hover:border-black active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black disabled:hover:border-[#ddd]"
+                className="bg-white border-2 border-[#ddd] rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-black transition-all duration-200 hover:bg-[#05df3bff] hover:text-white hover:border-green-500 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-black disabled:hover:border-[#ddd]"
                 disabled={!isPlayMode}
                 onClick={goToNextSentence}
               >
@@ -657,7 +657,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 w-full justify-center">
               {/* VolumeIcon */}
               <div
-                className="cursor-pointer text-[#4f4f4fff] flex items-center hover:text-white transition-colors duration-200"
+                className="cursor-pointer text-white/90 flex items-center hover:text-white transition-colors duration-200"
                 onClick={handleMuteToggle}
               >
                 {isMuted ? (

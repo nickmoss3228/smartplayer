@@ -165,11 +165,7 @@ const Dashboard: React.FC = () => {
                       {t("dashboard.stats.currentRank")}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold text-black break-words">
-                      {t(
-                        `dashboard.ranks.${rank.title
-                          .toLowerCase()
-                          .replace(/\s+/g, "")}`
-                      )}
+                      {t(`dashboard.ranks.${rank.title}`)}
                     </p>
                   </div>
                 </div>

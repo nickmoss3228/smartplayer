@@ -18,12 +18,12 @@ export const getTotalLevels = (overviewData: OverviewData | null): number => {
 };
 
 export const getRank = (progress: number): RankInfo => {
-  if (progress >= 90) return { title: 'Advanced', emoji: '👑' };
-  if (progress >= 70) return { title: 'Intermediate', emoji: '🏆' };
-  if (progress >= 50) return { title: 'Pre-Intermediate', emoji: '🥉' };
-  if (progress >= 25) return { title: 'Elementary', emoji: '📚' };
-  return { title: 'Beginner', emoji: '🌱' };
-};
+  if (progress >= 90) return { title: 'advanced', emoji: '👑' };
+  if (progress >= 70) return { title: 'intermediate', emoji: '🏆' };
+  if (progress >= 50) return { title: 'preintermediate', emoji: '🥉' };
+  if (progress >= 25) return { title: 'elementary', emoji: '📚' };
+  return { title: 'beginner', emoji: '🌱' };
+}
 
 export const getProgressPercentage = (completed: number, total: number): number => {
   return total > 0 ? Math.round((completed / total) * 100) : 0;

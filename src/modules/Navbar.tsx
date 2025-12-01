@@ -103,18 +103,18 @@ const handleLogoClick = () => {
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[10000]">
-                  {/* Settings */}
+                  {/* Settings
                   <button
                     onClick={handleSettingsClick}
                     className="w-full flex items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
                   >
                     <CogIcon className="w-4 h-4 mr-3" />
                     {t('navbar.settings')}
-                  </button>
+                  </button> */}
 
                    <button
                     onClick={handleGuideClick}
-                    className="w-full flex items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
+                    className="w-full flex cursor-pointer items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
                   >
                     <ImBook className="w-4 h-4 mr-3" />
                     {t('navbar.guide')}
@@ -132,7 +132,7 @@ const handleLogoClick = () => {
 
                     <button
                       onClick={() => handleLanguageChange("EN")}
-                      className={`w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200 ${
+                      className={`w-full text-left cursor-pointer px-2 py-1 text-sm rounded transition-colors duration-200 ${
                         currentLanguage === "EN"
                           ? "bg-black text-white"
                           : "text-black hover:bg-gray-100"
@@ -143,7 +143,7 @@ const handleLogoClick = () => {
 
                     <button
                       onClick={() => handleLanguageChange("RU")}
-                      className={`w-full text-left px-2 py-1 text-sm rounded transition-colors duration-200 ${
+                      className={`w-full text-left cursor-pointer px-2 py-1 text-sm rounded transition-colors duration-200 ${
                         currentLanguage === "RU"
                           ? "bg-black text-white"
                           : "text-black hover:bg-gray-100"

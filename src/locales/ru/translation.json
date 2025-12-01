@@ -136,14 +136,11 @@
       "currentRank": "Текущий ранг"
     },
     "ranks": {
-      "beginner": "Новичок",
-      "novice": "Начинающий",
-      "apprentice": "Ученик",
-      "intermediate": "Средний",
-      "advanced": "Продвинутый",
-      "expert": "Эксперт",
-      "master": "Мастер",
-      "grandmaster": "Гроссмейстер"
+      "beginner": "Начинающий",
+      "elementary": "Базовый",
+      "pre-intermediate": "Средний",
+      "intermediate": "Выше среднего",
+      "advanced": "Продвинутый"
     },
     "difficulty": {
       "easy": "Легкий",

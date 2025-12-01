@@ -45,7 +45,7 @@ const HowToUse: React.FC = () => {
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             {t("howToUse.overview.title")}
           </h2>
-          <img src="/guide/guide10.png" alt="img" className="w-160 mb-4" />
+          <img src="/guide/shot9.png" alt="img" className="w-160 mb-4" />
           <p className="text-2xl text-gray-700 leading-relaxed">
             {t("howToUse.overview.description")}
           </p>
@@ -60,7 +60,7 @@ const HowToUse: React.FC = () => {
             </h3>
             <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
               <img
-                src="/guide/guide2.png"
+                src="/guide/shot6.png"
                 alt=""
                 className="w-full h-full object-contain"
               />
@@ -138,7 +138,7 @@ const HowToUse: React.FC = () => {
             </h3>
             <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
               <img
-                src="/guide/guide9.png"
+                src="/guide/shot3.png"
                 alt=""
                 className="w-full h-full object-contain"
               />
@@ -188,7 +188,7 @@ const HowToUse: React.FC = () => {
             </h3>
             <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
               <img
-                src="/guide/guide8.png"
+                src="/guide/shot8.png"
                 alt=""
                 className="w-full h-full object-contain"
               />
@@ -258,7 +258,7 @@ const HowToUse: React.FC = () => {
             </h3>
             <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
               <img
-                src="/guide/guide4.png"
+                src="/guide/shot11.png"
                 alt=""
                 className="w-full h-full object-contain"
               />

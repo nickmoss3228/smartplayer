@@ -137,13 +137,10 @@
     },
     "ranks": {
       "beginner": "Beginner",
-      "novice": "Novice",
-      "apprentice": "Apprentice",
+      "elementary": "Elementary",
+      "pre-intermediate": "Pre-Intermediate",
       "intermediate": "Intermediate",
-      "advanced": "Advanced",
-      "expert": "Expert",
-      "master": "Master",
-      "grandmaster": "Grand Master"
+      "advanced": "Advanced"
     },
     "difficulty": {
       "easy": "Easy",
