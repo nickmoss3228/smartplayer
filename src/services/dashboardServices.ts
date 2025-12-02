@@ -11,7 +11,7 @@ export const fetchOverviewData = async (token: string): Promise<OverviewData> =>
     Authorization: `Bearer ${token}`
   };
 
-  const response = await axios.get(`${API_BASE}/api/progress/overview`, { headers });
+  const response = await axios.get(`${API_BASE}/progress/overview`, { headers });
   
   if (response.status < 200 || response.status >= 300) {
     throw new Error(`Overview fetch failed with status: ${response.status}`);
@@ -30,7 +30,7 @@ export const fetchDetailedProgress = async (token: string): Promise<DetailedProg
   };
 
   const progressPromises = difficulties.map(async (difficulty) => {
-    const response = await axios.get(`${API_BASE}/api/progress/${difficulty}`, { headers });
+    const response = await axios.get(`${API_BASE}/progress/${difficulty}`, { headers });
     
     if (response.status < 200 || response.status >= 300) {
       throw new Error(`Progress fetch for ${difficulty} failed with status: ${response.status}`);
