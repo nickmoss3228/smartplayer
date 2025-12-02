@@ -111,7 +111,7 @@ const Player = React.memo(() => {
         const token = localStorage.getItem("token");
 
         const response = await axios.post(
-          `${API_BASE_URL}/api/progress/complete`,
+          `${API_BASE_URL}/progress/complete`,
           {
             difficulty,
             level,
