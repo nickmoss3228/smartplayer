@@ -37,7 +37,7 @@ const initialProgressData: ProgressData = {
   initialLoad: true
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) => {
   const [progressData, setProgressData] = useState<ProgressData>(initialProgressData);
@@ -46,6 +46,11 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) 
     const token = localStorage.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+  useEffect(() => {
+    console.log('🔍 API_BASE_URL:', API_BASE_URL);
+    console.log('🔍 NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+  }, []);
 
   const fetchAllProgress = async (): Promise<void> => {
     try {
