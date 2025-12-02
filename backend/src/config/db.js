@@ -1,4 +1,3 @@
-// Connect to Mongo once, reuse across the app.
 import mongoose from 'mongoose';
 import { config } from './env.js';
 
