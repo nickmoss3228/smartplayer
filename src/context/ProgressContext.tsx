@@ -37,7 +37,7 @@ const initialProgressData: ProgressData = {
   initialLoad: true
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:8080/api';
 
 export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) => {
   const [progressData, setProgressData] = useState<ProgressData>(initialProgressData);
