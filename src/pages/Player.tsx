@@ -19,6 +19,8 @@ const Player = React.memo(() => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
   const difficulty = (searchParams.get("difficulty") || "easy") as Difficulty;
   const level = parseInt(searchParams.get("level") || "1");
 
@@ -109,7 +111,7 @@ const Player = React.memo(() => {
         const token = localStorage.getItem("token");
 
         const response = await axios.post(
-          "smartplayer-production.up.railway.app/api/progress/complete",
+          `${API_BASE_URL}/api/progress/complete`,
           {
             difficulty,
             level,
