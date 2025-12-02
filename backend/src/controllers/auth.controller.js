@@ -6,13 +6,13 @@ import { config } from "../config/env.js";
 export async function signup(req, res) {
   try {
     const { username, email, password } = req.body;
-    
+
     if (!username || !email || !password) {
       return res
         .status(400)
         .json({ message: "Username, email, and password are required" });
     }
-    
+
     if (password.length < 6) {
       return res
         .status(400)
@@ -21,9 +21,9 @@ export async function signup(req, res) {
 
     // Check if username or email already exists
     const existingUser = await User.findOne({
-      $or: [{ username }, { email }]
+      $or: [{ username }, { email }],
     });
-    
+
     if (existingUser) {
       if (existingUser.username === username) {
         return res.status(400).json({ message: "Username already exists" });
@@ -64,7 +64,7 @@ export async function signup(req, res) {
 export async function login(req, res) {
   try {
     const { usernameOrEmail, password } = req.body;
-    
+
     if (!usernameOrEmail || !password) {
       return res
         .status(400)
@@ -75,10 +75,10 @@ export async function login(req, res) {
     const user = await User.findOne({
       $or: [
         { username: usernameOrEmail },
-        { email: usernameOrEmail.toLowerCase() }
-      ]
+        { email: usernameOrEmail.toLowerCase() },
+      ],
     });
-    
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -115,13 +115,13 @@ export const logout = async (req, res) => {
     // But we can still send a success response
     res.status(200).json({
       success: true,
-      message: "Logged out successfully"
+      message: "Logged out successfully",
     });
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({
       success: false,
-      message: "Error during logout"
+      message: "Error during logout",
     });
   }
 };
@@ -130,23 +130,24 @@ export const validateToken = async (req, res) => {
   try {
     // If we reach here, the token is valid (thanks to authenticateToken middleware)
     // req.user should contain the decoded user info from the JWT
-    
+
     // Optionally, you can fetch fresh user data from the database
     // const user = await User.findById(req.user.id);
-    
+
     res.status(200).json({
       success: true,
       message: "Token is valid",
       user: {
         id: req.user._id,
-        email: req.user.username,
-      }
+        username: req.user.username,
+        email: req.user.email,
+      },
     });
   } catch (error) {
     console.error("Token validation error:", error);
     res.status(500).json({
       success: false,
-      message: "Error validating token"
+      message: "Error validating token",
     });
   }
 };
