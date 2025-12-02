@@ -37,6 +37,8 @@ const initialProgressData: ProgressData = {
   initialLoad: true
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
 export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) => {
   const [progressData, setProgressData] = useState<ProgressData>(initialProgressData);
 
@@ -50,9 +52,9 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) 
       const headers = getAuthHeaders();
       
       const [easyResponse, mediumResponse, hardResponse]: AxiosResponse<ProgressApiResponse>[] = await Promise.all([
-        axios.get<ProgressApiResponse>('/api/progress/easy', { headers }),
-        axios.get<ProgressApiResponse>('/api/progress/medium', { headers }),
-        axios.get<ProgressApiResponse>('/api/progress/hard', { headers })
+        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/easy`, { headers }),
+        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/medium`, { headers }),
+        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/hard`, { headers })
       ]);
 
       setProgressData({
@@ -84,7 +86,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({ children }) 
 
       const headers = getAuthHeaders();
       const response: AxiosResponse<ProgressApiResponse> = await axios.get<ProgressApiResponse>(
-        `smartplayer-production.up.railway.app/api/progress/${difficulty}`, 
+        `${API_BASE_URL}/progress/${difficulty}`, 
         { headers }
       );
       
