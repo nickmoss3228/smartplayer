@@ -54,7 +54,7 @@ export async function requestPasswordReset(req, res) {
     console.log("User updated with reset token");
 
     // Send email with plain token
-    const resetUrl = `${import.meta.env.FRONTEND_URL}/forgot-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/forgot-password?token=${resetToken}`;
 
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);
