@@ -55,7 +55,8 @@ export async function requestPasswordReset(req, res) {
 
     // Send email with plain token
     const resetUrl = `${process.env.FRONTEND_URL}/forgot-password?token=${resetToken}`;
-
+    console.log(resetUrl)
+    
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);
 
