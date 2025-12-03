@@ -4,6 +4,8 @@ import { User } from "../models/User.js";
 import { sendPasswordResetEmail } from "../services/email.service.js";
 
 export async function requestPasswordReset(req, res) {
+
+  const BASE_URL = process.env.FRONTEND_URL
   try {
     const { email } = req.body;
 
@@ -54,9 +56,9 @@ export async function requestPasswordReset(req, res) {
     console.log("User updated with reset token");
 
     // Send email with plain token
-    const resetUrl = `${process.env.FRONTEND_URL}/forgot-password?token=${resetToken}`;
+    const resetUrl = `${BASE_URL}/forgot-password?token=${resetToken}`;
     console.log(resetUrl)
-    
+
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);
 
