@@ -1,7 +1,5 @@
-// AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
-// import { useProgress } from './ProgressContext'; // ✅ Import ProgressContext
 import {
   User,
   AuthResult,

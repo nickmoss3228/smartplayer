@@ -66,7 +66,6 @@ const loadFromCache = (): ProgressData | null => {
   return null;
 };
 
-// Helper function to save to cache
 const saveToCache = (data: ProgressData): void => {
   try {
     localStorage.setItem('progressData', JSON.stringify(data));
@@ -158,7 +157,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
           ...prev,
           [difficulty]: { ...response.data, loading: false },
         };
-        saveToCache(newData); // Update cache
+        saveToCache(newData);
         return newData;
       });
     } catch (error) {
@@ -219,7 +218,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
     progressData,
     refreshProgress,
     refreshAllProgress,
-    fetchAllProgress, // ✅ Export this function
+    fetchAllProgress,  
     isInitialLoad: progressData.initialLoad,
     canAccessLevel,
     getHighestUnlockedLevel,
