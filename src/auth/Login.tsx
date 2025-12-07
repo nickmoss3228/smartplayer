@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
+// import { useProgress } from "../context/ProgressContext";
 
 const Login = () => {
   const { t } = useTranslation();
@@ -11,11 +12,13 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { signIn, user } = useAuth();
+  // const { fetchAllProgress } = useProgress();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || "/levels";
 
-  if (user) {
+   if (user) {
+    // fetchAllProgress();
     return <Navigate to={from} replace />;
   }
 

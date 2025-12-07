@@ -1,3 +1,4 @@
+// ProgressContext.tsx
 import React, {
   createContext,
   useContext,
@@ -47,25 +48,53 @@ const initialProgressData: ProgressData = {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
+// Helper function to load from cache
+const loadFromCache = (): ProgressData | null => {
+  try {
+    const cached = localStorage.getItem('progressData');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Check if cache is fresh (less than 5 minutes old)
+      const cacheTime = localStorage.getItem('progressCacheTime');
+      if (cacheTime && Date.now() - parseInt(cacheTime) < 5 * 60 * 1000) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load cached progress:', error);
+  }
+  return null;
+};
+
+// Helper function to save to cache
+const saveToCache = (data: ProgressData): void => {
+  try {
+    localStorage.setItem('progressData', JSON.stringify(data));
+    localStorage.setItem('progressCacheTime', Date.now().toString());
+  } catch (error) {
+    console.error('Failed to cache progress:', error);
+  }
+};
+
 export const ProgressProvider: React.FC<ProgressProviderProps> = ({
   children,
 }) => {
-  const [progressData, setProgressData] =
-    useState<ProgressData>(initialProgressData);
+  const [progressData, setProgressData] = useState<ProgressData>(() => {
+    // Load from cache immediately on mount
+    const cached = loadFromCache();
+    return cached || initialProgressData;
+  });
 
   const getAuthHeaders = (): { Authorization: string } | {} => {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const fetchAllProgress = async (): Promise<void> => {
+  const fetchAllProgress = async (): Promise<ProgressData | null> => {
     try {
       const headers = getAuthHeaders();
 
-      useEffect(() => {
-        console.log("🔍 API_BASE_URL:", API_BASE_URL);
-        console.log("🔍 VITE_PUBLIC_API_URL:", process.env.VITE_API_URL);
-      }, []);
+      console.log("🔍 Fetching progress from:", API_BASE_URL);
 
       const [
         easyResponse,
@@ -83,12 +112,17 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
         }),
       ]);
 
-      setProgressData({
+      const newData: ProgressData = {
         easy: { ...easyResponse.data, loading: false },
         medium: { ...mediumResponse.data, loading: false },
         hard: { ...hardResponse.data, loading: false },
         initialLoad: false,
-      });
+      };
+
+      setProgressData(newData);
+      saveToCache(newData); // Save to cache
+      
+      return newData;
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error("Failed to fetch progress:", axiosError.message);
@@ -100,6 +134,8 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
         hard: { ...prev.hard, loading: false },
         initialLoad: false,
       }));
+      
+      return null;
     }
   };
 
@@ -117,10 +153,14 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
           { headers }
         );
 
-      setProgressData((prev) => ({
-        ...prev,
-        [difficulty]: { ...response.data, loading: false },
-      }));
+      setProgressData((prev) => {
+        const newData = {
+          ...prev,
+          [difficulty]: { ...response.data, loading: false },
+        };
+        saveToCache(newData); // Update cache
+        return newData;
+      });
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(
@@ -135,31 +175,25 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
     }
   };
 
-  // New function: Check if user can access a specific level
   const canAccessLevel = useCallback(
     (difficulty: DifficultyType, level: number): boolean => {
       const difficultyData = progressData[difficulty];
 
-      // If data is not loaded yet or doesn't exist, only allow level 1
       if (!difficultyData || !difficultyData.completedLevels) {
         return level === 1;
       }
 
-      // Level 1 is always accessible
       if (level === 1) return true;
 
-      // Check if previous level is completed
       return difficultyData.completedLevels.includes(level - 1);
     },
     [progressData]
   );
 
-  // New function: Get highest unlocked level
   const getHighestUnlockedLevel = useCallback(
     (difficulty: DifficultyType): number => {
       const difficultyData = progressData[difficulty];
 
-      // If data is not loaded yet or doesn't exist, return level 1
       if (!difficultyData || difficultyData.currentLevel === undefined) {
         return 1;
       }
@@ -168,8 +202,13 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
     },
     [progressData]
   );
+
   useEffect(() => {
-    fetchAllProgress();
+    // Only fetch if we don't have cached data or token exists
+    const token = localStorage.getItem("token");
+    if (token && progressData.initialLoad) {
+      fetchAllProgress();
+    }
   }, []);
 
   const refreshAllProgress = async (): Promise<void> => {
@@ -180,6 +219,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
     progressData,
     refreshProgress,
     refreshAllProgress,
+    fetchAllProgress, // ✅ Export this function
     isInitialLoad: progressData.initialLoad,
     canAccessLevel,
     getHighestUnlockedLevel,

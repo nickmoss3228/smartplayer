@@ -1,8 +1,9 @@
+// AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
+// import { useProgress } from './ProgressContext'; // ✅ Import ProgressContext
 import {
   User,
-  // AuthError,
   AuthResult,
   AuthContextValue,
   AuthProviderProps,
@@ -67,6 +68,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('token', token);
       setUser(user);
       
+    // Prefetch progress data immediately after successful login
+      setTimeout(async () => {
+        try {
+          // We can't use useProgress here directly, but we can make the API call
+          const headers = { Authorization: `Bearer ${token}` };
+          const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
+            axios.get(`${API_BASE_URL}/progress/easy`, { headers }),
+            axios.get(`${API_BASE_URL}/progress/medium`, { headers }),
+            axios.get(`${API_BASE_URL}/progress/hard`, { headers }),
+          ]);
+
+          const progressData = {
+            easy: { ...easyResponse.data, loading: false },
+            medium: { ...mediumResponse.data, loading: false },
+            hard: { ...hardResponse.data, loading: false },
+            initialLoad: false,
+          };
+
+          // Cache the data
+          localStorage.setItem('progressData', JSON.stringify(progressData));
+          localStorage.setItem('progressCacheTime', Date.now().toString());
+          // console.log('✅ Progress data prefetched and cached');
+        } catch (error) {
+          console.error('Failed to prefetch progress:', error);
+        }
+      }, 0);
+      
       return { user, error: null };
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -89,6 +117,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('token', token);
       setUser(user);
       
+      // ✅ Also prefetch on signup
+      setTimeout(async () => {
+        try {
+          const headers = { Authorization: `Bearer ${token}` };
+          const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
+            axios.get(`${API_BASE_URL}/progress/easy`, { headers }),
+            axios.get(`${API_BASE_URL}/progress/medium`, { headers }),
+            axios.get(`${API_BASE_URL}/progress/hard`, { headers }),
+          ]);
+
+          const progressData = {
+            easy: { ...easyResponse.data, loading: false },
+            medium: { ...mediumResponse.data, loading: false },
+            hard: { ...hardResponse.data, loading: false },
+            initialLoad: false,
+          };
+
+          localStorage.setItem('progressData', JSON.stringify(progressData));
+          localStorage.setItem('progressCacheTime', Date.now().toString());
+          console.log('✅ Progress data prefetched and cached');
+        } catch (error) {
+          console.error('Failed to prefetch progress:', error);
+        }
+      }, 0);
+      
       return { user, error: null };
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -109,6 +162,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('progressData'); // ✅ Clear cache on logout
+      localStorage.removeItem('progressCacheTime');
       setUser(null);
     }
   };

@@ -32,10 +32,11 @@ export type DifficultyType = 'easy' | 'medium' | 'hard';
 export interface ProgressContextValue {
   progressData: ProgressData;
   refreshProgress: (difficulty: DifficultyType) => Promise<void>;
+  refreshAllProgress: () => Promise<void>;
+  fetchAllProgress: () => Promise<ProgressData | null>;
   isInitialLoad: boolean;
-  refreshAllProgress: () => Promise<void>; 
-  canAccessLevel: (difficulty: DifficultyType, level: number) => boolean; 
-  getHighestUnlockedLevel: (difficulty: DifficultyType) => number; 
+  canAccessLevel: (difficulty: DifficultyType, level: number) => boolean;
+  getHighestUnlockedLevel: (difficulty: DifficultyType) => number;
 }
 
 export interface ProgressProviderProps {
@@ -43,7 +44,7 @@ export interface ProgressProviderProps {
 }
 
 export interface EnhancedProgressContextValue extends ProgressContextValue {
-  fetchAllProgress: () => Promise<void>;
+  fetchAllProgress: () => Promise<ProgressData | null>;
   isLoading: (difficulty?: DifficultyType) => boolean;
   getProgressByDifficulty: (difficulty: DifficultyType) => DifficultyProgress;
   hasError: boolean;
