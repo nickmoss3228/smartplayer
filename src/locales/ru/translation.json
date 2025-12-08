@@ -287,13 +287,13 @@
     "cta": {
       "startLearning": "Начать обучение",
       "backHome": "Вернуться на главную"
-    }, 
-    "congrats": {
+    }   
+  },
+  "congrats": {
     "title": "Поздравляем!",
     "message": "Вы завершили все уровни в {{difficulty}}!",
     "allLevelsCompleted": "Все уровни пройдены",
     "nextDifficulty": "Попробовать следующую сложность",
     "close": "Продолжить"
     }
-  }
 }
