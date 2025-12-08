@@ -6,7 +6,7 @@ import { useLevelProgress } from "../hooks/useLevelProgress";
 import { NavigationArrow } from "../modules/NavigationArrow";
 import { getLevelStyles } from "../modules/levelprogress.module";
 import { useLocation } from "react-router";
-import { CongratsModal } from "../modules/congratsModule"; 
+import { CongratsModal } from "../modules/congratsModule";
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
@@ -29,7 +29,9 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const theme: Theme = themes[difficulty] || themes.easy;
 
   // Check if all levels are completed
-  const isAllCompleted = completedLevels.length === totalLevels;
+  const isAllCompleted =
+    completedLevels.length === totalLevels ||
+    (completedLevels.length === totalLevels - 1 && currentLevel > totalLevels);
 
   useEffect(() => {
     window.scrollTo(0, 0);
