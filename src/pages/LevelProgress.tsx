@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { themes } from "../modules/themes.levelprogress";
 import { LevelProgressProps, Theme } from "../types/LevelProgress";
@@ -6,10 +6,14 @@ import { useLevelProgress } from "../hooks/useLevelProgress";
 import { NavigationArrow } from "../modules/NavigationArrow";
 import { getLevelStyles } from "../modules/levelprogress.module";
 import { useLocation } from "react-router";
+import { CongratsModal } from "../modules/congratsModule"; 
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const [showCongrats, setShowCongrats] = useState(false);
+  const [hasShownCongrats, setHasShownCongrats] = useState(false);
+
   const {
     difficulty,
     completedLevels,
@@ -22,11 +26,42 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     navigationState,
   } = useLevelProgress(props);
 
+  const theme: Theme = themes[difficulty] || themes.easy;
+
+  // Check if all levels are completed
+  const isAllCompleted = completedLevels.length === totalLevels;
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  const theme: Theme = themes[difficulty] || themes.easy;
+  // Show congrats modal when all levels completed
+  useEffect(() => {
+    if (isAllCompleted && !hasShownCongrats) {
+      // Small delay for better UX
+      const timer = setTimeout(() => {
+        setShowCongrats(true);
+        setHasShownCongrats(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAllCompleted, hasShownCongrats]);
+
+  // Reset hasShownCongrats when difficulty changes
+  useEffect(() => {
+    setHasShownCongrats(false);
+  }, [difficulty]);
+
+  const handleCloseCongrats = () => {
+    setShowCongrats(false);
+  };
+
+  const handleNextDifficulty = () => {
+    setShowCongrats(false);
+    if (navigationState.nextDifficulty) {
+      goToDifficulty(navigationState.nextDifficulty);
+    }
+  };
 
   return (
     <div
@@ -59,6 +94,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
             disabled={!navigationState.nextDifficulty}
           />
         </div>
+
         {/* Legend */}
         <div className="text-center mb-12 animate-fade-in-delay-1">
           <div className="flex items-center justify-center space-x-4 text-white/80">
@@ -146,6 +182,16 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           })}
         </div>
       </div>
+
+      {/* Congratulations Modal */}
+      <CongratsModal
+        isOpen={showCongrats}
+        onClose={handleCloseCongrats}
+        difficulty={difficulty}
+        theme={theme}
+        onNextDifficulty={handleNextDifficulty}
+        hasNextDifficulty={!!navigationState.nextDifficulty}
+      />
     </div>
   );
 };
