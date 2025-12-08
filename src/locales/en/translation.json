@@ -287,7 +287,8 @@
     "cta": {
       "startLearning": "Start Learning Now",
       "backHome": "Back to Home"
-    },
+    }
+  },
     "congrats": {
     "title": "Congratulations!",
     "message": "You've completed all levels in {{difficulty}}!",
@@ -295,5 +296,4 @@
     "nextDifficulty": "Try Next Difficulty",
     "close": "Continue"
     }
-  }
 }
