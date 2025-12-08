@@ -138,7 +138,7 @@
     "ranks": {
       "beginner": "Начинающий",
       "elementary": "Базовый",
-      "pre-intermediate": "Средний",
+      "preintermediate": "Средний",
       "intermediate": "Выше среднего",
       "advanced": "Продвинутый"
     },
