@@ -12,7 +12,6 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
   const [showCongrats, setShowCongrats] = useState(false);
-  const [hasShownCongrats, setHasShownCongrats] = useState(false);
 
   const {
     difficulty,
@@ -33,26 +32,34 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     completedLevels.length === totalLevels ||
     (completedLevels.length === totalLevels - 1 && currentLevel > totalLevels);
 
+  // Get localStorage key for this difficulty
+  const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
+
+  // Check if congrats was already shown for this difficulty
+  const hasShownCongrats = (diff: string): boolean => {
+    return localStorage.getItem(getCongratsKey(diff)) === "true";
+  };
+
+  // Mark congrats as shown for this difficulty
+  const markCongratsShown = (diff: string) => {
+    localStorage.setItem(getCongratsKey(diff), "true");
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Show congrats modal when all levels completed
+  // Show congrats modal when all levels completed (only once per difficulty)
   useEffect(() => {
-    if (isAllCompleted && !hasShownCongrats) {
+    if (isAllCompleted && !hasShownCongrats(difficulty)) {
       // Small delay for better UX
       const timer = setTimeout(() => {
         setShowCongrats(true);
-        setHasShownCongrats(true);
+        markCongratsShown(difficulty);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isAllCompleted, hasShownCongrats]);
-
-  // Reset hasShownCongrats when difficulty changes
-  useEffect(() => {
-    setHasShownCongrats(false);
-  }, [difficulty]);
+  }, [isAllCompleted, difficulty]);
 
   const handleCloseCongrats = () => {
     setShowCongrats(false);
