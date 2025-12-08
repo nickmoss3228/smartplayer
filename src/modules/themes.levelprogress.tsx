@@ -1,7 +1,8 @@
 export const themes = {
     easy: {
       title: "Easy",
-      subtitle: "Leo's Life",
+    subtitle: "Leo's Life",
+      gradient: "from-green-900 via-emerald-900 to-teal-800",
       background: "from-green-900 via-emerald-900 to-teal-800",
       completedGradient: "from-green-400 to-green-600",
       currentGradient: "from-emerald-400 to-emerald-600",
@@ -12,11 +13,13 @@ export const themes = {
         completed: "text-green-400",
         remaining: "text-emerald-400",
         progress: "text-teal-400",
-      },
+    },
+      
     },
     medium: {
       title: "Medium",
       subtitle: "Maya's Adventures",
+      gradient: "from-yellow-900 via-orange-900 to-red-800",
       background: "from-yellow-900 via-orange-900 to-red-800",
       completedGradient: "from-yellow-400 to-orange-500",
       currentGradient: "from-orange-400 to-red-500",
@@ -32,6 +35,7 @@ export const themes = {
     hard: {
       title: "Hard",
       subtitle: "Daniel Mercer: a businessman's journey",
+      gradient: "from-red-900 via-purple-900 to-pink-800",
       background: "from-red-900 via-purple-900 to-pink-800",
       completedGradient: "from-red-400 to-red-600",
       currentGradient: "from-purple-400 to-purple-600",

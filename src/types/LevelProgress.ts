@@ -21,6 +21,7 @@ export interface Theme {
   currentGradient: string;
   currentColor: string;
   progressGradient: string;
+  gradient: string;
 }
 
 export interface NavigationState {
