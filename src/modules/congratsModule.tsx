@@ -104,12 +104,12 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
 
         {/* Congratulations Text */}
         <h2 className="text-4xl font-bold text-white text-center mb-4 animate-fade-in-delay-1">
-          {t("levelProgress.congratulations")}
+          {t("congrats.congratulations")}
         </h2>
 
         <p className="text-white/90 text-center text-lg mb-8 animate-fade-in-delay-2">
-          {t("levelProgress.completedAllLevels", {
-            difficulty: t(`levelProgress.difficulty.${difficulty}`),
+          {t("congrats.completedAllLevels", {
+            difficulty: t(`congrats.difficulty.${difficulty}`),
           })}
         </p>
 
@@ -122,7 +122,7 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
                 hover:bg-white/90 transform hover:scale-105 transition-all duration-300
                 shadow-lg hover:shadow-xl active:scale-95`}
             >
-              {t("levelProgress.tryNextDifficulty")} →
+              {t("congrats.tryNextDifficulty")} →
             </button>
           )}
 
@@ -132,7 +132,7 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
               hover:bg-white/30 transform hover:scale-105 transition-all duration-300
               border-2 border-white/30 hover:border-white/50 active:scale-95"
           >
-            {t("levelProgress.close")}
+            {t("congrats.close")}
           </button>
         </div>
 
