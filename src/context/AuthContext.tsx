@@ -87,7 +87,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Cache the data
           localStorage.setItem('progressData', JSON.stringify(progressData));
           localStorage.setItem('progressCacheTime', Date.now().toString());
-          // console.log('✅ Progress data prefetched and cached');
         } catch (error) {
           console.error('Failed to prefetch progress:', error);
         }
@@ -115,7 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('token', token);
       setUser(user);
       
-      // ✅ Also prefetch on signup
+      // Also prefetch on signup
       setTimeout(async () => {
         try {
           const headers = { Authorization: `Bearer ${token}` };
@@ -160,7 +159,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
-      localStorage.removeItem('progressData'); // ✅ Clear cache on logout
+      localStorage.removeItem('progressData');
       localStorage.removeItem('progressCacheTime');
       setUser(null);
     }

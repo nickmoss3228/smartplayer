@@ -5,15 +5,11 @@ import { LevelProgressProps, Theme } from "../types/LevelProgress";
 import { useLevelProgress } from "../hooks/useLevelProgress";
 import { NavigationArrow } from "../modules/NavigationArrow";
 import { getLevelStyles } from "../modules/levelprogress.module";
-// import { useProgress } from "../context/ProgressContext";
 import { useLocation } from "react-router";
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
-  // const { refreshProgress } = useProgress();
-  // const { pathname } = useLocation();
-  // const { progressData, refreshProgress } = useProgress();
   const {
     difficulty,
     completedLevels,
@@ -25,10 +21,6 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     progressPercentage,
     navigationState,
   } = useLevelProgress(props);
-
-  // useEffect(() => {
-  //   refreshProgress(difficulty);
-  // }, [difficulty]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

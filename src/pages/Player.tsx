@@ -24,7 +24,7 @@ const Player = React.memo(() => {
   const difficulty = (searchParams.get("difficulty") || "easy") as Difficulty;
   const level = parseInt(searchParams.get("level") || "1");
 
-  const { canAccessLevel, getHighestUnlockedLevel, isInitialLoad } = useProgress();
+  const { canAccessLevel, getHighestUnlockedLevel, isInitialLoad, refreshProgress } = useProgress();
   const navigate = useNavigate();
   
   const wavesurferRef = useRef<WaveSurferInstance | null>(null);
@@ -124,18 +124,18 @@ const Player = React.memo(() => {
         );
 
         console.log("Progress saved successfully:", response.data);
+        await refreshProgress(difficulty);
       } catch (error) {
         console.error("Failed to save progress:", error);
-       // Type guard for AxiosError
-      if (axios.isAxiosError(error)) {
-        console.error("Error response:", error.response?.data);
-      }
+        if (axios.isAxiosError(error)) {
+          console.error("Error response:", error.response?.data);
+        }
         alert("Failed to save your progress. Please try again.");
       } finally {
         setIsSubmitting(false);
       }
     },
-    [user, difficulty, level, isSubmitting]
+    [user, difficulty, level, isSubmitting, refreshProgress]
   );
   
 
