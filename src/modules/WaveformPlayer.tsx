@@ -183,27 +183,27 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         }
       };
     }, [
-      isPlaying,
-      isInitialized,
-      isPlayMode,
-      getCurrentSegmentBounds,
-      updateActiveSubtitle,
-      updateCurrentMarkerIndex,
-      dispatch,
-    ]);
+    isPlaying,              // Главный триггер запуска/остановки
+    isInitialized,          // Проверка готовности wavesurfer
+    isPlayMode,             // Режим воспроизведения (весь трек / сегмент)
+    getCurrentSegmentBounds, // Функция получения границ
+    updateActiveSubtitle,   // Функция обновления субтитров
+    updateCurrentMarkerIndex, // Функция обновления маркера
+    dispatch,               // Redux 
+  ]);
 
     // Main WaveSurfer initialization
     useEffect(() => {
       if (!waveformRef.current || !audioUrl) return;
 
-      console.log("Initializing wavesurfer");
+      // console.log("Initializing wavesurfer");
 
       // Clean up existing instance
       if (wavesurfer.current) {
         wavesurfer.current.pause();
         wavesurfer.current.destroy();
         wavesurfer.current = null;
-        dispatch(setIsPlaying(false)); // or however you manage
+        dispatch(setIsPlaying(false));
       }
 
       wavesurfer.current = WaveSurfer.create({
@@ -227,7 +227,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
       // Event handlers
       instance.on("ready", () => {
-        console.log("WaveSurfer ready");
+        console.log("WS ready");
         instance.setVolume(isMuted ? 0 : volume);
         instance.setPlaybackRate(playbackRate);
 
@@ -243,17 +243,17 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       });
 
       instance.on("play", () => {
-        console.log("WaveSurfer play event");
+        // console.log("WaveSurfer play event");
         dispatch(setIsPlaying(true));
       });
 
       instance.on("pause", () => {
-        console.log("WaveSurfer pause event");
+        // console.log("WaveSurfer pause event");
         dispatch(setIsPlaying(false));
       });
 
       instance.on("finish", () => {
-        console.log("WaveSurfer finish event");
+        // console.log("WaveSurfer finish event");
         dispatch(setIsPlaying(false));
       });
 
