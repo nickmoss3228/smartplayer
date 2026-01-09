@@ -44,6 +44,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const playbackRates: number[] = [0.85, 0.9, 1.0, 1.1, 1.2];
 
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); 
+    const previousAudioUrl = useRef<string | null>(null); 
     const intervalRef = useRef<any | null>(null);
 
     const [isSpeedDropdownOpen, setIsSpeedDropdownOpen] = useState(false);
@@ -190,13 +192,30 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     updateActiveSubtitle,   // Функция обновления субтитров
     updateCurrentMarkerIndex, // Функция обновления маркера
     dispatch,               // Redux 
-  ]);
+    ]);
+    
+    // Reset state when audioUrl changes
+    useEffect(() => {
+      if (previousAudioUrl.current !== audioUrl) {
+        // Immediately reset all player state when audio changes
+        setIsLoading(true);
+        setIsInitialized(false);
+        
+        // Reset Redux state
+        dispatch(setCurrentMarkerIndex(0));
+        dispatch(setIsPlaying(false));
+        dispatch(setCurrentTime("0:00"));
+        dispatch(setDuration("0:00"));
+        dispatch(setDurationSeconds(0));
+        dispatch(setActiveSubtitle(""));
+        
+        previousAudioUrl.current = audioUrl;
+      }
+    }, [audioUrl, dispatch]);
 
     // Main WaveSurfer initialization
     useEffect(() => {
       if (!waveformRef.current || !audioUrl) return;
-
-      // console.log("Initializing wavesurfer");
 
       // Clean up existing instance
       if (wavesurfer.current) {
@@ -205,6 +224,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         wavesurfer.current = null;
         dispatch(setIsPlaying(false));
       }
+
+      setIsLoading(true); // Ensure loading state
+      setIsInitialized(false);
 
       wavesurfer.current = WaveSurfer.create({
         container: waveformRef.current,
@@ -236,6 +258,11 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         dispatch(setDuration(formatTime(totalDuration)));
 
         setIsInitialized(true);
+
+        // Small delay to ensure DOM is updated
+        requestAnimationFrame(() => {
+          setIsLoading(false);
+        });
 
         if (onWavesurferMount) {
           onWavesurferMount(instance);
@@ -572,7 +599,17 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     }, [handlePlayPause, goToNextSentence, replayCurrentSentence, isPlayMode]);
 
     return (
+      
       <div className="waveform-overlay">
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-lg">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span className="text-white text-sm">Loading audio...</span>
+            </div>
+          </div>
+        )}
         {/* WaveformContainer */}
         <div
           ref={waveformRef}
@@ -600,7 +637,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             {duration}
           </div>
 
-          {renderTimeMarkers()}
+          {isInitialized && !isLoading && timeMarkers && (renderTimeMarkers())}
         </div>
 
         {/* SubtitlesContainer */}

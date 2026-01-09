@@ -81,6 +81,16 @@ const Player = React.memo(() => {
     [difficulty]
   );
 
+  useEffect(() => {
+  // Preload next level's audio
+  const nextTrack = audioTracks.find(t => t.id === (level + 1).toString());
+  if (nextTrack) {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = nextTrack.audio;
+  }
+}, [level, audioTracks]);
+
   const audioTrack = useMemo(
     () =>
       audioTracks.find((track) => track.id === selectedTrackId) ||
@@ -152,6 +162,7 @@ const Player = React.memo(() => {
           </div>
 
           <WaveformPlayer
+            key={`${difficulty}-${level}`} 
             audioUrl={audioTrack.audio}
             subtitles={audioTrack.subtitles}
             timeMarkers={audioTrack.timeMarkers}
