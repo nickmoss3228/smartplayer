@@ -25,29 +25,42 @@ const Dashboard: React.FC = () => {
   const [progressLoading, setProgressLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      if (!user) return;
-      // console.log("User object:", user);
-      // console.log("Username:", user?.username);
+  const loadDashboardData = async () => {
+    if (!user) return;
 
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+    // Load from cache immediately
+    const cachedData = sessionStorage.getItem('dashboardData');
+    if (cachedData) {
+      const { overviewData, detailedProgress } = JSON.parse(cachedData);
+      setOverviewData(overviewData);
+      setDetailedProgress(detailedProgress);
+      setProgressLoading(false);
+    }
 
-        const { overviewData, detailedProgress } = await fetchAllDashboardData(
-          token
-        );
-        setOverviewData(overviewData);
-        setDetailedProgress(detailedProgress);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setProgressLoading(false);
-      }
-    };
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-    loadDashboardData();
-  }, [user]);
+      const { overviewData, detailedProgress } = await fetchAllDashboardData(token);
+      
+      // Update with fresh data
+      setOverviewData(overviewData);
+      setDetailedProgress(detailedProgress);
+      
+      // Cache for next time
+      sessionStorage.setItem('dashboardData', JSON.stringify({ 
+        overviewData, 
+        detailedProgress 
+      }));
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  loadDashboardData();
+}, [user]);
 
   if (loading) {
     return (
