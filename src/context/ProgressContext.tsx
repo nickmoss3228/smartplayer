@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import axios, { AxiosResponse, AxiosError } from "axios";
 import {
@@ -18,6 +19,38 @@ import {
 const ProgressContext = createContext<ProgressContextValue | undefined>(
   undefined
 );
+
+// prefetch
+const prefetchPromiseRef = { current: null as Promise<ProgressData | null> | null };
+
+export const prefetchProgress = (): Promise<ProgressData | null> => {
+  if (prefetchPromiseRef.current) {
+    return prefetchPromiseRef.current;
+  }
+  
+  const token = localStorage.getItem("token");
+  if (!token) return Promise.resolve(null);
+
+  const headers = { Authorization: `Bearer ${token}` };
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+  prefetchPromiseRef.current = Promise.all([
+    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/easy`, { headers }),
+    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/medium`, { headers }),
+    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/hard`, { headers }),
+  ]).then(([easyRes, mediumRes, hardRes]) => {
+    const data: ProgressData = {
+      easy: { ...easyRes.data, loading: false },
+      medium: { ...mediumRes.data, loading: false },
+      hard: { ...hardRes.data, loading: false },
+      initialLoad: false,
+    };
+    saveToCache(data);
+    return data;
+  }).catch(() => null);
+
+  return prefetchPromiseRef.current;
+};
 
 export const useProgress = (): ProgressContextValue => {
   const context = useContext(ProgressContext);
@@ -74,25 +107,39 @@ const saveToCache = (data: ProgressData): void => {
   }
 };
 
-export const ProgressProvider: React.FC<ProgressProviderProps> = ({
-  children,
-}) => {
-  const [progressData, setProgressData] = useState<ProgressData>(() => {
-    // Load from cache immediately on mount
-    const cached = loadFromCache();
-    return cached || initialProgressData;
-  });
-
   const getAuthHeaders = (): { Authorization: string } | {} => {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  const fetchAllProgress = async (): Promise<ProgressData | null> => {
-    try {
-      const headers = getAuthHeaders();
+export const ProgressProvider: React.FC<ProgressProviderProps> = ({
+  children,
+}) => {
+  const [progressData, setProgressData] = useState<ProgressData>(() => {
+    const cached = loadFromCache();
+    return cached || initialProgressData;
+  });
 
-      console.log("🔍 Fetching progress from:", API_BASE_URL);
+  const fetchInProgress = useRef(false);
+
+  const fetchAllProgress = async (): Promise<ProgressData | null> => {
+    // Prevent duplicate fetches
+    if (fetchInProgress.current) {
+      return prefetchPromiseRef.current;
+    }
+    
+    fetchInProgress.current = true;
+
+    try {
+      // Use existing prefetch if available
+      if (prefetchPromiseRef.current) {
+        const data = await prefetchPromiseRef.current;
+        if (data) {
+          setProgressData(data);
+          return data;
+        }
+      }
+      const headers = getAuthHeaders();
 
       const [
         easyResponse,
@@ -118,7 +165,7 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
       };
 
       setProgressData(newData);
-      saveToCache(newData); // Save to cache
+      saveToCache(newData);
       
       return newData;
     } catch (error) {
@@ -134,6 +181,9 @@ export const ProgressProvider: React.FC<ProgressProviderProps> = ({
       }));
       
       return null;
+    } finally {
+      fetchInProgress.current = false;
+      prefetchPromiseRef.current = null;
     }
   };
 

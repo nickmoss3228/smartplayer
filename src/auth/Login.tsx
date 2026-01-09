@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
-// import { useProgress } from "../context/ProgressContext";
+import { prefetchProgress } from "../context/ProgressContext";
 
 const Login = () => {
   const { t } = useTranslation();
@@ -12,13 +12,12 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { signIn, user } = useAuth();
-  // const { fetchAllProgress } = useProgress();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const from = location.state?.from?.pathname || "/levels";
 
-   if (user) {
-    // fetchAllProgress();
+  if (user) {
     return <Navigate to={from} replace />;
   }
 
@@ -28,11 +27,20 @@ const Login = () => {
     setIsLoading(true);
 
     const result = await signIn(usernameOrEmail, password);
+    
     if (result.error) {
       setError(result.error.message);
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false);
+    // Login successful - start prefetching immediately (don't await)
+    // This runs in parallel with navigation, so data may already
+    // be cached when the user reaches the levels page
+    prefetchProgress();
+    
+    // Navigate to the intended destination
+    navigate(from, { replace: true });
   };
 
   return (

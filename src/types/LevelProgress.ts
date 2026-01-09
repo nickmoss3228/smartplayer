@@ -1,4 +1,4 @@
-export type DifficultyType = 'easy' | 'medium' | 'hard';
+export type DifficultyType = 'easy' | 'medium' | 'hard' ;
 
 export type LevelStatus = 'completed' | 'current' | 'available' | 'locked';
 

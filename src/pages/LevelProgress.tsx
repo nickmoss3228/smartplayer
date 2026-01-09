@@ -7,11 +7,18 @@ import { NavigationArrow } from "../modules/NavigationArrow";
 import { getLevelStyles } from "../modules/levelprogress.module";
 import { useLocation } from "react-router";
 import { CongratsModal } from "../modules/congratsModule";
+import { LevelProgressSkeleton } from "../components/LevelProgressSkeleton";
+import { useProgress } from "../context/ProgressContext"
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
   const [showCongrats, setShowCongrats] = useState(false);
+  const { progressData } = useProgress();
+
+  // Show skeleton if this difficulty is still loading
+ const isLoading = props.difficulty 
+  ? progressData[props.difficulty]?.loading && progressData.initialLoad : true
 
   const {
     difficulty,
@@ -71,6 +78,11 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       goToDifficulty(navigationState.nextDifficulty);
     }
   };
+
+  // Early return with skeleton
+  if (isLoading) {
+    return <LevelProgressSkeleton />;
+  }
 
   return (
     <div
