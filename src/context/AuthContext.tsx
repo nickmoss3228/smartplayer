@@ -16,7 +16,7 @@ import {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkTokenValidity = async (token: string): Promise<void> => {
     try {
-      const response = await axios.get<TokenValidationResponse>(`${API_BASE_URL}/validate-token`, {
+      const response = await axios.get<TokenValidationResponse>(`${API_BASE_URL}/api/validate-token`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data.user);
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password
       };
       
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/login`, requestData);
+      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/api/login`, requestData);
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
@@ -72,9 +72,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // We can't use useProgress here directly, but we can make the API call
           const headers = { Authorization: `Bearer ${token}` };
           const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/progress/easy`, { headers }),
-            axios.get(`${API_BASE_URL}/progress/medium`, { headers }),
-            axios.get(`${API_BASE_URL}/progress/hard`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/easy`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/medium`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/hard`, { headers }),
           ]);
 
           const progressData = {
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password
       };
       
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/signup`, requestData);
+      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/api/signup`, requestData);
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
@@ -119,9 +119,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const headers = { Authorization: `Bearer ${token}` };
           const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/progress/easy`, { headers }),
-            axios.get(`${API_BASE_URL}/progress/medium`, { headers }),
-            axios.get(`${API_BASE_URL}/progress/hard`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/easy`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/medium`, { headers }),
+            axios.get(`${API_BASE_URL}/api/progress/hard`, { headers }),
           ]);
 
           const progressData = {
@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post(`${API_BASE_URL}/logout`, {}, {
+        await axios.post(`${API_BASE_URL}/api/logout`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -169,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const requestData: ResetPasswordRequest = { email };
       
-      await axios.post(`${API_BASE_URL}/request-reset`, requestData);
+      await axios.post(`${API_BASE_URL}/api/request-reset`, requestData);
       
       return { success: true, error: null };
     } catch (error) {
@@ -183,7 +183,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const requestData: ResetPasswordConfirmRequest = { token, newPassword };
       
-      await axios.post(`${API_BASE_URL}/reset`, requestData);
+      await axios.post(`${API_BASE_URL}/api/reset`, requestData);
       
       return { success: true, error: null };
     } catch (error) {

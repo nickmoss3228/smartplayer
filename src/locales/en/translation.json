@@ -17,37 +17,28 @@
     "medium": "Medium",
     "hard": "Hard",
     "title": "Choose Your Level",
-    "selectProficiency": "Select Your",
-    "proficiencyLevel": "Proficiency Level",
-    "chooseAppropriate": "Choose the appropriate difficulty level to begin your assessment",
+    "selectProficiency": "Select Your Level:",
+    "proficiencyLevel": "",
     "level": "Level",
     "easySubtitle": "Foundational Level",
     "mediumSubtitle": "Intermediate Level",
     "hardSubtitle": "Advanced Level",
-    "easyFeature1": "Clear Audio Quality",
-    "easyFeature2": "Fundamental Vocabulary",
-    "easyFeature3": "Structured Learning",
-    "mediumFeature1": "Standard Pacing",
-    "mediumFeature2": "Diverse Content",
-    "mediumFeature3": "Progressive Difficulty",
-    "hardFeature1": "Complex Material",
-    "hardFeature2": "Accelerated Pace",
-    "hardFeature3": "Professional Standard",
     "proceedToAssessment": "Proceed to Assessment →",
-    "notSure": "Not sure which level to choose? Start with the foundational level and progress accordingly."
+    "continue": "Continue",
+    "notSure": ""
   },
   "levelProgress": {
-    "easyTitle": "Easy Mode",
+    "easyTitle": "Easy",
     "easySubtitle": "Building Foundations",
-    "mediumTitle": "Medium Mode",
+    "mediumTitle": "Medium",
     "mediumSubtitle": "Expanding Horizons",
-    "hardTitle": "Hard Mode",
+    "hardTitle": "Hard",
     "hardSubtitle": "Master Challenge",
     "completed": "Completed",
     "current": "Current",
-    "locked": "Locked",
-    "overallProgress": "Overall Progress",
-    "completedCount": "Completed",
+    "locked": "Not Completed",
+    "overallProgress": "My Progress",
+    "completedCount": "",
     "levelLabel": "Level"
   },
   "login": {
@@ -289,11 +280,11 @@
       "backHome": "Back to Home"
     }
   },
-    "congrats": {
+  "congrats": {
     "title": "Congratulations!",
     "message": "You've completed all levels in {{difficulty}}!",
     "allLevelsCompleted": "All Levels Completed",
     "nextDifficulty": "Try Next Difficulty",
     "close": "Continue"
-    }
+  }
 }

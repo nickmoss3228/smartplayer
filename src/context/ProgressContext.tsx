@@ -1,3 +1,4 @@
+// context/ProgressContext.tsx
 import React, {
   createContext,
   useContext,
@@ -6,276 +7,185 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import axios, { AxiosResponse, AxiosError } from "axios";
-import {
-  ProgressData,
-  ProgressContextValue,
-  ProgressProviderProps,
-  DifficultyType,
-  ProgressApiResponse,
-  DifficultyProgress,
-} from "../types/Progress";
+import axios from "axios";
+import { useAuth } from "./AuthContext";
+import { StoryProgressData, StoryProgressMap } from "../types/Progress";
 
-const ProgressContext = createContext<ProgressContextValue | undefined>(
-  undefined
-);
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// prefetch
-const prefetchPromiseRef = { current: null as Promise<ProgressData | null> | null };
-
-export const prefetchProgress = (): Promise<ProgressData | null> => {
-  if (prefetchPromiseRef.current) {
-    return prefetchPromiseRef.current;
-  }
-  
-  const token = localStorage.getItem("token");
-  if (!token) return Promise.resolve(null);
-
-  const headers = { Authorization: `Bearer ${token}` };
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-  prefetchPromiseRef.current = Promise.all([
-    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/easy`, { headers }),
-    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/medium`, { headers }),
-    axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/hard`, { headers }),
-  ]).then(([easyRes, mediumRes, hardRes]) => {
-    const data: ProgressData = {
-      easy: { ...easyRes.data, loading: false },
-      medium: { ...mediumRes.data, loading: false },
-      hard: { ...hardRes.data, loading: false },
-      initialLoad: false,
-    };
-    saveToCache(data);
-    return data;
-  }).catch(() => null);
-
-  return prefetchPromiseRef.current;
+// All story slugs per difficulty — add new ones here as you create them
+const STORY_SLUGS: Record<string, string[]> = {
+  easy:   ["leo"],
+  medium: ["maya"],
+  hard:   ["daniel"],
 };
 
-export const useProgress = (): ProgressContextValue => {
-  const context = useContext(ProgressContext);
-  if (!context) {
-    throw new Error("useProgress must be used within a ProgressProvider");
-  }
-  return context;
-};
+interface ProgressContextValue {
+  // Story-level data — the single source of truth
+  storyProgress: StoryProgressMap;
 
-const initialDifficultyState: DifficultyProgress = {
-  stats: {
-    solved: 0,
-    total: 0,
-    percentage: 0,
-  },
-  completedLevels: [],
-  currentLevel: 1,
+  // Convenience helpers used by LevelProgress + Player
+  getStoryData: (difficulty: string, storySlug: string) => StoryProgressData;
+  canAccessPart: (difficulty: string, storySlug: string, partNumber: number) => boolean;
+  refreshStoryProgress: (difficulty: string, storySlug: string) => Promise<void>;
+
+  // Legacy helpers Player/LevelProgress still use
+  isInitialLoad: boolean;
+}
+
+const defaultStoryData: StoryProgressData = {
+  completedParts: [],
+  currentPart: 1,
+  totalParts: 10,
   loading: true,
+  error: null,
 };
 
-const initialProgressData: ProgressData = {
-  easy: initialDifficultyState,
-  medium: initialDifficultyState,
-  hard: initialDifficultyState,
-  initialLoad: true,
-};
+const ProgressContext = createContext<ProgressContextValue>({
+  storyProgress: {},
+  getStoryData: () => defaultStoryData,
+  canAccessPart: () => false,
+  refreshStoryProgress: async () => {},
+  isInitialLoad: true,
+});
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
-// Helper function to load from cache
-const loadFromCache = (): ProgressData | null => {
-  try {
-    const cached = localStorage.getItem('progressData');
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      // Check if cache is fresh (less than 5 minutes old)
-      const cacheTime = localStorage.getItem('progressCacheTime');
-      if (cacheTime && Date.now() - parseInt(cacheTime) < 5 * 60 * 1000) {
-        return parsed;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load cached progress:', error);
-  }
-  return null;
-};
-
-const saveToCache = (data: ProgressData): void => {
-  try {
-    localStorage.setItem('progressData', JSON.stringify(data));
-    localStorage.setItem('progressCacheTime', Date.now().toString());
-  } catch (error) {
-    console.error('Failed to cache progress:', error);
-  }
-};
-
-  const getAuthHeaders = (): { Authorization: string } | {} => {
-    const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
-export const ProgressProvider: React.FC<ProgressProviderProps> = ({
+export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [progressData, setProgressData] = useState<ProgressData>(() => {
-    const cached = loadFromCache();
-    return cached || initialProgressData;
-  });
+  const { user } = useAuth();
+  const [storyProgress, setStoryProgress] = useState<StoryProgressMap>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const hasFetched = useRef(false);
 
-  const fetchInProgress = useRef(false);
+  const getToken = (): string | null => localStorage.getItem("token");
 
-  const fetchAllProgress = async (): Promise<ProgressData | null> => {
-    // Prevent duplicate fetches
-    if (fetchInProgress.current) {
-      return prefetchPromiseRef.current;
-    }
-    
-    fetchInProgress.current = true;
+  const fetchSingleStory = useCallback(
+    async (difficulty: string, storySlug: string): Promise<StoryProgressData> => {
+      const token = getToken();
+      if (!token) return { ...defaultStoryData, loading: false };
 
-    try {
-      // Use existing prefetch if available
-      if (prefetchPromiseRef.current) {
-        const data = await prefetchPromiseRef.current;
-        if (data) {
-          setProgressData(data);
-          return data;
-        }
-      }
-      const headers = getAuthHeaders();
-
-      const [
-        easyResponse,
-        mediumResponse,
-        hardResponse,
-      ]: AxiosResponse<ProgressApiResponse>[] = await Promise.all([
-        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/easy`, {
-          headers,
-        }),
-        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/medium`, {
-          headers,
-        }),
-        axios.get<ProgressApiResponse>(`${API_BASE_URL}/progress/hard`, {
-          headers,
-        }),
-      ]);
-
-      const newData: ProgressData = {
-        easy: { ...easyResponse.data, loading: false },
-        medium: { ...mediumResponse.data, loading: false },
-        hard: { ...hardResponse.data, loading: false },
-        initialLoad: false,
-      };
-
-      setProgressData(newData);
-      saveToCache(newData);
-      
-      return newData;
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error("Failed to fetch progress:", axiosError.message);
-
-      setProgressData((prev) => ({
-        ...prev,
-        easy: { ...prev.easy, loading: false },
-        medium: { ...prev.medium, loading: false },
-        hard: { ...prev.hard, loading: false },
-        initialLoad: false,
-      }));
-      
-      return null;
-    } finally {
-      fetchInProgress.current = false;
-      prefetchPromiseRef.current = null;
-    }
-  };
-
-  const refreshProgress = async (difficulty: DifficultyType): Promise<void> => {
-    try {
-      setProgressData((prev) => ({
-        ...prev,
-        [difficulty]: { ...prev[difficulty], loading: true },
-      }));
-
-      const headers = getAuthHeaders();
-      const response: AxiosResponse<ProgressApiResponse> =
-        await axios.get<ProgressApiResponse>(
-          `${API_BASE_URL}/progress/${difficulty}`,
-          { headers }
+      try {
+        const res = await axios.get(
+          `${API_BASE}/api/progress/story/${difficulty}/${storySlug}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-
-      setProgressData((prev) => {
-        const newData = {
-          ...prev,
-          [difficulty]: { ...response.data, loading: false },
+        return {
+          completedParts: res.data.completedParts ?? [],
+          currentPart: res.data.currentPart ?? 1,
+          totalParts: res.data.totalParts ?? 10,
+          loading: false,
+          error: null,
         };
-        saveToCache(newData);
-        return newData;
-      });
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      console.error(
-        `Failed to refresh ${difficulty} progress:`,
-        axiosError.message
-      );
-
-      setProgressData((prev) => ({
-        ...prev,
-        [difficulty]: { ...prev[difficulty], loading: false },
-      }));
-    }
-  };
-
-  const canAccessLevel = useCallback(
-    (difficulty: DifficultyType, level: number): boolean => {
-      const difficultyData = progressData[difficulty];
-
-      if (!difficultyData || !difficultyData.completedLevels) {
-        return level === 1;
+      } catch (err) {
+        console.error(`Failed to fetch progress for ${difficulty}:${storySlug}`, err);
+        return {
+          ...defaultStoryData,
+          loading: false,
+          error: "Failed to load progress",
+        };
       }
-
-      if (level === 1) return true;
-
-      return difficultyData.completedLevels.includes(level - 1);
     },
-    [progressData]
+    []
   );
 
-  const getHighestUnlockedLevel = useCallback(
-    (difficulty: DifficultyType): number => {
-      const difficultyData = progressData[difficulty];
+  // Fetch all stories on mount
+  const fetchAll = useCallback(async () => {
+    if (!user) return;
 
-      if (!difficultyData || difficultyData.currentLevel === undefined) {
-        return 1;
-      }
+    const entries = Object.entries(STORY_SLUGS).flatMap(([difficulty, slugs]) =>
+      slugs.map((slug) => ({ difficulty, slug }))
+    );
 
-      return difficultyData.currentLevel;
-    },
-    [progressData]
-  );
+    // Set all to loading first
+    const loadingState: StoryProgressMap = {};
+    entries.forEach(({ difficulty, slug }) => {
+      loadingState[`${difficulty}:${slug}`] = { ...defaultStoryData, loading: true };
+    });
+    setStoryProgress(loadingState);
+
+    // Fetch all in parallel
+    const results = await Promise.all(
+      entries.map(async ({ difficulty, slug }) => {
+        const data = await fetchSingleStory(difficulty, slug);
+        return { key: `${difficulty}:${slug}`, data };
+      })
+    );
+
+    const finalState: StoryProgressMap = {};
+    results.forEach(({ key, data }) => {
+      finalState[key] = data;
+    });
+
+    setStoryProgress(finalState);
+    setIsInitialLoad(false);
+    hasFetched.current = true;
+  }, [user, fetchSingleStory]);
 
   useEffect(() => {
-    // Only fetch if we don't have cached data or token exists
-    const token = localStorage.getItem("token");
-    if (token && progressData.initialLoad) {
-      fetchAllProgress();
+    if (user && !hasFetched.current) {
+      fetchAll();
     }
-  }, []);
+    if (!user) {
+      setStoryProgress({});
+      setIsInitialLoad(true);
+      hasFetched.current = false;
+    }
+  }, [user, fetchAll]);
 
-  const refreshAllProgress = async (): Promise<void> => {
-    await fetchAllProgress();
-  };
+  // Called by Player after a quiz is submitted
+  const refreshStoryProgress = useCallback(
+    async (difficulty: string, storySlug: string) => {
+      const key = `${difficulty}:${storySlug}`;
 
-  const contextValue: ProgressContextValue = {
-    progressData,
-    refreshProgress,
-    refreshAllProgress,
-    fetchAllProgress,  
-    isInitialLoad: progressData.initialLoad,
-    canAccessLevel,
-    getHighestUnlockedLevel,
-  };
+      // Set loading for just this story
+      setStoryProgress((prev) => ({
+        ...prev,
+        [key]: { ...(prev[key] ?? defaultStoryData), loading: true },
+      }));
+
+      const data = await fetchSingleStory(difficulty, storySlug);
+
+      setStoryProgress((prev) => ({
+        ...prev,
+        [key]: data,
+      }));
+
+      // Also invalidate Dashboard cache so it re-fetches
+      sessionStorage.removeItem("dashboardData");
+    },
+    [fetchSingleStory]
+  );
+
+  const getStoryData = useCallback(
+    (difficulty: string, storySlug: string): StoryProgressData => {
+      return storyProgress[`${difficulty}:${storySlug}`] ?? defaultStoryData;
+    },
+    [storyProgress]
+  );
+
+  const canAccessPart = useCallback(
+    (difficulty: string, storySlug: string, partNumber: number): boolean => {
+      const data = storyProgress[`${difficulty}:${storySlug}`];
+      if (!data) return partNumber === 1;
+      if (data.completedParts.includes(partNumber)) return true;
+      return partNumber <= data.currentPart;
+    },
+    [storyProgress]
+  );
 
   return (
-    <ProgressContext.Provider value={contextValue}>
+    <ProgressContext.Provider
+      value={{
+        storyProgress,
+        getStoryData,
+        canAccessPart,
+        refreshStoryProgress,
+        isInitialLoad,
+      }}
+    >
       {children}
     </ProgressContext.Provider>
   );
 };
+
+export const useProgress = () => useContext(ProgressContext);

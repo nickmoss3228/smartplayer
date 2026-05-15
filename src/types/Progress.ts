@@ -12,6 +12,17 @@ export interface DifficultyProgress {
   totalLevels?: number;
 }
 
+export interface StoryProgressData {
+  completedParts: number[];
+  currentPart: number;
+  totalParts: number;
+  loading: boolean;
+  error: string | null;
+}
+
+// Key is "difficulty:storySlug" e.g. "easy:leo"
+export type StoryProgressMap = Record<string, StoryProgressData>;
+
 export interface ProgressData {
   easy: DifficultyProgress;
   medium: DifficultyProgress;

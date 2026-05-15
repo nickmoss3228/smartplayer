@@ -1,9 +1,11 @@
-export type DifficultyType = 'easy' | 'medium' | 'hard' ;
+export type DifficultyType = 'easy' | 'medium' | 'hard';
 
-export type LevelStatus = 'completed' | 'current' | 'available' | 'locked';
+export type LevelStatus = "incomplete" | "completed" | "lastListened";
 
 export interface LevelProgressProps {
   difficulty?: DifficultyType;
+  storySlug?: string;      
+  storyTitle?: string;        
   completedLevels?: number[];
   currentLevel?: number;
   totalLevels?: number;
@@ -22,6 +24,8 @@ export interface Theme {
   currentColor: string;
   progressGradient: string;
   gradient: string;
+  incompleteGradient: string;
+  incompleteColor: string;
 }
 
 export interface NavigationState {

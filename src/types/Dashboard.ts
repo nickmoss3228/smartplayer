@@ -1,26 +1,29 @@
-export interface User {
-    username: string;
-    user: string;
-    email: string;
+// types/Dashboard.ts
+export type Difficulty = "easy" | "medium" | "hard";
+
+export interface StoryOverview {
+  storyId: string;
+  storyName: string;
+  characterIcon: string;
+  totalParts: number;
+  completedParts: number[];
+  currentPart: number;
 }
 
-export interface OverviewInfo {
+export interface DifficultyOverview {
   completed: number;
   total: number;
+  stories: StoryOverview[];
 }
 
-export interface OverviewData {
-  [difficulty: string]: OverviewInfo;
-}
-
-export interface DetailedProgress {
-  totalLevels: number;
-  completedLevels: number[];
-  currentLevel: number;
-}
+export type OverviewData = Record<Difficulty, DifficultyOverview>;
 
 export interface DetailedProgressMap {
-  [difficulty: string]: DetailedProgress;
+  [difficulty: string]: {
+    totalLevels: number;
+    completedLevels: number[];
+    currentLevel: number;
+  };
 }
 
 export interface RankInfo {
@@ -28,11 +31,15 @@ export interface RankInfo {
   emoji: string;
 }
 
-export type LevelStatus = 'completed' | 'current' | 'available' | 'locked';
-
-export type Difficulty = 'easy' | 'medium' | 'hard';
+export type LevelStatus = "completed" | "current" | "available" | "locked";
 
 export interface ApiHeaders {
-  [key: string]: string; // Add index signature
   Authorization: string;
+}
+
+export interface UserProfile {
+  username: string;
+  email: string;
+  nickname: string;
+  avatar: string;
 }

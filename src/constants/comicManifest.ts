@@ -1,0 +1,6 @@
+// constants/comicManifest.ts
+export const comicManifest: Record<string, string[]> = {
+  easy: ["1. Meet Leo.png", "2. Leo's mornings.png", "3. Leo’s Favorite Food", "4. Leo's family", "5. Leo's clothes", "6. A Day at the Beach", "7. A Country Leo Wants to Visit", "8. Leo's hobbies", "9. Meeting a friend", "10. The Lost Kitten " /* … */],
+  medium: ["1. Meet Maya.png", "2. A trip to Kyoto", "3. Trying street food in Bangkok", "4. A missed connection", "5. Family Across Borders", "6. Budgeting for adventure", "7. Discussing environmental concerns", "8. An unexpected interview", "9. The Mountain Festival - Part 1", "10. The Mountain Festival - Part 2" /* … */],
+  hard:   ["1. Introducing Myself","2. The deal that nearly broke me", "3. The Conference in Munich", "4. A Failure with a Silver Lining", "5. The Bridge at Low Tide.", "6. Night of the Phantom Pallets", "7. Family Weather Report", "8. The Price of Enough", "9. Family on the Manifest, Part I The Itinerary That Blinked", "10. Family on the Manifest, Part II The Break That Tested the Break",/* … */],
+};

@@ -23,7 +23,7 @@ html, body, #root {
 }
 
 body {
-  overflow-x: hidden; /* Optional: prevents horizontal scroll if needed */
+  overflow-x: hidden;
 }
 
 

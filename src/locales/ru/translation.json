@@ -13,28 +13,19 @@
     "account": "Уже есть личный профиль?"
   },
   "levels": {
-    "easy": "Легкий",
+    "easy": "Базовый",
     "medium": "Средний",
-    "hard": "Сложный",
+    "hard": "Продвинутый",
     "title": "Выберите уровень",
-    "selectProficiency": "Выберите ваш",
-    "proficiencyLevel": "уровень владения Английским",
-    "chooseAppropriate": "Выберите подходящий уровень сложности для начала оценки",
+    "selectProficiency": "Выберите ваш уровень",
+    "proficiencyLevel": "",
     "level": "Уровень",
     "easySubtitle": "Базовый уровень",
     "mediumSubtitle": "Средний уровень",
     "hardSubtitle": "Продвинутый уровень",
-    "easyFeature1": "Четкое качество аудио",
-    "easyFeature2": "Базовый словарный запас",
-    "easyFeature3": "Структурированное обучение",
-    "mediumFeature1": "Стандартный темп",
-    "mediumFeature2": "Разнообразный контент",
-    "mediumFeature3": "Прогрессивная сложность",
-    "hardFeature1": "Сложный материал",
-    "hardFeature2": "Ускоренный темп",
-    "hardFeature3": "Профессиональный стандарт",
-    "proceedToAssessment": "Перейти к оценке →",
-    "notSure": "Не уверены, какой уровень выбрать? Начните с базового уровня и двигайтесь дальше."
+    "proceedToAssessment": "Начать",
+    "continue": "Продолжить",
+    "notSure": ""
   },
   "levelProgress": {
     "easyTitle": "Легкий",
@@ -45,7 +36,7 @@
     "hardSubtitle": "Мастерский вызов",
     "completed": "Завершён",
     "current": "Текущий",
-    "locked": "Заблокирован",
+    "locked": "Не выполнен",
     "overallProgress": "Общий прогресс",
     "completedCount": "Завершено",
     "levelLabel": "Уровень"
@@ -287,7 +278,7 @@
     "cta": {
       "startLearning": "Начать обучение",
       "backHome": "Вернуться на главную"
-    }   
+    }
   },
   "congrats": {
     "title": "Поздравляем!",
@@ -295,5 +286,5 @@
     "allLevelsCompleted": "Все уровни пройдены",
     "nextDifficulty": "Попробовать следующую сложность",
     "close": "Продолжить"
-    }
+  }
 }

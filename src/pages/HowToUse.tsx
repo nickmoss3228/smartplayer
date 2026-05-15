@@ -1,493 +1,620 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import {
+  IoPause,
+  IoPlay,
+  IoChevronBack,
+  IoChevronForward,
+  IoVolumeHigh,
+  IoVolumeMute,
+} from "react-icons/io5";
+import { MdReplay } from "react-icons/md";
 
+// ─── Constants ──────────────────────────────────────────────────────────────
+const PLAYBACK_RATES = [0.5, 0.75, 1];
+const MARKER_POSITIONS = [0, 27, 54, 79]; // % along the bar
+const SEGMENT_LABELS = ["Intro", "Part 1", "Part 2", "Part 3"];
+const TOTAL_SECONDS = 180;
+
+const fmt = (s: number) =>
+  `${Math.floor(s / 60).toString().padStart(2, "0")}:${Math.floor(s % 60)
+    .toString()
+    .padStart(2, "0")}`;
+
+// ─── Tiny local Toggle (mirrors your ToggleSwitch visually) ─────────────────
+const Toggle: React.FC<{
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}> = ({ checked, onChange, label }) => (
+  <div className="flex flex-col items-center gap-1">
+    <button
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+        checked ? "bg-[#05df3bff]" : "bg-gray-400"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-300 ${
+          checked ? "translate-x-5" : "translate-x-1"
+        }`}
+      />
+    </button>
+    <span className="whitespace-nowrap font-['Montserrat'] text-[9px] font-semibold uppercase tracking-widest text-black/50">
+      {label}
+    </span>
+  </div>
+);
+
+// ─── Collapsible section ─────────────────────────────────────────────────────
+const Collapse: React.FC<{
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ title, open, onToggle, children }) => (
+  <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/10 backdrop-blur-sm">
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-white/10"
+    >
+      <span className="text-lg font-semibold text-white">{title}</span>
+      <span
+        className={`text-white/60 transition-transform duration-200 ${
+          open ? "rotate-180" : ""
+        }`}
+      >
+        ▾
+      </span>
+    </button>
+    {open && (
+      <div className="space-y-2 border-t border-white/10 px-6 pb-5 pt-4 text-sm leading-relaxed text-white/80">
+        {children}
+      </div>
+    )}
+  </div>
+);
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 const HowToUse: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [activeSections, setActiveSections] = useState<number[]>([]);
 
-  const toggleSection = (section: number) => {
-    setActiveSections(
-      (prev) =>
-        prev.includes(section)
-          ? prev.filter((s) => s !== section) // Remove if already active
-          : [...prev, section] // Add if not active
-    );
+  // Demo player state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isEnhanced, setIsEnhanced] = useState(false);
+  const [isStep, setIsStep] = useState(false);
+  const [repeatCount, setRepeatCount] = useState(1);
+  const [speed, setSpeed] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [progress, setProgress] = useState(0); // 0–100 %
+  const [activeSeg, setActiveSeg] = useState(0);
+  const [openSections, setOpenSections] = useState<number[]>([0]);
+
+  // Derive active segment from progress
+  useEffect(() => {
+    const idx = [...MARKER_POSITIONS]
+      .reverse()
+      .findIndex((m) => progress >= m);
+    if (idx !== -1) setActiveSeg(MARKER_POSITIONS.length - 1 - idx);
+  }, [progress]);
+
+  // Animate the fake progress bar
+  useEffect(() => {
+    if (!isPlaying) return;
+    const TICK = 80; // ms
+    const step = 0.35 * speed; // faster speed → bigger step
+
+    const id = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setIsPlaying(false);
+          return 100;
+        }
+        if (isStep) {
+          const next = MARKER_POSITIONS.find((m) => m > prev);
+          if (next !== undefined && prev + step >= next) {
+            setIsPlaying(false);
+            return next;
+          }
+        }
+        return Math.min(100, prev + step);
+      });
+    }, TICK);
+
+    return () => clearInterval(id);
+  }, [isPlaying, isStep, speed]);
+
+  const currentSec = Math.round((progress / 100) * TOTAL_SECONDS);
+  const canPrev = activeSeg > 0;
+  const canNext = activeSeg < MARKER_POSITIONS.length - 1;
+
+  const jumpTo = (idx: number) => {
+    setProgress(MARKER_POSITIONS[idx]);
+    setActiveSeg(idx);
   };
 
+  const toggleSection = (i: number) =>
+    setOpenSections((prev) =>
+      prev.includes(i) ? prev.filter((s) => s !== i) : [...prev, i]
+    );
+
+  const label =
+    "whitespace-nowrap font-['Montserrat'] text-[9px] font-semibold uppercase tracking-widest text-black/50";
+  const dimmed = !isEnhanced
+    ? "pointer-events-none cursor-not-allowed select-none opacity-40"
+    : "";
+
+  // ── Shared button style factories ──
+  const roundBtn = (active: boolean) =>
+    `border-2 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer
+     text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
+     ${
+       active
+         ? "bg-[#05df3bff] text-black border-green-500"
+         : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+     }`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-red-400 to-blue-700 pt-30 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold text-gray-900 mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text ">
-            {t("howToUse.title")}
+    <div className="min-h-screen bg-gradient-to-br from-yellow-300 via-red-400 to-blue-700 pb-20 pt-24 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl space-y-10">
+
+        {/* ── Back ── */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-white"
+        >
+          <IoChevronBack className="h-4 w-4" />
+          Back
+        </button>
+
+        {/* ── Header ── */}
+        <div className="space-y-3 text-center">
+          <h1 className="text-4xl font-bold text-white drop-shadow-lg sm:text-5xl">
+            How to Use the Player
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {t("howToUse.subtitle")}
+          <p className="mx-auto max-w-xl text-lg text-white/80">
+            No audio needed — click every button to get familiar with the
+            controls before your first lesson.
           </p>
         </div>
 
-        {/* Overview Section */}
-        <section className="bg-white flex flex-col items-center justify-center rounded-2xl shadow-xl p-8 mb-12 border border-gray-100">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            {t("howToUse.overview.title")}
-          </h2>
-          <img src="/guide/shot9.png" alt="img" className="w-160 mb-4" />
-          <p className="text-2xl text-gray-700 leading-relaxed">
-            {t("howToUse.overview.description")}
-          </p>
-        </section>
+        {/* ════════════════════ INTERACTIVE DEMO ════════════════════ */}
+        <div className="space-y-6 rounded-2xl border border-white/20 bg-white/15 p-6 backdrop-blur-sm sm:p-8">
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-6xl mx-auto items-start">
-          {/* Feature 1: Sentence Mode */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              {t("howToUse.features.sentenceMode.title")}
-            </h3>
-            <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src="/guide/shot6.png"
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <p className="text-gray-600 mb-4 text-center flex-grow">
-              {t("howToUse.features.sentenceMode.description")}
+          {/* Track info */}
+          <div className="text-center">
+            <p className="font-['Montserrat'] text-[10px] font-semibold uppercase tracking-widest text-white/50">
+              Interactive Demo · No audio
             </p>
-            <button
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300"
-              onClick={() => toggleSection(1)}
-            >
-              {activeSections.includes(1)
-                ? t("howToUse.features.sentenceMode.showLess")
-                : t("howToUse.features.sentenceMode.learnMore")}
-            </button>
-            {activeSections.includes(1) && (
-              <div className="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-100 animate-fadeIn">
-                <h4 className="font-bold text-gray-900 mb-3 text-lg text-center">
-                  {t("howToUse.features.sentenceMode.howItWorks")}
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-purple-700">
-                        {t("howToUse.features.sentenceMode.autoPause")}
-                      </strong>{" "}
-                      {t("howToUse.features.sentenceMode.autoPauseDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-purple-700">
-                        {t("howToUse.features.sentenceMode.nextButton")}
-                      </strong>{" "}
-                      {t("howToUse.features.sentenceMode.nextButtonDesc")}{" "}
-                      <kbd className="px-2 py-1 bg-gray-200 rounded text-sm font-mono">
-                        →
-                      </kbd>{" "}
-                      {t("howToUse.features.sentenceMode.nextButtonDesc2")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-purple-700">
-                        {t("howToUse.features.sentenceMode.repeatButton")}
-                      </strong>{" "}
-                      {t("howToUse.features.sentenceMode.repeatButtonDesc")}{" "}
-                      <kbd className="px-2 py-1 bg-gray-200 rounded text-sm font-mono">
-                        R
-                      </kbd>{" "}
-                      {t("howToUse.features.sentenceMode.repeatButtonDesc2")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-purple-700">
-                        {t("howToUse.features.sentenceMode.whyHelps")}
-                      </strong>{" "}
-                      {t("howToUse.features.sentenceMode.whyHelpsDesc")}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            )}
+            <h2 className="text-2xl font-bold text-white">
+              Sample Listening Track
+            </h2>
+            <p className="mt-0.5 text-xs text-white/40">Level 1 – Beginner</p>
           </div>
 
-          {/* Feature 2: Time Markers */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              {t("howToUse.features.timeMarkers.title")}
-            </h3>
-            <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src="/guide/shot3.png"
-                alt=""
-                className="w-full h-full object-contain"
+          {/* ── Fake progress / waveform bar ── */}
+          <div className="relative pb-7 pt-1">
+            {/* Clickable bar */}
+            <div
+              className="relative h-8 w-full cursor-pointer overflow-visible rounded-lg bg-white/60 px-0.5"
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setProgress(
+                  Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100))
+                );
+              }}
+            >
+              {/* Fill */}
+              <div
+                className="pointer-events-none absolute left-0 top-0 h-full rounded-l-lg bg-green-400/50 transition-[width] duration-100"
+                style={{ width: `${progress}%` }}
               />
+
+              {/* Segment markers */}
+              {MARKER_POSITIONS.map((pos, i) => (
+                <React.Fragment key={i}>
+                  <div
+                    className={`absolute top-0 z-10 h-full w-[3px] -translate-x-1/2 cursor-pointer transition-colors ${
+                      activeSeg === i
+                        ? "bg-green-500/90"
+                        : "bg-black/25 hover:bg-black/50"
+                    }`}
+                    style={{ left: `${pos}%` }}
+                    title={SEGMENT_LABELS[i]}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      jumpTo(i);
+                    }}
+                  />
+                  {/* Label below bar */}
+                  <span
+                    className="pointer-events-none absolute top-9 -translate-x-1/2 whitespace-nowrap text-[9px] text-white/50"
+                    style={{ left: `${pos}%` }}
+                  >
+                    {SEGMENT_LABELS[i]}
+                  </span>
+                </React.Fragment>
+              ))}
             </div>
-            <p className="text-gray-600 mb-4 text-center flex-grow">
-              {t("howToUse.features.timeMarkers.description")}
-            </p>
-            <button
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300"
-              onClick={() => toggleSection(2)}
-            >
-              {activeSections.includes(2)
-                ? t("howToUse.features.sentenceMode.showLess")
-                : t("howToUse.features.sentenceMode.learnMore")}
-            </button>
-            {activeSections.includes(2) && (
-              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100 animate-fadeIn">
-                <h4 className="font-bold text-gray-900 mb-3 text-lg text-center">
-                  {t("howToUse.features.timeMarkers.understanding")}
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{t("howToUse.features.timeMarkers.point1")}</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{t("howToUse.features.timeMarkers.point2")}</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{t("howToUse.features.timeMarkers.point3")}</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{t("howToUse.features.timeMarkers.point4")}</span>
-                  </li>
-                </ul>
-              </div>
-            )}
+
+            {/* Timestamps */}
+            <span className="absolute bottom-0 left-0 text-[10px] text-white/60">
+              {fmt(currentSec)}
+            </span>
+            <span className="absolute bottom-0 right-0 text-[10px] text-white/60">
+              {fmt(TOTAL_SECONDS)}
+            </span>
           </div>
 
-          {/* Feature 3: Quiz Game */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              {t("howToUse.features.speedControl.title")}
-            </h3>
-            <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src="/guide/shot8.png"
-                alt=""
-                className="w-full h-full object-contain"
+          {/* ── Controls card — exact desktop layout ── */}
+          <div className="rounded-2xl bg-white/60 p-5">
+            <div className="flex flex-wrap items-end justify-between gap-4 w-full">
+
+              {/* Repeat */}
+              <div className={`flex flex-col items-center gap-1 ${dimmed}`}>
+                <div className="flex items-center gap-2">
+                  {[3, 2, 1].map((n) => (
+                    <button
+                      key={n}
+                      className={roundBtn(repeatCount === n)}
+                      onClick={() => setRepeatCount(n)}
+                      title={`Repeat each segment ${n} time${n > 1 ? "s" : ""}`}
+                    >
+                      x{n}
+                    </button>
+                  ))}
+                </div>
+                <span className={label}>Repeat</span>
+              </div>
+
+              {/* Play + Step */}
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-3">
+                  {/* Play / Pause */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      className="flex cursor-pointer items-center justify-center rounded-full border-none bg-black/90 p-2 text-white transition-all duration-200 hover:bg-black/50 active:scale-95"
+                      onClick={() => setIsPlaying((p) => !p)}
+                      aria-label={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <IoPause className="h-[50px] w-[50px] text-white" />
+                      ) : (
+                        <IoPlay className="h-[50px] w-[50px] text-white" />
+                      )}
+                    </button>
+                    <span className={label}>{isPlaying ? "Pause" : "Play"}</span>
+                  </div>
+
+                  {/* Step */}
+                  <div className={`flex flex-col items-center gap-1 ${dimmed}`}>
+                    <button
+                      className={`flex cursor-pointer items-center justify-center rounded-full border-2 p-2 transition-all duration-200 active:scale-95 ${
+                        isStep
+                          ? "border-green-500 bg-[#05df3bff] hover:bg-[#04c934]"
+                          : "border-[#ddd] bg-black/90 hover:bg-black/50"
+                      }`}
+                      onClick={() => setIsStep((s) => !s)}
+                      title={isStep ? "Step ON — pauses after each segment" : "Step OFF"}
+                    >
+                      <MdReplay className="h-[30px] w-[30px] text-white" />
+                    </button>
+                    <span className={label}>Step</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Speed */}
+              <div className={`flex flex-col items-center gap-1 ${dimmed}`}>
+                <div className="flex items-center gap-2">
+                  {PLAYBACK_RATES.map((r) => (
+                    <button
+                      key={r}
+                      className={roundBtn(speed === r)}
+                      onClick={() => setSpeed(r)}
+                    >
+                      x{r}
+                    </button>
+                  ))}
+                </div>
+                <span className={label}>Speed</span>
+              </div>
+
+              {/* Enhanced toggle */}
+              <div className="flex min-w-[80px] flex-col items-center gap-1">
+                <Toggle
+                  checked={isEnhanced}
+                  onChange={() => setIsEnhanced((e) => !e)}
+                  label={isEnhanced ? "Enhanced" : "Free Play"}
+                />
+              </div>
+            </div>
+
+            {/* Volume */}
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={() => setIsMuted((m) => !m)}
+                className="text-black/50 transition-colors hover:text-black"
+                title={isMuted ? "Unmute" : "Mute"}
+              >
+                {isMuted ? (
+                  <IoVolumeMute className="h-5 w-5" />
+                ) : (
+                  <IoVolumeHigh className="h-5 w-5" />
+                )}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={isMuted ? 0 : volume}
+                onChange={(e) => {
+                  setVolume(Number(e.target.value));
+                  setIsMuted(false);
+                }}
+                className="w-28 accent-green-500"
               />
+              <span className="w-8 text-right text-xs text-black/40">
+                {isMuted ? "0%" : `${Math.round(volume * 100)}%`}
+              </span>
             </div>
-            <p className="text-gray-600 mb-4 text-center flex-grow">
-              {t("howToUse.features.speedControl.description")}
-            </p>
+          </div>
+
+          {/* Segment Prev / Next */}
+          <div className="flex items-center justify-center gap-4">
             <button
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300"
-              onClick={() => toggleSection(3)}
+              onClick={() => jumpTo(activeSeg - 1)}
+              disabled={!canPrev}
+              aria-label="Previous segment"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white shadow transition hover:bg-white/30 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
             >
-              {activeSections.includes(3)
-                ? t("howToUse.features.sentenceMode.showLess")
-                : t("howToUse.features.sentenceMode.learnMore")}
+              <IoChevronBack className="h-5 w-5" />
             </button>
-            {activeSections.includes(3) && (
-              <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100 animate-fadeIn">
-                <h4 className="font-bold text-gray-900 mb-3 text-lg text-center">
-                  {t("howToUse.features.speedControl.speedOptions")}
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="mr-2">🎧</span>
-                    <span>
-                      <strong className="text-green-700">
-                        {t("howToUse.features.speedControl.slow")}
-                      </strong>{" "}
-                      {t("howToUse.features.speedControl.slowDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">✏️</span>
-                    <span>
-                      <strong className="text-green-700">
-                        {t("howToUse.features.speedControl.normal")}
-                      </strong>{" "}
-                      {t("howToUse.features.speedControl.normalDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">❓</span>
-                    <span>
-                      <strong className="text-green-700">
-                        {t("howToUse.features.speedControl.fast")}
-                      </strong>{" "}
-                      {t("howToUse.features.speedControl.fastDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">💡</span>
-                    <span>
-                      <strong className="text-green-700">
-                        {t("howToUse.features.speedControl.tip")}
-                      </strong>{" "}
-                      {t("howToUse.features.speedControl.tipDesc")}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Feature 4: Subtitles */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300 flex flex-col">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              {t("howToUse.features.subtitles.title")}
-            </h3>
-            <div className="w-full h-48 mb-4 flex items-center justify-center overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src="/guide/shot11.png"
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <p className="text-gray-600 mb-4 text-center flex-grow">
-              {t("howToUse.features.subtitles.description")}
-            </p>
+            <span className="text-xs font-medium text-white/60">
+              Segment {activeSeg + 1} / {MARKER_POSITIONS.length} —{" "}
+              <span className="text-white">{SEGMENT_LABELS[activeSeg]}</span>
+            </span>
             <button
-              className="w-full py-2 px-4 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all duration-300"
-              onClick={() => toggleSection(4)}
+              onClick={() => jumpTo(activeSeg + 1)}
+              disabled={!canNext}
+              aria-label="Next segment"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white shadow transition hover:bg-white/30 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
             >
-              {activeSections.includes(4)
-                ? t("howToUse.features.sentenceMode.showLess")
-                : t("howToUse.features.sentenceMode.learnMore")}
+              <IoChevronForward className="h-5 w-5" />
             </button>
-            {activeSections.includes(4) && (
-              <div className="mt-6 p-4 bg-pink-50 rounded-xl border border-pink-100 animate-fadeIn">
-                <h4 className="font-bold text-gray-900 mb-3 text-lg text-center">
-                  {t("howToUse.features.subtitles.usingEffectively")}
-                </h4>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-pink-700">
-                        {t("howToUse.features.subtitles.firstListen")}
-                      </strong>{" "}
-                      {t("howToUse.features.subtitles.firstListenDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-pink-700">
-                        {t("howToUse.features.subtitles.secondListen")}
-                      </strong>{" "}
-                      {t("howToUse.features.subtitles.secondListenDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>
-                      <strong className="text-pink-700">
-                        {t("howToUse.features.subtitles.thirdListen")}
-                      </strong>{" "}
-                      {t("howToUse.features.subtitles.thirdListenDesc")}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">•</span>
-                    <span>{t("howToUse.features.subtitles.allStories")}</span>
-                  </li>
-                </ul>
-              </div>
-            )}
           </div>
-        </div>
 
-        {/* Levels Section */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">
-            {t("howToUse.levelsSection.title")}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-green-400 via-emerald-400 to-teal-300 rounded-2xl shadow-lg p-8 text-center transition-transform duration-300 border-2 border-green-300">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                {t("howToUse.levelsSection.easy.title")}
-              </h3>
-              <p className="text-xl font-semibold text-gray-800 mb-3">
-                {t("howToUse.levelsSection.easy.stories")}
-              </p>
-              <p className="text-gray-700">
-                {t("howToUse.levelsSection.easy.description")}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-yellow-400 via-orange-400 to-red-300 rounded-2xl shadow-lg p-8 text-center transition-transform duration-300 border-2 border-yellow-300">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                {t("howToUse.levelsSection.medium.title")}
-              </h3>
-              <p className="text-xl font-semibold text-gray-800 mb-3">
-                {t("howToUse.levelsSection.medium.stories")}
-              </p>
-              <p className="text-gray-700">
-                {t("howToUse.levelsSection.medium.description")}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-red-400 via-purple-400 to-pink-300 rounded-2xl shadow-lg p-8 text-center  transition-transform duration-300 border-2 border-red-300">
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">
-                {t("howToUse.levelsSection.hard.title")}
-              </h3>
-              <p className="text-xl font-semibold text-gray-800 mb-3">
-                {t("howToUse.levelsSection.hard.stories")}
-              </p>
-              <p className="text-gray-700">
-                {t("howToUse.levelsSection.hard.description")}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Quick Start Guide */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">
-            {t("howToUse.quickStart.title")}
-          </h2>
-          <div className="space-y-6">
+          {/* Live status badges */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               {
-                number: "1",
-                title: t("howToUse.quickStart.step1.title"),
-                description: t("howToUse.quickStart.step1.description"),
+                label: "Mode",
+                value: isEnhanced ? "Enhanced" : "Free Play",
+                active: isEnhanced,
               },
+              { label: "Speed", value: `×${speed}`, active: isEnhanced },
+              { label: "Repeat", value: `×${repeatCount}`, active: isEnhanced },
               {
-                number: "2",
-                title: t("howToUse.quickStart.step2.title"),
-                description: t("howToUse.quickStart.step2.description"),
+                label: "Step",
+                value: isStep ? "On ✓" : "Off",
+                active: isStep && isEnhanced,
               },
-              {
-                number: "3",
-                title: t("howToUse.quickStart.step3.title"),
-                description: t("howToUse.quickStart.step3.description"),
-              },
-              {
-                number: "4",
-                title: t("howToUse.quickStart.step4.title"),
-                description: t("howToUse.quickStart.step4.description"),
-              },
-            ].map((step, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-6 bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl hover:translate-x-2 transition-all duration-300 border border-gray-100"
-              >
-                <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-lg">
-                  {step.number}
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">
-                    {step.title}
-                  </h4>
-                  <p className="text-gray-600">{step.description}</p>
-                </div>
+            ].map(({ label: l, value, active }) => (
+              <div key={l} className="rounded-xl bg-white/10 p-3 text-center">
+                <p className="font-['Montserrat'] text-[9px] font-semibold uppercase tracking-widest text-white/40">
+                  {l}
+                </p>
+                <p
+                  className={`text-lg font-bold transition-colors duration-300 ${
+                    active ? "text-green-400" : "text-white/25"
+                  }`}
+                >
+                  {value}
+                </p>
               </div>
             ))}
           </div>
-        </section>
 
-        {/* Keyboard Shortcuts */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">
-            {t("howToUse.keyboardShortcuts.title")}
-          </h2>
-          <div className="flex flex-wrap justify-center gap-8">
-            <div className="text-center">
-              <kbd className="inline-block px-6 py-3 bg-gray-800 text-white rounded-lg text-2xl font-bold shadow-lg mb-3">
-                →
-              </kbd>
-              <p className="text-gray-700 font-medium">
-                {t("howToUse.keyboardShortcuts.next")}
-              </p>
-            </div>
-            <div className="text-center">
-              <kbd className="inline-block px-6 py-3 bg-gray-800 text-white rounded-lg text-2xl font-bold shadow-lg mb-3">
-                R
-              </kbd>
-              <p className="text-gray-700 font-medium">
-                {t("howToUse.keyboardShortcuts.repeat")}
-              </p>
-            </div>
-            <div className="text-center">
-              <kbd className="inline-block px-6 py-3 bg-gray-800 text-white rounded-lg text-2xl font-bold shadow-lg mb-3">
-                Space
-              </kbd>
-              <p className="text-gray-700 font-medium">
-                {t("howToUse.keyboardShortcuts.playPause")}
-              </p>
-            </div>
-          </div>
-        </section>
+          {/* Contextual nudge */}
+          {!isEnhanced && (
+            <p className="animate-pulse text-center text-sm text-white/50">
+              💡 Toggle{" "}
+              <strong className="text-white">Enhanced Mode</strong> to unlock
+              Speed &amp; Repeat!
+            </p>
+          )}
+          {isEnhanced && (
+            <p className="text-center text-sm text-green-300">
+              ✅ <strong>Enhanced Mode is ON</strong> — Speed and Repeat are
+              now active. Try them!
+            </p>
+          )}
+        </div>
 
-        {/* Tips Section */}
-        <section className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 mb-12 border border-blue-100">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">
-            {t("howToUse.learningTips.title")}
+        {/* ════════════════════ FEATURE GUIDE ════════════════════ */}
+        <div className="space-y-3">
+          <h2 className="mb-6 text-center text-2xl font-bold text-white">
+            Feature Guide
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: "👂",
-                title: t("howToUse.learningTips.activeListen.title"),
-                description: t(
-                  "howToUse.learningTips.activeListen.description"
-                ),
-              },
-              {
-                icon: "🔄",
-                title: t("howToUse.learningTips.repetition.title"),
-                description: t("howToUse.learningTips.repetition.description"),
-              },
-              {
-                icon: "📈",
-                title: t("howToUse.learningTips.progressive.title"),
-                description: t("howToUse.learningTips.progressive.description"),
-              },
-              {
-                icon: "⏱️",
-                title: t("howToUse.learningTips.adjustSpeed.title"),
-                description: t("howToUse.learningTips.adjustSpeed.description"),
-              },
-            ].map((tip, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-4 bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow duration-300"
-              >
-                <span className="text-4xl">{tip.icon}</span>
-                <div>
-                  <p className="text-gray-800">
-                    <strong className="text-purple-700">{tip.title}</strong>{" "}
-                    {tip.description}
+
+          {[
+            {
+              title: "🔀 Enhanced Mode vs Free Play",
+              body: (
+                <>
+                  <p>
+                    <strong className="text-white">Enhanced Mode</strong> is the
+                    core learning mode. Toggle it with the switch at the
+                    bottom-right of the player.
                   </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button
-            className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-lg font-bold rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-            onClick={() => navigate("/levels")}
-          >
-            {t("howToUse.cta.startLearning")}
-          </button>
-          <button
-            className="px-8 py-4 bg-white text-purple-600 text-lg font-bold rounded-full shadow-lg hover:shadow-xl border-2 border-purple-600 hover:bg-purple-50 transition-all duration-300"
-            onClick={() => navigate("/")}
-          >
-            {t("howToUse.cta.backHome")}
-          </button>
+                  <p>
+                    When{" "}
+                    <span className="font-semibold text-green-400">ON</span>,
+                    the <strong className="text-white">Speed</strong> and{" "}
+                    <strong className="text-white">Repeat</strong> controls
+                    unlock, and the player pauses between segments so you can
+                    absorb each chunk.
+                  </p>
+                  <p>
+                    <strong className="text-white">Free Play</strong> lets the
+                    audio run straight through — great for a relaxed first
+                    listen or reviewing familiar tracks.
+                  </p>
+                </>
+              ),
+            },
+            {
+              title: "⏩ Playback Speed",
+              body: (
+                <>
+                  <p>
+                    Three speed presets unlock in Enhanced Mode:
+                  </p>
+                  <ul className="ml-3 list-inside list-disc space-y-1 text-white/70">
+                    <li>
+                      <strong className="text-white">×0.5</strong> — half
+                      speed, great for dense or fast passages
+                    </li>
+                    <li>
+                      <strong className="text-white">×0.75</strong> — a
+                      comfortable learning pace
+                    </li>
+                    <li>
+                      <strong className="text-white">×1</strong> — natural
+                      speed
+                    </li>
+                  </ul>
+                  <p>
+                    The selected speed lights up in{" "}
+                    <span className="font-semibold text-green-400">green</span>.
+                  </p>
+                </>
+              ),
+            },
+            {
+              title: "🔁 Repeat per Segment",
+              body: (
+                <>
+                  <p>
+                    The <strong className="text-white">Repeat</strong> buttons
+                    control how many times each segment plays before the player
+                    advances to the next one (Enhanced Mode required):
+                  </p>
+                  <ul className="ml-3 list-inside list-disc space-y-1 text-white/70">
+                    <li>
+                      <strong className="text-white">×1</strong> — plays once,
+                      then moves on
+                    </li>
+                    <li>
+                      <strong className="text-white">×2</strong> — natural
+                      listen-then-repeat rhythm
+                    </li>
+                    <li>
+                      <strong className="text-white">×3</strong> — drills hard
+                      sentences until they sink in
+                    </li>
+                  </ul>
+                </>
+              ),
+            },
+            {
+              title: "⏹ Step Mode",
+              body: (
+                <>
+                  <p>
+                    The <strong className="text-white">Step</strong> button
+                    (the replay icon next to Play) pauses the audio
+                    automatically at the end of every segment.
+                  </p>
+                  <p>
+                    When{" "}
+                    <span className="font-semibold text-green-400">green</span>
+                    , Step is active. After each segment completes, press Play
+                    again — or the{" "}
+                    <strong className="text-white">→ Next</strong> arrow — to
+                    continue. Perfect for shadowing or taking notes sentence by
+                    sentence.
+                  </p>
+                </>
+              ),
+            },
+            {
+              title: "📍 Segment Markers",
+              body: (
+                <>
+                  <p>
+                    The vertical lines on the progress bar are{" "}
+                    <strong className="text-white">segment markers</strong>{" "}
+                    that divide the audio into meaningful chunks.
+                  </p>
+                  <p>
+                    Click any marker to jump directly to that segment. Use the{" "}
+                    <strong className="text-white">← / →</strong> arrows to
+                    step through them, or click anywhere on the bar to seek
+                    freely.
+                  </p>
+                </>
+              ),
+            },
+            {
+              title: "📝 The Quiz",
+              body: (
+                <>
+                  <p>
+                    After listening to the{" "}
+                    <em>entire</em> audio track, a{" "}
+                    <strong className="text-white">Take the Quiz →</strong>{" "}
+                    button unlocks below the player.
+                  </p>
+                  <p>
+                    You must listen all the way through at least once — no
+                    skipping to the end! The quiz tests what you actually heard.
+                  </p>
+                </>
+              ),
+            },
+          ].map((s, i) => (
+            <Collapse
+              key={i}
+              title={s.title}
+              open={openSections.includes(i)}
+              onToggle={() => toggleSection(i)}
+            >
+              {s.body}
+            </Collapse>
+          ))}
         </div>
+
+        {/* ── Quick-start ── */}
+        <div className="rounded-2xl border border-white/20 bg-white/15 p-6 backdrop-blur-sm sm:p-8">
+          <h3 className="mb-5 text-center text-xl font-bold text-white">
+            ⚡ Quick-Start Guide
+          </h3>
+          <ol className="mx-auto max-w-lg space-y-3">
+            {[
+              ["Press Play", "to hear the track at normal speed first."],
+              ["Toggle Enhanced Mode ON", "with the switch at the bottom-right."],
+              ["Set Speed to ×0.75", "if the audio moves too fast for you."],
+              ["Set Repeat to ×2 or ×3", "to drill a segment automatically."],
+              ["Enable Step", "to pause and absorb each chunk before continuing."],
+              ["Listen to the full track,", "then unlock and take the Quiz!"],
+            ].map(([bold, rest], i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-green-400/30 bg-green-400/20 text-sm font-bold text-green-300">
+                  {i + 1}
+                </span>
+                <p className="pt-0.5 text-sm text-white/80">
+                  <strong className="text-white">{bold}</strong> {rest}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+
       </div>
     </div>
   );
