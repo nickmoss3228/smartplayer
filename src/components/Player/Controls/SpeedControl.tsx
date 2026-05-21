@@ -9,7 +9,7 @@ interface SpeedControlProps {
 }
 
 export const SpeedControl: React.FC<SpeedControlProps> = React.memo(
-  ({ playbackRate, repeatCount, onSpeedChange, onRepeatCountChange }) => (
+  ({ playbackRate, onSpeedChange }) => (
     <div className="flex flex-col items-center w-full gap-2">
       <div className="flex items-center justify-evenly w-full gap-5 md:gap-3 sm:gap-2.5">
         {/* <div className="flex items-center gap-[15px] md:gap-3 sm:gap-2.5">

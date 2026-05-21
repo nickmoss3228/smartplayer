@@ -1,16 +1,16 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext';
 import LevelProgress from '../pages/LevelProgress';
 import { getStoryGroup } from '../types/storyGroups';
-import { Navigate } from 'react-router-dom';
 
 const Hard = () => {
   const { storySlug } = useParams<{ storySlug: string }>();
-  const { progressData, refreshProgress, isInitialLoad } = useProgress();
-  const hardData = progressData.hard;
+  const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
 
+  const slug = storySlug || 'daniel';
+  const hardData = getStoryData('hard', slug);
   const storyGroup = storySlug ? getStoryGroup('hard', storySlug) : undefined;
-  
+
   if (storySlug && !storyGroup) {
     return <Navigate to="/levels/hard" replace />;
   }
@@ -26,12 +26,12 @@ const Hard = () => {
   return (
     <LevelProgress
       difficulty="hard"
-      storySlug={storySlug || 'daniel'}
+      storySlug={slug}
       storyTitle={storyGroup?.title}
-      completedLevels={hardData.completedLevels}
-      currentLevel={hardData.currentLevel}
-      totalLevels={storyGroup?.totalTracks || hardData.totalLevels}
-      onRefresh={() => refreshProgress('hard')}
+      completedLevels={hardData.completedParts}
+      currentLevel={hardData.currentPart}
+      totalLevels={storyGroup?.totalTracks || hardData.totalParts}
+      onRefresh={() => refreshStoryProgress('hard', slug)}
     />
   );
 };

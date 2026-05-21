@@ -35,6 +35,7 @@ export type LevelStatus = "completed" | "current" | "available" | "locked";
 
 export interface ApiHeaders {
   Authorization: string;
+  [key: string]: string; // ← add this line
 }
 
 export interface UserProfile {

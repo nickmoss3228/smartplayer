@@ -70,7 +70,7 @@ const List = () => {
   const stories = getStoryGroups(diff);
   const theme = difficultyThemes[diff] || difficultyThemes.easy;
 
-  const [search, setSearch] = useState('');
+  const [search, _setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('title');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [topicFilter, setTopicFilter] = useState<string>('all');

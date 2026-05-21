@@ -57,9 +57,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       ? "opacity-40 pointer-events-none cursor-not-allowed"
       : "";
     
-    const repeatsDisabledClass = !isEnhancedMode
-  ? "opacity-40 pointer-events-none cursor-not-allowed"
-  : "";
+  //   const repeatsDisabledClass = !isEnhancedMode
+  // ? "opacity-40 pointer-events-none cursor-not-allowed"
+  // : "";
 
     // ═══════════════════════════════════════════════════════════
     // MOBILE LAYOUT

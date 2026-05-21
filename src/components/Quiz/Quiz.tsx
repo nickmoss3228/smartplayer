@@ -7,7 +7,7 @@ import QuestionAudioButton from "./QuestionAudioButton";
 type FeedbackState = "idle" | "correct" | "incorrect";
 
 const Quiz: React.FC<QuizProps> = ({
-  onTimeJump,
+  // onTimeJump,
   questions,
   onQuizComplete,
   isSubmitting = false,

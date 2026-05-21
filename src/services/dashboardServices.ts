@@ -7,7 +7,8 @@ const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
 
 export const fetchOverviewData = async (token: string): Promise<OverviewData> => {
   const headers: ApiHeaders = {
-    Authorization: `Bearer ${token}`
+    Authorization: `Bearer ${token}`,
+    
   };
 
   const response = await axios.get(`${API_BASE}/api/progress/overview`, { headers });

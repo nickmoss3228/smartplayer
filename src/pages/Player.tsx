@@ -40,14 +40,14 @@ const Player = React.memo(() => {
     : `/levels/${difficulty}`;
 
   // Replace the useProgress destructure in Player.tsx
-  const { canAccessPart, refreshStoryProgress, isInitialLoad } = useProgress();
+  const { refreshStoryProgress, isInitialLoad } = useProgress();
   
   const navigate = useNavigate();
 
   const wavesurferRef = useRef<WaveSurferInstance | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
   const [showQuiz, setShowQuiz] = useState(false);
-  const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
+  const [_quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // tracks whether the student has listened to the full audio 

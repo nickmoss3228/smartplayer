@@ -39,6 +39,7 @@ const Dashboard: React.FC = () => {
     null
   );
 
+  console.log(detailedProgress)
   // Load dashboard data
   useEffect(() => {
     const loadDashboardData = async () => {

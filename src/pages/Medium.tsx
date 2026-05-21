@@ -1,16 +1,16 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext';
 import LevelProgress from '../pages/LevelProgress';
 import { getStoryGroup } from '../types/storyGroups';
-import { Navigate } from 'react-router-dom';
 
 const Medium = () => {
   const { storySlug } = useParams<{ storySlug: string }>();
-  const { progressData, refreshProgress, isInitialLoad } = useProgress();
-  const mediumData = progressData.medium;
+  const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
 
+  const slug = storySlug || 'maya';
+  const mediumData = getStoryData('medium', slug);
   const storyGroup = storySlug ? getStoryGroup('medium', storySlug) : undefined;
-  
+
   if (storySlug && !storyGroup) {
     return <Navigate to="/levels/medium" replace />;
   }
@@ -26,12 +26,12 @@ const Medium = () => {
   return (
     <LevelProgress
       difficulty="medium"
-      storySlug={storySlug || 'maya'}
+      storySlug={slug}
       storyTitle={storyGroup?.title}
-      completedLevels={mediumData.completedLevels}
-      currentLevel={mediumData.currentLevel}
-      totalLevels={storyGroup?.totalTracks || mediumData.totalLevels}
-      onRefresh={() => refreshProgress('medium')}
+      completedLevels={mediumData.completedParts}
+      currentLevel={mediumData.currentPart}
+      totalLevels={storyGroup?.totalTracks || mediumData.totalParts}
+      onRefresh={() => refreshStoryProgress('medium', slug)}
     />
   );
 };

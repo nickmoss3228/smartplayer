@@ -9,7 +9,7 @@ interface StoryCardProps {
   onClick: (story: StoryOverview) => void;
 }
 
-const StoryCard: React.FC<StoryCardProps> = ({ story, difficulty, onClick }) => {
+const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
   const { t } = useTranslation();
 
   const completedCount = story.completedParts.length;

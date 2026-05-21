@@ -6,10 +6,9 @@ import { Navigate } from 'react-router-dom';
 
 const Easy = () => {
   const { storySlug } = useParams<{ storySlug: string }>();
-  const { progressData, refreshProgress, isInitialLoad } = useProgress();
-  const easyData = progressData.easy;
-
-  // Validate the story slug
+  const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
+ const slug = storySlug || 'leo';
+  const easyData = getStoryData('easy', slug);
   const storyGroup = storySlug ? getStoryGroup('easy', storySlug) : undefined;
   
   if (storySlug && !storyGroup) {
@@ -24,15 +23,15 @@ const Easy = () => {
     );
   }
 
-  return (
+ return (
     <LevelProgress
       difficulty="easy"
-      storySlug={storySlug || 'leo'}
+      storySlug={slug}
       storyTitle={storyGroup?.title}
-      completedLevels={easyData.completedLevels}
-      currentLevel={easyData.currentLevel}
-      totalLevels={storyGroup?.totalTracks || easyData.totalLevels}
-      onRefresh={() => refreshProgress('easy')}
+      completedLevels={easyData.completedParts}
+      currentLevel={easyData.currentPart}
+      totalLevels={storyGroup?.totalTracks || easyData.totalParts}
+      onRefresh={() => refreshStoryProgress('easy', slug)}
     />
   );
 };

@@ -1,7 +1,7 @@
 // components/Dashboard/DifficultyModal.tsx
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { DifficultyOverview, StoryOverview, LevelStatus } from "../../types/Dashboard";
+// import { useTranslation } from "react-i18next";
+import { DifficultyOverview, LevelStatus } from "../../types/Dashboard";
 import { getDifficultyIcon, getLevelStatus } from "./dashboardModule";
 
 interface DifficultyModalProps {
@@ -15,7 +15,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
   overview,
   onClose,
 }) => {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
   const [expandedStory, setExpandedStory] = useState<string | null>(
     // Auto-expand if there's only one story
     overview.stories.length === 1 ? overview.stories[0].storyId : null
