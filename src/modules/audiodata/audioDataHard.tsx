@@ -1,216 +1,216 @@
 // Hard level Audios
-import Introducing from "../../assets/3. Daniel/1. Introducing Myself.mp3";
-import TheDeal from "../../assets/3. Daniel/2. The deal that nearly broke me..mp3";
-import Conference from "../../assets/3. Daniel/3. The Conference in Munich.mp3";
-import AFailure from "../../assets/3. Daniel/4. A Failure with a Silver Lining.mp3";
-import TheBridge from "../../assets/3. Daniel/5. The Bridge at Low Tide.mp3";
-import Night from "../../assets/3. Daniel/6. Night of the Phantom Pallets.mp3";
-import FamilyReport from "../../assets/3. Daniel/7. Family Weather Report.mp3";
-import ThePrice from "../../assets/3. Daniel/8. The Price of Enough.mp3";
-import FamilyOnTheManifest1 from "../../assets/3. Daniel/9. Family on the Manifest, Part I The Itinerary That Blinked..mp3";
-import FamilyOnTheManifest2 from "../../assets/3. Daniel/10. Family on the Manifest, Part II The Break That Tested the Break..mp3";
+import Introducing from "../../assets/daniel/1. Introducing Myself.mp3";
+import TheDeal from "../../assets/daniel/2. The deal that nearly broke me..mp3";
+import Conference from "../../assets/daniel/3. The Conference in Munich.mp3";
+import AFailure from "../../assets/daniel/4. A Failure with a Silver Lining.mp3";
+import TheBridge from "../../assets/daniel/5. The Bridge at Low Tide.mp3";
+import Night from "../../assets/daniel/6. Night of the Phantom Pallets.mp3";
+import FamilyReport from "../../assets/daniel/7. Family Weather Report.mp3";
+import ThePrice from "../../assets/daniel/8. The Price of Enough.mp3";
+import FamilyOnTheManifest1 from "../../assets/daniel/9. Family on the Manifest, Part I The Itinerary That Blinked..mp3";
+import FamilyOnTheManifest2 from "../../assets/daniel/10. Family on the Manifest, Part II The Break That Tested the Break..mp3";
 
 import { AudioTrack } from "../../types";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 1: Introducing Myself
 // ─────────────────────────────────────────────────────────────
-const q1_1fast = "/assets/3. Daniel/quiz/1. introducing myself/q1-fast.mp3";
-const q1_1slow = "/assets/3. Daniel/quiz/1. introducing myself/q1-slow.mp3";
-const q1_2fast = "/assets/3. Daniel/quiz/1. introducing myself/q2-fast.mp3";
-const q1_2slow = "/assets/3. Daniel/quiz/1. introducing myself/q2-slow.mp3";
-const q1_3fast = "/assets/3. Daniel/quiz/1. introducing myself/q3-fast.mp3";
-const q1_3slow = "/assets/3. Daniel/quiz/1. introducing myself/q3-slow.mp3";
-const q1_4fast = "/assets/3. Daniel/quiz/1. introducing myself/q4-fast.mp3";
-const q1_4slow = "/assets/3. Daniel/quiz/1. introducing myself/q4-slow.mp3";
-const q1_5fast = "/assets/3. Daniel/quiz/1. introducing myself/q5-fast.mp3";
-const q1_5slow = "/assets/3. Daniel/quiz/1. introducing myself/q5-slow.mp3";
+const q1_1fast = "/assets/daniel/quiz/1. introducing myself/q1-fast.mp3";
+const q1_1slow = "/assets/daniel/quiz/1. introducing myself/q1-slow.mp3";
+const q1_2fast = "/assets/daniel/quiz/1. introducing myself/q2-fast.mp3";
+const q1_2slow = "/assets/daniel/quiz/1. introducing myself/q2-slow.mp3";
+const q1_3fast = "/assets/daniel/quiz/1. introducing myself/q3-fast.mp3";
+const q1_3slow = "/assets/daniel/quiz/1. introducing myself/q3-slow.mp3";
+const q1_4fast = "/assets/daniel/quiz/1. introducing myself/q4-fast.mp3";
+const q1_4slow = "/assets/daniel/quiz/1. introducing myself/q4-slow.mp3";
+const q1_5fast = "/assets/daniel/quiz/1. introducing myself/q5-fast.mp3";
+const q1_5slow = "/assets/daniel/quiz/1. introducing myself/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 2: The Deal That Nearly Broke Me
 // ─────────────────────────────────────────────────────────────
 const q2_1fast =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q1-fast.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q1-fast.mp3";
 const q2_1slow =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q1-slow.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q1-slow.mp3";
 const q2_2fast =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q2-fast.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q2-fast.mp3";
 const q2_2slow =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q2-slow.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q2-slow.mp3";
 const q2_3fast =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q3-fast.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q3-fast.mp3";
 const q2_3slow =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q3-slow.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q3-slow.mp3";
 const q2_4fast =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q4-fast.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q4-fast.mp3";
 const q2_4slow =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q4-slow.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q4-slow.mp3";
 const q2_5fast =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q5-fast.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q5-fast.mp3";
 const q2_5slow =
-  "/assets/3. Daniel/quiz/2. the deal that nearly broke me/q5-slow.mp3";
+  "/assets/daniel/quiz/2. the deal that nearly broke me/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 3: The Conference in Munich
 // ─────────────────────────────────────────────────────────────
 const q3_1fast =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q1-fast.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q1-fast.mp3";
 const q3_1slow =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q1-slow.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q1-slow.mp3";
 const q3_2fast =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q2-fast.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q2-fast.mp3";
 const q3_2slow =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q2-slow.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q2-slow.mp3";
 const q3_3fast =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q3-fast.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q3-fast.mp3";
 const q3_3slow =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q3-slow.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q3-slow.mp3";
 const q3_4fast =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q4-fast.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q4-fast.mp3";
 const q3_4slow =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q4-slow.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q4-slow.mp3";
 const q3_5fast =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q5-fast.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q5-fast.mp3";
 const q3_5slow =
-  "/assets/3. Daniel/quiz/3. the conference in munich/q5-slow.mp3";
+  "/assets/daniel/quiz/3. the conference in munich/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 4: A Failure with a Silver Lining
 // ─────────────────────────────────────────────────────────────
 const q4_1fast =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q1-fast.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q1-fast.mp3";
 const q4_1slow =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q1-slow.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q1-slow.mp3";
 const q4_2fast =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q2-fast.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q2-fast.mp3";
 const q4_2slow =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q2-slow.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q2-slow.mp3";
 const q4_3fast =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q3-fast.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q3-fast.mp3";
 const q4_3slow =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q3-slow.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q3-slow.mp3";
 const q4_4fast =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q4-fast.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q4-fast.mp3";
 const q4_4slow =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q4-slow.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q4-slow.mp3";
 const q4_5fast =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q5-fast.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q5-fast.mp3";
 const q4_5slow =
-  "/assets/3. Daniel/quiz/4. a failure with a silver lining/q5-slow.mp3";
+  "/assets/daniel/quiz/4. a failure with a silver lining/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 5: The Bridge at Low Tide
 // ─────────────────────────────────────────────────────────────
-const q5_1fast = "/assets/3. Daniel/quiz/5. the bridge at low tide/q1-fast.mp3";
-const q5_1slow = "/assets/3. Daniel/quiz/5. the bridge at low tide/q1-slow.mp3";
-const q5_2fast = "/assets/3. Daniel/quiz/5. the bridge at low tide/q2-fast.mp3";
-const q5_2slow = "/assets/3. Daniel/quiz/5. the bridge at low tide/q2-slow.mp3";
-const q5_3fast = "/assets/3. Daniel/quiz/5. the bridge at low tide/q3-fast.mp3";
-const q5_3slow = "/assets/3. Daniel/quiz/5. the bridge at low tide/q3-slow.mp3";
-const q5_4fast = "/assets/3. Daniel/quiz/5. the bridge at low tide/q4-fast.mp3";
-const q5_4slow = "/assets/3. Daniel/quiz/5. the bridge at low tide/q4-slow.mp3";
-const q5_5fast = "/assets/3. Daniel/quiz/5. the bridge at low tide/q5-fast.mp3";
-const q5_5slow = "/assets/3. Daniel/quiz/5. the bridge at low tide/q5-slow.mp3";
+const q5_1fast = "/assets/daniel/quiz/5. the bridge at low tide/q1-fast.mp3";
+const q5_1slow = "/assets/daniel/quiz/5. the bridge at low tide/q1-slow.mp3";
+const q5_2fast = "/assets/daniel/quiz/5. the bridge at low tide/q2-fast.mp3";
+const q5_2slow = "/assets/daniel/quiz/5. the bridge at low tide/q2-slow.mp3";
+const q5_3fast = "/assets/daniel/quiz/5. the bridge at low tide/q3-fast.mp3";
+const q5_3slow = "/assets/daniel/quiz/5. the bridge at low tide/q3-slow.mp3";
+const q5_4fast = "/assets/daniel/quiz/5. the bridge at low tide/q4-fast.mp3";
+const q5_4slow = "/assets/daniel/quiz/5. the bridge at low tide/q4-slow.mp3";
+const q5_5fast = "/assets/daniel/quiz/5. the bridge at low tide/q5-fast.mp3";
+const q5_5slow = "/assets/daniel/quiz/5. the bridge at low tide/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 6: Night of the Phantom Pallets
 // ─────────────────────────────────────────────────────────────
 const q6_1fast =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q1-fast.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q1-fast.mp3";
 const q6_1slow =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q1-slow.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q1-slow.mp3";
 const q6_2fast =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q2-fast.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q2-fast.mp3";
 const q6_2slow =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q2-slow.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q2-slow.mp3";
 const q6_3fast =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q3-fast.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q3-fast.mp3";
 const q6_3slow =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q3-slow.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q3-slow.mp3";
 const q6_4fast =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q4-fast.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q4-fast.mp3";
 const q6_4slow =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q4-slow.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q4-slow.mp3";
 const q6_5fast =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q5-fast.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q5-fast.mp3";
 const q6_5slow =
-  "/assets/3. Daniel/quiz/6. night of the phantom pallets/q5-slow.mp3";
+  "/assets/daniel/quiz/6. night of the phantom pallets/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 7: Family Weather Report
 // ─────────────────────────────────────────────────────────────
-const q7_1fast = "/assets/3. Daniel/quiz/7. family weather report/q1-fast.mp3";
-const q7_1slow = "/assets/3. Daniel/quiz/7. family weather report/q1-slow.mp3";
-const q7_2fast = "/assets/3. Daniel/quiz/7. family weather report/q2-fast.mp3";
-const q7_2slow = "/assets/3. Daniel/quiz/7. family weather report/q2-slow.mp3";
-const q7_3fast = "/assets/3. Daniel/quiz/7. family weather report/q3-fast.mp3";
-const q7_3slow = "/assets/3. Daniel/quiz/7. family weather report/q3-slow.mp3";
-const q7_4fast = "/assets/3. Daniel/quiz/7. family weather report/q4-fast.mp3";
-const q7_4slow = "/assets/3. Daniel/quiz/7. family weather report/q4-slow.mp3";
-const q7_5fast = "/assets/3. Daniel/quiz/7. family weather report/q5-fast.mp3";
-const q7_5slow = "/assets/3. Daniel/quiz/7. family weather report/q5-slow.mp3";
+const q7_1fast = "/assets/daniel/quiz/7. family weather report/q1-fast.mp3";
+const q7_1slow = "/assets/daniel/quiz/7. family weather report/q1-slow.mp3";
+const q7_2fast = "/assets/daniel/quiz/7. family weather report/q2-fast.mp3";
+const q7_2slow = "/assets/daniel/quiz/7. family weather report/q2-slow.mp3";
+const q7_3fast = "/assets/daniel/quiz/7. family weather report/q3-fast.mp3";
+const q7_3slow = "/assets/daniel/quiz/7. family weather report/q3-slow.mp3";
+const q7_4fast = "/assets/daniel/quiz/7. family weather report/q4-fast.mp3";
+const q7_4slow = "/assets/daniel/quiz/7. family weather report/q4-slow.mp3";
+const q7_5fast = "/assets/daniel/quiz/7. family weather report/q5-fast.mp3";
+const q7_5slow = "/assets/daniel/quiz/7. family weather report/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 8: The Price of Enough
 // ─────────────────────────────────────────────────────────────
-const q8_1fast = "/assets/3. Daniel/quiz/8. the price of enough/q1-fast.mp3";
-const q8_1slow = "/assets/3. Daniel/quiz/8. the price of enough/q1-slow.mp3";
-const q8_2fast = "/assets/3. Daniel/quiz/8. the price of enough/q2-fast.mp3";
-const q8_2slow = "/assets/3. Daniel/quiz/8. the price of enough/q2-slow.mp3";
-const q8_3fast = "/assets/3. Daniel/quiz/8. the price of enough/q3-fast.mp3";
-const q8_3slow = "/assets/3. Daniel/quiz/8. the price of enough/q3-slow.mp3";
-const q8_4fast = "/assets/3. Daniel/quiz/8. the price of enough/q4-fast.mp3";
-const q8_4slow = "/assets/3. Daniel/quiz/8. the price of enough/q4-slow.mp3";
-const q8_5fast = "/assets/3. Daniel/quiz/8. the price of enough/q5-fast.mp3";
-const q8_5slow = "/assets/3. Daniel/quiz/8. the price of enough/q5-slow.mp3";
+const q8_1fast = "/assets/daniel/quiz/8. the price of enough/q1-fast.mp3";
+const q8_1slow = "/assets/daniel/quiz/8. the price of enough/q1-slow.mp3";
+const q8_2fast = "/assets/daniel/quiz/8. the price of enough/q2-fast.mp3";
+const q8_2slow = "/assets/daniel/quiz/8. the price of enough/q2-slow.mp3";
+const q8_3fast = "/assets/daniel/quiz/8. the price of enough/q3-fast.mp3";
+const q8_3slow = "/assets/daniel/quiz/8. the price of enough/q3-slow.mp3";
+const q8_4fast = "/assets/daniel/quiz/8. the price of enough/q4-fast.mp3";
+const q8_4slow = "/assets/daniel/quiz/8. the price of enough/q4-slow.mp3";
+const q8_5fast = "/assets/daniel/quiz/8. the price of enough/q5-fast.mp3";
+const q8_5slow = "/assets/daniel/quiz/8. the price of enough/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 9: Family on the Manifest, Part I
 // ─────────────────────────────────────────────────────────────
 const q9_1fast =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q1-fast.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q1-fast.mp3";
 const q9_1slow =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q1-slow.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q1-slow.mp3";
 const q9_2fast =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q2-fast.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q2-fast.mp3";
 const q9_2slow =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q2-slow.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q2-slow.mp3";
 const q9_3fast =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q3-fast.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q3-fast.mp3";
 const q9_3slow =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q3-slow.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q3-slow.mp3";
 const q9_4fast =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q4-fast.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q4-fast.mp3";
 const q9_4slow =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q4-slow.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q4-slow.mp3";
 const q9_5fast =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q5-fast.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q5-fast.mp3";
 const q9_5slow =
-  "/assets/3. Daniel/quiz/9. family on the manifest part i/q5-slow.mp3";
+  "/assets/daniel/quiz/9. family on the manifest part i/q5-slow.mp3";
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 10: Family on the Manifest, Part II
 // ─────────────────────────────────────────────────────────────
 const q10_1fast =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q1-fast.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q1-fast.mp3";
 const q10_1slow =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q1-slow.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q1-slow.mp3";
 const q10_2fast =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q2-fast.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q2-fast.mp3";
 const q10_2slow =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q2-slow.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q2-slow.mp3";
 const q10_3fast =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q3-fast.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q3-fast.mp3";
 const q10_3slow =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q3-slow.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q3-slow.mp3";
 const q10_4fast =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q4-fast.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q4-fast.mp3";
 const q10_4slow =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q4-slow.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q4-slow.mp3";
 const q10_5fast =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q5-fast.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q5-fast.mp3";
 const q10_5slow =
-  "/assets/3. Daniel/quiz/10. family on the manifest part ii/q5-slow.mp3";
+  "/assets/daniel/quiz/10. family on the manifest part ii/q5-slow.mp3";
 
 export const hardAudioData: AudioTrack[] = [
   {
