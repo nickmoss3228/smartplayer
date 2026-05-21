@@ -1,9 +1,11 @@
+// routes/user.routes.js
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
-import { getDashboard } from "../controllers/user.controller.js";
+import { getProfile, updateProfile } from "../controllers/user.controller.js";
 
 const router = Router();
 
-router.get("/dashboard", authenticateToken, getDashboard);
+router.get("/user/profile", authenticateToken, getProfile);
+router.patch("/user/profile", authenticateToken, updateProfile);
+
 export default router;
-    

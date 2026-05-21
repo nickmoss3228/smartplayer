@@ -1,3 +1,4 @@
+// models/User.js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
@@ -25,30 +26,28 @@ const userSchema = new mongoose.Schema({
     required: true,
     minLength: 6,
   },
-  isEmailVerified: {
-    type: Boolean,
-    default: false,
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationToken: { type: String, default: null },
+  emailVerificationExpires: { type: Date, default: null },
+  createdAt: { type: Date, default: Date.now },
+  passwordResetToken: { type: String, default: undefined },
+  passwordResetExpires: { type: Date, default: undefined },
+  avatar: { type: String, default: "cat" },
+  nickname: { type: String, default: null, trim: true, maxLength: 30 },
+
+  // ── NEW ──
+  streak: {
+    current: { type: Number, default: 0 },
+    longest: { type: Number, default: 0 },
+    lastSubmittedDate: { type: String, default: null }, // "YYYY-MM-DD"
   },
-  emailVerificationToken: {
-    type: String,
-    default: null,
+  achievements: {
+    listeningTime:     { type: String, default: null },
+    questionsAnswered: { type: String, default: null },
+    studyStreak:       { type: String, default: null },
+    storiesListened:   { type: String, default: null },
   },
-  emailVerificationExpires: {
-    type: Date,
-    default: null,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  passwordResetToken: {
-    type: String,
-    default: undefined,
-  },
-  passwordResetExpires: {
-    type: Date,
-    default: undefined,
-  },
+  totalListeningSeconds: { type: Number, default: 0 },
 });
 
 export const User = mongoose.model("User", userSchema);

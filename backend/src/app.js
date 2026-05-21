@@ -1,7 +1,6 @@
 import express from "express"; 
 import { corsMiddleware } from "./middleware/cors.js";
 import routes from "./routes/index.js";
-import { User } from "./models/User.js";
 
 const app = express();
 
@@ -22,8 +21,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/signup, /api/login, /api/logout, /api/validate-token',
-      user: '/api/dashboard',
       progress: '/api/progress/:difficulty, /api/progress/complete, /api/progress/overview',
+      user: '/api/user/profile',
       password: '/api/request-reset, /api/reset'
     }
   });

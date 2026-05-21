@@ -1,16 +1,22 @@
+// routes/progress.routes.js
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
 import {
   getProgress,
   completeLevel,
   getOverview,
+  getStoryProgress,
+  syncListeningTime,
+  getAchievements,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
 
-router.post("/progress/complete", authenticateToken, completeLevel);
-router.get("/progress/overview", authenticateToken, getOverview);
-router.get("/progress/:difficulty", authenticateToken, getProgress);
-// this parametric path piece of shit, as it turned out - we have to put these :fuckshit parametric paths at the end of the list of paths.
+router.get("/progress/overview",                   authenticateToken, getOverview);
+router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);
+router.get("/progress/achievements",               authenticateToken, getAchievements);
+router.post("/progress/complete",                  authenticateToken, completeLevel);
+router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
+router.get("/progress/:difficulty",                authenticateToken, getProgress);
 
 export default router;
