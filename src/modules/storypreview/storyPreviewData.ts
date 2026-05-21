@@ -11,17 +11,17 @@ export interface StoryPreview {
   topics: string[];
   tip: string;
 }
-
-import leo1 from "../../assets/leo/preview/preview1.png"
-import leo2 from "../../assets/leo/preview/preview2.png"
-import leo3 from "../../assets/leo/preview/preview3.png"
-import leo4 from "../../assets/leo/preview/preview4.png"
-import leo5 from "../../assets/leo/preview/preview5.png"
-import leo6 from "../../assets/leo/preview/preview6.png"
-import leo7 from "../../assets/leo/preview/preview7.png"
-import leo8 from "../../assets/leo/preview/preview8.png"
-import leo9 from "../../assets/leo/preview/preview9.png"
-import leo10 from "../../assets/leo/preview/preview10.png"
+ 
+const leo1 =  "../../../assets/leo/preview/preview1.png"
+const leo2 =  "../../../assets/leo/preview/preview2.png"
+const leo3 =  "../../../assets/leo/preview/preview3.png"
+const leo4 =  "../../../assets/leo/preview/preview4.png"
+const leo5 =  "../../../assets/leo/preview/preview5.png"
+const leo6 =  "../../../assets/leo/preview/preview6.png"
+const leo7 =  "../../../assets/leo/preview/preview7.png"
+const leo8 =  "../../../assets/leo/preview/preview8.png"
+const leo9 =  "../../../assets/leo/preview/preview9.png"
+const leo10 = "../../../assets/leo/preview/preview10.png"
 
 // import { getOptimizedImageUrl } from "./imageUrl.ts";
 
