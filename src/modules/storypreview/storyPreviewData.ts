@@ -12,16 +12,16 @@ export interface StoryPreview {
   tip: string;
 }
 
-import leo1 from "../../assets/1. Leo/preview/preview1.png"
-import leo2 from "../../assets/1. Leo/preview/preview2.png"
-import leo3 from "../../assets/1. Leo/preview/preview3.png"
-import leo4 from "../../assets/1. Leo/preview/preview4.png"
-import leo5 from "../../assets/1. Leo/preview/preview5.png"
-import leo6 from "../../assets/1. Leo/preview/preview6.png"
-import leo7 from "../../assets/1. Leo/preview/preview7.png"
-import leo8 from "../../assets/1. Leo/preview/preview8.png"
-import leo9 from "../../assets/1. Leo/preview/preview9.png"
-import leo10 from "../../assets/1. Leo/preview/preview10.png"
+import leo1 from "../../assets/leo/preview/preview1.png"
+import leo2 from "../../assets/leo/preview/preview2.png"
+import leo3 from "../../assets/leo/preview/preview3.png"
+import leo4 from "../../assets/leo/preview/preview4.png"
+import leo5 from "../../assets/leo/preview/preview5.png"
+import leo6 from "../../assets/leo/preview/preview6.png"
+import leo7 from "../../assets/leo/preview/preview7.png"
+import leo8 from "../../assets/leo/preview/preview8.png"
+import leo9 from "../../assets/leo/preview/preview9.png"
+import leo10 from "../../assets/leo/preview/preview10.png"
 
 // import { getOptimizedImageUrl } from "./imageUrl.ts";
 
