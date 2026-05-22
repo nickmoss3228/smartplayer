@@ -23,10 +23,6 @@ export interface StoryPreview {
   tip: string;
 }
 
-
-
-// import { getOptimizedImageUrl } from "./imageUrl.ts";
-
 export const storyPreviewData: Record<string, StoryPreview> = {
   "easy-1": {
     id: "1",
