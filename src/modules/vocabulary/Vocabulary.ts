@@ -46,9 +46,9 @@ export const trackFolderMap: Record<string, Record<string, string>> = {
 
 // Maps each difficulty to its top-level story folder
 export const storyFolderMap: Record<string, string> = {
-  easy: "1. Leo",
-  medium: "2. Maya",
-  hard: "3. Daniel",
+  easy: "leo",
+  medium: "maya",
+  hard: "daniel",
 };
 
 export const trackVocabulary: Record<string, Record<string, VocabEntry[]>> = {
