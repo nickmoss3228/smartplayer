@@ -1,6 +1,6 @@
 import React from "react";
-import { IoPause, IoPlay, IoChevronBack, IoChevronForward } from "react-icons/io5"; 
-import { MdReplay } from "react-icons/md";
+import {IoPlay, IoChevronBack, IoChevronForward } from "react-icons/io5"; 
+// import { MdReplay } from "react-icons/md";
 // import VoiceSwitcher from "../VoiceSwitcher/VoiceSwitcher";
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
@@ -32,9 +32,9 @@ interface PlayerControlsProps {
 export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
   ({
     isPlaying,
-    isControlledMode,
+    // isControlledMode,
     onPlayPause,
-    onToggleControlledMode,
+    // onToggleControlledMode,
     onToggleEnhancedMode,
     repeatCount,
     onRepeatCountChange,
