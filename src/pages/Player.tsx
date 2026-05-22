@@ -161,7 +161,7 @@ const handleQuizComplete = useCallback(
   );
   
   return (
-    <div className={`min-h-screen pt-16 bg-gradient-to-br ${theme.background}`}>
+    <div className={`min-h-screen pt-13 bg-gradient-to-br ${theme.background}`}>
       <div className="flex justify-center items-center align-center ">
         <div className="relative w-full max-w-[1100px] md:mt-10 mx-auto my-0.5 md:p-10 bg-white/15 backdrop-blur-sm rounded-2xl text-center animate-fade-in">
 
@@ -177,17 +177,17 @@ const handleQuizComplete = useCallback(
           </button>
 
           {/* Track header */}
-          <div className="mb-[10px] min-h-[60px] items-center flex flex-col justify-center rounded-lg">
-            <h3 className="text-sm text-black">
+          <div className="min-h-[60px] items-center flex flex-col justify-center rounded-lg">
+            {/* <h3 className="text-sm text-black">
               Level {level} –{" "}
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} */}
               {/* {storySlug && (
                 <span className="ml-1 text-black">
                   · {storySlug.charAt(0).toUpperCase() + storySlug.slice(1)}'s Story
                 </span>
               )} */}
-            </h3>
-            <h1 className="text-2xl -mt-1.5 text-black font-bold">{audioTrack.title}</h1>
+            {/* </h3> */}
+            <h1 className="text-xl -mt-1.5 text-black font-bold">{audioTrack.title}</h1>
           </div>
 
           {/* Main content */}

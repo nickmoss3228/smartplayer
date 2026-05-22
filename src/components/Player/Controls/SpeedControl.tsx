@@ -42,7 +42,7 @@ export const SpeedControl: React.FC<SpeedControlProps> = React.memo(
                 }`}
               onClick={() => onSpeedChange(speed)}
             >
-              x{speed}
+              {speed}
             </button>
           ))}
         </div>

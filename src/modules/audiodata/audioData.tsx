@@ -1,14 +1,14 @@
 //Easy level Audios
-import Leoslife from "../../assets/leo/altLeo/1/1. Meet Leo.mp3";
-import Leosmornings from "../../assets/leo/altLeo/2/2. Leo's Mornings.mp3";
-import Leosfavoritefood from "../../assets/leo/altLeo/3/3. Leo's Favorite Food.mp3";
-import Leosfamily from "../../assets/leo/altLeo/4/4. Leo's family.mp3";
-import Leosclothes from "../../assets/leo/altLeo/5/5. Leo's Clothes.mp3";
-import Adayatthebeach from "../../assets/leo/altLeo/6/6. A day at the beach.mp3";
-import Acountry from "../../assets/leo/altLeo/7/7. A country Leo wants to visit.mp3";
-import Leoshobbies from "../../assets/leo/altLeo/8/8. Leo's Hobbies.mp3";
-import Meetingafriend from "../../assets/leo/altLeo/9/9. Meeting A Friend.mp3";
-import TheLostKitten from "../../assets/leo/altLeo/10/10. The Lost Kitten.mp3";
+const Leoslife = "/assets/leo/1. Meet Leo.mp3";
+const Leosmornings = "/assets/leo/2. Leo's Mornings.mp3";
+const Leosfavoritefood = "/assets/leo/3. Leo's Favorite Food.mp3";
+const Leosfamily = "/assets/leo/4. Leo's family.mp3";
+const Leosclothes = "/assets/leo/5. Leo's Clothes.mp3";
+const Adayatthebeach = "/assets/leo/6. A day at the beach.mp3";
+const Acountry = "/assets/leo/7. A country Leo wants to visit.mp3";
+const Leoshobbies = "/assets/leo/8. Leo's Hobbies.mp3";
+const Meetingafriend = "/assets/leo/9. Meeting A Friend.mp3";
+const TheLostKitten = "/assets/leo/10. The Lost Kitten.mp3";
 
 const q1_1fast = "/assets/leo/quiz/1.leo's life/q1-fast.mp3";
 const q1_1slow = "/assets/leo/quiz/1.leo's life/q1-slow.mp3";

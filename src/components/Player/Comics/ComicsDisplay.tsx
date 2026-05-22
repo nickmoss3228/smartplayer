@@ -1,32 +1,61 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { storyFolderMap } from "../../../modules/vocabulary/Vocabulary";
+// import { storyFolderMap } from "../../../modules/vocabulary/Vocabulary";
 
-// ─── Glob ALL characters' comics in one static call ──────────────────────────
-const allComicModules = import.meta.glob<{ default: string }>(
-  "../../../assets/*/comics/*.{jpg,jpeg,png,webp,JPG,PNG}",
-  { eager: true }
-);
+// Maps difficulty → character folder name in public/assets/
+const characterFolderMap: Record<string, string> = {
+  easy:   "leo",
+  medium: "maya",
+  hard:   "hard", // rename to match your actual folder name
+};
 
-// ─── Returns sorted comic URLs for a given difficulty ─────────────────────────
+const comicManifest: Record<string, string[]> = {
+  easy: [
+    "1. Meet Leo",
+    "2. Leo's mornings",
+    "3. Leo's Favorite Food",
+    "4. Leo's family",
+    "5. Leo's clothes",
+    "6. A Day at the Beach",
+    "7. A Country Leo Wants to Visit",
+    "8. Leo's hobbies",
+    "9. Meeting a friend",
+    "10. The Lost Kitten",
+  ],
+  medium: [
+    "1. Meet Maya",
+    "2. A trip to Kyoto",
+    "3. Trying street food in Bangkok",
+    "4. A missed connection",
+    "5. Family Across Borders",
+    "6. Budgeting for adventure",
+    "7. Discussing environmental concerns",
+    "8. An unexpected interview",
+    "9. The Mountain Festival - Part 1",
+    "10. The Mountain Festival - Part 2",
+  ],
+  hard: [
+    "1. Introducing Myself",
+    "2. The deal that nearly broke me",
+    "3. The Conference in Munich",
+    "4. A Failure with a Silver Lining",
+    "5. The Bridge at Low Tide",
+    "6. Night of the Phantom Pallets",
+    "7. Family Weather Report",
+    "8. The Price of Enough",
+    "9. Family on the Manifest, Part I The Itinerary That Blinked",
+    "10. Family on the Manifest, Part II The Break That Tested the Break",
+  ],
+};
+
+// Builds full public URLs from the manifest
 export function getOrderedComics(difficulty: string): string[] {
-  console.log("[Comics] difficulty received:", difficulty);
-  console.log("[Comics] all glob keys:", Object.keys(allComicModules));
-  const characterFolder = storyFolderMap[difficulty];
-  console.log("[Comics] characterFolder:", characterFolder);
-  if (!characterFolder) return [];
-
-  return Object.entries(allComicModules)
-    .filter(([path]) => path.includes(`/${characterFolder}/comics/`))
-    .sort(([a], [b]) => {
-      const n = (p: string) =>
-        parseInt(p.split("/").pop()?.match(/^(\d+)/)?.[1] ?? "0", 10);
-      return n(a) - n(b);
-    })
-    .map(([, mod]) => mod.default);
+  const folder = characterFolderMap[difficulty];
+  const files  = comicManifest[difficulty];
+  if (!folder || !files) return [];
+  return files.map(name => `/assets/${folder}/comics/${name}.jpg`);
 }
 
-// Backward-compat export (easy / Leo)
 export const orderedComicsEasy: string[] = getOrderedComics("easy");
 
 // ─── Zoom helpers (module-level — pure, no closures) ─────────────────────────

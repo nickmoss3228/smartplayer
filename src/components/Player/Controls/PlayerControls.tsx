@@ -73,7 +73,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       const idleBtn = "bg-black/90 text-white/90 border-[#ddd]";
 
       return (
-        <div className="flex flex-col w-full gap-4">
+        <div className="flex flex-col w-full gap-3">
 
           {/* Row A — Prev  ·  Play/Pause  ·  Next */}
           <div className="flex items-center justify-center gap-6">
@@ -100,9 +100,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
-                <IoPause className="text-white w-14 h-14" />
+                <IoPlay className="text-white w-10 h-10" />
               ) : (
-                <IoPlay className="text-white w-14 h-14" />
+                <IoPlay className="text-white w-10 h-10" />
               )}
             </button>
 
@@ -149,7 +149,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       ${playbackRate === speed ? activeBtn : idleBtn}`}
     onClick={() => onSpeedChange(speed)}
   >
-    x{speed}
+    {speed}
   </button>
 ))}
               </div>
@@ -230,13 +230,13 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   title="Play / Pause"
                 >
                   {isPlaying
-                    ? <IoPause className="text-white w-[50px] h-[50px]" />
-                    : <IoPlay  className="text-white w-[50px] h-[50px]" />}
+                    ? <IoPlay className="text-white w-[45px] h-[45px]" />
+                    : <IoPlay  className="text-white w-[45px] h-[45px]" />}
                 </button>
                 <span className={labelClass}>{isPlaying ? "Pause" : "Play"}</span>
               </div>
 
-              <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+              {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
                 <button
                   className={`p-2 border-2 rounded-full cursor-pointer
                     transition-all duration-200 active:scale-95 flex items-center justify-center
@@ -248,11 +248,11 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   title={isControlledMode
                     ? "Controlled mode ON — stops after each segment"
                     : "Controlled mode OFF — plays continuously"}
-                >
-                  <MdReplay className="text-white w-[30px] h-[30px]" />
-                </button>
-                <span className={labelClass}>Step</span>
-              </div>
+                > */}
+                  {/* <MdReplay className="text-white w-[30px] h-[30px]" /> */}
+                {/* </button> */}
+                {/* <span className={labelClass}>Step</span> */}
+              {/* </div> */}
             </div>
           </div>
 
