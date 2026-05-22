@@ -1,14 +1,14 @@
 // storyPreviewData.tsx
-const leo1 = "/assets/leo/preview/preview1.png"
-const leo2 = "/assets/leo/preview/preview2.png"
-const leo3 = "/assets/leo/preview/preview3.png"
-const leo4 = "/assets/leo/preview/preview4.png"
-const leo5 = "/assets/leo/preview/preview5.png"
-const leo6 = "/assets/leo/preview/preview6.png"
-const leo7 = "/assets/leo/preview/preview7.png"
-const leo8 = "/assets/leo/preview/preview8.png"
-const leo9 = "/assets/leo/preview/preview9.png"
-const leo10 = "/assets/leo/preview/preview10.png"
+const leo1 = "/assets/leo/preview/preview1.jpg"
+const leo2 = "/assets/leo/preview/preview2.jpg"
+const leo3 = "/assets/leo/preview/preview3.jpg"
+const leo4 = "/assets/leo/preview/preview4.jpg"
+const leo5 = "/assets/leo/preview/preview5.jpg"
+const leo6 = "/assets/leo/preview/preview6.jpg"
+const leo7 = "/assets/leo/preview/preview7.jpg"
+const leo8 = "/assets/leo/preview/preview8.jpg"
+const leo9 = "/assets/leo/preview/preview9.jpg"
+const leo10 = "/assets/leo/preview/preview10.jpg"
 
 export interface StoryPreview {
   id: string;
