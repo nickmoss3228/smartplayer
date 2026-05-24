@@ -86,20 +86,32 @@ const Player = React.memo(() => {
     [difficulty]
   );
 
+  
+
   const resolvedStorySlug = storySlug ?? (
   difficulty === "easy" ? "leo" :
   difficulty === "medium" ? "maya" :
   difficulty === "hard" ? "daniel" : "leo"
 );
 
+  // useEffect(() => {
+  //   const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
+  //   if (nextTrack) {
+  //     const audio = new Audio();
+  //     audio.preload = "auto";
+  //     audio.src = nextTrack.audio;
+  //   }
+  // }, [level, audioTracks]);
+
   useEffect(() => {
-    const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
-    if (nextTrack) {
-      const audio = new Audio();
-      audio.preload = "auto";
-      audio.src = nextTrack.audio;
-    }
-  }, [level, audioTracks]);
+  const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
+  if (!nextTrack) return;
+
+  // Warm up the CDN/storage edge cache with a HEAD request
+  axios.head(nextTrack.audio).catch(() => {
+    // Non-critical: silently ignore if the next track doesn't exist yet
+  });
+}, [level, audioTracks]);
 
   const audioTrack = useMemo(
     () => audioTracks.find((track) => track.id === selectedTrackId) || audioTracks[0],
@@ -159,6 +171,10 @@ const handleQuizComplete = useCallback(
   },
   [user, difficulty, level, resolvedStorySlug, isSubmitting, refreshStoryProgress]
   );
+
+  useEffect(() => {
+  console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
+}, [audioTrack]);
   
   return (
     <div className={`min-h-screen pt-13 bg-gradient-to-br ${theme.background}`}>

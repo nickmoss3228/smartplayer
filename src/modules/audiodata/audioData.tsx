@@ -1,14 +1,27 @@
 //Easy level Audios
-const Leoslife = "/assets/leo/1. Meet Leo.mp3";
-const Leosmornings = "/assets/leo/2. Leo's Mornings.mp3";
-const Leosfavoritefood = "/assets/leo/3. Leo's Favorite Food.mp3";
-const Leosfamily = "/assets/leo/4. Leo's family.mp3";
-const Leosclothes = "/assets/leo/5. Leo's Clothes.mp3";
-const Adayatthebeach = "/assets/leo/6. A day at the beach.mp3";
-const Acountry = "/assets/leo/7. A country Leo wants to visit.mp3";
-const Leoshobbies = "/assets/leo/8. Leo's Hobbies.mp3";
-const Meetingafriend = "/assets/leo/9. Meeting A Friend.mp3";
-const TheLostKitten = "/assets/leo/10. The Lost Kitten.mp3";
+// const Leoslife = "/assets/leo/1. Meet Leo.mp3";
+// const Leosmornings = "/assets/leo/2. Leo's Mornings.mp3";
+// const Leosfavoritefood = "/assets/leo/3. Leo's Favorite Food.mp3";
+// const Leosfamily = "/assets/leo/4. Leo's family.mp3";
+// const Leosclothes = "/assets/leo/5. Leo's Clothes.mp3";
+// const Adayatthebeach = "/assets/leo/6. A day at the beach.mp3";
+// const Acountry = "/assets/leo/7. A country Leo wants to visit.mp3";
+// const Leoshobbies = "/assets/leo/8. Leo's Hobbies.mp3";
+// const Meetingafriend = "/assets/leo/9. Meeting A Friend.mp3";
+// const TheLostKitten = "/assets/leo/10. The Lost Kitten.mp3";
+
+const Leoslife         = getStorageUrl("leo/1. Meet Leo.mp3");
+const Leosmornings     = getStorageUrl("leo/2. Leo's Mornings.mp3");
+const Leosfavoritefood = getStorageUrl("leo/3. Leo's Favorite Food.mp3");
+const Leosfamily       = getStorageUrl("leo/4. Leo's family.mp3");
+const Leosclothes      = getStorageUrl("leo/5. Leo's Clothes.mp3");
+const Adayatthebeach   = getStorageUrl("leo/6. A day at the beach.mp3");
+const Acountry         = getStorageUrl("leo/7. A country Leo wants to visit.mp3");
+const Leoshobbies      = getStorageUrl("leo/8. Leo's Hobbies.mp3");
+const Meetingafriend   = getStorageUrl("leo/9. Meeting A Friend.mp3");
+const TheLostKitten    = getStorageUrl("leo/10. The Lost Kitten.mp3");
+
+import { getStorageUrl } from "../../services/yandexStorage";
 
 const q1_1fast = "/assets/leo/quiz/1.leo's life/q1-fast.mp3";
 const q1_1slow = "/assets/leo/quiz/1.leo's life/q1-slow.mp3";
