@@ -12,6 +12,12 @@
     "button3": "How does it work?",
     "account": "Already have an account?"
   },
+  "list" : {
+    "stories": "stories",
+    "title" : "Title",
+    "topic" : "Topic",
+    "progress":"Progress"
+  },
   "levels": {
     "easy": "Easy",
     "medium": "Medium",
@@ -40,6 +46,7 @@
     "overallProgress": "My Progress",
     "completedCount": "",
     "levelLabel": "Level"
+
   },
   "login": {
     "title": "Welcome!",

@@ -10,6 +10,30 @@ const leo8 = "/assets/leo/preview/preview8.jpg"
 const leo9 = "/assets/leo/preview/preview9.jpg"
 const leo10 = "/assets/leo/preview/preview10.jpg"
 
+const maya1 = "/assets/maya/preview/preview1.JPG"
+const maya2 = "/assets/maya/preview/preview2.JPG"
+const maya3 = "/assets/maya/preview/preview3.JPG"
+const maya4 = "/assets/maya/preview/preview4.JPG"
+const maya5 = "/assets/maya/preview/preview5.JPG"
+const maya6 = "/assets/maya/preview/preview6.JPG"
+const maya7 = "/assets/maya/preview/preview7.JPG"
+const maya8 = "/assets/maya/preview/preview8.JPG"
+const maya9 = "/assets/maya/preview/preview9.JPG"
+const maya10 = "/assets/maya/preview/preview10.JPG"
+
+const daniel1 = "/assets/daniel/preview/preview1.JPG"
+const daniel2 = "/assets/daniel/preview/preview2.JPG"
+const daniel3 = "/assets/daniel/preview/preview3.JPG"
+const daniel4 = "/assets/daniel/preview/preview4.JPG"
+const daniel5 = "/assets/daniel/preview/preview5.JPG"
+const daniel6 = "/assets/daniel/preview/preview6.JPG"
+const daniel7 = "/assets/daniel/preview/preview7.JPG"
+const daniel8 = "/assets/daniel/preview/preview8.JPG"
+const daniel9 = "/assets/daniel/preview/preview9.JPG"
+const daniel10 = "/assets/daniel/preview/preview10.JPG"
+
+
+
 export interface StoryPreview {
   id: string;
   title: string;
@@ -221,7 +245,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Meet Maya!",
     emoji: "✈️",
     // Female journalist / New York City energy
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&auto=format&fit=crop",
+    image: maya1,
     difficulty: "Medium",
     duration: "~42 sec",
     description:
@@ -241,7 +265,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "A Trip to Kyoto",
     emoji: "🏯",
     // Kyoto temple / torii gate scene
-    image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800&auto=format&fit=crop",
+    image: maya2,
     difficulty: "Medium",
     duration: "~69 sec",
     description:
@@ -261,7 +285,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Trying Street Food in Bangkok",
     emoji: "🍜",
     // Bangkok street food market at night
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop",
+    image: maya3,
     difficulty: "Medium",
     duration: "~81 sec",
     description:
@@ -281,7 +305,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "A Missed Connection",
     emoji: "🚆",
     // Train station / railway platform
-    image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=800&auto=format&fit=crop",
+    image: maya4,
     difficulty: "Medium",
     duration: "~80 sec",
     description:
@@ -301,7 +325,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Budgeting for Adventure",
     emoji: "💸",
     // Wallet / cash / budget planning on a map
-    image: "https://images.unsplash.com/photo-1554774853-b415df9eeb92?w=800&auto=format&fit=crop",
+    image: maya5,
     difficulty: "Medium",
     duration: "~81 sec",
     description:
@@ -321,7 +345,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Discussing Environmental Concerns",
     emoji: "🌊",
     // Ocean pollution / coastal environment
-    image: "https://images.unsplash.com/photo-1483683804023-6ccbe297ec3a?w=800&auto=format&fit=crop",
+    image: maya6,
     difficulty: "Medium",
     duration: "~73 sec",
     description:
@@ -347,7 +371,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "An Unexpected Interview",
     emoji: "🧵",
     // Moroccan leather craft / tannery
-    image: "https://images.unsplash.com/photo-1548013146-72479768bada?w=800&auto=format&fit=crop",
+    image: maya7,
     difficulty: "Medium",
     duration: "~84 sec",
     description:
@@ -373,7 +397,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Family Across Borders",
     emoji: "🌍",
     // Video call / family staying in touch across distance
-    image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&auto=format&fit=crop",
+    image: maya8,
     difficulty: "Medium",
     duration: "~83 sec",
     description:
@@ -399,7 +423,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Mountain Festival – Part 1",
     emoji: "🏔️",
     // Peruvian highlands / Andean mountains
-    image: "https://images.unsplash.com/photo-1526392060635-9d6019884377?w=800&auto=format&fit=crop",
+    image: maya9,
     difficulty: "Medium",
     duration: "~82 sec",
     description:
@@ -425,7 +449,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Mountain Festival – Part 2",
     emoji: "🌌",
     // Night sky / stars over mountains — ritual atmosphere
-    image: "https://images.unsplash.com/photo-1464852045489-bccb7d17fe39?w=800&auto=format&fit=crop",
+    image: maya10,
     difficulty: "Medium",
     duration: "~101 sec",
     description:
@@ -453,7 +477,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Introducing Myself",
     emoji: "🏢",
     // Confident businessman / office portrait
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&auto=format&fit=crop",
+    image: daniel1,
     difficulty: "Hard",
     duration: "~101 sec",
     description:
@@ -473,7 +497,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Deal That Nearly Broke Me",
     emoji: "📦",
     // Warehouse / logistics / pallets
-    image: "https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&auto=format&fit=crop",
+    image: daniel2,
     difficulty: "Hard",
     duration: "~87 sec",
     description:
@@ -499,7 +523,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Conference in Munich",
     emoji: "🇩🇪",
     // Munich / conference / beer hall
-    image: "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=800&auto=format&fit=crop",
+    image: daniel3,
     difficulty: "Hard",
     duration: "~163 sec",
     description:
@@ -525,7 +549,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "A Failure with a Silver Lining",
     emoji: "🧀",
     // Artisan cheese / refrigerated goods
-    image: "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=800&auto=format&fit=crop",
+    image: daniel4,
     difficulty: "Hard",
     duration: "~120 sec",
     description:
@@ -551,7 +575,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Bridge at Low Tide",
     emoji: "🌉",
     // Narrow stone bridge / English countryside
-    image: "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&auto=format&fit=crop",
+    image: daniel5,
     difficulty: "Hard",
     duration: "~100 sec",
     description:
@@ -577,7 +601,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Night of the Phantom Pallets",
     emoji: "🌙",
     // Dark warehouse at night / night operations
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&auto=format&fit=crop",
+    image: daniel6,
     difficulty: "Hard",
     duration: "~130 sec",
     description:
@@ -603,7 +627,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Family Weather Report",
     emoji: "🏠",
     // Warm family kitchen / home life
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop",
+    image: daniel7,
     difficulty: "Hard",
     duration: "~102 sec",
     description:
@@ -629,7 +653,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "The Price of Enough",
     emoji: "💷",
     // Money / financial reflection / coins and notes
-    image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&auto=format&fit=crop",
+    image: daniel8,
     difficulty: "Hard",
     duration: "~96 sec",
     description:
@@ -655,7 +679,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Family on the Manifest – Part I",
     emoji: "✈️",
     // Airport / family travel / Bilbao or Spain cityscape
-    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&auto=format&fit=crop",
+    image: daniel9,
     difficulty: "Hard",
     duration: "~118 sec",
     description:
@@ -681,7 +705,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     title: "Family on the Manifest – Part II",
     emoji: "⛵",
     // San Sebastián bay / La Concha beach / dramatic sea
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop",
+    image: daniel10,
     difficulty: "Hard",
     duration: "~197 sec",
     description:

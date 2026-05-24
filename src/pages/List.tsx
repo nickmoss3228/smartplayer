@@ -170,7 +170,7 @@ const List = () => {
         {t(`levelProgress.${diff}Title`)}
       </div>
       <p className="text-gray-400 text-sm mt-1">
-        {sortedFilteredStories.length} / {stories.length} stories
+              {sortedFilteredStories.length} / {stories.length} {t(`list.stories`)}
       </p>
     </div>
 
@@ -212,14 +212,16 @@ const List = () => {
               className="flex items-center text-left hover:text-gray-600 transition-colors"
             >
               <IoBookOutline size={13} className="mr-1.5" />
-              Title
+              {/* Title */}
+              {t(`list.title`)}
               <SortIcon col="title" />
             </button>
             <button
               onClick={() => handleSort('topic')}
               className="flex items-center hover:text-gray-600 transition-colors"
             >
-              Topic
+              {/* Topic */}
+                {t(`list.topic`)}
               <SortIcon col="topic" />
             </button>
             <button
@@ -233,7 +235,8 @@ const List = () => {
               onClick={() => handleSort('progress')}
               className="flex items-center hover:text-gray-600 transition-colors"
             >
-              Progress
+              {/* Progress */}
+                {t(`list.progress`)}
               <SortIcon col="progress" />
             </button>
           </div>

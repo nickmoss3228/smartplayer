@@ -567,7 +567,7 @@ export const trackVocabulary: Record<string, Record<string, VocabEntry[]>> = {
       },
       { word: "опечатка", definition: "1", audioKey: "typo" },
       {
-        word: "дублирующие записи",
+        word: "продублированные записи",
         definition: "1",
         audioKey: "duplicate entries",
       },
@@ -716,7 +716,7 @@ export const trackVocabulary: Record<string, Record<string, VocabEntry[]>> = {
         audioKey: "trust but verify",
       },
       { word: "перенаправить", definition: "1", audioKey: "reroute" },
-      { word: "вестибюль", definition: "1", audioKey: "vestibule" },
+      // { word: "вестибюль", definition: "1", audioKey: "vestibule" },
       { word: "неохотно", definition: "1", audioKey: "grudgingly" },
       { word: "расслабиться", definition: "1", audioKey: "unwind" },
     ],

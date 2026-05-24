@@ -12,6 +12,12 @@
     "button3": "Как это работает?",
     "account": "Уже есть личный профиль?"
   },
+  "list" : {
+    "stories": "историй",
+    "title" : "по названию",
+    "topic" : "по теме",
+    "progress":"по прогрессу"
+  },
   "levels": {
     "easy": "Базовый",
     "medium": "Средний",
@@ -28,7 +34,7 @@
     "notSure": ""
   },
   "levelProgress": {
-    "easyTitle": "Легкий",
+    "easyTitle": "Базовый",
     "easySubtitle": "Построение основы",
     "mediumTitle": "Средний",
     "mediumSubtitle": "Расширение горизонтов",
@@ -40,6 +46,7 @@
     "overallProgress": "Общий прогресс",
     "completedCount": "Завершено",
     "levelLabel": "Уровень"
+
   },
   "login": {
     "title": "Добро пожаловать!",

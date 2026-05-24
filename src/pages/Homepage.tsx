@@ -12,7 +12,7 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen pt-16 bg-gray-50 relative overflow-hidden">
+    <div className="min-h-screen pt-6 bg-gray-50 relative overflow-hidden">
       {/* Subtle animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl animate-pulse"></div>
@@ -22,8 +22,8 @@ const Homepage = () => {
       <div className="relative z-10 min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6">
         <div className="max-w-7xl w-full text-center">
           {/* Main title */}
-          <div className="overflow-hidden mb-4 sm:mb-6">
-            <h1 className={`text-5xl sm:text-6xl md:text-7xl lg:text-9xl font-bold text-black mb-4 sm:mb-6 leading-tight transform transition-all duration-1000 ease-out ${
+          <div className="overflow-hidden sm:mb-6">
+            <h1 className={`text-4xl sm:text-4xl md:text-7xl lg:text-9xl font-bold text-black mb-4 sm:mb-6 leading-tight transform transition-all duration-1000 ease-out ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
             }`}>
               The Infinity Player
@@ -32,7 +32,7 @@ const Homepage = () => {
 
           {/* Subtitle */}
           <div className="font-montserrat overflow-hidden mb-10 sm:mb-12 md:mb-16">
-            <p className={`text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed px-4 transform transition-all duration-1000 ease-out delay-300 ${
+            <p className={`text-base text-sm text-gray-700 max-w-2xl mx-auto leading-relaxed px-4 transform transition-all duration-1000 ease-out delay-300 ${
               isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
             }`}>
               {t('homepage.landing')}

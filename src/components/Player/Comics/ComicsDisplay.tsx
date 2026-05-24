@@ -6,31 +6,31 @@ import { createPortal } from "react-dom";
 const characterFolderMap: Record<string, string> = {
   easy:   "leo",
   medium: "maya",
-  hard:   "hard", // rename to match your actual folder name
+  hard:   "daniel", // rename to match your actual folder name
 };
 
-const comicManifest: Record<string, string[]> = {
+export const comicManifest: Record<string, string[]> = {
   easy: [
     "1. Meet Leo",
     "2. Leo's mornings",
-    "3. Leo's Favorite Food",
+    "3. Leo’s Favorite Food",
     "4. Leo's family",
     "5. Leo's clothes",
     "6. A Day at the Beach",
     "7. A Country Leo Wants to Visit",
     "8. Leo's hobbies",
     "9. Meeting a friend",
-    "10. The Lost Kitten",
+    "10. The Lost Kitten",   // ← no trailing space
   ],
   medium: [
     "1. Meet Maya",
     "2. A trip to Kyoto",
     "3. Trying street food in Bangkok",
     "4. A missed connection",
-    "5. Family Across Borders",
-    "6. Budgeting for adventure",
-    "7. Discussing environmental concerns",
-    "8. An unexpected interview",
+    "5. Budgeting for adventure",
+    "6. Discussing environmental concerns",
+    "7. An unexpected interview",
+    "8. Family Across Borders",
     "9. The Mountain Festival - Part 1",
     "10. The Mountain Festival - Part 2",
   ],
@@ -39,7 +39,7 @@ const comicManifest: Record<string, string[]> = {
     "2. The deal that nearly broke me",
     "3. The Conference in Munich",
     "4. A Failure with a Silver Lining",
-    "5. The Bridge at Low Tide",
+    "5. The Bridge at Low Tide",   // ← no trailing dot
     "6. Night of the Phantom Pallets",
     "7. Family Weather Report",
     "8. The Price of Enough",

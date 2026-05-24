@@ -151,7 +151,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     <div
       className={`min-h-screen bg-gradient-to-br ${theme.background} p-8 transition-all duration-1000 ease-in-out`}
     >
-      <div className="max-w-4xl pt-16 mx-auto">
+      <div className="max-w-4xl pt-12 mx-auto">
         {/* Header */}
         <div className="relative flex items-center mb-10 animate-fade-in">
           {/* Back button — absolutely positioned, never disrupts centering */}
@@ -188,7 +188,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         </div>
 
         {/* Progress Overview */}
-        <div className="backdrop-blur-sm rounded-2xl p-6 mb-8 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
+        <div className="backdrop-blur-sm rounded-2xl p-6 mb-5 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-black/80">
               {t("levelProgress.overallProgress")}

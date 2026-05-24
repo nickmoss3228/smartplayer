@@ -20,6 +20,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   theme,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
+  console.log(preview)
 
   if (!isOpen || !preview) return null;
 

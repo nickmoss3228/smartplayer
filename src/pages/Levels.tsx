@@ -49,14 +49,14 @@ const Levels = () => {
   ];
 
   return (
-    <div className="min-h-screen pt-20 sm:pt-30 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 relative">
+    <div className="min-h-screen pt-4 sm:pt-30 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 relative">
       <div className="relative mt-10 z-10 h-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
 
         {/* Header */}
-        <div className={`text-center mb-8 sm:mb-12 md:mb-16 px-4 transform transition-all duration-1000 ${
+        <div className={`text-center mb-3 sm:mb-12 md:mb-16 px-4 transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
-          <h1 className="text-2xl sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
+          <h1 className="text-xl sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
             {t('levels.selectProficiency')}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
               {t('levels.proficiencyLevel')}
@@ -68,7 +68,7 @@ const Levels = () => {
         </div>
 
         {/* Level Circles */}
-        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-8 sm:gap-10 md:gap-14 w-full max-w-4xl">
+        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-4 sm:gap-10 md:gap-14 w-full max-w-4xl">
           {levels.map((level, index) => (
             <div
               key={level.id}
@@ -81,7 +81,7 @@ const Levels = () => {
               <button
                 onClick={() => setSelectedLevel(level.id)}
                 className={`
-                  w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52
+                  w-28 h-28 sm:w-44 sm:h-44 md:w-52 md:h-52
                   rounded-full border-4 transition-all duration-300
                   flex flex-col items-center justify-center
                   bg-white cursor-pointer
@@ -98,7 +98,7 @@ const Levels = () => {
                   {t('levels.level')} {index + 1}
                 </span> */}
 
-                <h3 className="text-l sm:text-2xl font-semibold text-gray-900 text-center px-2">
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 text-center px-2">
                   {level.title}
                 </h3>
 {/* 
@@ -115,8 +115,8 @@ const Levels = () => {
           ))}
         </div>
 
-        {/* Continue Button */}
-        <div className={`mt-10 sm:mt-12 md:mt-16 transform transition-all duration-700 ${
+        {/* Continue Button */} 
+        <div className={`mt-8 sm:mt-12 md:mt-16 transform transition-all duration-700 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           {selectedLevel ? (
