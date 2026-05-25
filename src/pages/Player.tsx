@@ -174,7 +174,9 @@ const handleQuizComplete = useCallback(
 
   useEffect(() => {
   console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
-}, [audioTrack]);
+  }, [audioTrack]);
+  
+  
   
   return (
     <div className={`min-h-screen pt-13 bg-gradient-to-br ${theme.background}`}>

@@ -2,6 +2,9 @@ import axios from "axios";
 
 const YOS_BASE_URL = import.meta.env.VITE_YOS_BASE_URL;
 
+console.log("ENV CHECK:", import.meta.env);
+console.log("YOS:", import.meta.env.VITE_YOS_BASE_URL);
+
 if (!YOS_BASE_URL) {
   console.warn("VITE_YOS_BASE_URL is not defined in your .env file");
 }

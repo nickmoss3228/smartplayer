@@ -1,134 +1,147 @@
 //Medium level Audios
-import MeetMaya from "../../assets/maya/1. Meet Maya!.mp3";
-import ATripToKyoto from "../../assets/maya/2. A trip to Kyoto.mp3";
-import StreetFood from "../../assets/maya/3. Trying Street Food in Bangkok.mp3";
-import MissedConnection from "../../assets/maya/4. A Missed Connection.mp3";
-import BudgetForAdventure from "../../assets/maya/5. Budgeting for Adventure.mp3";
-import DiscussingEnviroment from "../../assets/maya/6. Discussing Environmental Concerns.mp3";
-import UnexpectedInterview from "../../assets/maya/7. An Unexpected Interview.mp3";
-import FamilyAcrossBorders from "../../assets/maya/8. Family Across Borders.mp3";
-import TheMountainFestival1 from "../../assets/maya/9. The Mountain Festival - Part 1.mp3";
-import TheMountainFestival2 from "../../assets/maya/10. The Mountain Festival - Part 2.mp3";
+// import MeetMaya from "../../assets/maya/1. Meet Maya!.mp3";
+// import ATripToKyoto from "../../assets/maya/2. A trip to Kyoto.mp3";
+// import StreetFood from "../../assets/maya/3. Trying Street Food in Bangkok.mp3";
+// import MissedConnection from "../../assets/maya/4. A Missed Connection.mp3";
+// import BudgetForAdventure from "../../assets/maya/5. Budgeting for Adventure.mp3";
+// import DiscussingEnviroment from "../../assets/maya/6. Discussing Environmental Concerns.mp3";
+// import UnexpectedInterview from "../../assets/maya/7. An Unexpected Interview.mp3";
+// import FamilyAcrossBorders from "../../assets/maya/8. Family Across Borders.mp3";
+// import TheMountainFestival1 from "../../assets/maya/9. The Mountain Festival - Part 1.mp3";
+// import TheMountainFestival2 from "../../assets/maya/10. The Mountain Festival - Part 2.mp3";
+
+import { getStorageUrl } from "../../services/yandexStorage";
+
+const MeetMaya = getStorageUrl('maya/1. Meet Maya!.mp3')
+const ATripToKyoto = getStorageUrl('maya/2. A trip to Kyoto.mp3')
+const StreetFood = getStorageUrl('maya/3. Trying Street Food in Bangkok.mp3')
+const MissedConnection = getStorageUrl('maya/4. A Missed Connection.mp3')
+const BudgetForAdventure = getStorageUrl('maya/5. Budgeting for Adventure.mp3')
+const DiscussingEnviroment = getStorageUrl('maya/6. Discussing Environmental Concerns.mp3')
+const UnexpectedInterview = getStorageUrl('maya/7. An Unexpected Interview.mp3')
+const FamilyAcrossBorders = getStorageUrl('maya/8. Family Across Borders.mp3')
+const TheMountainFestival1 = getStorageUrl('maya/9. The Mountain Festival - Part 1.mp3')
+const TheMountainFestival2 = getStorageUrl('maya/10. The Mountain Festival - Part 2.mp3')
 
 // Quiz Audio — Track 1: Meet Maya!
-const q1_1fast = "/assets/maya/quiz/1. meet me/q1-fast.mp3";
-const q1_1slow = "/assets/maya/quiz/1. meet me/q1-slow.mp3";
-const q1_2fast = "/assets/maya/quiz/1. meet me/q2-fast.mp3";
-const q1_2slow = "/assets/maya/quiz/1. meet me/q2-slow.mp3";
-const q1_3fast = "/assets/maya/quiz/1. meet me/q3-fast.mp3"; 
-const q1_3slow = "/assets/maya/quiz/1. meet me/q3-slow.mp3";
-const q1_4fast = "/assets/maya/quiz/1. meet me/q4-fast.mp3";
-const q1_4slow = "/assets/maya/quiz/1. meet me/q4-slow.mp3";
-const q1_5fast = "/assets/maya/quiz/1. meet me/q5-fast.mp3";
-const q1_5slow = "/assets/maya/quiz/1. meet me/q5-slow.mp3";
+const q1_1fast = getStorageUrl("maya/quiz/1. meet me/q1-fast.mp3");
+const q1_1slow = getStorageUrl("maya/quiz/1. meet me/q1-slow.mp3");
+const q1_2fast = getStorageUrl("maya/quiz/1. meet me/q2-fast.mp3");
+const q1_2slow = getStorageUrl("maya/quiz/1. meet me/q2-slow.mp3");
+const q1_3fast = getStorageUrl("maya/quiz/1. meet me/q3-fast.mp3"); 
+const q1_3slow = getStorageUrl("maya/quiz/1. meet me/q3-slow.mp3");
+const q1_4fast = getStorageUrl("maya/quiz/1. meet me/q4-fast.mp3");
+const q1_4slow = getStorageUrl("maya/quiz/1. meet me/q4-slow.mp3");
+const q1_5fast = getStorageUrl("maya/quiz/1. meet me/q5-fast.mp3");
+const q1_5slow = getStorageUrl("maya/quiz/1. meet me/q5-slow.mp3");
 
 // Quiz Audio — Track 2: A Trip to Kyoto
-const q2_1fast = "/assets/maya/quiz/2. a trip to kyoto/q1-fast.mp3";
-const q2_1slow = "/assets/maya/quiz/2. a trip to kyoto/q1-slow.mp3";
-const q2_2fast = "/assets/maya/quiz/2. a trip to kyoto/q2-fast.mp3";
-const q2_2slow = "/assets/maya/quiz/2. a trip to kyoto/q2-slow.mp3";
-const q2_3fast = "/assets/maya/quiz/2. a trip to kyoto/q3-fast.mp3";
-const q2_3slow = "/assets/maya/quiz/2. a trip to kyoto/q3-slow.mp3";
-const q2_4fast = "/assets/maya/quiz/2. a trip to kyoto/q4-fast.mp3";
-const q2_4slow = "/assets/maya/quiz/2. a trip to kyoto/q4-slow.mp3";
-const q2_5fast = "/assets/maya/quiz/2. a trip to kyoto/q5-fast.mp3";
-const q2_5slow = "/assets/maya/quiz/2. a trip to kyoto/q5-slow.mp3";
+const q2_1fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q1-fast.mp3");
+const q2_1slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q1-slow.mp3");
+const q2_2fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q2-fast.mp3");
+const q2_2slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q2-slow.mp3");
+const q2_3fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q3-fast.mp3");
+const q2_3slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q3-slow.mp3");
+const q2_4fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q4-fast.mp3");
+const q2_4slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q4-slow.mp3");
+const q2_5fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q5-fast.mp3");
+const q2_5slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q5-slow.mp3");
 
 // Quiz Audio — Track 3: Trying Street Food in Bangkok
-const q3_1fast = "/assets/maya/quiz/3. trying street food in bangkok/q1-fast.mp3";
-const q3_1slow = "/assets/maya/quiz/3. trying street food in bangkok/q1-slow.mp3";
-const q3_2fast = "/assets/maya/quiz/3. trying street food in bangkok/q2-fast.mp3";
-const q3_2slow = "/assets/maya/quiz/3. trying street food in bangkok/q2-slow.mp3";
-const q3_3fast = "/assets/maya/quiz/3. trying street food in bangkok/q3-fast.mp3";
-const q3_3slow = "/assets/maya/quiz/3. trying street food in bangkok/q3-slow.mp3";
-const q3_4fast = "/assets/maya/quiz/3. trying street food in bangkok/q4-fast.mp3";
-const q3_4slow = "/assets/maya/quiz/3. trying street food in bangkok/q4-slow.mp3";
-const q3_5fast = "/assets/maya/quiz/3. trying street food in bangkok/q5-fast.mp3";
-const q3_5slow = "/assets/maya/quiz/3. trying street food in bangkok/q5-slow.mp3";
+const q3_1fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q1-fast.mp3");
+const q3_1slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q1-slow.mp3");
+const q3_2fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q2-fast.mp3");
+const q3_2slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q2-slow.mp3");
+const q3_3fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q3-fast.mp3");
+const q3_3slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q3-slow.mp3");
+const q3_4fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q4-fast.mp3");
+const q3_4slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q4-slow.mp3");
+const q3_5fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q5-fast.mp3");
+const q3_5slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q5-slow.mp3");
 
 // Quiz Audio — Track 4: A Missed Connection
-const q4_1fast = "/assets/maya/quiz/4. a missed connection/q1-fast.mp3";
-const q4_1slow = "/assets/maya/quiz/4. a missed connection/q1-slow.mp3";
-const q4_2fast = "/assets/maya/quiz/4. a missed connection/q2-fast.mp3";
-const q4_2slow = "/assets/maya/quiz/4. a missed connection/q2-slow.mp3";
-const q4_3fast = "/assets/maya/quiz/4. a missed connection/q3-fast.mp3";
-const q4_3slow = "/assets/maya/quiz/4. a missed connection/q3-slow.mp3";
-const q4_4fast = "/assets/maya/quiz/4. a missed connection/q4-fast.mp3";
-const q4_4slow = "/assets/maya/quiz/4. a missed connection/q4-slow.mp3";
-const q4_5fast = "/assets/maya/quiz/4. a missed connection/q5-fast.mp3";
-const q4_5slow = "/assets/maya/quiz/4. a missed connection/q5-slow.mp3";
+const q4_1fast = getStorageUrl("maya/quiz/4. a missed connection/q1-fast.mp3");
+const q4_1slow = getStorageUrl("maya/quiz/4. a missed connection/q1-slow.mp3");
+const q4_2fast = getStorageUrl("maya/quiz/4. a missed connection/q2-fast.mp3");
+const q4_2slow = getStorageUrl("maya/quiz/4. a missed connection/q2-slow.mp3");
+const q4_3fast = getStorageUrl("maya/quiz/4. a missed connection/q3-fast.mp3");
+const q4_3slow = getStorageUrl("maya/quiz/4. a missed connection/q3-slow.mp3");
+const q4_4fast = getStorageUrl("maya/quiz/4. a missed connection/q4-fast.mp3");
+const q4_4slow = getStorageUrl("maya/quiz/4. a missed connection/q4-slow.mp3");
+const q4_5fast = getStorageUrl("maya/quiz/4. a missed connection/q5-fast.mp3");
+const q4_5slow = getStorageUrl("maya/quiz/4. a missed connection/q5-slow.mp3");
 
-// Quiz Audio — Track 5: Budgeting for Adventure
-const q5_1fast = "/assets/maya/quiz/5. family across borders/q1-fast.mp3";
-const q5_1slow = "/assets/maya/quiz/5. family across borders/q1-slow.mp3";
-const q5_2fast = "/assets/maya/quiz/5. family across borders/q2-fast.mp3";
-const q5_2slow = "/assets/maya/quiz/5. family across borders/q2-slow.mp3";
-const q5_3fast = "/assets/maya/quiz/5. family across borders/q3-fast.mp3";
-const q5_3slow = "/assets/maya/quiz/5. family across borders/q3-slow.mp3";
-const q5_4fast = "/assets/maya/quiz/5. family across borders/q4-fast.mp3";
-const q5_4slow = "/assets/maya/quiz/5. family across borders/q4-slow.mp3";
-const q5_5fast = "/assets/maya/quiz/5. family across borders/q5-fast.mp3";
-const q5_5slow = "/assets/maya/quiz/5. family across borders/q5-slow.mp3";
+// Quiz Audio — Track 5: Budgetidventure
+const q5_1fast = getStorageUrl("maya/quiz/5. family across borders/q1-fast.mp3");
+const q5_1slow = getStorageUrl("maya/quiz/5. family across borders/q1-slow.mp3");
+const q5_2fast = getStorageUrl("maya/quiz/5. family across borders/q2-fast.mp3");
+const q5_2slow = getStorageUrl("maya/quiz/5. family across borders/q2-slow.mp3");
+const q5_3fast = getStorageUrl("maya/quiz/5. family across borders/q3-fast.mp3");
+const q5_3slow = getStorageUrl("maya/quiz/5. family across borders/q3-slow.mp3");
+const q5_4fast = getStorageUrl("maya/quiz/5. family across borders/q4-fast.mp3");
+const q5_4slow = getStorageUrl("maya/quiz/5. family across borders/q4-slow.mp3");
+const q5_5fast = getStorageUrl("maya/quiz/5. family across borders/q5-fast.mp3");
+const q5_5slow = getStorageUrl("maya/quiz/5. family across borders/q5-slow.mp3");
 
 // Quiz Audio — Track 6: Discussing Environmental Concerns
-const q6_1fast = "/assets/maya/quiz/6. budgeting for adventure/q1-fast.mp3";
-const q6_1slow = "/assets/maya/quiz/6. budgeting for adventure/q1-slow.mp3";
-const q6_2fast = "/assets/maya/quiz/6. budgeting for adventure/q2-fast.mp3";
-const q6_2slow = "/assets/maya/quiz/6. budgeting for adventure/q2-slow.mp3";
-const q6_3fast = "/assets/maya/quiz/6. budgeting for adventure/q3-fast.mp3";
-const q6_3slow = "/assets/maya/quiz/6. budgeting for adventure/q3-slow.mp3";
-const q6_4fast = "/assets/maya/quiz/6. budgeting for adventure/q4-fast.mp3";
-const q6_4slow = "/assets/maya/quiz/6. budgeting for adventure/q4-slow.mp3";
-const q6_5fast = "/assets/maya/quiz/6. budgeting for adventure/q5-fast.mp3";
-const q6_5slow = "/assets/maya/quiz/6. budgeting for adventure/q5-slow.mp3";
+const q6_1fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q1-fast.mp3");
+const q6_1slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q1-slow.mp3");
+const q6_2fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q2-fast.mp3");
+const q6_2slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q2-slow.mp3");
+const q6_3fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q3-fast.mp3");
+const q6_3slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q3-slow.mp3");
+const q6_4fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q4-fast.mp3");
+const q6_4slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q4-slow.mp3");
+const q6_5fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q5-fast.mp3");
+const q6_5slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q5-slow.mp3");
 
 // Quiz Audio — Track 7: An Unexpected Interview
-const q7_1fast = "/assets/maya/quiz/7. discussing environmental concerns/q1-fast.mp3";
-const q7_1slow = "/assets/maya/quiz/7. discussing environmental concerns/q1-slow.mp3";
-const q7_2fast = "/assets/maya/quiz/7. discussing environmental concerns/q2-fast.mp3";
-const q7_2slow = "/assets/maya/quiz/7. discussing environmental concerns/q2-slow.mp3";
-const q7_3fast = "/assets/maya/quiz/7. discussing environmental concerns/q3-fast.mp3";
-const q7_3slow = "/assets/maya/quiz/7. discussing environmental concerns/q3-slow.mp3";
-const q7_4fast = "/assets/maya/quiz/7. discussing environmental concerns/q4-fast.mp3";
-const q7_4slow = "/assets/maya/quiz/7. discussing environmental concerns/q4-slow.mp3";
-const q7_5fast = "/assets/maya/quiz/7. discussing environmental concerns/q5-fast.mp3";
-const q7_5slow = "/assets/maya/quiz/7. discussing environmental concerns/q5-slow.mp3";
+const q7_1fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q1-fast.mp3");
+const q7_1slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q1-slow.mp3");
+const q7_2fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q2-fast.mp3");
+const q7_2slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q2-slow.mp3");
+const q7_3fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q3-fast.mp3");
+const q7_3slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q3-slow.mp3");
+const q7_4fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q4-fast.mp3");
+const q7_4slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q4-slow.mp3");
+const q7_5fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q5-fast.mp3");
+const q7_5slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q5-slow.mp3");
 
 // Quiz Audio — Track 8: Family Across Borders
-const q8_1fast = "/assets/maya/quiz/8. an unexpected interview/q1-fast.mp3";
-const q8_1slow = "/assets/maya/quiz/8. an unexpected interview/q1-slow.mp3";
-const q8_2fast = "/assets/maya/quiz/8. an unexpected interview/q2-fast.mp3";
-const q8_2slow = "/assets/maya/quiz/8. an unexpected interview/q2-slow.mp3";
-const q8_3fast = "/assets/maya/quiz/8. an unexpected interview/q3-fast.mp3";
-const q8_3slow = "/assets/maya/quiz/8. an unexpected interview/q3-slow.mp3";
-const q8_4fast = "/assets/maya/quiz/8. an unexpected interview/q4-fast.mp3";
-const q8_4slow = "/assets/maya/quiz/8. an unexpected interview/q4-slow.mp3";
-const q8_5fast = "/assets/maya/quiz/8. an unexpected interview/q5-fast.mp3";
-const q8_5slow = "/assets/maya/quiz/8. an unexpected interview/q5-slow.mp3";
+const q8_1fast = getStorageUrl("maya/quiz/8. an unexpected interview/q1-fast.mp3");
+const q8_1slow = getStorageUrl("maya/quiz/8. an unexpected interview/q1-slow.mp3");
+const q8_2fast = getStorageUrl("maya/quiz/8. an unexpected interview/q2-fast.mp3");
+const q8_2slow = getStorageUrl("maya/quiz/8. an unexpected interview/q2-slow.mp3");
+const q8_3fast = getStorageUrl("maya/quiz/8. an unexpected interview/q3-fast.mp3");
+const q8_3slow = getStorageUrl("maya/quiz/8. an unexpected interview/q3-slow.mp3");
+const q8_4fast = getStorageUrl("maya/quiz/8. an unexpected interview/q4-fast.mp3");
+const q8_4slow = getStorageUrl("maya/quiz/8. an unexpected interview/q4-slow.mp3");
+const q8_5fast = getStorageUrl("maya/quiz/8. an unexpected interview/q5-fast.mp3");
+const q8_5slow = getStorageUrl("maya/quiz/8. an unexpected interview/q5-slow.mp3");
 
 // Quiz Audio — Track 9: The Mountain Festival Part 1
-const q9_1fast = "/assets/maya/quiz/9. the mountain festival part 1/q1-fast.mp3";
-const q9_1slow = "/assets/maya/quiz/9. the mountain festival part 1/q1-slow.mp3";
-const q9_2fast = "/assets/maya/quiz/9. the mountain festival part 1/q2-fast.mp3";
-const q9_2slow = "/assets/maya/quiz/9. the mountain festival part 1/q2-slow.mp3";
-const q9_3fast = "/assets/maya/quiz/9. the mountain festival part 1/q3-fast.mp3";
-const q9_3slow = "/assets/maya/quiz/9. the mountain festival part 1/q3-slow.mp3";
-const q9_4fast = "/assets/maya/quiz/9. the mountain festival part 1/q4-fast.mp3";
-const q9_4slow = "/assets/maya/quiz/9. the mountain festival part 1/q4-slow.mp3";
-const q9_5fast = "/assets/maya/quiz/9. the mountain festival part 1/q5-fast.mp3";
-const q9_5slow = "/assets/maya/quiz/9. the mountain festival part 1/q5-slow.mp3";
+const q9_1fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q1-fast.mp3");
+const q9_1slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q1-slow.mp3");
+const q9_2fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q2-fast.mp3");
+const q9_2slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q2-slow.mp3");
+const q9_3fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q3-fast.mp3");
+const q9_3slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q3-slow.mp3");
+const q9_4fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q4-fast.mp3");
+const q9_4slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q4-slow.mp3");
+const q9_5fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q5-fast.mp3");
+const q9_5slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q5-slow.mp3");
 
 // Quiz Audio — Track 10: The Mountain Festival Part 2
-const q10_1fast = "/assets/maya/quiz/10. the mountain festival part 2/q1-fast.mp3";
-const q10_1slow = "/assets/maya/quiz/10. the mountain festival part 2/q1-slow.mp3";
-const q10_2fast = "/assets/maya/quiz/10. the mountain festival part 2/q2-fast.mp3";
-const q10_2slow = "/assets/maya/quiz/10. the mountain festival part 2/q2-slow.mp3";
-const q10_3fast = "/assets/maya/quiz/10. the mountain festival part 2/q3-fast.mp3";
-const q10_3slow = "/assets/maya/quiz/10. the mountain festival part 2/q3-slow.mp3";
-const q10_4fast = "/assets/maya/quiz/10. the mountain festival part 2/q4-fast.mp3";
-const q10_4slow = "/assets/maya/quiz/10. the mountain festival part 2/q4-slow.mp3";
-const q10_5fast = "/assets/maya/quiz/10. the mountain festival part 2/q5-fast.mp3";
-const q10_5slow = "/assets/maya/quiz/10. the mountain festival part 2/q5-slow.mp3";
+const q10_1fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q1-fast.mp3");
+const q10_1slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q1-slow.mp3");
+const q10_2fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q2-fast.mp3");
+const q10_2slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q2-slow.mp3");
+const q10_3fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q3-fast.mp3");
+const q10_3slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q3-slow.mp3");
+const q10_4fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q4-fast.mp3");
+const q10_4slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q4-slow.mp3");
+const q10_5fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q5-fast.mp3");
+const q10_5slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q5-slow.mp3");
 
 import { AudioTrack } from "../../types";
 
