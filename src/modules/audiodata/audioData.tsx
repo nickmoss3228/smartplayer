@@ -111,27 +111,27 @@ const q8_4slow = getStorageUrl("leo/quiz/8. leo's hobbies/q4slow.mp3");
 const q8_5fast = getStorageUrl("leo/quiz/8. leo's hobbies/q5fast.mp3");
 const q8_5slow = getStorageUrl("leo/quiz/8. leo's hobbies/q5slow.mp3");
 
-const q9_1fast = getStorageUrl("leo/quiz/9. meeting a friend/q1-fast.mp3");
-const q9_1slow = getStorageUrl("leo/quiz/9. meeting a friend/q1-slow.mp3");
-const q9_2fast = getStorageUrl("leo/quiz/9. meeting a friend/q2-fast.mp3");
-const q9_2slow = getStorageUrl("leo/quiz/9. meeting a friend/q2-slow.mp3");
-const q9_3fast = getStorageUrl("leo/quiz/9. meeting a friend/q3-fast.mp3");
-const q9_3slow = getStorageUrl("leo/quiz/9. meeting a friend/q3-slow.mp3");
-const q9_4fast = getStorageUrl("leo/quiz/9. meeting a friend/q4-fast.mp3");
-const q9_4slow = getStorageUrl("leo/quiz/9. meeting a friend/q4-slow.mp3");
-const q9_5fast = getStorageUrl("leo/quiz/9. meeting a friend/q5-fast.mp3");
-const q9_5slow = getStorageUrl("leo/quiz/9. meeting a friend/q5-slow.mp3");
+const q9_1fast = getStorageUrl("leo/quiz/9. meeting a friend/q1fast.mp3");
+const q9_1slow = getStorageUrl("leo/quiz/9. meeting a friend/q1slow.mp3");
+const q9_2fast = getStorageUrl("leo/quiz/9. meeting a friend/q2fast.mp3");
+const q9_2slow = getStorageUrl("leo/quiz/9. meeting a friend/q2slow.mp3");
+const q9_3fast = getStorageUrl("leo/quiz/9. meeting a friend/q3fast.mp3");
+const q9_3slow = getStorageUrl("leo/quiz/9. meeting a friend/q3slow.mp3");
+const q9_4fast = getStorageUrl("leo/quiz/9. meeting a friend/q4fast.mp3");
+const q9_4slow = getStorageUrl("leo/quiz/9. meeting a friend/q4slow.mp3");
+const q9_5fast = getStorageUrl("leo/quiz/9. meeting a friend/q5fast.mp3");
+const q9_5slow = getStorageUrl("leo/quiz/9. meeting a friend/q5slow.mp3");
 
-const q10_1fast = getStorageUrl("leo/quiz/10. the lost kitten/q1-fast.mp3");
-const q10_1slow = getStorageUrl("leo/quiz/10. the lost kitten/q1-slow.mp3");
-const q10_2fast = getStorageUrl("leo/quiz/10. the lost kitten/q2-fast.mp3");
-const q10_2slow = getStorageUrl("leo/quiz/10. the lost kitten/q2-slow.mp3");
-const q10_3fast = getStorageUrl("leo/quiz/10. the lost kitten/q3-fast.mp3");
-const q10_3slow = getStorageUrl("leo/quiz/10. the lost kitten/q3-slow.mp3");
-const q10_4fast = getStorageUrl("leo/quiz/10. the lost kitten/q4-fast.mp3");
-const q10_4slow = getStorageUrl("leo/quiz/10. the lost kitten/q4-slow.mp3");
-const q10_5fast = getStorageUrl("leo/quiz/10. the lost kitten/q5-fast.mp3");
-const q10_5slow = getStorageUrl("leo/quiz/10. the lost kitten/q5-slow.mp3");
+const q10_1fast = getStorageUrl("leo/quiz/10. the lost kitten/q1fast.mp3");
+const q10_1slow = getStorageUrl("leo/quiz/10. the lost kitten/q1slow.mp3");
+const q10_2fast = getStorageUrl("leo/quiz/10. the lost kitten/q2fast.mp3");
+const q10_2slow = getStorageUrl("leo/quiz/10. the lost kitten/q2slow.mp3");
+const q10_3fast = getStorageUrl("leo/quiz/10. the lost kitten/q3fast.mp3");
+const q10_3slow = getStorageUrl("leo/quiz/10. the lost kitten/q3slow.mp3");
+const q10_4fast = getStorageUrl("leo/quiz/10. the lost kitten/q4fast.mp3");
+const q10_4slow = getStorageUrl("leo/quiz/10. the lost kitten/q4slow.mp3");
+const q10_5fast = getStorageUrl("leo/quiz/10. the lost kitten/q5fast.mp3");
+const q10_5slow = getStorageUrl("leo/quiz/10. the lost kitten/q5slow.mp3");
 
 import { AudioTrack } from "../../types";
 
