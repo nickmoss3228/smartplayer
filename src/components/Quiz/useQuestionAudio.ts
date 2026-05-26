@@ -36,7 +36,7 @@ export function useQuestionAudio({ fastSrc, slowSrc }: UseQuestionAudioProps) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      const audio = new Audio(encodeURI(src)); // <-- encode spaces in path
+      const audio = new Audio(src); // <-- encode spaces in path
       audioRef.current = audio;
       audio.play().catch(console.error);
       audio.addEventListener("ended", onEnd, { once: true });
