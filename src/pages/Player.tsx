@@ -172,9 +172,9 @@ const handleQuizComplete = useCallback(
   [user, difficulty, level, resolvedStorySlug, isSubmitting, refreshStoryProgress]
   );
 
-  useEffect(() => {
-  console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
-  }, [audioTrack]);
+  // useEffect(() => {
+  // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
+  // }, [audioTrack]);
   
   
   

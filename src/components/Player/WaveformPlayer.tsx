@@ -213,7 +213,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         {/* ═══════════ MOBILE LAYOUT (< md) ═══════════ */}
         <div className="md:hidden flex flex-col gap-4 px-4 pb-6">
           {/* <ComicsPlaceholder /> */}
-{(() => { console.log("[JSX] passing difficulty as:", level); return null; })()}
+{/* {(() => { console.log("[JSX] passing difficulty as:", level); return null; })()} */}
           <ComicsDisplay
             storyIndex={Number(trackId)}
             title={storyTitles[Number(trackId)]}
