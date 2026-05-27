@@ -1,43 +1,64 @@
 // hooks/useVocabAudio.ts
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { trackFolderMap, storyFolderMap } from "../../../modules/vocabulary/Vocabulary";
+import { getStorageUrl } from "../../../services/yandexStorage"; // ← adjust path if needed
 
 export function useVocabAudio(trackId: string, difficulty: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const stop = useCallback(() => {
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+  }, []);
+
+  useEffect(() => {
+    return stop;
+  }, [trackId, difficulty, stop]);
+
   const playVocabWord = useCallback(
-    (fileName: string) => {
-      // Stop any currently playing vocab audio
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+    (fileName: string): HTMLAudioElement | null => {
+      stop();
 
       const storyFolder = storyFolderMap[difficulty] ?? "";
       const trackFolder = trackFolderMap[difficulty]?.[trackId] ?? "";
 
       if (!storyFolder || !trackFolder) {
         console.warn(
-          `No folder mapping found for difficulty: "${difficulty}", trackId: "${trackId}"`
+          `[useVocabAudio] No folder mapping found for difficulty: "${difficulty}", trackId: "${trackId}"`
         );
-        return;
+        return null;
       }
 
-      
-      // Build the raw path first, then encode the full URI
-      // encodeURI preserves apostrophes and slashes, only encodes spaces etc.
-     const rawUrl = `/assets/${storyFolder}/quiz/${trackFolder}/vocab/${fileName}.mp3`;
-console.log("Attempting vocab audio:", rawUrl); // ← add this
-const url = encodeURI(rawUrl);
+      // Build the YOS URL — getStorageUrl encodes everything except "/"
+      // so spaces, apostrophes and other special chars in folder names are handled
+      const path = `${storyFolder}/quiz/${trackFolder}/vocab/${fileName}.mp3`;
+      const url = getStorageUrl(path);
+
+      console.log(`[useVocabAudio] Fetching vocab audio from YOS:`, url);
+
       const audio = new Audio(url);
       audioRef.current = audio;
 
-      audio.play().catch((err) => {
-        console.warn(`Vocab audio error for "${fileName}":`, err.message);
+      audio.addEventListener("canplaythrough", () => {
+        console.log(`[useVocabAudio] ✅ Successfully loaded: "${fileName}" → ${url}`);
       });
+
+      audio.addEventListener("error", (e) => {
+        console.error(
+          `[useVocabAudio] ❌ Failed to load: "${fileName}" → ${url}`,
+          e
+        );
+      });
+
+      audio.play().catch((err) => {
+        console.warn(`[useVocabAudio] Playback rejected for "${fileName}":`, err.message);
+      });
+
+      return audio;
     },
-    [trackId, difficulty],
+    [trackId, difficulty, stop],
   );
 
-  return { playVocabWord };
+  return { playVocabWord, stop };
 }

@@ -8,7 +8,7 @@ interface VocabWord {
 
 interface VocabularyRowProps {
   words: VocabWord[];
-  onPlay: (audioKey: string) => void;
+  onPlay: (audioKey: string) => HTMLAudioElement | null; // ← updated
   volume: number;
 }
 

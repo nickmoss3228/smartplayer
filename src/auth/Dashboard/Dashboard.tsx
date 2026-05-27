@@ -22,6 +22,7 @@ import {
 import ProfileEditor from "./ProfileEditor";
 import DifficultyModal from "./DifficultyModal";
 import AchievementsRow from "./AchievementsRow";
+import { useProfile } from "../../context/ProfileContext";
 
 const Dashboard: React.FC = () => {
   const { user, signOut, loading } = useAuth();
@@ -31,8 +32,8 @@ const Dashboard: React.FC = () => {
     useState<DetailedProgressMap>({});
   const [progressLoading, setProgressLoading] = useState<boolean>(true);
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState<boolean>(true);
+  // const [profile, setProfile] = useState<UserProfile | null>(null);
+  // const [profileLoading, setProfileLoading] = useState<boolean>(true);
 
   // Modal state — clicking a difficulty card opens the modal for that difficulty
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
@@ -76,21 +77,23 @@ const Dashboard: React.FC = () => {
   }, [user]);
 
   // Load user profile
-  useEffect(() => {
-    const loadProfile = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      try {
-        const data = await fetchProfile(token);
-        setProfile(data);
-      } catch (error) {
-        console.error("Failed to load profile:", error);
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-    if (user) loadProfile();
-  }, [user]);
+  // useEffect(() => {
+  //   const loadProfile = async () => {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) return;
+  //     try {
+  //       const data = await fetchProfile(token);
+  //       setProfile(data);
+  //     } catch (error) {
+  //       console.error("Failed to load profile:", error);
+  //     } finally {
+  //       setProfileLoading(false);
+  //     }
+  //   };
+  //   if (user) loadProfile();
+  // }, [user]);
+
+  const { profile, profileLoading, setProfileDirect } = useProfile();
 
   // Close modal on Escape
   useEffect(() => {
@@ -140,7 +143,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       ) : profile ? (
-        <ProfileEditor profile={profile} onProfileUpdate={setProfile} />
+        <ProfileEditor profile={profile} onProfileUpdate={setProfileDirect} />
       ) : (
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 border-2 border-black rounded-full flex items-center justify-center text-xl font-bold">

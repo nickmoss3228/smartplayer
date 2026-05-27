@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 interface VocabChipProps {
   word: string;
   audioKey?: string;
-  onPlay: (audioKey: string) => void;
+  onPlay: (audioKey: string) => HTMLAudioElement | null; // ← now returns the element
   volume?: number;
 }
 
@@ -12,7 +12,7 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    // Sync volume on the live audio element whenever it changes
+    // Keep live volume in sync with parent (mute / volume slider)
     useEffect(() => {
       if (audioRef.current) {
         audioRef.current.volume = volume;
@@ -20,9 +20,9 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
     }, [volume]);
 
     const handleClick = useCallback(() => {
-      // Use audioKey if provided, otherwise fall back to the word itself
       const key = (audioKey ?? word).toLowerCase();
 
+      // ── Toggle off if this chip is already playing ──────────────────────
       if (audioRef.current && !audioRef.current.paused) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -30,21 +30,21 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
         return;
       }
 
-      onPlay(key);
+      // ── Delegate playback to the hook, get back the Audio element ───────
+      const audio = onPlay(key);
+      if (!audio) return;
 
-      // const audio = new Audio(`/quiz/meet leo/vocab/${encodeURIComponent(fileName)}.mp3`);
-      // audio.volume = volume; // apply volume at creation time
-      // audioRef.current = audio;
+      audio.volume = volume; // apply current volume immediately
+      audioRef.current = audio;
 
-      // audio.addEventListener("play", () => setIsPlaying(true));
-      // audio.addEventListener("ended", () => setIsPlaying(false));
-      // audio.addEventListener("pause", () => setIsPlaying(false));
-      // audio.addEventListener("error", () => {
-      //   setIsPlaying(false);
-      //   console.warn(`Could not load audio for word: "${word}" (key: "${fileName}")`);
-      // });
-
-      // audio.play().catch(() => setIsPlaying(false));
+      // Wire up isPlaying state
+      audio.addEventListener("play", () => setIsPlaying(true));
+      audio.addEventListener("ended", () => setIsPlaying(false));
+      audio.addEventListener("pause", () => setIsPlaying(false)); // also fires when another chip stops this one
+      audio.addEventListener("error", () => {
+        setIsPlaying(false);
+        console.warn(`[VocabChip] Could not load audio for "${word}" (key: "${key}")`);
+      });
     }, [word, audioKey, onPlay, volume]);
 
     return (
@@ -52,14 +52,13 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
         <button
           onClick={handleClick}
           className={`inline-flex items-center gap-1.5 transition-colors duration-200 text-white text-xs font-semibold font-['Montserrat'] px-3 py-1.5 rounded-full cursor-pointer select-none shadow-sm
-          ${
-            isPlaying
-              ? "bg-green-400 ring-2 ring-green-300 ring-offset-1 ring-offset-transparent"
-              : "bg-green-600 hover:bg-green-500"
-          }`}
+            ${
+              isPlaying
+                ? "bg-green-400 ring-2 ring-green-300 ring-offset-1 ring-offset-transparent"
+                : "bg-green-600 hover:bg-green-500"
+            }`}
           title={`Hear pronunciation of "${word}"`}
         >
-          {/* Speaker icon — pulses while playing */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"

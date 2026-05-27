@@ -48,12 +48,15 @@ const Levels = () => {
     },
   ];
 
-  return (
-    <div className="min-h-screen pt-4 sm:pt-30 bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 relative">
-      <div className="relative mt-10 z-10 h-full flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+ return (
+    // ── outer: full-height flex column, no padding-top ──────────────────────
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
+
+      {/* ── inner: flex-1 so it fills whatever the outer gives it ───────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
 
         {/* Header */}
-        <div className={`text-center mb-3 sm:mb-12 md:mb-16 px-4 transform transition-all duration-1000 ${
+        <div className={`text-center mb-6 sm:mb-10 md:mb-14 px-4 transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           <h1 className="text-xl sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
@@ -62,70 +65,49 @@ const Levels = () => {
               {t('levels.proficiencyLevel')}
             </span>
           </h1>
-          {/* <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto font-light">
-            {t('levels.chooseAppropriate')}
-          </p> */}
         </div>
 
         {/* Level Circles */}
-        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-4 sm:gap-10 md:gap-14 w-full max-w-4xl">
+        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-5 sm:gap-10 md:gap-14 w-full max-w-4xl">
           {levels.map((level, index) => (
             <div
               key={level.id}
-              className={`transform transition-all duration-700 flex flex-col items-center gap-3 ${
+              className={`transform transition-all duration-700 flex flex-col items-center ${
                 isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
-              {/* Circle */}
               <button
                 onClick={() => setSelectedLevel(level.id)}
                 className={`
-                  w-28 h-28 sm:w-44 sm:h-44 md:w-52 md:h-52
+                  w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52
                   rounded-full border-4 transition-all duration-300
-                  flex flex-col items-center justify-center
+                  flex items-center justify-center
                   bg-white cursor-pointer
                   ${selectedLevel === level.id
                     ? `${level.selectedBorder} shadow-xl ${level.selectedShadow} scale-105`
-                    : `${level.border} ${level.hover} shadow-md`
-                  }
+                    : `${level.border} ${level.hover} shadow-md`}
                 `}
               >
-                {/* Gradient dot indicator */}
-                {/* <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${level.accent} mb-2`}></div> */}
-
-                {/* <span className="text-xs sm:text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">
-                  {t('levels.level')} {index + 1}
-                </span> */}
-
-                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 text-center px-2">
+                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 text-center px-3 leading-snug">
                   {level.title}
                 </h3>
-{/* 
-                <p className="text-xs text-gray-500 font-light mt-1 text-center px-4">
-                  {level.subtitle}
-                </p> */}
-
-                {/* Selected ring accent line at bottom of circle
-                {selectedLevel === level.id && (
-                  <div className={`absolute bottom-0 w-1/2 h-1 bg-gradient-to-r ${level.accent} rounded-full mt-2`} />
-                )} */}
               </button>
             </div>
           ))}
         </div>
 
-        {/* Continue Button */} 
-        <div className={`mt-8 sm:mt-12 md:mt-16 transform transition-all duration-700 ${
+        {/* Continue Button */}
+        <div className={`mt-8 sm:mt-12 md:mt-16 transform transition-all duration-700 delay-300 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           {selectedLevel ? (
             <Link to={`/levels/${selectedLevel}`}>
               <button
                 className={`
-                  px-10 sm:px-14  cursor-pointer  py-3 sm:py-4 rounded-lg font-medium text-white text-sm sm:text-base
+                  px-10 sm:px-14 py-3 sm:py-4 rounded-lg font-medium text-white text-sm sm:text-base
                   bg-gradient-to-r ${levels.find(l => l.id === selectedLevel)?.accent}
-                  shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl
+                  shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
                 `}
               >
                 {t('levels.continue')}
@@ -143,7 +125,7 @@ const Levels = () => {
         </div>
 
         {/* Additional Info */}
-        <div className={`mt-6 sm:mt-8 text-center px-4 transform transition-all duration-1000 delay-500 ${
+        <div className={`mt-5 sm:mt-8 text-center px-4 transform transition-all duration-1000 delay-500 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           <p className="text-xs sm:text-sm text-gray-500">

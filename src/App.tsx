@@ -25,6 +25,7 @@ import { ProgressProvider } from "./context/ProgressContext";
 import ForgotPassword from "./auth/ForgetPassword/ForgetPassword";
 import List from './pages/List';
 import DifficultyDetail from './modules/levelprogress/DifficultyDetail';
+import { ProfileProvider } from './context/ProfileContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -40,6 +41,7 @@ function App() {
   return (
     <>
       <AuthProvider>
+        <ProfileProvider>
         <ProgressProvider>
           <Provider store={store}>
             <Router>
@@ -116,8 +118,10 @@ function App() {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Router>
-          </Provider>
-        </ProgressProvider>
+            </Provider>
+            
+          </ProgressProvider>
+          </ProfileProvider>
       </AuthProvider>
     </>
   );

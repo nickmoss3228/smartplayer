@@ -44,7 +44,7 @@
     "current": "Текущий",
     "locked": "Не выполнен",
     "overallProgress": "Общий прогресс",
-    "completedCount": "Завершено",
+    "completedCount": "",
     "levelLabel": "Уровень"
 
   },

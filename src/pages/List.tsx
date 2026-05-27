@@ -155,8 +155,8 @@ const List = () => {
     <div className="min-h-screen bg-gray-50 text-gray-900">
 
       {/* Header */}
-      <div className="max-w-5xl mt-6 pt-16 mx-auto px-4 sm:px-6">
-  <div className="flex items-center justify-between gap-2 sm:gap-4 mb-8 animate-fade-in">
+      <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
+  <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 animate-fade-in">
 
     <button
       onClick={() => navigate('/levels')}

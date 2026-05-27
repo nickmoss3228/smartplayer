@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
 
-
 interface StoryPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,7 +19,6 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   theme,
 }) => {
   const [showDetails, setShowDetails] = useState(false);
-  console.log(preview)
 
   if (!isOpen || !preview) return null;
 
@@ -29,42 +27,41 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
+      {/*
+        ── Modal shell ─────────────────────────────────────────────────────────
+        flex-col + max-h-[90vh] on mobile so it never grows past the viewport.
+        On sm+ we keep the familiar look with max-h-[85vh] just as a safety net.
+      */}
       <div
-        className="relative w-full max-w-[680px] bg-gray-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-scale-in"
+        className="relative w-full max-w-[680px] bg-gray-900 border border-white/10
+                   rounded-3xl shadow-2xl overflow-hidden animate-scale-in
+                   flex flex-col max-h-[90vh] sm:max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Header image ── */}
-        <div className="relative h-52 w-full overflow-hidden">
+
+        {/* ── Header image — flex-shrink-0 so it never gets squished ── */}
+        <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
           <img
             src={preview.image}
             alt={preview.title}
             className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
           />
-          {/* gradient fade into card body */}
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
-
-          {/* theme accent bar sits on top of image */}
           <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${theme.progressGradient}`} />
-
-          {/* Close button — floats over image */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/70 transition-all flex items-center justify-center text-sm leading-none"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm
+                       text-white/70 hover:text-white hover:bg-black/70 transition-all
+                       flex items-center justify-center text-sm leading-none"
             aria-label="Close"
           >
             ✕
           </button>
-
-          {/* Emoji badge — overlaps image / body boundary */}
-          {/* <div
-            className={`absolute -bottom-6 left-6 w-14 h-14 rounded-2xl bg-gradient-to-br ${theme.progressGradient} flex items-center justify-center text-3xl shadow-xl border-2 border-gray-900`}
-          >
-            {preview.emoji}
-          </div> */}
         </div>
 
-        {/* ── Body ── */}
-        <div className="px-6 pt-10 pb-6 space-y-4">
+        {/* ── Scrollable body — flex-1 + overflow-y-auto ── */}
+        <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 space-y-4
+                        [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
           {/* Title + meta */}
           <div>
@@ -88,63 +85,77 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             }`}
           >
             <div className="space-y-4 pt-1">
-              {/* Grammar points */}
+
+              {/* Grammar points — smaller text on mobile */}
               <div>
                 <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">
                   Grammar focus
                 </p>
                 <div className="flex flex-col gap-2">
                   {preview.grammar.map((point, i) => (
-                    <div key={point} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold flex items-center justify-center border border-blue-500/30">
+                    <div key={point} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full
+                                       bg-blue-500/20 text-blue-400 text-[9px] sm:text-[10px]
+                                       font-bold flex items-center justify-center border border-blue-500/30">
                         {i + 1}
                       </span>
-                      <p className="text-white/75 text-sm leading-snug">{point}</p>
+                      {/* text-xs on mobile, text-sm on sm+ */}
+                      <p className="text-white/75 text-xs sm:text-sm leading-snug">{point}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Tip */}
-              <div className="flex gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
+              {/* Tip — hidden on mobile, visible on sm+ */}
+              <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
                 <span className="text-xl flex-shrink-0">💡</span>
                 <p className="text-white/65 text-sm leading-relaxed">
                   <span className="text-white font-semibold">Tip: </span>
                   {preview.tip}
                 </p>
               </div>
+
             </div>
           </div>
 
           {/* Toggle */}
           <button
             onClick={() => setShowDetails((prev) => !prev)}
-            className="w-full py-2 text-xs font-medium text-white/35 hover:text-white/60 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full py-2 text-xs font-medium text-white/35 hover:text-white/60
+                       transition-colors flex items-center justify-center gap-1.5"
           >
             <span
-              className={`inline-block transition-transform duration-300 ${showDetails ? "rotate-180" : "rotate-0"}`}
+              className={`inline-block transition-transform duration-300 ${
+                showDetails ? "rotate-180" : "rotate-0"
+              }`}
             >
               ▼
             </span>
             {showDetails ? "Hide details" : "Grammar & tips"}
           </button>
+        </div>
 
-          {/* ── Actions ── */}
-          <div className="flex gap-3 pt-1">
+        {/* ── Action buttons — flex-shrink-0 keeps them ALWAYS visible ── */}
+        <div className="flex-shrink-0 px-6 pb-6 pt-3 border-t border-white/5">
+          <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-white/15 text-white/55 hover:text-white hover:border-white/30 transition-all text-sm font-medium"
+              className="flex-1 py-3 rounded-xl border border-white/15 text-white/55
+                         hover:text-white hover:border-white/30 transition-all text-sm font-medium"
             >
               Back
             </button>
             <button
               onClick={onStart}
-              className={`flex-1 py-3 rounded-xl bg-gradient-to-r ${theme.progressGradient} text-white font-semibold text-sm shadow-lg hover:opacity-90 active:scale-[0.98] transition-all`}
+              className={`flex-1 py-3 rounded-xl bg-gradient-to-r ${theme.progressGradient}
+                          text-white font-semibold text-sm shadow-lg
+                          hover:opacity-90 active:scale-[0.98] transition-all`}
             >
-              Start Listening →
+              Start Listening
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

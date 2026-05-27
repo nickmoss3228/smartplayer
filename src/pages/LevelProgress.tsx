@@ -190,10 +190,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         {/* Progress Overview */}
         <div className="backdrop-blur-sm rounded-2xl p-6 mb-5 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-black/80">
+            <h2 className="text-sm font-semibold text-black/80">
               {t("levelProgress.overallProgress")}
             </h2>
-            <span className="text-black/80">
+            <span className="text-black/80 text-sm">
               {completedLevels.length}/{totalLevels}{" "}
               {t("levelProgress.completedCount")}
             </span>
