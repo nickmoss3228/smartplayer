@@ -10,13 +10,26 @@
     "button1": "Start your journey",
     "button2": "Log in",
     "button3": "How does it work?",
-    "account": "Already have an account?"
+    "account": "Already have an account?",
+    "eyebrow": "English Listening Training",
+    "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
+    "startFree": "Start for Free",
+    "howItWorks": "How it works",
+    "badge": "Subtitles disabled by design",
+    "step1Title": "Listen to a Story",
+    "step1Desc": "No subtitles. No transcript. Only the audio.",
+    "step2Title": "Use Only Your Ears",
+    "step2Desc": "Replay any sentence. Slow it down. But you cannot read along.",
+    "step3Title": "Pass the Quiz",
+    "step3Desc": "Answer comprehension questions to prove you understood.",
+    "step4Title": "Unlock the Next Story",
+    "step4Desc": "Every story earned is harder and richer than the last."
   },
-  "list" : {
+  "list": {
     "stories": "stories",
-    "title" : "Title",
-    "topic" : "Topic",
-    "progress":"Progress"
+    "title": "Title",
+    "topic": "Topic",
+    "progress": "Progress"
   },
   "levels": {
     "easy": "Easy",
@@ -46,7 +59,6 @@
     "overallProgress": "My Progress",
     "completedCount": "",
     "levelLabel": "Level"
-
   },
   "login": {
     "title": "Welcome!",

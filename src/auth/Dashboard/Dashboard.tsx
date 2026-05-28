@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { fetchAllDashboardData } from "../../services/dashboardServices";
-import { fetchProfile } from "../../services/profileServices";
+// import { fetchProfile } from "../../services/profileServices";
 import {
   getOverallProgress,
   // getTotalCompleted,
@@ -15,7 +15,7 @@ import {
   OverviewData,
   DetailedProgressMap,
   // StoryOverview,
-  UserProfile,
+  // UserProfile,
 } from "../../types/Dashboard";
 // import StoryProgressModal from "./StoryProgressModal";
 // import ListeningStatsCard from "../Dashboard/ListeningStatsCards";
