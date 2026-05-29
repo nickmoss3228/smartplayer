@@ -12,6 +12,21 @@ import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
 import { getAvatarById } from "../../config/avatars";
 
+// ── Flag image URLs (flagcdn.com — free, no account needed) ──────────────────
+const FLAG_URLS: Record<string, string> = {
+  EN: "https://flagcdn.com/w40/gb.png",
+  RU: "https://flagcdn.com/w40/ru.png",
+};
+
+const FlagImg = ({ lang }: { lang: string }) => (
+  <img
+    src={FLAG_URLS[lang]}
+    alt={lang}
+    className="w-5 h-3.5 object-cover rounded-sm"
+  />
+);
+// ─────────────────────────────────────────────────────────────────────────────
+
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { t, i18n } = useTranslation();
@@ -24,7 +39,8 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   // Resolve avatar — falls back to the outline icon if no profile yet
-const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
+  const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
+  
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,14 +98,12 @@ const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
               className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
             >
               {avatar ? (
-                // Dicebear SVG avatar
                 <img
                   src={avatar.url}
                   alt={avatar.label}
                   className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200"
                 />
               ) : (
-                // No profile loaded yet — generic silhouette
                 <UserCircleIcon className="w-7 h-7 text-gray-600 hover:text-black transition-colors" />
               )}
             </button>
@@ -98,11 +112,10 @@ const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
-                className="cursor-pointer flex items-center space-x-1 px-3 py-2 rounded-lg text-black hover:bg-gray-100 transition-colors duration-200"
+                className="cursor-pointer flex items-center space-x-1.5 px-3 py-2 rounded-lg text-black hover:bg-gray-100 transition-colors duration-200"
               >
-                <span className="text-lg leading-none">
-                  {currentLanguage === "EN" ? "🇬🇧" : "🇷🇺"}
-                </span>
+                {/* Always renders a real flag image */}
+                <FlagImg lang={currentLanguage === "EN" ? "EN" : "RU"} />
                 <ChevronDownIcon
                   className={`w-4 h-4 transition-transform duration-200 ${
                     isDropdownOpen ? "rotate-180" : ""
@@ -135,7 +148,7 @@ const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
                           : "text-black hover:bg-gray-100"
                       }`}
                     >
-                      <span className="text-base leading-none">🇬🇧</span>
+                      <FlagImg lang="EN" />
                       English
                     </button>
                     <button
@@ -146,7 +159,7 @@ const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
                           : "text-black hover:bg-gray-100"
                       }`}
                     >
-                      <span className="text-base leading-none">🇷🇺</span>
+                      <FlagImg lang="RU" />
                       Русский
                     </button>
                   </div>
