@@ -22,7 +22,7 @@ interface UseSegmentEngineOptions {
   repeatCount: number;
   isControlledMode: boolean;
   playbackRateRef: React.MutableRefObject<number>;
-  isEnhancedMode: boolean; // add this
+  isEnhancedMode: boolean; 
   onAudioComplete: (() => void) | undefined;
   userPlaybackRateRef: React.MutableRefObject<number>;
 }
@@ -107,22 +107,6 @@ export const useSegmentEngine = ({
     },
     [],
   );
-
-  // const updateActiveSubtitle = useCallback(
-  //   (currentTimeValue: number) => {
-  //     if (!subtitles?.length) {
-  //       dispatch(setActiveSubtitle(""));
-  //       return;
-  //     }
-  //     const currentSubtitle = subtitles.find(
-  //       (sub) =>
-  //         currentTimeValue >= sub.startTime &&
-  //         currentTimeValue <= sub.endTime,
-  //     );
-  //     dispatch(setActiveSubtitle(currentSubtitle ? currentSubtitle.text : ""));
-  //   },
-  //   [subtitles, dispatch],
-  // );
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -353,3 +337,22 @@ export const useSegmentEngine = ({
     isEnhancedModeRef,
   };
 };
+
+
+
+
+  // const updateActiveSubtitle = useCallback(
+  //   (currentTimeValue: number) => {
+  //     if (!subtitles?.length) {
+  //       dispatch(setActiveSubtitle(""));
+  //       return;
+  //     }
+  //     const currentSubtitle = subtitles.find(
+  //       (sub) =>
+  //         currentTimeValue >= sub.startTime &&
+  //         currentTimeValue <= sub.endTime,
+  //     );
+  //     dispatch(setActiveSubtitle(currentSubtitle ? currentSubtitle.text : ""));
+  //   },
+  //   [subtitles, dispatch],
+  // );

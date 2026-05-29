@@ -1,7 +1,6 @@
 import React from "react";
 import {IoPlay, IoChevronBack, IoChevronForward } from "react-icons/io5"; 
-// import { MdReplay } from "react-icons/md";
-// import VoiceSwitcher from "../VoiceSwitcher/VoiceSwitcher";
+
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
 import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay"; 
@@ -27,6 +26,7 @@ interface PlayerControlsProps {
   storyIndex?: number;
   comicsTitle?: string;
   difficulty?: string;
+  isUserPaused?: boolean;
 }
 
 export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
@@ -34,9 +34,11 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     isPlaying,
     // isControlledMode,
     onPlayPause,
+    // isUserPaused = false,
     // onToggleControlledMode,
     onToggleEnhancedMode,
     repeatCount,
+
     onRepeatCountChange,
     onSpeedChange,
     playbackRate,
@@ -56,6 +58,13 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     const disabledClass = !isEnhancedMode
       ? "opacity-40 pointer-events-none cursor-not-allowed"
       : "";
+    
+    // true  → show Pause icon  (user manually paused, or non-enhanced playing)
+    // false → show Play icon
+    // const showPauseIcon = isUserPaused || (isPlaying && !isEnhancedMode);
+
+    // green pulsing state: engine is auto-cycling in Enhanced mode
+    // const highlightGreen = isPlaying && isEnhancedMode && !isUserPaused;
     
   //   const repeatsDisabledClass = !isEnhancedMode
   // ? "opacity-40 pointer-events-none cursor-not-allowed"
@@ -235,24 +244,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 </button>
                 <span className={labelClass}>{isPlaying ? "Pause" : "Play"}</span>
               </div>
-
-              {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
-                <button
-                  className={`p-2 border-2 rounded-full cursor-pointer
-                    transition-all duration-200 active:scale-95 flex items-center justify-center
-                    ${isControlledMode
-                      ? "bg-[#05df3bff] border-green-500 hover:bg-[#04c934]"
-                      : "bg-black/90 border-[#ddd] hover:bg-black/50"
-                    }`}
-                  onClick={onToggleControlledMode}
-                  title={isControlledMode
-                    ? "Controlled mode ON — stops after each segment"
-                    : "Controlled mode OFF — plays continuously"}
-                > */}
-                  {/* <MdReplay className="text-white w-[30px] h-[30px]" /> */}
-                {/* </button> */}
-                {/* <span className={labelClass}>Step</span> */}
-              {/* </div> */}
+              {/* here was controlled mode code */}
             </div>
           </div>
 
@@ -262,7 +254,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
              {PLAYBACK_RATES.map((speed) => (
   <button
     key={speed}
-    disabled={!isEnhancedMode}   // ← add
+    disabled={!isEnhancedMode} 
     className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
       cursor-pointer text-xs font-medium font-['Montserrat']
       transition-all duration-200 active:scale-95
@@ -298,7 +290,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 PlayerControls.displayName = "PlayerControls";
 
 
-
+// import { MdReplay } from "react-icons/md";
 
  {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
               <button
@@ -320,3 +312,21 @@ PlayerControls.displayName = "PlayerControls";
               </button>
               <span className={labelClass}>Step</span>
             </div> */}
+
+            {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+                <button
+                  className={`p-2 border-2 rounded-full cursor-pointer
+                    transition-all duration-200 active:scale-95 flex items-center justify-center
+                    ${isControlledMode
+                      ? "bg-[#05df3bff] border-green-500 hover:bg-[#04c934]"
+                      : "bg-black/90 border-[#ddd] hover:bg-black/50"
+                    }`}
+                  onClick={onToggleControlledMode}
+                  title={isControlledMode
+                    ? "Controlled mode ON — stops after each segment"
+                    : "Controlled mode OFF — plays continuously"}
+                > */}
+                  {/* <MdReplay className="text-white w-[30px] h-[30px]" /> */}
+                {/* </button> */}
+                {/* <span className={labelClass}>Step</span> */}
+              {/* </div> */}

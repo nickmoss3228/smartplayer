@@ -23,9 +23,8 @@ import { PlayerControls } from "./Controls/PlayerControls";
 import { VolumeControl } from "./Controls/VolumeControl";
 import { VocabChip } from "./Vocabulary/VocabChip";
 import { VocabularyRow } from "./Vocabulary/VocabularyRow";
-// import { ComicsPlaceholder } from "../Player/Comics/ComicsPlaceholder";
 import ComicsDisplay from "./Comics/ComicsDisplay";
-import { trackFolderMap } from "../../modules/vocabulary/Vocabulary"; // adjust path
+import { trackFolderMap } from "../../modules/vocabulary/Vocabulary"; 
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
   ({
@@ -59,6 +58,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const [isControlledMode, setIsControlledMode] = useState(false);
     const playbackRateRef = useRef(playbackRate);
     const [isEnhancedMode, setIsEnhancedMode] = useState(true);
+    // const [isUserPaused, setIsUserPaused] = useState(false);
     const handleToggleEnhancedMode = () => setIsEnhancedMode((prev) => !prev);
 
     useEffect(() => {

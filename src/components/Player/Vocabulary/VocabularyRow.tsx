@@ -18,7 +18,7 @@ export const VocabularyRow: React.FC<VocabularyRowProps> = ({ words, onPlay, vol
       Vocabulary
     </p>
     <div
-      className="flex gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4
+      className="flex pt-2 gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4
                  [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {words.map(({ word, audioKey }) => (

@@ -2,12 +2,12 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { TimeMarker } from "../../../types";
 
 interface MobileProgressBarProps {
-  getAudioTime: () => number;          // polls wavesurfer.getCurrentTime()
+  getAudioTime: () => number;  // polls wavesurfer.getCurrentTime()
   durationSeconds: number;
   timeMarkers: TimeMarker[];
   onSeek: (progress: number) => void;  // 0 – 1
   onMarkerClick: (time: number) => void;
-  currentTime: string;                 // formatted "M:SS" for display
+  currentTime: string; // formatted "M:SS" for display
   duration: string;
   isLoading: boolean;
 }
@@ -41,7 +41,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
     return () => cancelAnimationFrame(rafRef.current);
   }, [durationSeconds, getAudioTime]);
 
-  // ── Pointer interactions ──────────────────────────────────────────────────
+  // Pointer interactions 
   const getProgressFromX = useCallback((clientX: number) => {
     if (!barRef.current) return 0;
     const { left, width } = barRef.current.getBoundingClientRect();
@@ -67,7 +67,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
 
   const handlePointerUp = useCallback(() => setIsDragging(false), []);
 
-  // ── Loading state ─────────────────────────────────────────────────────────
+  // Loading state
   if (isLoading) {
     return (
       <div className="w-full flex items-center justify-center gap-2 py-6">

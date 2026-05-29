@@ -19,6 +19,10 @@ import {
 } from "../modules/storypreview/storyPreviewData";
 import { getOrderedComics } from "../components/Player/Comics/ComicsDisplay";
 
+import { preloadImages }          from '../services/preload';
+import { usePreloadStoryAssets }  from '../hooks/usePreloadStoryAssets';
+import type { Difficulty }        from '../types/Player'; // if not already imported
+
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -68,6 +72,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   const audioTracks = getAudioTracksByDifficulty(difficulty);
   const theme: Theme = themes[difficulty] || themes.easy;
+  const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty);
 
   const comics = getOrderedComics(difficulty);
 
@@ -84,6 +89,27 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  useEffect(() => {
+  // 1. Preview modal images — one per level (the picture shown inside the modal).
+  //    ⚠️  Change `.coverImage` to match the actual property in your StoryPreview type.
+  const previewUrls = audioTracks
+    .map(track => {
+      const data = storyPreviewData[`${difficulty}-${track.id}`];
+      return (data as any)?.coverImage as string | undefined;
+    })
+    .filter((url): url is string => Boolean(url));
+
+  preloadImages(previewUrls);
+
+  // 2. Comic cover images shown directly on the story cards.
+  //    getOrderedComics returns objects with a `src` field — adjust if needed.
+  const comicUrls = (comics as any[])
+    .map(c => (typeof c === 'string' ? c : c?.src ?? c?.cover ?? c?.image))
+    .filter((url): url is string => typeof url === 'string' && url.length > 0);
+
+  preloadImages(comicUrls);
+}, [difficulty]); // re-run only when difficulty changes
 
   useEffect(() => {
     if (isAllCompleted && !hasShownCongrats(difficulty)) {
@@ -119,6 +145,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     const data = storyPreviewData[key] ?? null;
     setPreviewLevel(level);
     setPreviewData(data);
+    // 🔥 Kick off audio buffering the moment the modal opens.
+  //    By the time the user reads the preview and clicks "Start Listening",
+  //    the main track + all vocab clips will already be in the browser cache.
+  preloadAudioAssets(level);
   };
 
   const handleStartListening = () => {

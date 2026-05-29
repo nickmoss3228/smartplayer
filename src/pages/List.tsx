@@ -56,10 +56,10 @@ const difficultyThemes: Record<DifficultySlug, {
   },
 };
 
-type SortKey = 'title' | 'topic' | 'duration' | 'progress';
+type SortKey = 'title' | 'topic' | 'progress';
 type SortDir = 'asc' | 'desc';
 
-const MOBILE_SORT_KEYS: SortKey[] = ['title', 'duration', 'progress'];
+const MOBILE_SORT_KEYS: SortKey[] = ['title', 'progress'];
 
 const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
@@ -126,9 +126,6 @@ const List = () => {
       } else if (sortKey === 'topic') {
         valA = ((a as any).topic || '').toLowerCase();
         valB = ((b as any).topic || '').toLowerCase();
-      } else if (sortKey === 'duration') {
-        valA = (a as any).duration || 0;
-        valB = (b as any).duration || 0;
       } else if (sortKey === 'progress') {
         valA = getStoryProgress(a).percentage;
         valB = getStoryProgress(b).percentage;
@@ -156,27 +153,27 @@ const List = () => {
 
       {/* Header */}
       <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
-  <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 animate-fade-in">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 animate-fade-in">
 
-    <button
-      onClick={() => navigate('/levels')}
-      className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
-    >
-      <IoArrowBack size={16} />
-    </button>
+          <button
+            onClick={() => navigate('/levels')}
+            className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
+          >
+            <IoArrowBack size={16} />
+          </button>
 
-    <div className="text-center flex-1 min-w-0 px-2">
-      <div className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide">
-        {t(`levelProgress.${diff}Title`)}
-      </div>
-      <p className="text-gray-400 text-sm mt-1">
+          <div className="text-center flex-1 min-w-0 px-2">
+            <div className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide">
+              {t(`levelProgress.${diff}Title`)}
+            </div>
+            <p className="text-gray-400 text-sm mt-1">
               {sortedFilteredStories.length} / {stories.length} {t(`list.stories`)}
-      </p>
-    </div>
+            </p>
+          </div>
 
-    <div className="w-4 flex-shrink-0" />
+          <div className="w-4 flex-shrink-0" />
 
-  </div>
+        </div>
 
         <div>
           {allTopics.length > 1 && (
@@ -206,13 +203,12 @@ const List = () => {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
           {/* ── Desktop table header ── */}
-          <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1.4fr] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
             <button
               onClick={() => handleSort('title')}
               className="flex items-center text-left hover:text-gray-600 transition-colors"
             >
               <IoBookOutline size={13} className="mr-1.5" />
-              {/* Title */}
               {t(`list.title`)}
               <SortIcon col="title" />
             </button>
@@ -220,23 +216,14 @@ const List = () => {
               onClick={() => handleSort('topic')}
               className="flex items-center hover:text-gray-600 transition-colors"
             >
-              {/* Topic */}
-                {t(`list.topic`)}
+              {t(`list.topic`)}
               <SortIcon col="topic" />
-            </button>
-            <button
-              onClick={() => handleSort('duration')}
-              className="flex items-center hover:text-gray-600 transition-colors"
-            >
-              <IoTimeOutline size={13} className="mr-1" />
-              <SortIcon col="duration" />
             </button>
             <button
               onClick={() => handleSort('progress')}
               className="flex items-center hover:text-gray-600 transition-colors"
             >
-              {/* Progress */}
-                {t(`list.progress`)}
+              {t(`list.progress`)}
               <SortIcon col="progress" />
             </button>
           </div>
@@ -283,21 +270,16 @@ const List = () => {
                   className={`cursor-pointer transition-colors duration-150 ${theme.rowHover} ${borderClass}`}
                 >
 
-                  {/* ── MOBILE layout ── */}
+                  {/* ── MOBILE layout (unchanged) ── */}
                   <div className="sm:hidden px-4 py-4">
-                    {/* Title — wraps freely, never truncated */}
                     <p className="text-sm font-semibold text-gray-800 leading-snug">
                       {story.title}
                     </p>
-                    {/* Description — 1-line hint */}
                     <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
                       {story.description}
                     </p>
 
-                    {/* Meta icons + progress */}
                     <div className="flex items-center justify-between gap-3 mt-2.5">
-
-                      {/* Left: icon-only meta */}
                       <div className="flex items-center gap-1.5">
                         {topic && (
                           <span
@@ -317,7 +299,6 @@ const List = () => {
                         )}
                       </div>
 
-                      {/* Right: progress bar */}
                       <div className="flex items-center gap-2 flex-1 max-w-[9.5rem]">
                         {isCompleted ? (
                           <IoCheckmarkCircle
@@ -345,8 +326,8 @@ const List = () => {
                     </div>
                   </div>
 
-                  {/* ── DESKTOP layout (unchanged) ── */}
-                  <div className="hidden sm:grid grid-cols-[2fr_1fr_1fr_1.4fr] gap-1 px-5 py-4">
+                  {/* ── DESKTOP layout ── */}
+                  <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-1 px-5 py-4">
                     {/* Title + description */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="min-w-0">
@@ -367,18 +348,6 @@ const List = () => {
                         </span>
                       ) : (
                         <span className="text-xs text-gray-300">—</span>
-                      )}
-                    </div>
-
-                    {/* Duration */}
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                      {duration ? (
-                        <>
-                          <IoTimeOutline size={13} className="text-gray-400" />
-                          {duration}
-                        </>
-                      ) : (
-                        <span className="text-gray-300 text-xs">—</span>
                       )}
                     </div>
 
