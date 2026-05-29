@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { getStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
-import { IoArrowBack } from 'react-icons/io5';
+// import { IoArrowBack } from 'react-icons/io5';
 import { t } from 'i18next';
 import { useState, useMemo } from 'react';
 import {
