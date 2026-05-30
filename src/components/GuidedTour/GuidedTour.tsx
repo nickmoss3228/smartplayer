@@ -16,7 +16,7 @@ interface TourStepConfig {
 const STEP_CONFIG: TourStepConfig[] = [
   { target: "tour-player",     side: "bottom", padding: 14 },
   { target: "tour-comics",     side: "bottom", padding: 10 },
-  { target: "tour-controls",   side: "top",    padding: 10 },
+  { target: "tour-controls",   side: "bottom",    padding: 10 },
   { target: "tour-vocabulary", side: "top",    padding: 10 },
   { target: "tour-quiz",       side: "top",    padding: 12 },
 ];
