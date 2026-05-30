@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { QuizProps } from "../../types/Quiz";
 import { useQuestionAudio } from "./useQuestionAudio";
@@ -7,7 +7,6 @@ import QuestionAudioButton from "./QuestionAudioButton";
 type FeedbackState = "idle" | "correct" | "incorrect";
 
 const Quiz: React.FC<QuizProps> = ({
-  // onTimeJump,
   questions,
   onQuizComplete,
   isSubmitting = false,
@@ -21,52 +20,40 @@ const Quiz: React.FC<QuizProps> = ({
 
   const navigate = useNavigate();
 
-  // ── Question audio ────────────────────────────────────────────────────────
-  const currentQ = questions[currentQuestion];                  // ← NEW
-  const { playState, handlePress, stop } = useQuestionAudio({  // ← NEW
+  const currentQ = questions[currentQuestion];
+  const { playState, handlePress, stop } = useQuestionAudio({
     fastSrc: currentQ.audio?.fast,
     slowSrc: currentQ.audio?.slow,
   });
 
-  // Auto-advance after feedback is shown
   useEffect(() => {
     if (feedback === "idle") return;
-
     const timer = setTimeout(() => {
       handleNext();
     }, 1500);
-
     return () => clearTimeout(timer);
   }, [feedback]);
 
   const handleAnswer = (selectedOption: number) => {
     if (selectedAnswer !== null || feedback !== "idle") return;
-
     stop();
-
     setSelectedAnswer(selectedOption);
-
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestion] = selectedOption;
     setUserAnswers(newAnswers);
-
-    const isCorrect =
-      selectedOption === questions[currentQuestion].correctAnswer;
+    const isCorrect = selectedOption === questions[currentQuestion].correctAnswer;
     setFeedback(isCorrect ? "correct" : "incorrect");
   };
 
   const handleNext = () => {
-    const isCorrect =
-      selectedAnswer === questions[currentQuestion].correctAnswer;
+    const isCorrect = selectedAnswer === questions[currentQuestion].correctAnswer;
     let newScore = score;
     if (isCorrect) {
       newScore = score + 1;
       setScore(newScore);
     }
-
     setFeedback("idle");
     setSelectedAnswer(null);
-
     if (currentQuestion + 1 < questions.length) {
       setCurrentQuestion((prev) => prev + 1);
     } else {
@@ -79,10 +66,6 @@ const Quiz: React.FC<QuizProps> = ({
       }
     }
   };
-
-  // const handleReferenceClick = () => {
-  //   onTimeJump(questions[currentQuestion].referenceTime);
-  // };
 
   const handleRetry = () => {
     setCurrentQuestion(0);
@@ -98,18 +81,18 @@ const Quiz: React.FC<QuizProps> = ({
   };
 
   const passingScore = Math.ceil(questions.length * 0.7);
-  const progressPercentage = ((currentQuestion) / questions.length) * 100;
+  const progressPercentage = (currentQuestion / questions.length) * 100;
   const finalPercentage = Math.round((score / questions.length) * 100);
 
   // ── Option button styles ──────────────────────────────────────────────────
   const getOptionClasses = (index: number) => {
     const base =
-      "w-full p-4 text-left rounded-xl border-2 font-medium transition-all duration-200 flex items-center gap-3 group";
+      // ↓ p-3 on mobile, p-4 on sm+  |  gap-2 on mobile, gap-3 on sm+
+      "w-full p-3 sm:p-4 text-left rounded-xl border-2 font-medium transition-all duration-200 flex items-center gap-2 sm:gap-3 group";
 
     if (feedback === "idle" || selectedAnswer === null) {
       return `${base} bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer`;
     }
-
     if (selectedAnswer === index) {
       if (feedback === "correct") {
         return `${base} bg-green-50 border-green-500 text-green-800 cursor-default`;
@@ -117,15 +100,14 @@ const Quiz: React.FC<QuizProps> = ({
         return `${base} bg-red-50 border-red-500 text-red-800 cursor-default`;
       }
     }
-
-    // All other options dimmed
     return `${base} bg-gray-50 border-gray-200 text-gray-400 cursor-default opacity-60`;
   };
 
   const getOptionIcon = (index: number) => {
     const letter = String.fromCharCode(65 + index);
+    // ↓ w-7 h-7 on mobile, w-8 h-8 on sm+  |  text-xs on mobile, text-sm on sm+
     const baseIcon =
-      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all duration-200";
+      "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 transition-all duration-200";
 
     if (feedback === "idle" || selectedAnswer === null) {
       return (
@@ -134,25 +116,19 @@ const Quiz: React.FC<QuizProps> = ({
         </span>
       );
     }
-
     if (selectedAnswer === index) {
       if (feedback === "correct") {
-        return (
-          <span className={`${baseIcon} bg-green-500 text-white`}>✓</span>
-        );
+        return <span className={`${baseIcon} bg-green-500 text-white`}>✓</span>;
       } else {
-        return (
-          <span className={`${baseIcon} bg-red-500 text-white`}>✗</span>
-        );
+        return <span className={`${baseIcon} bg-red-500 text-white`}>✗</span>;
       }
     }
-
     return (
       <span className={`${baseIcon} bg-gray-100 text-gray-400`}>{letter}</span>
     );
   };
 
- if (!showResults) {
+  if (!showResults) {
     return (
       <div className="w-full mx-auto mt-4 bg-white/60 rounded-2xl shadow-xl overflow-hidden">
 
@@ -164,10 +140,11 @@ const Quiz: React.FC<QuizProps> = ({
           />
         </div>
 
-        <div className="p-6 sm:p-8">
+        {/* ↓ p-4 on mobile, p-8 on sm+ */}
+        <div className="m-2 p-5 sm:p-8">
 
-          {/* Header row */}
-          <div className="flex items-center justify-between mb-6">
+          {/* Header row — ↓ mb-4 on mobile, mb-6 on sm+ */}
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <span className="text-xs font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
               Question {currentQuestion + 1} / {questions.length}
             </span>
@@ -176,20 +153,15 @@ const Quiz: React.FC<QuizProps> = ({
             </span>
           </div>
 
-          {/* Question text */}
-          {/* <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 leading-snug">
-            {currentQ.question}
-          </h2> */}
-
-          {/* ← NEW: Audio play button sits right under the question */}
+          {/* Audio button */}
           <QuestionAudioButton
             playState={playState}
             onPress={handlePress}
             hasAudio={!!currentQ.audio}
           />
 
-          {/* Options */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+          {/* Options — ↓ gap-2 on mobile, gap-3 on sm+  |  mb-5 on mobile, mb-8 on sm+ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-8">
             {currentQ.options.map((option, index) => (
               <button
                 key={index}
@@ -198,6 +170,7 @@ const Quiz: React.FC<QuizProps> = ({
                 disabled={selectedAnswer !== null || isSubmitting}
               >
                 {getOptionIcon(index)}
+                {/* ↓ text-sm on mobile, text-base on sm+ */}
                 <span className="flex-1 text-sm sm:text-base leading-snug">
                   {option}
                 </span>
@@ -205,9 +178,9 @@ const Quiz: React.FC<QuizProps> = ({
             ))}
           </div>
 
-          {/* Feedback banner — unchanged */}
+          {/* Feedback banner — ↓ mb-4 on mobile, mb-6 on sm+  |  tighter padding on mobile */}
           <div
-            className={`mb-6 rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
+            className={`mb-4 sm:mb-6 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
               feedback === "idle"
                 ? "opacity-0 bg-transparent"
                 : feedback === "correct"
@@ -219,15 +192,6 @@ const Quiz: React.FC<QuizProps> = ({
             {feedback === "incorrect" && (<><span className="text-red-500 text-base">✗</span> Not quite. Moving on...</>)}
             {feedback === "idle" && <span>&nbsp;</span>}
           </div>
-
-          {/* Reference button — unchanged */}
-          {/* <button
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-200 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-            onClick={handleReferenceClick}
-            disabled={isSubmitting}
-          >
-            🎧 <span>Jump to Reference in Audio</span>
-          </button> */}
 
         </div>
       </div>
@@ -243,17 +207,13 @@ const Quiz: React.FC<QuizProps> = ({
       {/* Top accent bar */}
       <div className={`h-2 w-full ${passed ? "bg-gradient-to-r from-green-400 to-emerald-500" : "bg-gradient-to-r from-orange-400 to-red-500"}`} />
 
-      <div className="p-6 sm:p-8 text-center">
+      {/* ↓ p-4 on mobile, p-8 on sm+ */}
+      <div className="p-4 sm:p-8 text-center">
 
-        {/* Score circle */}
-        <div className="relative w-28 h-28 mx-auto mb-6">
+        {/* Score circle — ↓ w-24 h-24 on mobile, w-28 h-28 on sm+  |  mb-4 on mobile, mb-6 on sm+ */}
+        <div className="relative w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-4 sm:mb-6">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50" cy="50" r="42"
-              fill="none"
-              stroke="#f1f5f9"
-              strokeWidth="10"
-            />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
             <circle
               cx="50" cy="50" r="42"
               fill="none"
@@ -266,7 +226,8 @@ const Quiz: React.FC<QuizProps> = ({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={`text-3xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
+            {/* ↓ text-2xl on mobile, text-3xl on sm+ */}
+            <span className={`text-2xl sm:text-3xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
               {finalPercentage}%
             </span>
             <span className="text-xs text-gray-400 font-medium mt-0.5">
@@ -279,24 +240,26 @@ const Quiz: React.FC<QuizProps> = ({
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
           {passed ? "Well Done! 🎉" : "Keep Going! 💪"}
         </h2>
-        <p className="text-gray-500 text-sm sm:text-base mb-8 max-w-sm mx-auto">
+        {/* ↓ mb-6 on mobile, mb-8 on sm+ */}
+        <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8 max-w-sm mx-auto">
           {passed
             ? "You passed this level. Great listening skills!"
             : `You need ${passingScore} correct answers to pass. You got ${score}. Give it another shot!`}
         </p>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-            <p className="text-xl font-bold text-gray-800">{score}</p>
+        {/* Stats row — ↓ gap-2 on mobile, gap-3 on sm+  |  mb-6 on mobile, mb-8 on sm+ */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
+          {/* ↓ p-2.5 on mobile, p-3 on sm+  |  text-lg on mobile, text-xl on sm+ */}
+          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+            <p className="text-lg sm:text-xl font-bold text-gray-800">{score}</p>
             <p className="text-xs text-gray-400 mt-0.5">Correct</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-            <p className="text-xl font-bold text-gray-800">{questions.length - score}</p>
+          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+            <p className="text-lg sm:text-xl font-bold text-gray-800">{questions.length - score}</p>
             <p className="text-xs text-gray-400 mt-0.5">Incorrect</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-            <p className={`text-xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
+          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+            <p className={`text-lg sm:text-xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
               {passed ? "Pass" : "Fail"}
             </p>
             <p className="text-xs text-gray-400 mt-0.5">Result</p>
@@ -334,4 +297,4 @@ const Quiz: React.FC<QuizProps> = ({
   );
 };
 
-export default Quiz;
+export default Quiz;        

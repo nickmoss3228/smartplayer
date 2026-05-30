@@ -5,6 +5,10 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import enTranslation from './locales/en/translation.json';
 import ruTranslation from './locales/ru/translation.json';
 
+const LANG_KEY = "preferredLanguage";
+
+const initialLang = localStorage.getItem(LANG_KEY) ?? "ru";
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -17,6 +21,7 @@ i18n
         translation: ruTranslation
       }
     },
+    lng: initialLang,
     fallbackLng: 'en',
     debug: false,
     interpolation: {

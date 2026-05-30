@@ -213,22 +213,27 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         {/* ═══════════ MOBILE LAYOUT (< md) ═══════════ */}
         <div className="md:hidden flex flex-col gap-4 px-4 pb-6">
           {/* <ComicsPlaceholder /> */}
-{/* {(() => { console.log("[JSX] passing difficulty as:", level); return null; })()} */}
+          {/* {(() => { console.log("[JSX] passing difficulty as:", level); return null; })()} */}
+          <div data-tour="tour-comics">
           <ComicsDisplay
             storyIndex={Number(trackId)}
             title={storyTitles[Number(trackId)]}
             difficulty={difficulty} // ← new prop
-          />
+            />
+          </div>
 
           {currentVocabulary.length > 0 && (
+            <div data-tour="tour-vocabulary">
             <VocabularyRow
               words={currentVocabulary}
               onPlay={playVocabWord}
               volume={isMuted ? 0 : volume}
-            />
+              />
+              </div>
           )}
 
           {/* isMobile prop replaces mobilePrevNext; no more buttons here */}
+          <div data-tour="tour-player">
           <WaveformDisplay
             waveformRef={waveformRef}
             isLoading={isLoading}
@@ -243,9 +248,10 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             onSeek={handleSeek}
             getAudioTime={getAudioTime}
             isMobile // ← replaces mobilePrevNext
-          />
+            />
+            </div>
 
-          <div className="bg-white/60 rounded-2xl p-4 flex flex-col gap-4">
+          <div className="bg-white/60 rounded-2xl p-4 flex flex-col gap-4" data-tour="tour-controls">
             <PlayerControls
               isPlaying={isPlaying}
               isControlledMode={isControlledMode}
@@ -269,6 +275,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
         {/* ═══════════ DESKTOP LAYOUT (≥ md) — UNCHANGED ═══════════ */}
         <div className="hidden md:block">
+          <div data-tour="tour-player">
           <WaveformDisplay
             waveformRef={waveformRef}
             isLoading={isLoading}
@@ -280,9 +287,12 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             subtitlesVisible={subtitlesVisible}
             activeSubtitle={activeSubtitle}
             onMarkerClick={handleMarkerClick}
-          />
+            />
+            </div>
 
-          <div className="max-w-[1100px] bg-white/60 mx-auto p-[35px] rounded-2xl md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]">
+          <div className="max-w-[1100px] bg-white/60 mx-auto p-[35px] rounded-2xl md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
+            data-tour="tour-controls"
+          >
             <PlayerControls
               isPlaying={isPlaying}
               isControlledMode={isControlledMode}
@@ -308,7 +318,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
           </div>
 
           {currentVocabulary.length > 0 && (
-            <div className="max-w-[1100px] mx-auto px-5 pb-6 mt-2">
+            <div className="max-w-[1100px] mx-auto px-5 pb-6 mt-2"
+              data-tour="tour-vocabulary"
+            >
               <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-3">
                 Key Vocabulary
               </p>

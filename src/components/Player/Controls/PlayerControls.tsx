@@ -190,7 +190,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         <div className="flex items-end justify-between w-full">
 
           {/* ── LEFT SLOT: circular comics button ── */}
-          <div className="flex flex-col items-center gap-1 min-w-[80px]">
+          <div className="flex flex-col items-center gap-1 min-w-[80px]"
+            data-tour="tour-comics"
+          >
             {showComics ? (
               <>
                 <ComicsDisplay

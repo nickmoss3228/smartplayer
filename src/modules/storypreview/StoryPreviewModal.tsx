@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
+// import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 
 interface StoryPreviewModalProps {
   isOpen: boolean;
@@ -12,15 +14,25 @@ interface StoryPreviewModalProps {
 }
 
 export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
-  isOpen,
-  onClose,
-  onStart,
-  preview,
-  theme,
+  preview, theme, isOpen, onClose, onStart,
 }) => {
+  const { t } = useTranslation();  // ← use hook, not standalone t import
   const [showDetails, setShowDetails] = useState(false);
 
   if (!isOpen || !preview) return null;
+
+  const storyKey = `stories.${preview.id}`;
+  // const grammarPoints = t(`${storyKey}.grammar`, { returnObjects: true }) as string[];
+  const title       = t(`${storyKey}.title`);
+  const description = t(`${storyKey}.description`);
+  const tip         = t(`${storyKey}.tip`);
+  const difficulty  = t(`${storyKey}.difficulty`);  // if translated
+  const duration = t(`${storyKey}.duration`);    // if translated
+  
+  const grammarRaw     = t(`${storyKey}.grammar`, { returnObjects: true });
+
+  // Safety guard — if JSON structure is wrong, this won't crash the render
+  const safeGrammarPoints = Array.isArray(preview.grammar) ? preview.grammar : [];
 
   return (
     <div
@@ -66,17 +78,17 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
           {/* Title + meta */}
           <div>
             <p className="text-xs text-white/45 uppercase tracking-widest mb-1">
-              {preview.difficulty} · {preview.duration}
-            </p>
+      {difficulty} · {duration}
+    </p>
             <h2 className="text-2xl font-bold text-white leading-snug">
-              {preview.title}
-            </h2>
+      {title}
+    </h2>
           </div>
 
           {/* Description */}
           <p className="text-white/70 text-sm leading-relaxed">
-            {preview.description}
-          </p>
+      {description}
+    </p>
 
           {/* Expandable details */}
           <div
@@ -89,11 +101,11 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               {/* Grammar points — smaller text on mobile */}
               <div>
                 <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">
-                  Grammar focus
+                  {t("storyModal.grammarFocus")}
                 </p>
                 <div className="flex flex-col gap-2">
-                  {preview.grammar.map((point, i) => (
-                    <div key={point} className="flex items-start gap-2">
+                  {safeGrammarPoints.map((point, i) => (
+                    <div key={i} className="flex items-start gap-2">
                       <span className="mt-0.5 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full
                                        bg-blue-500/20 text-blue-400 text-[9px] sm:text-[10px]
                                        font-bold flex items-center justify-center border border-blue-500/30">
@@ -110,8 +122,8 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
                 <span className="text-xl flex-shrink-0">💡</span>
                 <p className="text-white/65 text-sm leading-relaxed">
-                  <span className="text-white font-semibold">Tip: </span>
-                  {preview.tip}
+                  <span className="text-white font-semibold">{t("storyModal.tip") + ": "}</span>
+                  {tip}
                 </p>
               </div>
 
@@ -131,7 +143,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             >
               ▼
             </span>
-            {showDetails ? "Hide details" : "Grammar & tips"}
+            {showDetails ? t("storyModal.hideDetails") : t("storyModal.grammarAndTips")}
           </button>
         </div>
 
@@ -143,7 +155,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               className="flex-1 py-3 rounded-xl border border-white/15 text-white/55
                          hover:text-white hover:border-white/30 transition-all text-sm font-medium"
             >
-              Back
+              {t("storyModal.back")}
             </button>
             <button
               onClick={onStart}
@@ -151,7 +163,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
                           text-white font-semibold text-sm shadow-lg
                           hover:opacity-90 active:scale-[0.98] transition-all`}
             >
-              Start Listening
+              {t("storyModal.startListening")}
             </button>
           </div>
         </div>
