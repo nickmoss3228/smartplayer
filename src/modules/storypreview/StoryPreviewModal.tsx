@@ -20,19 +20,27 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   const [showDetails, setShowDetails] = useState(false);
 
   if (!isOpen || !preview) return null;
+  console.log("storyKey →", `stories.${preview.id}`);
 
   const storyKey = `stories.${preview.id}`;
   // const grammarPoints = t(`${storyKey}.grammar`, { returnObjects: true }) as string[];
-  const title       = t(`${storyKey}.title`);
-  const description = t(`${storyKey}.description`);
-  const tip         = t(`${storyKey}.tip`);
-  const difficulty  = t(`${storyKey}.difficulty`);  // if translated
-  const duration = t(`${storyKey}.duration`);    // if translated
+const title       = t(`${storyKey}.title`,      );
+const description = t(`${storyKey}.description`, );
+const tip         = t(`${storyKey}.tip`,          );
+const difficulty  = t(`${storyKey}.difficulty`,  );
+const duration    = t(`${storyKey}.duration`,    );
   
-  // const grammarRaw= t(`${storyKey}.grammar`, { returnObjects: true });
-
-  // Safety guard — if JSON structure is wrong, this won't crash the render
-  const safeGrammarPoints = Array.isArray(preview.grammar) ? preview.grammar : [];
+  // Grammar: prefer the translated array from i18next;
+// if the key is missing or returns a non-array, fall back to preview.grammar.
+const grammarFromI18n = t(`${storyKey}.grammar`, {
+  returnObjects: true,
+  defaultValue: null,
+});
+const safeGrammarPoints: string[] = Array.isArray(grammarFromI18n)
+  ? (grammarFromI18n as string[])
+  : Array.isArray(preview.grammar)
+  ? preview.grammar
+  : [];
 
   return (
     <div

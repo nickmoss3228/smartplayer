@@ -49,7 +49,7 @@ export interface StoryPreview {
 
 export const storyPreviewData: Record<string, StoryPreview> = {
   "easy-1": {
-    id: "1",
+    id: "easy-1",
     title: "Leo's Life",
     emoji: "🧑",
     image: leo1,
@@ -68,7 +68,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-2": {
-    id: "2",
+    id: "easy-2",
     title: "Leo's Mornings",
     emoji: "☀️",
     image: leo2,
@@ -87,7 +87,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-3": {
-    id: "3",
+    id: "easy-3",
     title: "Leo's Favorite Food",
     emoji: "🍕",
     image: leo3,
@@ -106,7 +106,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-4": {
-    id: "4",
+    id: "easy-4",
     title: "Leo's Family",
     emoji: "👨‍👩‍👧‍👦",
     image: leo4,
@@ -125,7 +125,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-5": {
-    id: "5",
+    id: "easy-5",
     title: "Leo's Clothes",
     emoji: "👕",
     image: leo5,
@@ -144,7 +144,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-6": {
-    id: "6",
+    id: "easy-6",
     title: "A Day at the Beach",
     emoji: "🏖️",
     image: leo6,
@@ -163,7 +163,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-7": {
-    id: "7",
+    id: "easy-7",
     title: "A Country Leo Wants to Visit",
     emoji: "🇮🇹",
     image: leo7,
@@ -182,7 +182,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-8": {
-    id: "8",
+    id: "easy-8",
     title: "Leo's Hobbies",
     emoji: "⚽",
     image: leo8,
@@ -201,7 +201,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-9": {
-    id: "9",
+    id: "easy-9",
     title: "Meeting a Friend",
     emoji: "☕",
     image: leo9,
@@ -220,7 +220,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "easy-10": {
-    id: "10",
+    id: "easy-10",
     title: "The Lost Kitten",
     emoji: "🐱",
     image: leo10,
@@ -241,7 +241,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   // ─── MEDIUM ────────────────────────────────────────────────────────────────
 
   "medium-1": {
-    id: "1",
+    id: "medium-1",
     title: "Meet Maya!",
     emoji: "✈️",
     // Female journalist / New York City energy
@@ -261,7 +261,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-2": {
-    id: "2",
+    id: "medium-2",
     title: "A Trip to Kyoto",
     emoji: "🏯",
     // Kyoto temple / torii gate scene
@@ -281,7 +281,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-3": {
-    id: "3",
+    id: "medium-3",
     title: "Trying Street Food in Bangkok",
     emoji: "🍜",
     // Bangkok street food market at night
@@ -301,7 +301,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-4": {
-    id: "4",
+    id: "medium-4",
     title: "A Missed Connection",
     emoji: "🚆",
     // Train station / railway platform
@@ -321,7 +321,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-5": {
-    id: "5",
+    id: "medium-5",
     title: "Budgeting for Adventure",
     emoji: "💸",
     // Wallet / cash / budget planning on a map
@@ -341,7 +341,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-6": {
-    id: "6",
+    id: "medium-6",
     title: "Discussing Environmental Concerns",
     emoji: "🌊",
     // Ocean pollution / coastal environment
@@ -367,7 +367,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-7": {
-    id: "7",
+    id: "medium-7",
     title: "An Unexpected Interview",
     emoji: "🧵",
     // Moroccan leather craft / tannery
@@ -393,7 +393,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-8": {
-    id: "8",
+    id: "medium-8",
     title: "Family Across Borders",
     emoji: "🌍",
     // Video call / family staying in touch across distance
@@ -419,7 +419,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-9": {
-    id: "9",
+    id: "medium-9",
     title: "The Mountain Festival – Part 1",
     emoji: "🏔️",
     // Peruvian highlands / Andean mountains
@@ -445,7 +445,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "medium-10": {
-    id: "10",
+    id: "medium-10",
     title: "The Mountain Festival – Part 2",
     emoji: "🌌",
     // Night sky / stars over mountains — ritual atmosphere
@@ -473,7 +473,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   // ─── HARD ──────────────────────────────────────────────────────────────────
 
   "hard-1": {
-    id: "1",
+    id: "hard-1",
     title: "Introducing Myself",
     emoji: "🏢",
     // Confident businessman / office portrait
@@ -493,7 +493,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-2": {
-    id: "2",
+    id: "hard-2",
     title: "The Deal That Nearly Broke Me",
     emoji: "📦",
     // Warehouse / logistics / pallets
@@ -519,7 +519,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-3": {
-    id: "3",
+    id: "hard-3",
     title: "The Conference in Munich",
     emoji: "🇩🇪",
     // Munich / conference / beer hall
@@ -545,7 +545,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-4": {
-    id: "4",
+    id: "hard-4",
     title: "A Failure with a Silver Lining",
     emoji: "🧀",
     // Artisan cheese / refrigerated goods
@@ -571,7 +571,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-5": {
-    id: "5",
+    id: "hard-5",
     title: "The Bridge at Low Tide",
     emoji: "🌉",
     // Narrow stone bridge / English countryside
@@ -597,7 +597,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-6": {
-    id: "6",
+    id: "hard-6",
     title: "Night of the Phantom Pallets",
     emoji: "🌙",
     // Dark warehouse at night / night operations
@@ -623,7 +623,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-7": {
-    id: "7",
+    id: "hard-7",
     title: "Family Weather Report",
     emoji: "🏠",
     // Warm family kitchen / home life
@@ -649,7 +649,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-8": {
-    id: "8",
+    id: "hard-8",
     title: "The Price of Enough",
     emoji: "💷",
     // Money / financial reflection / coins and notes
@@ -675,7 +675,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-9": {
-    id: "9",
+    id: "hard-9",
     title: "Family on the Manifest – Part I",
     emoji: "✈️",
     // Airport / family travel / Bilbao or Spain cityscape
@@ -701,7 +701,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
   },
 
   "hard-10": {
-    id: "10",
+    id: "hard-10",
     title: "Family on the Manifest – Part II",
     emoji: "⛵",
     // San Sebastián bay / La Concha beach / dramatic sea
