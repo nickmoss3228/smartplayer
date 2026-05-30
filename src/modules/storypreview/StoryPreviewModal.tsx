@@ -29,7 +29,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   const difficulty  = t(`${storyKey}.difficulty`);  // if translated
   const duration = t(`${storyKey}.duration`);    // if translated
   
-  const grammarRaw     = t(`${storyKey}.grammar`, { returnObjects: true });
+  // const grammarRaw= t(`${storyKey}.grammar`, { returnObjects: true });
 
   // Safety guard — if JSON structure is wrong, this won't crash the render
   const safeGrammarPoints = Array.isArray(preview.grammar) ? preview.grammar : [];
