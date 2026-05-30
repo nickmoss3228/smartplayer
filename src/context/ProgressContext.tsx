@@ -127,7 +127,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     if (!user) {
       setStoryProgress({});
-      setIsInitialLoad(true);
+      setIsInitialLoad(false);
       hasFetched.current = false;
     }
   }, [user, fetchAll]);

@@ -264,12 +264,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
             />
-            {/* <VolumeControl
-              isMuted={isMuted}
-              volume={volume}
-              onMuteToggle={handleMuteToggle}
-              onVolumeChange={handleVolumeChange}
-            /> */}
           </div>
         </div>
 

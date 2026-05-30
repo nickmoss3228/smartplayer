@@ -305,5 +305,14 @@
     "allLevelsCompleted": "All Levels Completed",
     "nextDifficulty": "Try Next Difficulty",
     "close": "Continue"
-  }
+  },
+  "trial": {
+  "free":                "FREE",
+  "register":            "Sign up",
+  "unlockTitle":         "Unlock All Stories",
+  "unlockDescription":   "You've explored {{count}} free stories. Create a free account to unlock everything and track your progress.",
+  "createAccount":       "Create Free Account",
+  "login":               "Already have an account? Log in",
+  "maybeLater":          "Maybe later"
+}
 }

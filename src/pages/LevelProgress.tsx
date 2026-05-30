@@ -1,60 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { themes } from "../modules/levelprogress/themes.levelprogress";
-import { LevelProgressProps, Theme } from "../types/LevelProgress";
-import { useLevelProgress } from "../hooks/useLevelProgress";
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { themes } from '../modules/levelprogress/themes.levelprogress';
+import { LevelProgressProps, Theme } from '../types/LevelProgress';
+import { useLevelProgress } from '../hooks/useLevelProgress';
 import {
   loadLastListened,
   saveLastListened,
-} from "../modules/levelprogress/levelprogress.module";
-import { useLocation, useNavigate } from "react-router";
-import { CongratsModal } from "../modules/levelprogress/congratsModule";
-import { LevelProgressSkeleton } from "../modules/levelprogress/LevelProgressSkeleton";
-import { useProgress } from "../context/ProgressContext";
-import { getAudioTracksByDifficulty } from "../modules/audiodata/audioDataByDiffculty";
-import { StoryPreviewModal } from "../modules/storypreview/StoryPreviewModal";
+} from '../modules/levelprogress/levelprogress.module';
+import { useLocation, useNavigate } from 'react-router';
+import { CongratsModal } from '../modules/levelprogress/congratsModule';
+import { LevelProgressSkeleton } from '../modules/levelprogress/LevelProgressSkeleton';
+import { useProgress } from '../context/ProgressContext';
+import { getAudioTracksByDifficulty } from '../modules/audiodata/audioDataByDiffculty';
+import { StoryPreviewModal } from '../modules/storypreview/StoryPreviewModal';
 import {
   storyPreviewData,
   StoryPreview,
-} from "../modules/storypreview/storyPreviewData";
-import { getOrderedComics } from "../components/Player/Comics/ComicsDisplay";
-
-import { preloadImages }          from '../services/preload';
-import { usePreloadStoryAssets }  from '../hooks/usePreloadStoryAssets';
-import type { Difficulty }        from '../types/Player'; // if not already imported
+} from '../modules/storypreview/storyPreviewData';
+import { getOrderedComics } from '../components/Player/Comics/ComicsDisplay';
+import { preloadImages } from '../services/preload';
+import { usePreloadStoryAssets } from '../hooks/usePreloadStoryAssets';
+import type { Difficulty } from '../types/Player';
+// ── NEW ──────────────────────────────────────────────────────────────────────
+import { useAuth } from '../context/AuthContext';
+import { FREE_TRIAL_STORIES } from '../constants/trial';
+// ─────────────────────────────────────────────────────────────────────────────
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
+  // ── NEW: know whether the user is signed in ───────────────────────────────
+  const { user } = useAuth();
+  // ─────────────────────────────────────────────────────────────────────────
+
   const [showCongrats, setShowCongrats] = useState(false);
   const [previewLevel, setPreviewLevel] = useState<number | null>(null);
   const [previewData, setPreviewData] = useState<StoryPreview | null>(null);
+  // ── NEW ──────────────────────────────────────────────────────────────────
+  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // ─── Last listened state (persisted per difficulty) ───────────────────────
   const [lastListenedLevel, setLastListenedLevel] = useState<number | null>(
-    () => loadLastListened(props.difficulty ?? "easy"),
+    () => loadLastListened(props.difficulty ?? 'easy'),
   );
 
   useEffect(() => {
-    setLastListenedLevel(loadLastListened(props.difficulty ?? "easy"));
+    setLastListenedLevel(loadLastListened(props.difficulty ?? 'easy'));
   }, [props.difficulty]);
 
   const { getStoryData, isInitialLoad } = useProgress();
 
   const storyData = getStoryData(
-    props.difficulty ?? "easy",
-    props.storySlug ?? "leo",
+    props.difficulty ?? 'easy',
+    props.storySlug ?? 'leo',
   );
 
-  const isLoading = storyData.loading && isInitialLoad;
+  const isLoading = !!user && storyData.loading && isInitialLoad;
 
   const completedLevels = props.completedLevels?.length
     ? props.completedLevels
     : storyData.completedParts;
   const currentLevel = props.currentLevel ?? storyData.currentPart;
-  const totalLevels = props.totalLevels ?? storyData.totalParts;
+
+  const audioTracks = getAudioTracksByDifficulty(
+    props.difficulty ?? 'easy',
+  );
+
+  // ── Fallback to audioTracks.length so the grid renders for guests too ─────
+  const totalLevels =
+    props.totalLevels ?? (storyData.totalParts || audioTracks.length);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const {
     difficulty,
@@ -70,10 +87,8 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     totalLevels,
   });
 
-  const audioTracks = getAudioTracksByDifficulty(difficulty);
   const theme: Theme = themes[difficulty] || themes.easy;
   const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty);
-
   const comics = getOrderedComics(difficulty);
 
   const isAllCompleted =
@@ -82,34 +97,28 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
   const hasShownCongrats = (diff: string) =>
-    localStorage.getItem(getCongratsKey(diff)) === "true";
+    localStorage.getItem(getCongratsKey(diff)) === 'true';
   const markCongratsShown = (diff: string) =>
-    localStorage.setItem(getCongratsKey(diff), "true");
+    localStorage.setItem(getCongratsKey(diff), 'true');
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
   useEffect(() => {
-  // 1. Preview modal images — one per level (the picture shown inside the modal).
-  //    ⚠️  Change `.coverImage` to match the actual property in your StoryPreview type.
-  const previewUrls = audioTracks
-    .map(track => {
-      const data = storyPreviewData[`${difficulty}-${track.id}`];
-      return (data as any)?.coverImage as string | undefined;
-    })
-    .filter((url): url is string => Boolean(url));
+    const previewUrls = audioTracks
+      .map((track) => {
+        const data = storyPreviewData[`${difficulty}-${track.id}`];
+        return (data as any)?.coverImage as string | undefined;
+      })
+      .filter((url): url is string => Boolean(url));
+    preloadImages(previewUrls);
 
-  preloadImages(previewUrls);
-
-  // 2. Comic cover images shown directly on the story cards.
-  //    getOrderedComics returns objects with a `src` field — adjust if needed.
-  const comicUrls = (comics as any[])
-    .map(c => (typeof c === 'string' ? c : c?.src ?? c?.cover ?? c?.image))
-    .filter((url): url is string => typeof url === 'string' && url.length > 0);
-
-  preloadImages(comicUrls);
-}, [difficulty]); // re-run only when difficulty changes
+    const comicUrls = (comics as any[])
+      .map((c) => (typeof c === 'string' ? c : c?.src ?? c?.cover ?? c?.image))
+      .filter((url): url is string => typeof url === 'string' && url.length > 0);
+    preloadImages(comicUrls);
+  }, [difficulty]);
 
   useEffect(() => {
     if (isAllCompleted && !hasShownCongrats(difficulty)) {
@@ -125,30 +134,35 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  // Ring color around the cover based on level status (option b)
   const getStatusRingClass = (status: string) => {
     switch (status) {
-      case "completed":
-        return "ring-2 ring-green-400/80";
-      case "current":
-        return "ring-2 ring-white/80";
-      case "locked":
-      default:
-        return "ring-1 ring-white/20";
+      case 'completed': return 'ring-2 ring-green-400/80';
+      case 'current':   return 'ring-2 ring-white/80';
+      case 'locked':
+      default:          return 'ring-1 ring-white/20';
     }
   };
+
+  // ── NEW: returns true when a guest (no account) tries to open a paid story ─
+  const isTrialLocked = (level: number): boolean =>
+    !user && level > FREE_TRIAL_STORIES;
+  // ─────────────────────────────────────────────────────────────────────────
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const handleLevelCardClick = (level: number) => {
+    // ── NEW: intercept before doing anything else ─────────────────────────
+    if (isTrialLocked(level)) {
+      setShowRegisterPrompt(true);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     const key = `${difficulty}-${level}`;
     const data = storyPreviewData[key] ?? null;
     setPreviewLevel(level);
     setPreviewData(data);
-    // 🔥 Kick off audio buffering the moment the modal opens.
-  //    By the time the user reads the preview and clicks "Start Listening",
-  //    the main track + all vocab clips will already be in the browser cache.
-  preloadAudioAssets(level);
+    preloadAudioAssets(level);
   };
 
   const handleStartListening = () => {
@@ -182,9 +196,9 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       className={`min-h-screen bg-gradient-to-br ${theme.background} p-8 transition-all duration-1000 ease-in-out`}
     >
       <div className="max-w-4xl pt-12 mx-auto">
+
         {/* Header */}
         <div className="relative flex items-center mb-10 animate-fade-in">
-          {/* Back button — absolutely positioned, never disrupts centering */}
           <button
             onClick={() => navigate(`/levels/${difficulty}`)}
             className="absolute left-0 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm z-10"
@@ -197,16 +211,11 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
             <span className="hidden sm:inline">Вернуться</span>
           </button>
 
-          {/* Title — always truly centered across the full row */}
           <div className="w-full text-center px-14 sm:px-20 transform transition-all duration-700 ease-in-out">
             <div className="text-sm sm:text-2xl md:text-2xl font-bold text-black/80 mb-1 sm:mb-2 tracking-wider transition-all duration-700 animate-slide-down">
               {t(`levelProgress.${difficulty}Title`)}
@@ -221,11 +230,11 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         <div className="backdrop-blur-sm rounded-2xl p-6 mb-5 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-black/80">
-              {t("levelProgress.overallProgress")}
+              {t('levelProgress.overallProgress')}
             </h2>
             <span className="text-black/80 text-sm">
-              {completedLevels.length}/{totalLevels}{" "}
-              {t("levelProgress.completedCount")}
+              {completedLevels.length}/{totalLevels}{' '}
+              {t('levelProgress.completedCount')}
             </span>
           </div>
           <div className="w-full bg-white/20 rounded-full h-3">
@@ -236,15 +245,16 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           </div>
         </div>
 
-        {/* Level Grid — Spotify-style cards */}
+        {/* Level Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-5 animate-fade-in-delay-3">
           {Array.from({ length: totalLevels }, (_, index) => {
             const level = index + 1;
             const levelData = getLevelData(level, lastListenedLevel);
             const isCompleted = completedLevels.includes(level);
+            const locked = isTrialLocked(level); // ── NEW
             const trackTitle =
               audioTracks.find((tr) => tr.id === level.toString())?.title ||
-              `${t("levelProgress.levelLabel")} ${level}`;
+              `${t('levelProgress.levelLabel')} ${level}`;
 
             return (
               <div
@@ -256,68 +266,102 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
                 {/* Square cover */}
                 <div
                   className={`
-    relative w-full aspect-square rounded-xl overflow-hidden
-    bg-gradient-to-br from-white/30 to-white/10
-    shadow-md group-hover:shadow-xl transition-shadow duration-300
-    ${getStatusRingClass(levelData.status)}
-  `}
+                    relative w-full aspect-square rounded-xl overflow-hidden
+                    bg-gradient-to-br from-white/30 to-white/10
+                    shadow-md group-hover:shadow-xl transition-shadow duration-300
+                    ${getStatusRingClass(levelData.status)}
+                  `}
                 >
-                  {/* ── Comic artwork (zoomed center crop, same as ComicsDisplay) ── */}
+                  {/* Comic artwork */}
                   {comics[level - 1] ? (
                     <img
                       src={comics[level - 1]}
                       alt={trackTitle}
                       draggable={false}
-                      className="
-      w-full h-full object-cover object-center
-      scale-[1.65] group-hover:scale-[1.82]
-      transition-transform duration-500 ease-out
-    "
+                      className={`
+                        w-full h-full object-cover object-center
+                        scale-[1.65] group-hover:scale-[1.82]
+                        transition-transform duration-500 ease-out
+                        ${locked ? 'brightness-50' : ''}
+                      `}
                     />
                   ) : (
-                    /* Fallback if the image hasn't loaded / index is out of range */
                     <div
                       className={`
-        w-full h-full flex items-center justify-center
-        bg-gradient-to-br ${theme.progressGradient} opacity-70
-      `}
+                        w-full h-full flex items-center justify-center
+                        bg-gradient-to-br ${theme.progressGradient} opacity-70
+                      `}
                     >
-                      <span className="text-white/60 text-4xl font-bold select-none">
-                        ♪
-                      </span>
+                      <span className="text-white/60 text-4xl font-bold select-none">♪</span>
                     </div>
                   )}
 
-                  {/* Top-left badge: number OR green check — unchanged */}
-                  <div
-                    className={`
-      absolute top-2 left-2 w-7 h-7 rounded-full
-      flex items-center justify-center shadow-md
-      text-xs font-bold
-      ${isCompleted ? "bg-green-500 text-white" : "bg-white/90 text-black/80"}
-    `}
-                  >
-                    {isCompleted ? (
+                  {/* ── NEW: Lock overlay for trial-locked stories ────────── */}
+                  {locked && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl z-10 gap-1.5">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
+                        className="w-7 h-7 text-white/95 drop-shadow"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="3"
+                        strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="w-4 h-4"
                       >
-                        <polyline points="20 6 9 17 4 12" />
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
-                    ) : (
-                      level
-                    )}
-                  </div>
+                      <span className="text-white/90 text-[10px] font-semibold tracking-widest uppercase drop-shadow">
+                        {t('trial.register')}
+                      </span>
+                    </div>
+                  )}
+                  {/* ─────────────────────────────────────────────────────── */}
+
+                  {/* Top-left badge: number / green check (hidden under lock overlay) */}
+                  {!locked && (
+                    <div
+                      className={`
+                        absolute top-2 left-2 w-7 h-7 rounded-full z-10
+                        flex items-center justify-center shadow-md text-xs font-bold
+                        ${isCompleted ? 'bg-green-500 text-white' : 'bg-white/90 text-black/80'}
+                      `}
+                    >
+                      {isCompleted ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        level
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── NEW: FREE badge on trial-accessible stories for guests ── */}
+                  {!user && level <= FREE_TRIAL_STORIES && (
+                    <div className="absolute top-2 right-2 z-10 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow tracking-wide uppercase">
+                      {t('trial.free')}
+                    </div>
+                  )}
+                  {/* ─────────────────────────────────────────────────────── */}
                 </div>
 
-                {/* Title under the cover */}
-                <div className="text-sm font-medium text-black/80 leading-tight line-clamp-2 px-0.5">
+                {/* Title */}
+                <div
+                  className={`text-sm font-medium leading-tight line-clamp-2 px-0.5 transition-colors ${
+                    locked ? 'text-black/35' : 'text-black/80'
+                  }`}
+                >
                   {trackTitle}
                 </div>
               </div>
@@ -329,43 +373,28 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       {/* Legend */}
       <div className="text-center mt-22 animate-fade-in-delay-1">
         <div className="flex text-xs items-center justify-center gap-4 text-black/80 flex-wrap gap-y-2">
-          {/* Locked / incomplete — numbered circle */}
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-white/90 text-black/80 flex items-center justify-center text-[10px] font-bold shadow-sm ring-1 ring-white/20">
               1
             </div>
-            <span>{t("levelProgress.locked")}</span>
+            <span>{t('levelProgress.locked')}</span>
           </div>
-
-          {/* Completed — green check circle */}
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3 h-3"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <span>{t("levelProgress.completed")}</span>
+            <span>{t('levelProgress.completed')}</span>
           </div>
-
-          {/* Current — white ring sample */}
           <div className="flex items-center gap-2">
-            <div
-              className={`w-5 h-5 rounded-md bg-gradient-to-br ${theme.progressGradient} ring-2 ring-white/80 shadow-sm`}
-            />
-            <span>{t("levelProgress.current")}</span>
+            <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${theme.progressGradient} ring-2 ring-white/80 shadow-sm`} />
+            <span>{t('levelProgress.current')}</span>
           </div>
         </div>
       </div>
 
+      {/* ── Existing modals ─────────────────────────────────────────────────── */}
       <CongratsModal
         isOpen={showCongrats}
         onClose={handleCloseCongrats}
@@ -382,6 +411,76 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         preview={previewData}
         theme={theme}
       />
+
+      {/* ── NEW: Trial gate modal ──────────────────────────────────────────── */}
+      {showRegisterPrompt && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowRegisterPrompt(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div
+              className={`w-16 h-16 rounded-full bg-gradient-to-br ${theme.progressGradient} flex items-center justify-center mx-auto mb-5 shadow-lg`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-8 h-8 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              {t('trial.unlockTitle')}
+            </h2>
+            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+              {t('trial.unlockDescription', { count: FREE_TRIAL_STORIES })}
+            </p>
+
+            {/* Primary CTA */}
+            <button
+              onClick={() =>
+                navigate('/signup', {
+                  state: { fromTrial: true, returnTo: location.pathname },
+                })
+              }
+              className={`w-full py-3 rounded-xl bg-gradient-to-r ${theme.progressGradient} text-white font-semibold mb-3 hover:opacity-90 active:scale-95 transition-all shadow-md`}
+            >
+              {t('trial.createAccount')}
+            </button>
+
+            {/* Secondary CTA */}
+            <button
+              onClick={() =>
+                navigate('/login', { state: { returnTo: location.pathname } })
+              }
+              className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 active:scale-95 transition-all mb-4"
+            >
+              {t('trial.login')}
+            </button>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setShowRegisterPrompt(false)}
+              className="text-gray-400 text-sm hover:text-gray-600 transition-colors"
+            >
+              {t('trial.maybeLater')}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* ─────────────────────────────────────────────────────────────────── */}
     </div>
   );
 };

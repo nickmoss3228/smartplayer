@@ -13,6 +13,7 @@ import Quiz from "../components/Quiz/Quiz";
 import { getAudioTracksByDifficulty } from "../modules/audiodata/audioDataByDiffculty";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
 import { useProgress } from "../context/ProgressContext";
+import { FREE_TRIAL_STORIES } from '../constants/trial';
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -73,13 +74,15 @@ const Player = React.memo(() => {
     setHasListenedFully(false);
   }, [level]);
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    if (isInitialLoad) return;
-  }, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
+useEffect(() => {
+  // Route layer (TrackProtectedRoute) already blocks guests on tracks > FREE_TRIAL_STORIES.
+  // Only redirect here as a safety net for the legacy /player route which has no params.
+  if (!user && level > FREE_TRIAL_STORIES) {
+    navigate("/login");
+    return;
+  }
+  if (isInitialLoad) return;
+}, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
 
   const audioTracks = useMemo(
     () => getAudioTracksByDifficulty(difficulty),
@@ -137,7 +140,13 @@ const Player = React.memo(() => {
 // Replace handleQuizComplete in Player.tsx
 const handleQuizComplete = useCallback(
   async (results: QuizResults) => {
-    if (!user || isSubmitting) return;
+    // Guest completed a trial track — no progress to save, just show results
+    if (!user) {
+      setQuizResults(results);
+      return;
+    }
+
+    if (isSubmitting) return; // ← just isSubmitting, !user is already handled above
 
     setIsSubmitting(true);
     setQuizResults(results);
@@ -148,8 +157,8 @@ const handleQuizComplete = useCallback(
         `${API_BASE_URL}/api/progress/complete`,
         {
           difficulty,
-          storyId: resolvedStorySlug,   // ← was missing
-          partNumber: level,             // ← was "level"
+          storyId: resolvedStorySlug,
+          partNumber: level,
           correctAnswers: results.correctAnswers,
           totalQuestions: results.totalQuestions,
         },
@@ -157,7 +166,6 @@ const handleQuizComplete = useCallback(
       );
       console.log("Progress saved:", response.data);
 
-      // Refresh just this story's progress
       await refreshStoryProgress(difficulty, resolvedStorySlug);
     } catch (error) {
       console.error("Failed to save progress:", error);
@@ -170,8 +178,7 @@ const handleQuizComplete = useCallback(
     }
   },
   [user, difficulty, level, resolvedStorySlug, isSubmitting, refreshStoryProgress]
-  );
-
+);
   // useEffect(() => {
   // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
   // }, [audioTrack]);
