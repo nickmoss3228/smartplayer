@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 // ─── Bump version to force the tour to re-show for existing users ─────────────
-const TOUR_KEY = "playerTourV2";
+const TOUR_KEY = "playerTourV3";
 
 // ─── Static step config (layout-only, no text) ───────────────────────────────
 // Title and body come from i18n; only the structural fields live here.
@@ -16,7 +16,8 @@ interface TourStepConfig {
 const STEP_CONFIG: TourStepConfig[] = [
   { target: "tour-player",     side: "bottom", padding: 14 },
   { target: "tour-comics",     side: "bottom", padding: 10 },
-  { target: "tour-controls",   side: "bottom",    padding: 10 },
+  { target: "tour-speed", side: "bottom", padding: 10 },
+  { target: "tour-repeat",   side: "bottom",    padding: 10 },
   { target: "tour-vocabulary", side: "top",    padding: 10 },
   { target: "tour-quiz",       side: "top",    padding: 12 },
 ];

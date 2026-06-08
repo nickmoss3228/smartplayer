@@ -60,6 +60,15 @@
     "completedCount": "",
     "levelLabel": "Level"
   },
+  "controls" : {
+    "repeat": "Repeat",
+    "comics": "Comics",
+    "play": "Play",
+    "pause": "Pause",
+    "speed": "Speed",
+    "freemode": "Free Mode",
+    "drillmode": "Drill Mode"
+  },
   "login": {
     "title": "Welcome!",
     "subtitle": "Sign in to continue your listening journey.",
@@ -356,7 +365,7 @@
     "title": "Leo's Life",
     "difficulty": "Easy",
     "duration": "~48 sec",
-    "description": "Meet Leo — a cheerful 26-year-old who lives in a small flat with his cat in the town of Neverland. This story introduces his daily life, job, and personality.",
+    "description": "Meet Leo — a cheerful 26-year-old who lives in a small flat with his cat in the town of Saint-Petersburg. This story introduces his daily life, job, and personality.",
     "grammar": [
       "Present Simple (he lives, he works)",
       "Third-person -s (he enjoys, he likes)",

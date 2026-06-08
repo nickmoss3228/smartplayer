@@ -4,6 +4,7 @@ import {IoPlay, IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
 import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay"; 
+import { useTranslation } from "react-i18next";
 
 interface PlayerControlsProps {
   isPlaying: boolean;
@@ -52,6 +53,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     comicsTitle,
     difficulty, 
   }) => {
+
+    const { t } = useTranslation();
+
     const labelClass =
       "text-black/50 text-[9px] uppercase tracking-widest font-semibold font-['Montserrat'] whitespace-nowrap";
 
@@ -131,7 +135,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 
           {/* Row B — Repeat + Speed (2-column grid) */}
           <div className="grid grid-cols-2 gap-3">
-            <div className={`flex flex-col items-center gap-1.5 ${disabledClass}`}>
+            <div className={`flex flex-col items-center gap-1.5 ${disabledClass}`} data-tour="tour-repeat">
               <div className="flex items-center gap-1.5">
                 {[3, 2, 1].map((count) => (
                   <button
@@ -144,10 +148,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   </button>
                 ))}
               </div>
-              <span className={labelClass}>Repeat</span>
+              <span className={labelClass}>{t('controls.repeat')}</span>
             </div>
 
-            <div className={`flex flex-col items-center gap-1.5 `}>
+            <div className={`flex flex-col items-center gap-1.5 `} data-tour="tour-speed">
               <div className="flex items-center gap-1.5">
                 {PLAYBACK_RATES.map((speed) => (
   <button
@@ -201,13 +205,13 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   difficulty={difficulty!}
                   variant="circular"   // ← circular shape
                 />
-                <span className={labelClass}>Comics</span>
+                <span className={labelClass}>{t('controls.comics')}</span>
               </>
             ) : null}
           </div>
 
           {/* ── REPEAT ── */}
-          <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+          <div className={`flex flex-col items-center gap-1 ${disabledClass}`} data-tour="tour-repeat">
             <div className="flex items-center gap-2">
               {[3, 2, 1].map((count) => (
                 <button
@@ -226,7 +230,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 </button>
               ))}
             </div>
-            <span className={labelClass}>Repeat</span>
+            <span className={labelClass}>{t('controls.repeat')}</span>
           </div>
 
           {/* ── PLAY / STEP ── */}
@@ -244,14 +248,14 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                     ? <IoPlay className="text-white w-[45px] h-[45px]" />
                     : <IoPlay  className="text-white w-[45px] h-[45px]" />}
                 </button>
-                <span className={labelClass}>{isPlaying ? "Pause" : "Play"}</span>
+                <span className={labelClass}>{isPlaying ? t('controls.pause') : t('controls.play')}</span>
               </div>
               {/* here was controlled mode code */}
             </div>
           </div>
 
           {/* ── SPEED ── */}
-          <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+          <div className={`flex flex-col items-center gap-1 ${disabledClass}`} data-tour="tour-speed">
             <div className="flex items-center gap-2">
              {PLAYBACK_RATES.map((speed) => (
   <button
@@ -271,7 +275,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
   </button>
 ))}
             </div>
-            <span className={labelClass}>Speed</span>
+            <span className={labelClass}>{t('controls.speed')}</span>
           </div>
 
           {/* ── RIGHT SLOT: Enhanced toggle ── */}
@@ -279,7 +283,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             <ToggleSwitch
               checked={isEnhancedMode}
               onChange={onToggleEnhancedMode}
-              label={isEnhancedMode ? "Enhanced Mode" : "Free Play"}
+              label={isEnhancedMode ? t('controls.drillmode') : t('controls.freemode')}
             />
           </div>
 

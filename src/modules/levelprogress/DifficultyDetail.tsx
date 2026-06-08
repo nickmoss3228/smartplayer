@@ -1,6 +1,6 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { useProgress } from '../../context/ProgressContext';
-import LevelProgress from '../../pages/LevelProgress';
+import LevelProgress from '../../components/LevelProgress';
 import { getStoryGroup } from '../../types/storyGroups';
 import { DifficultySlug } from '../../types/storyGroups';
 

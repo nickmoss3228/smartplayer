@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { getStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
-// import { IoArrowBack } from 'react-icons/io5';
 import { t } from 'i18next';
 import { useState, useMemo } from 'react';
 import {
@@ -59,7 +58,7 @@ const difficultyThemes: Record<DifficultySlug, {
 type SortKey = 'title' | 'topic' | 'progress';
 type SortDir = 'asc' | 'desc';
 
-const MOBILE_SORT_KEYS: SortKey[] = ['title', 'progress'];
+const MOBILE_SORT_KEYS: SortKey[] = ['title', 'topic', 'progress'];
 
 const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
@@ -70,18 +69,18 @@ const List = () => {
   const stories = getStoryGroups(diff);
   const theme = difficultyThemes[diff] || difficultyThemes.easy;
 
+  const getStoryProgress = (story: StoryGroup) => {
+  const storyData = getStoryData(diff, story.slug);
+  const completed = storyData.completedParts.length;
+  const total = story.totalTracks;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { completed, total, percentage };
+  };
+
   const [search, _setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('title');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [topicFilter, setTopicFilter] = useState<string>('all');
-
-  const getStoryProgress = (story: StoryGroup) => {
-    const storyData = getStoryData(diff, story.slug);
-    const completed = storyData.completedParts.length;
-    const total = story.totalTracks;
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { completed, total, percentage };
-  };
 
   const allTopics = useMemo(() => {
     const topics = stories
