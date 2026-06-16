@@ -303,7 +303,7 @@ const handleAudioComplete = useCallback(() => {
             
               <button
                 onClick={handleOpenHelp}
-               className="flex items-center gap-2 px-5 py-2 rounded-lg
+               className="w-fit self-center flex items-center gap-2 px-5 py-2 rounded-lg
              bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
              transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
               >
