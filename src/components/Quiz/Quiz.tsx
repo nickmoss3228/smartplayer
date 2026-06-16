@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { QuizProps } from "../../types/Quiz";
 import { useQuestionAudio } from "./useQuestionAudio";
 import QuestionAudioButton from "./QuestionAudioButton";
+import { useTranslation } from "react-i18next";
 
 type FeedbackState = "idle" | "correct" | "incorrect";
 
@@ -17,6 +18,7 @@ const Quiz: React.FC<QuizProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>("idle");
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const { t } = useTranslation()
 
   const navigate = useNavigate();
 
@@ -146,10 +148,10 @@ const Quiz: React.FC<QuizProps> = ({
           {/* Header row — ↓ mb-4 on mobile, mb-6 on sm+ */}
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <span className="text-xs font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-              Question {currentQuestion + 1} / {questions.length}
+              {t('quiz.question')}  {currentQuestion + 1} / {questions.length}
             </span>
             <span className="text-xs font-semibold text-gray-400">
-              Score: {score}/{currentQuestion}
+              {t('quiz.score')} : {score}/{currentQuestion}
             </span>
           </div>
 
@@ -188,8 +190,8 @@ const Quiz: React.FC<QuizProps> = ({
                 : "opacity-100 bg-red-50 border border-red-200 text-red-700"
             }`}
           >
-            {feedback === "correct" && (<><span className="text-green-500 text-base">✓</span> Correct! Moving on...</>)}
-            {feedback === "incorrect" && (<><span className="text-red-500 text-base">✗</span> Not quite. Moving on...</>)}
+            {feedback === "correct" && (<><span className="text-green-500 text-base">✓</span> {t('quiz.correct')}</>)}
+            {feedback === "incorrect" && (<><span className="text-red-500 text-base">✗</span> {t('quiz.not-correct')}</>)}
             {feedback === "idle" && <span>&nbsp;</span>}
           </div>
 
@@ -238,7 +240,7 @@ const Quiz: React.FC<QuizProps> = ({
 
         {/* Pass / Fail message */}
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-          {passed ? "Well Done! 🎉" : "Keep Going! 💪"}
+          {passed ? t('quiz.welldone'): t('quiz.keepgoing')}
         </h2>
         {/* ↓ mb-6 on mobile, mb-8 on sm+ */}
         <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8 max-w-sm mx-auto">
@@ -252,17 +254,17 @@ const Quiz: React.FC<QuizProps> = ({
           {/* ↓ p-2.5 on mobile, p-3 on sm+  |  text-lg on mobile, text-xl on sm+ */}
           <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
             <p className="text-lg sm:text-xl font-bold text-gray-800">{score}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Correct</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('quiz.correctanswers')}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
             <p className="text-lg sm:text-xl font-bold text-gray-800">{questions.length - score}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Incorrect</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('quiz.incorrectanswers')}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
             <p className={`text-lg sm:text-xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
-              {passed ? "Pass" : "Fail"}
+              {passed ? t('quiz.pass') : t('quiz.fail')}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">Result</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('quiz.result')}</p>
           </div>
         </div>
 
@@ -278,7 +280,7 @@ const Quiz: React.FC<QuizProps> = ({
               onClick={handleRetry}
               className="flex-1 bg-white/80 cursor-pointer px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base"
             >
-              Try Again
+              {t('quiz.tryagain')}
             </button>
             <button
               onClick={handleReturn}
@@ -288,7 +290,7 @@ const Quiz: React.FC<QuizProps> = ({
                   : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 shadow-lg shadow-indigo-500/30"
               }`}
             >
-              Return
+              {t('quiz.return-btn')}
             </button>
           </div>
         )}

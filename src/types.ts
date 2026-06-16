@@ -13,6 +13,7 @@ export interface AudioTrack {
   subtitles: Subtitle[];
   timeMarkers: TimeMarker[];
   quiz: QuizQuestion[];
+  helpAudio?: string[];
 }
 export interface TimeMarker {
   time: number;
@@ -37,6 +38,7 @@ export interface WaveformPlayerProps {
     color: string;
   }[];
   onWavesurferMount: (wavesurfer: WaveSurfer) => void;
+  helpAudioUrls?: string[]; 
 }
 
 export interface QuizQuestion {

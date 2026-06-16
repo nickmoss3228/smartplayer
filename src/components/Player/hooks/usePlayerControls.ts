@@ -29,6 +29,7 @@ interface UsePlayerControlsOptions {
   isControlledMode: boolean;
   isEnhancedModeRef: React.MutableRefObject<boolean>;  // ← add
   userPlaybackRateRef: React.MutableRefObject<number>;
+  onEnhancedSessionChange?: (active: boolean) => void; 
 }
 
 export const usePlayerControls = ({
@@ -49,6 +50,7 @@ export const usePlayerControls = ({
   // repeatCount,
   setRepeatCount,
   setIsControlledMode,
+  onEnhancedSessionChange,
   // isControlledMode,
 }: UsePlayerControlsOptions) => {
   const dispatch = useAppDispatch();
@@ -76,6 +78,7 @@ export const usePlayerControls = ({
 
     try {
       if (isPlaying) {
+        onEnhancedSessionChange?.(false);
         wavesurfer.current.pause();
       } else {
         if (timeMarkersRef.current?.length) {
@@ -88,12 +91,14 @@ export const usePlayerControls = ({
         isSegmentTransitioningRef.current = false;
         currentRepeatRef.current = 0;
 
-         applySequenceStartSpeed();
+        applySequenceStartSpeed();
+        onEnhancedSessionChange?.(!!isEnhancedModeRef.current); // ← session starts
         wavesurfer.current.play();
       }
     } catch (error) {
       console.error("Playback error:", error);
       dispatch(setIsPlaying(false));
+      onEnhancedSessionChange?.(false);            // ← rollback on error
     }
   }, [
     isPlaying,
@@ -107,6 +112,7 @@ export const usePlayerControls = ({
     currentRepeatRef,
     isSegmentTransitioningRef,
     wavesurfer,
+    onEnhancedSessionChange,
   ]);
 
   const goToNextSentence = useCallback(() => {
@@ -123,8 +129,8 @@ export const usePlayerControls = ({
   currentRepeatRef.current = 0;
   isSegmentTransitioningRef.current = false;
 
-   applySequenceStartSpeed();
-
+  applySequenceStartSpeed();
+  onEnhancedSessionChange?.(true);// (keyboard ArrowRight keeps session alive)
   dispatch(setCurrentMarkerIndex(nextIdx));
   wavesurfer.current.setTime(nextTime);
   wavesurfer.current.play();
@@ -136,8 +142,9 @@ export const usePlayerControls = ({
   repeatCountRef,
   currentRepeatRef,
   isSegmentTransitioningRef,
-  isEnhancedModeRef,  // ← add to deps
+  isEnhancedModeRef, 
   wavesurfer,
+  onEnhancedSessionChange,
   ]);
   
   
@@ -149,6 +156,7 @@ export const usePlayerControls = ({
   isSegmentTransitioningRef.current = false;
 
     applySequenceStartSpeed();
+    onEnhancedSessionChange?.(true);
   wavesurfer.current.setTime(start);
   setTimeout(() => wavesurfer.current?.play(), 10);
 }, [
@@ -160,7 +168,8 @@ export const usePlayerControls = ({
   currentRepeatRef,
   isSegmentTransitioningRef,
   isEnhancedModeRef,  // ← add to deps
-  wavesurfer,
+    wavesurfer,
+  onEnhancedSessionChange,
 ]);
 
   const handleMuteToggle = useCallback(() => {
@@ -228,6 +237,7 @@ export const usePlayerControls = ({
       } catch (error) {
         console.error("handleMarkerClick error:", error);
         dispatch(setIsPlaying(false));
+        onEnhancedSessionChange?.(false);
       }
     },
     [
@@ -238,6 +248,7 @@ export const usePlayerControls = ({
       currentRepeatRef,
       isSegmentTransitioningRef,
       wavesurfer,
+      onEnhancedSessionChange,
     ],
   );
 

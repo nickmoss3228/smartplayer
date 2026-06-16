@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { getStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
-import { t } from 'i18next';
 import { useState, useMemo } from 'react';
 import {
   IoSearchOutline,
@@ -12,6 +11,7 @@ import {
   IoEllipseOutline,
   IoPricetagOutline,
 } from 'react-icons/io5';
+import { useTranslation } from 'react-i18next';
 
 const difficultyThemes: Record<DifficultySlug, {
   gradient: string;
@@ -64,9 +64,10 @@ const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
   const navigate = useNavigate();
   const { getStoryData } = useProgress();
+  const { t } = useTranslation();
 
   const diff = (difficulty || 'easy') as DifficultySlug;
-  const stories = getStoryGroups(diff);
+  const stories = getStoryGroups(diff, t);
   const theme = difficultyThemes[diff] || difficultyThemes.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
@@ -282,12 +283,12 @@ const List = () => {
                   className={`cursor-pointer transition-colors duration-150 ${theme.rowHover} ${borderClass}`}
                 >
 
-                  {/* ── MOBILE layout (unchanged) ── */}
+                  {/* ── MOBILE layout ── */}
                   <div className="sm:hidden px-4 py-4">
                     <p className="text-sm font-semibold text-gray-800 leading-snug">
                       {story.title}
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {story.description}
                     </p>
 
@@ -346,7 +347,7 @@ const List = () => {
                         <p className="text-sm font-semibold text-gray-800 truncate">
                           {story.title}
                         </p>
-                        <p className="text-xs text-gray-400 truncate mt-0.5">
+                        <p className="text-xs text-gray-400 mt-0.5">
                           {story.description}
                         </p>
                       </div>
@@ -393,8 +394,8 @@ const List = () => {
           ) : (
             <div className="text-center py-16 text-gray-400">
               <IoSearchOutline size={32} className="mx-auto mb-3 opacity-40" />
-              <p className="text-sm font-medium">No stories match your search.</p>
-              <p className="text-xs mt-1">Try a different keyword or reset the filters.</p>
+              {/* <p className="text-sm font-medium">No stories match your search.</p>
+              <p className="text-xs mt-1">Try a different keyword or reset the filters.</p> */}
             </div>
           )}
         </div>

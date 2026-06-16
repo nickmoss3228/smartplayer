@@ -1,13 +1,36 @@
+import { TFunction } from 'i18next';
+
 export interface StoryGroup {
   slug: string;           // URL-friendly name, e.g. "leo"
-  title: string;          // Display name, e.g. "Leo's Adventures"
-  description: string;    // Short description for the card
-  character: string;      // Main character name
+  title: string;          
+  description: string;    
+  character: string;      
   totalTracks: number;
-  coverEmoji: string;     // replace with an image later
+  coverEmoji: string;       
 }
 
 export type DifficultySlug = 'easy' | 'medium' | 'hard';
+// Only non-translatable fields live here
+type StoryGroupRaw = Omit<StoryGroup, 'title' | 'description'>;
+
+const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
+  easy: [
+    { slug: 'leo',    character: 'Leo',    totalTracks: 10, coverEmoji: '🧑' },
+  ],
+  medium: [
+    { slug: 'maya',   character: 'Maya',   totalTracks: 10, coverEmoji: '👩' },
+  ],
+  hard: [
+    { slug: 'daniel', character: 'Daniel', totalTracks: 10, coverEmoji: '👨' },
+  ],
+};
+
+export const getStoryGroups = (diff: DifficultySlug, t: TFunction): StoryGroup[] =>
+  storyGroupsRaw[diff].map(story => ({
+    ...story,
+    title:       t(`stories.${diff}.${story.slug}.title`),
+    description: t(`stories.${diff}.${story.slug}.description`),
+  }));
 
 export const storyGroups: Record<DifficultySlug, StoryGroup[]> = {
   easy: [
@@ -80,6 +103,6 @@ export const getStoryGroup = (difficulty: DifficultySlug, slug: string): StoryGr
   return storyGroups[difficulty]?.find(group => group.slug === slug);
 };
 
-export const getStoryGroups = (difficulty: DifficultySlug): StoryGroup[] => {
-  return storyGroups[difficulty] || [];
-};
+// export const getStoryGroups = (difficulty: DifficultySlug): StoryGroup[] => {
+//   return storyGroups[difficulty] || [];
+// };

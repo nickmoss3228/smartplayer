@@ -134,12 +134,14 @@ const q10_5fast = getStorageUrl("leo/quiz/10. the lost kitten/q5fast.mp3");
 const q10_5slow = getStorageUrl("leo/quiz/10. the lost kitten/q5slow.mp3");
 
 import { AudioTrack } from "../../types";
+import { getHelpAudioUrls } from "./helpAudioUrls";
 
 export const audioTracks: AudioTrack[] = [
   {
     id: "1",
     title: "Leo's Life",
     audio: Leoslife,
+    helpAudio: getHelpAudioUrls("easy", "1"), 
     subtitles: [
       { startTime: 0.1, endTime: 1, text: "Meet Leo." },
     ],
@@ -184,16 +186,16 @@ export const audioTracks: AudioTrack[] = [
     audio: { fast: q1_3fast, slow: q1_3slow },
   },
   {
-    question: "What is Leo studying?",
-    options: ["Engineering", "Medicine", "Designing", "Music"],
+    question: "What is the name of the town where Leo lives?",
+    options: ["Moscow", "London", "Saint-Petersburg", "Paris"],
     correctAnswer: 2,
     referenceTime: 0,
     audio: { fast: q1_4fast, slow: q1_4slow },
   },
   {
-    question: "In which city was Leo born?",
-    options: ["Moscow", "London", "Paris", "Saint-Petersburg"],
-    correctAnswer: 3,
+    question: "What does Leo enjoy doing in his free time?",
+    options: ["Playing videogames", "Listening to music and birds", "Walking in the forest", "Drinking coffee"],
+    correctAnswer: 1,
     referenceTime: 0,
     audio: { fast: q1_5fast, slow: q1_5slow },
   },
@@ -203,6 +205,7 @@ export const audioTracks: AudioTrack[] = [
     id: "2",
     title: "Leo's Mornings",
     audio: Leosmornings,
+    helpAudio: getHelpAudioUrls("easy", "2"),
     subtitles: [
       { startTime: 0.1, endTime: 2.7, text: "2. Leo's mornings." },
     ],
@@ -286,6 +289,7 @@ export const audioTracks: AudioTrack[] = [
     id: "3",
     title: "Leo's Favorite Food",
     audio: Leosfavoritefood,
+    helpAudio: getHelpAudioUrls("easy", "3"),
     subtitles: [
       { startTime: 0.1, endTime: 3.2, text: "3. Leo's favorite food." },
     ],
@@ -355,6 +359,7 @@ export const audioTracks: AudioTrack[] = [
     id: "4",
     title: "Leo's Family",
     audio: Leosfamily,
+    helpAudio: getHelpAudioUrls("easy", "4"),
     subtitles: [
       { startTime: 0.1, endTime: 3.4, text: "4. Leo's Family" },
     ],
@@ -440,6 +445,7 @@ export const audioTracks: AudioTrack[] = [
     id: "5",
     title: "Leo's Clothes",
     audio: Leosclothes,
+    helpAudio: getHelpAudioUrls("easy", "5"),
     subtitles: [
       { startTime: 0.1, endTime: 3, text: "5. Leo's Clothes" },
     ],
@@ -524,6 +530,7 @@ export const audioTracks: AudioTrack[] = [
     id: "6",
     title: "A day at the Beach",
     audio: Adayatthebeach,
+    helpAudio: getHelpAudioUrls("easy", "6"),
     subtitles: [
       { startTime: 0.1, endTime: 3, text: "6. A day at the beach." },
     ],
@@ -602,6 +609,7 @@ export const audioTracks: AudioTrack[] = [
     id: "7",
     title: "A country that Leo wants to visit",
     audio: Acountry,
+    helpAudio: getHelpAudioUrls("easy", "7"),
     subtitles: [
       { startTime: 0.1, endTime: 4, text: "7. A Country Leo Wants to Visit" },
     ],
@@ -684,6 +692,7 @@ export const audioTracks: AudioTrack[] = [
     id: "8",
     title: "Leo's hobbies",
     audio: Leoshobbies,
+    helpAudio: getHelpAudioUrls("easy", "8"),
     subtitles: [
       { startTime: 0.1, endTime: 2.5, text: "8. Leo’s hobbies " },
     ],
@@ -748,6 +757,7 @@ export const audioTracks: AudioTrack[] = [
     id: "9",
     title: "Meeting a friend",
     audio: Meetingafriend,
+    helpAudio: getHelpAudioUrls("easy", "9"),
     subtitles: [
       { startTime: 0.1, endTime: 4, text: "9. Meeting a Friend" },
     ],
@@ -827,6 +837,7 @@ export const audioTracks: AudioTrack[] = [
     id: "10",
     title: "The Lost Kitten",
     audio: TheLostKitten,
+    helpAudio: getHelpAudioUrls("easy", "10"),
     subtitles: [
       { startTime: 0.1, endTime: 2.7, text: "10. The Lost Kitten" },
     ],

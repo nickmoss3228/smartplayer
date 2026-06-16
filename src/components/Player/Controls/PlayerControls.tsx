@@ -1,9 +1,14 @@
 import React from "react";
-import {IoPlay, IoChevronBack, IoChevronForward } from "react-icons/io5"; 
+import {
+  IoPlay,
+  IoChevronBack,
+  IoChevronForward,
+  IoPause,
+} from "react-icons/io5";
 
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
-import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay"; 
+import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
 
 interface PlayerControlsProps {
@@ -23,11 +28,12 @@ interface PlayerControlsProps {
   onNext?: () => void;
   canGoPrev?: boolean;
   canGoNext?: boolean;
-  // ── Comics (desktop circular button) ──  ← NEW
+  // ── Comics (desktop circular button) 
   storyIndex?: number;
   comicsTitle?: string;
   difficulty?: string;
   isUserPaused?: boolean;
+  isEnhancedSessionActive?: boolean;
 }
 
 export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
@@ -39,7 +45,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     // onToggleControlledMode,
     onToggleEnhancedMode,
     repeatCount,
-
+    isEnhancedSessionActive = false,
     onRepeatCountChange,
     onSpeedChange,
     playbackRate,
@@ -49,11 +55,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     onNext,
     canGoPrev = false,
     canGoNext = false,
-    storyIndex,   
+    storyIndex,
     comicsTitle,
-    difficulty, 
+    difficulty,
   }) => {
-
     const { t } = useTranslation();
 
     const labelClass =
@@ -62,17 +67,23 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     const disabledClass = !isEnhancedMode
       ? "opacity-40 pointer-events-none cursor-not-allowed"
       : "";
-    
+
+    // ── Two derived values used by both layouts ───────────────────────────
+    // Green glow: only when Enhanced session is actively running
+    const buttonIsGreen = isEnhancedMode && isEnhancedSessionActive;
+    // Show pause icon: Enhanced → follow session state; Free → follow isPlaying
+    const showPauseIcon = isEnhancedMode ? isEnhancedSessionActive : isPlaying;
+
     // true  → show Pause icon  (user manually paused, or non-enhanced playing)
     // false → show Play icon
     // const showPauseIcon = isUserPaused || (isPlaying && !isEnhancedMode);
 
     // green pulsing state: engine is auto-cycling in Enhanced mode
     // const highlightGreen = isPlaying && isEnhancedMode && !isUserPaused;
-    
-  //   const repeatsDisabledClass = !isEnhancedMode
-  // ? "opacity-40 pointer-events-none cursor-not-allowed"
-  // : "";
+
+    //   const repeatsDisabledClass = !isEnhancedMode
+    // ? "opacity-40 pointer-events-none cursor-not-allowed"
+    // : "";
 
     // ═══════════════════════════════════════════════════════════
     // MOBILE LAYOUT
@@ -87,10 +98,8 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 
       return (
         <div className="flex flex-col w-full gap-3">
-
           {/* Row A — Prev  ·  Play/Pause  ·  Next */}
           <div className="flex items-center justify-center gap-6">
-
             {/* ← Previous segment */}
             <button
               onClick={onPrev}
@@ -106,14 +115,19 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 
             {/* ▶ / ⏸ */}
             <button
-              className="p-3 border-none bg-black/90 text-white rounded-full cursor-pointer
-                         hover:bg-black/70 transition-all active:scale-95
-                         flex items-center justify-center shadow-lg"
+              className={`p-3 border-none rounded-full cursor-pointer
+                transition-all active:scale-95
+                flex items-center justify-center shadow-lg
+                ${
+                  buttonIsGreen
+                    ? "bg-[#05df3bff] hover:bg-green-400"
+                    : "bg-black/90 hover:bg-black/70"
+                } text-white`}
               onClick={onPlayPause}
-              aria-label={isPlaying ? "Pause" : "Play"}
+              aria-label={showPauseIcon ? "Pause" : "Play"}
             >
-              {isPlaying ? (
-                <IoPlay className="text-white w-10 h-10" />
+              {showPauseIcon ? (
+                <IoPause className="text-white w-10 h-10" />
               ) : (
                 <IoPlay className="text-white w-10 h-10" />
               )}
@@ -135,7 +149,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 
           {/* Row B — Repeat + Speed (2-column grid) */}
           <div className="grid grid-cols-2 gap-3">
-            <div className={`flex flex-col items-center gap-1.5 ${disabledClass}`} data-tour="tour-repeat">
+            <div
+              className={`flex flex-col items-center gap-1.5 ${disabledClass}`}
+              data-tour="tour-repeat"
+            >
               <div className="flex items-center gap-1.5">
                 {[3, 2, 1].map((count) => (
                   <button
@@ -148,25 +165,28 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   </button>
                 ))}
               </div>
-              <span className={labelClass}>{t('controls.repeat')}</span>
+              <span className={labelClass}>{t("controls.repeat")}</span>
             </div>
 
-            <div className={`flex flex-col items-center gap-1.5 `} data-tour="tour-speed">
+            <div
+              className={`flex flex-col items-center gap-1.5 `}
+              data-tour="tour-speed"
+            >
               <div className="flex items-center gap-1.5">
                 {PLAYBACK_RATES.map((speed) => (
-  <button
-    key={speed}
-    // disabled={!isEnhancedMode}   // ← add
-    className={`${speedBtnBase}
+                  <button
+                    key={speed}
+                    // disabled={!isEnhancedMode}   // ← add
+                    className={`${speedBtnBase}
      
       ${playbackRate === speed ? activeBtn : idleBtn}`}
-    onClick={() => onSpeedChange(speed)}
-  >
-    {speed}
-  </button>
-))}
+                    onClick={() => onSpeedChange(speed)}
+                  >
+                    {speed}
+                  </button>
+                ))}
               </div>
-              <span className={labelClass}>Speed</span>
+              <span className={labelClass}>{t("controls.speed")}</span>
             </div>
           </div>
 
@@ -176,7 +196,11 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             <ToggleSwitch
               checked={isEnhancedMode}
               onChange={onToggleEnhancedMode}
-              label={isEnhancedMode ? "Enhanced Mode" : "Free Play"}
+              label={
+                isEnhancedMode
+                  ? t("controls.drillmode")
+                  : t("controls.freemode")
+              }
             />
           </div>
         </div>
@@ -192,9 +216,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     return (
       <div className="flex flex-col items-center w-full gap-2">
         <div className="flex items-end justify-between w-full">
-
           {/* ── LEFT SLOT: circular comics button ── */}
-          <div className="flex flex-col items-center gap-1 min-w-[80px]"
+          <div
+            className="flex flex-col items-center gap-1 min-w-[80px]"
             data-tour="tour-comics"
           >
             {showComics ? (
@@ -203,15 +227,18 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   storyIndex={storyIndex!}
                   title={comicsTitle}
                   difficulty={difficulty!}
-                  variant="circular"   // ← circular shape
+                  variant="circular" // ← circular shape
                 />
-                <span className={labelClass}>{t('controls.comics')}</span>
+                <span className={labelClass}>{t("controls.comics")}</span>
               </>
             ) : null}
           </div>
 
           {/* ── REPEAT ── */}
-          <div className={`flex flex-col items-center gap-1 ${disabledClass}`} data-tour="tour-repeat">
+          <div
+            className={`flex flex-col items-center gap-1 ${disabledClass}`}
+            data-tour="tour-repeat"
+          >
             <div className="flex items-center gap-2">
               {[3, 2, 1].map((count) => (
                 <button
@@ -219,9 +246,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
                     cursor-pointer text-xs font-medium font-['Montserrat']
                     transition-all duration-200 active:scale-95
-                    ${repeatCount === count
-                      ? "bg-[#05df3bff] text-black border-green-500"
-                      : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                    ${
+                      repeatCount === count
+                        ? "bg-[#05df3bff] text-black border-green-500"
+                        : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
                     }`}
                   onClick={() => onRepeatCountChange(count)}
                   title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
@@ -230,7 +258,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 </button>
               ))}
             </div>
-            <span className={labelClass}>{t('controls.repeat')}</span>
+            <span className={labelClass}>{t("controls.repeat")}</span>
           </div>
 
           {/* ── PLAY / STEP ── */}
@@ -238,44 +266,57 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center gap-1">
                 <button
-                  className="p-2 border-none bg-black/90 text-white rounded-full cursor-pointer
-                             hover:bg-black/50 transition-all duration-200 active:scale-95
-                             flex items-center justify-center"
+                  className={`p-2 border-none rounded-full cursor-pointer
+                  transition-all duration-200 active:scale-95
+                  flex items-center justify-center
+                  ${
+                    buttonIsGreen
+                      ? "bg-[#05df3bff] hover:bg-green-400"
+                      : "bg-black/90 hover:bg-black/50"
+                  } text-white`}
                   onClick={onPlayPause}
-                  title="Play / Pause"
+                  title={showPauseIcon ? "Pause" : "Play"}
                 >
-                  {isPlaying
-                    ? <IoPlay className="text-white w-[45px] h-[45px]" />
-                    : <IoPlay  className="text-white w-[45px] h-[45px]" />}
+                  {showPauseIcon ? (
+                    <IoPause className="text-white w-[45px] h-[45px]" />
+                  ) : (
+                    <IoPlay className="text-white w-[45px] h-[45px]" />
+                  )}
                 </button>
-                <span className={labelClass}>{isPlaying ? t('controls.pause') : t('controls.play')}</span>
+                <span className={labelClass}>
+                  {showPauseIcon ? t("controls.pause") : t("controls.play")}
+                </span>
               </div>
               {/* here was controlled mode code */}
             </div>
           </div>
 
           {/* ── SPEED ── */}
-          <div className={`flex flex-col items-center gap-1 ${disabledClass}`} data-tour="tour-speed">
+          <div
+            className={`flex flex-col items-center gap-1 ${disabledClass}`}
+            data-tour="tour-speed"
+          >
             <div className="flex items-center gap-2">
-             {PLAYBACK_RATES.map((speed) => (
-  <button
-    key={speed}
-    disabled={!isEnhancedMode} 
-    className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
+              {PLAYBACK_RATES.map((speed) => (
+                <button
+                  key={speed}
+                  disabled={!isEnhancedMode}
+                  className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
       cursor-pointer text-xs font-medium font-['Montserrat']
       transition-all duration-200 active:scale-95
       disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
-      ${playbackRate === speed
-        ? "bg-[#05df3bff] text-black border-green-500"
-        : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+      ${
+        playbackRate === speed
+          ? "bg-[#05df3bff] text-black border-green-500"
+          : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
       }`}
-    onClick={() => onSpeedChange(speed)}
-  >
-    x{speed}
-  </button>
-))}
+                  onClick={() => onSpeedChange(speed)}
+                >
+                  x{speed}
+                </button>
+              ))}
             </div>
-            <span className={labelClass}>{t('controls.speed')}</span>
+            <span className={labelClass}>{t("controls.speed")}</span>
           </div>
 
           {/* ── RIGHT SLOT: Enhanced toggle ── */}
@@ -283,22 +324,25 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             <ToggleSwitch
               checked={isEnhancedMode}
               onChange={onToggleEnhancedMode}
-              label={isEnhancedMode ? t('controls.drillmode') : t('controls.freemode')}
+              label={
+                isEnhancedMode
+                  ? t("controls.drillmode")
+                  : t("controls.freemode")
+              }
             />
           </div>
-
         </div>
       </div>
     );
-  }
+  },
 );
 
 PlayerControls.displayName = "PlayerControls";
 
-
 // import { MdReplay } from "react-icons/md";
 
- {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+{
+  /* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
               <button
                 className={`p-2 border-2 rounded-full cursor-pointer transition-all active:scale-95 flex items-center justify-center
                   ${
@@ -317,9 +361,11 @@ PlayerControls.displayName = "PlayerControls";
                 <MdReplay className="text-white w-6 h-6" />
               </button>
               <span className={labelClass}>Step</span>
-            </div> */}
+            </div> */
+}
 
-            {/* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
+{
+  /* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
                 <button
                   className={`p-2 border-2 rounded-full cursor-pointer
                     transition-all duration-200 active:scale-95 flex items-center justify-center
@@ -331,8 +377,17 @@ PlayerControls.displayName = "PlayerControls";
                   title={isControlledMode
                     ? "Controlled mode ON — stops after each segment"
                     : "Controlled mode OFF — plays continuously"}
-                > */}
-                  {/* <MdReplay className="text-white w-[30px] h-[30px]" /> */}
-                {/* </button> */}
-                {/* <span className={labelClass}>Step</span> */}
-              {/* </div> */}
+                > */
+}
+{
+  /* <MdReplay className="text-white w-[30px] h-[30px]" /> */
+}
+{
+  /* </button> */
+}
+{
+  /* <span className={labelClass}>Step</span> */
+}
+{
+  /* </div> */
+}

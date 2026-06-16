@@ -15,10 +15,12 @@ import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
 import { useProgress } from "../context/ProgressContext";
 import { FREE_TRIAL_STORIES } from "../constants/trial";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
+import { useTranslation } from "react-i18next";
 
 const Player = React.memo(() => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
 
   const {
     difficulty: urlDifficulty,
@@ -262,7 +264,8 @@ const Player = React.memo(() => {
                 subtitles={audioTrack.subtitles}
                 timeMarkers={audioTrack.timeMarkers}
                 onWavesurferMount={handleWavesurferMount}
-                onAudioComplete={handleAudioComplete}
+                  onAudioComplete={handleAudioComplete}
+                helpAudioUrls={audioTrack.helpAudio}
               />
 
               {/* Step 4: highlight the quiz unlock area */}
@@ -281,12 +284,12 @@ const Player = React.memo(() => {
                     }`}
                 >
                   {hasListenedFully
-                    ? "Take the Quiz →"
-                    : "Listen to unlock the Quiz"}
+                    ? t('player.quiz-incomp')
+                    : t('player.quiz')}
                 </button>
                 {!hasListenedFully && (
                   <p className="text-white/40 text-xs">
-                    Complete the audio track to unlock the quiz.
+                    {t('player.quiz-bottom')}
                   </p>
                 )}
               </div>

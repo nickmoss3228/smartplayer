@@ -79,7 +79,7 @@ export const trackVocabulary: Record<string, Record<string, VocabEntry[]>> = {
       { word: "чистить зубы", definition: "1", audioKey: "brush my teeth" },
       { word: "брюки", definition: "1", audioKey: "trousers" },
       { word: "ответить", definition: "1", audioKey: "answer" },
-      { word: "тихое утро", definition: "1", audioKey: "quiet mornings" },
+      { word: "тихое утро", definition: "1", audioKey: "a quiet morning" },
       { word: "занятый", definition: "1", audioKey: "busy" },
       { word: "расстроенный", definition: "1", audioKey: "upset" },
       { word: "прилечь", definition: "1", audioKey: "lay down" },

@@ -69,6 +69,21 @@
     "freemode": "Free Mode",
     "drillmode": "Drill Mode"
   },
+  "quiz": {
+    "question": "Question",
+    "score": "Score",
+    "welldone": "Well Done!",
+    "keepgoing": "Keep Going! 💪",
+    "correct": "Correct",
+    "not-correct": "Incorrect",
+    "pass": "Pass",
+    "fail": "Fail",
+    "result": "Result",
+    "return-btn": "Return",
+    "tryagain": "Try Again",
+    "correctanswers": "Correct Answers",
+    "incorrectanswers": "Incorrect Answers"
+  },
   "login": {
     "title": "Welcome!",
     "subtitle": "Sign in to continue your listening journey.",
@@ -175,139 +190,115 @@
     }
   },
   "howToUse": {
-    "title": "How to Use This App?",
-    "subtitle": "Master English listening skills with our interactive audio player.",
-
-    "overview": {
-      "title": "What Makes This Player Special?",
-      "description": "This isn't just an ordinary audio player. It's designed specifically to help you improve your English listening skills through interactive, sentence-by-sentence learning."
+  "back": "Back",
+  "scroll": "Scroll",
+  "badge": "Listening Practice Tool",
+  "footer": "Infinity Player · Your path to confident listening",
+  "hero": {
+    "title1": "The Infinity",
+    "title2": "Player",
+    "subtitle": "A practicing tool built on the method of an American professor — train your ear to understand real spoken English, step by step.",
+    "tag1": "No subtitles",
+    "tag2": "Spaced repetition",
+    "tag3": "Level-based",
+    "tag4": "Audio-first"
+  },
+  "s01": {
+    "label": "Philosophy",
+    "title": "Why No Subtitles?",
+    "card1": {
+      "title": "Main Goal",
+      "text": "Teach students to understand spoken English by repeating fragments of speech and gradually increasing the complexity of phrases and grammatical forms — based on the method of an American professor."
     },
-
-    "features": {
-      "sentenceMode": {
-        "title": "Sentence Mode",
-        "description": "Activate this special mode to automatically pause after each sentence. Perfect for focused listening practice.",
-        "learnMore": "Learn More ↓",
-        "showLess": "Show Less ↑",
-        "howItWorks": "How Sentence Mode Works:",
-        "autoPause": "Auto-pause:",
-        "autoPauseDesc": "Audio stops automatically after each sentence",
-        "nextButton": "Next Button:",
-        "nextButtonDesc": "Click or press",
-        "nextButtonDesc2": "(right arrow) to play the next sentence",
-        "repeatButton": "Repeat Button:",
-        "repeatButtonDesc": "Click or press",
-        "repeatButtonDesc2": "to replay the current sentence",
-        "whyHelps": "Why it helps:",
-        "whyHelpsDesc": "Gives you time to process what you heard before moving forward"
-      },
-      "timeMarkers": {
-        "title": "Time Markers",
-        "description": "Visual indicators showing where sentences start and end, helping you navigate through the story efficiently.",
-        "understanding": "Understanding Time Markers:",
-        "point1": "Each marker represents a sentence boundary",
-        "point2": "Some markers group related sentences (complete ideas) together",
-        "point3": "Click on any marker to jump to that part instantly",
-        "point4": "Great for reviewing specific parts of the story"
-      },
-      "speedControl": {
-        "title": "Quiz Game!",
-        "description": "After you listen, make sure you understood everything - take a short quiz on the content.",
-        "speedOptions": "How to Use the Quiz:",
-        "slow": "First Listen:",
-        "slowDesc": "Listen to the story without interruptions to get the overall understanding",
-        "normal": "Second Listen & Quiz:",
-        "normalDesc": "Listen again and answer questions that appear during the story",
-        "fast": "Question Types:",
-        "fastDesc": "Questions may test what you heard (audio recognition) or meaning comprehension",
-        "tip": "Tip:",
-        "tipDesc": "Difficulty level affects question complexity - start with easier levels and progress gradually"
-      },
-      "subtitles": {
-        "title": "Subtitles",
-        "description": "Follow along with text subtitles for all stories. Toggle them on or off based on your learning needs.",
-        "usingEffectively": "Using Subtitles Effectively:",
-        "firstListen": "First listen:",
-        "firstListenDesc": "Try without subtitles to test your comprehension",
-        "secondListen": "Second listen:",
-        "secondListenDesc": "Turn on subtitles to confirm understanding",
-        "thirdListen": "Third listen:",
-        "thirdListenDesc": "Turn off subtitles again to reinforce learning",
-        "allStories": "All 30 stories include full subtitles"
-      }
+    "card2": {
+      "title": "No Crutches",
+      "text": "Subtitles and listening aids create only a false sense of confidence. True comprehension comes from training the ear directly — without a visual safety net."
     },
-
-    "levelsSection": {
-      "title": "Choose Your Level",
-      "easy": {
-        "title": "Easy",
-        "stories": "10 stories",
-        "description": "Simple vocabulary, clear pronunciation, slower pace"
-      },
-      "medium": {
-        "title": "Medium",
-        "stories": "10 stories",
-        "description": "Moderate vocabulary, natural pace, some idioms"
-      },
-      "hard": {
-        "title": "Hard",
-        "stories": "10 stories",
-        "description": "Advanced vocabulary, fast pace, complex sentences"
-      }
-    },
-
-    "quickStart": {
-      "title": "Quick Start Guide",
-      "step1": {
-        "title": "Select Your Level",
-        "description": "Choose Easy, Medium, or Hard based on your current skills"
-      },
-      "step2": {
-        "title": "Pick a Story",
-        "description": "Browse through 10 stories in your chosen level"
-      },
-      "step3": {
-        "title": "Activate Sentence Mode",
-        "description": "Toggle it on for sentence-by-sentence practice"
-      },
-      "step4": {
-        "title": "Start Listening",
-        "description": "Use → for next, R for repeat"
-      }
-    },
-
-    "keyboardShortcuts": {
-      "title": "⌨️ Keyboard Shortcuts",
-      "next": "Next sentence",
-      "repeat": "Repeat current sentence",
-      "playPause": "Play/Pause"
-    },
-
-    "learningTips": {
-      "title": "💡 Learning Tips",
-      "activeListen": {
-        "title": "Active Listening:",
-        "description": "Focus on understanding, not just hearing"
-      },
-      "repetition": {
-        "title": "Repetition is Key:",
-        "description": "Don't hesitate to replay sentences multiple times"
-      },
-      "progressive": {
-        "title": "Progressive Challenge:",
-        "description": "Start with subtitles, then try without"
-      },
-      "adjustSpeed": {
-        "title": "Adjust Speed:",
-        "description": "Begin slower, increase as you improve"
-      }
-    },
-
-    "cta": {
-      "startLearning": "Start Learning Now",
-      "backHome": "Back to Home"
+    "card3": {
+      "title": "Secondary Goals",
+      "text": "Build genuine confidence in what you hear, and validate the effectiveness of this method through real learning scenarios."
     }
   },
+  "s02": {
+    "label": "The Player",
+    "title": "How You Listen",
+    "speedLabel": "Playback speeds:",
+    "freePlay": {
+      "title": "Free Play",
+      "text": "Listen to a story naturally, without any audio manipulation. Adjust playback speed to your comfort. Ideal for your first pass through any story."
+    },
+    "enhanced": {
+      "title": "Enhanced Mode",
+      "text": "A specialized mode that plays each audio segment multiple times at progressively faster speeds, training your ear gradually and systematically.",
+      "rep3": "×3 Repetitions",
+      "rep2": "×2 Repetitions",
+      "rep1": "×1 Repetition",
+      "speedNote": {
+        "label": "Manual Speed Control",
+        "text": "In addition to automatic repetition speeds, you can manually set the playback speed at any time."
+      },
+      "pauseNote": {
+        "label": "Note:",
+        "text": "In single-repetition mode at 1.0×, a pause is inserted before each sentence to aid processing. Pauses are also available in ×3 and ×2 modes."
+      }
+    }
+  },
+  "s03": {
+    "label": "Vocabulary",
+    "titleLine1": "Listen First,",
+    "titleLine2": "Read Later",
+    "card1": {
+      "title": "Before You Listen",
+      "text": "A vocabulary list is provided before each story so you can familiarize yourself with the words you are about to hear."
+    },
+    "card2": {
+      "title": "Tap to Hear",
+      "text": "The list is written in Russian, but clicking any word plays its English pronunciation. We focus on auditory perception — not on linking a word to its written form or a visual image."
+    },
+    "belief": {
+      "label": "Our belief:",
+      "text": "Spelling can be learned after listening skills are developed. The written form of a word is not essential for training listening comprehension."
+    }
+  },
+  "s04": {
+    "label": "Engagement",
+    "title": "Beyond Listening",
+    "gamification": {
+      "title": "Stories & Gamification",
+      "text": "Engaging stories keep students coming back. Learning is gamified — achievements earned during practice are visible in each learner's personal profile."
+    },
+    "comics": {
+      "title": "Comics",
+      "text": "Visual support during listening. Comics develop imaginative thinking and give students confidence that they are truly understanding what they hear."
+    },
+    "quiz": {
+      "title": "Quiz",
+      "text": "An audio-based comprehension check after each story. Each question comes in two versions — normal speed and slow speed — simulating real lesson questions and helping you practice question patterns."
+    }
+  },
+  "s05": {
+    "label": "Story Design",
+    "title": "The Stories We Create",
+    "item1": {
+      "title": "Character & Context",
+      "text": "Every story starts with a character — their backstory, gender, and life situation (child, teenager, adult, working, studying). All future stories build directly on this established foundation."
+    },
+    "item2": {
+      "title": "Level-Based Rules",
+      "text": "Beginner stories use Beginner/Elementary vocabulary and grammar. Intermediate learners work with Pre-Intermediate/Intermediate material. Advanced learners receive Upper-Intermediate/Advanced content."
+    },
+    "item3": {
+      "title": "Emotional Coloring",
+      "text": "Voiced by a neural network, every story must include breaths, clicking sounds, tone changes, and sarcastic expressions — everything found in real human speech. Emotional context is just as important as the words. Without it, the audio sounds unnatural."
+    }
+  },
+  "photos": {
+    "player": { "label": "Screenshot — Enhanced Mode Controls" },
+    "vocab":  { "label": "Screenshot — Vocabulary List" },
+    "comics": { "label": "Example — Comic Panel" },
+    "quiz":   { "label": "Screenshot — Quiz Interface" }
+  }
+},
   "congrats": {
     "title": "Congratulations!",
     "message": "You've completed all levels in {{difficulty}}!",
@@ -332,7 +323,7 @@
       },
       {
         "title": "🎨 Story Comics",
-        "body": "Every story comes with illustrated comics! Follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
+        "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
       },
       {
         "title": "🔄 Enhanced Mode & Repeats",
@@ -360,7 +351,31 @@
   "back": "Back",
   "startListening": "Start listening"
 },
+"player" : {
+  "vocabulary": "Vocabulary",
+  "quiz-incomp": "Take the Quiz!",
+  "quiz": "Quiz",
+  "quiz-bottom": "Listen until the end to open the quiz."
+},
 "stories": {
+  "easy": {
+      "leo": {
+        "title": "Leo's Adventures",
+        "description": "Follow Leo, a kind young man from St. Petersburg."
+      }
+    },
+    "medium": {
+      "maya": {
+        "title": "Maya's Journey",
+        "description": "Join Maya as she navigates life's challenges and discovers new experiences around the world."
+      }
+    },
+    "hard": {
+      "daniel": {
+        "title": "Daniel's World",
+        "description": "Explore the complex and fascinating life of Daniel, a man with big dreams and tough decisions."
+      }
+    },
   "easy-1": {
     "title": "Leo's Life",
     "difficulty": "Easy",
