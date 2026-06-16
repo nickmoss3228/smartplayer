@@ -18,11 +18,11 @@ const fmt = (s: number): string => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-const mTime = (m: TimeMarker): number =>
-  typeof m === "object" ? m.time : (m as unknown as number);
+// const mTime = (m: TimeMarker): number =>
+//   typeof m === "object" ? m.time : (m as unknown as number);
 
-const mLabel = (m: TimeMarker, i: number): string =>
-  typeof m === "object" && m.label ? m.label : `Part ${i + 1}`;
+// const mLabel = (m: TimeMarker, i: number): string =>
+//   typeof m === "object" && m.label ? m.label : `Part ${i + 1}`;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const HelpModal: React.FC<HelpModalProps> = ({
@@ -148,19 +148,19 @@ const HelpModal: React.FC<HelpModalProps> = ({
     }
   }, [isPlaying, canInteract]);
 
-  const handleReplay = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || !canInteract) return;
-    audio.pause();
-    audio.currentTime = 0;
-    setProgress(0);
-    setElapsed(0);
-    setTimeout(() => {
-      audio.play()
-        .then(() => setIsPlaying(true))
-        .catch(console.error);
-    }, 30);
-  }, [canInteract]);
+  // const handleReplay = useCallback(() => {
+  //   const audio = audioRef.current;
+  //   if (!audio || !canInteract) return;
+  //   audio.pause();
+  //   audio.currentTime = 0;
+  //   setProgress(0);
+  //   setElapsed(0);
+  //   setTimeout(() => {
+  //     audio.play()
+  //       .then(() => setIsPlaying(true))
+  //       .catch(console.error);
+  //   }, 30);
+  // }, [canInteract]);
 
   const handlePrev = useCallback(() => {
     if (markerIdx > 0) setMarkerIdx((i) => i - 1);
