@@ -25,6 +25,7 @@ import List from './pages/List';
 import DifficultyDetail from './modules/levelprogress/DifficultyDetail';
 import { ProfileProvider } from './context/ProfileContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
+import AdminPanel from "./components/Admin/AdminPanel";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -65,7 +66,8 @@ function App() {
               <Routes>
                 {/* ── Fully public ── */}
                 <Route path="/"                element={<Homepage />} />
-                <Route path="/how-to-use"      element={<HowToUse />} />
+                <Route path="/how-to-use" element={<HowToUse />} />
+                <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/login"           element={<Login />} />
                 <Route path="/signup"          element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

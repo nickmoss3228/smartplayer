@@ -273,7 +273,7 @@ const handleAudioComplete = useCallback(() => {
               onMarkerClick={handleMarkerClick}
               onSeek={handleSeek}
               getAudioTime={getAudioTime}
-              isMobile // ← replaces mobilePrevNext
+              isMobile 
             />
           </div>
 
@@ -292,7 +292,7 @@ const handleAudioComplete = useCallback(() => {
               onSpeedChange={changePlaybackRate}
               isEnhancedMode={isEnhancedMode}
               onToggleEnhancedMode={handleToggleEnhancedMode}
-              isEnhancedSessionActive={isEnhancedSessionActive} // ← NEW
+              isEnhancedSessionActive={isEnhancedSessionActive}
               layout="mobile"
               // ── segment nav now lives here ──
               onPrev={handlePrevMarker}
@@ -304,7 +304,7 @@ const handleAudioComplete = useCallback(() => {
               <button
                 onClick={handleOpenHelp}
                className="w-fit self-center flex items-center gap-2 px-5 py-2 rounded-lg
-             bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
+             bg-black hover:bg-red-600 text-white text-sm font-semibold
              transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
               >
               Help!
@@ -362,7 +362,7 @@ const handleAudioComplete = useCallback(() => {
               <button
                 onClick={handleOpenHelp}
              className="flex items-center gap-2 px-5 py-2 rounded-lg
-             bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
+             bg-black hover:bg-red-600 text-white text-sm font-semibold
              transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
               >
                 Help!

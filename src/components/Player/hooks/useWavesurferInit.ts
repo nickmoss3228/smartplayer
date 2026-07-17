@@ -51,7 +51,7 @@ export const useWavesurferInit = ({
     setIsLoading(true);
     setIsInitialized(false);
 
-    // FIX: track intentional destruction so we can suppress expected errors
+    // track intentional destruction so we can suppress expected errors
     let isDestroyed = false;
 
     const isMobile =
@@ -98,7 +98,7 @@ export const useWavesurferInit = ({
       onAudioCompleteRef.current?.();
     });
 
-    // FIX: ignore AbortError (expected on destroy) and errors after teardown
+    // ignore AbortError (expected on destroy) and errors after teardown
     instance.on("error", (error) => {
       if (isDestroyed || (error as Error)?.name === "AbortError") return;
       console.error("WaveSurfer error:", error);
@@ -111,7 +111,7 @@ export const useWavesurferInit = ({
     };
     waveformRef.current.addEventListener("pointermove", handlePointerMove);
 
-    // FIX: load() returns a Promise in WaveSurfer v7 — catch the AbortError
+    // load() returns a Promise in WaveSurfer v7 — catch the AbortError
     // that is thrown when destroy() cancels the in-flight fetch
     instance.load(audioUrl).catch((error: Error) => {
       if (error?.name === "AbortError") return; // intentional, safe to ignore
@@ -119,7 +119,7 @@ export const useWavesurferInit = ({
     });
 
     return () => {
-      // FIX: mark as destroyed BEFORE calling destroy() so the error handler
+      // mark as destroyed BEFORE calling destroy() so the error handler
       // above does not react to any late-firing events
       isDestroyed = true;
 
