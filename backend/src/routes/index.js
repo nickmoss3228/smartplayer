@@ -3,8 +3,8 @@ import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import progressRoutes from "./progress.routes.js";
 import passwordRoutes from "./password.routes.js";
-import feedbackRoutes from "./feedback.js";
-import adminRoutes from "./admin.js";
+import feedbackRoutes from "./feedback.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
