@@ -1,6 +1,8 @@
+// StoryPreviewModal.tsx
 import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
+// import { t } from "i18next";
 import { useTranslation } from "react-i18next";
 
 interface StoryPreviewModalProps {

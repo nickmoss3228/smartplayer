@@ -18,6 +18,13 @@ const fmt = (s: number): string => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
+// const mTime = (m: TimeMarker): number =>
+//   typeof m === "object" ? m.time : (m as unknown as number);
+
+// const mLabel = (m: TimeMarker, i: number): string =>
+//   typeof m === "object" && m.label ? m.label : `Part ${i + 1}`;
+// ─────────────────────────────────────────────────────────────────────────────
+
 const HelpModal: React.FC<HelpModalProps> = ({
   isOpen,
   onClose,
@@ -140,6 +147,20 @@ const HelpModal: React.FC<HelpModalProps> = ({
         });
     }
   }, [isPlaying, canInteract]);
+
+  // const handleReplay = useCallback(() => {
+  //   const audio = audioRef.current;
+  //   if (!audio || !canInteract) return;
+  //   audio.pause();
+  //   audio.currentTime = 0;
+  //   setProgress(0);
+  //   setElapsed(0);
+  //   setTimeout(() => {
+  //     audio.play()
+  //       .then(() => setIsPlaying(true))
+  //       .catch(console.error);
+  //   }, 30);
+  // }, [canInteract]);
 
   const handlePrev = useCallback(() => {
     if (markerIdx > 0) setMarkerIdx((i) => i - 1);
@@ -280,6 +301,16 @@ const HelpModal: React.FC<HelpModalProps> = ({
               Prev
             </button>
 
+            {/* <button 
+              onClick={handleReplay}
+              disabled={!canInteract}
+              className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-500"
+            >
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button> */}
+
             <button
               onClick={handlePlayPause}
               disabled={!canInteract}
@@ -322,36 +353,3 @@ const HelpModal: React.FC<HelpModalProps> = ({
 };
 
 export default HelpModal;
-
-// const mTime = (m: TimeMarker): number =>
-//   typeof m === "object" ? m.time : (m as unknown as number);
-
-// const mLabel = (m: TimeMarker, i: number): string =>
-//   typeof m === "object" && m.label ? m.label : `Part ${i + 1}`;
-// ─────────────────────────────────────────────────────────────────────────────
-
-  // const handleReplay = useCallback(() => {
-  //   const audio = audioRef.current;
-  //   if (!audio || !canInteract) return;
-  //   audio.pause();
-  //   audio.currentTime = 0;
-  //   setProgress(0);
-  //   setElapsed(0);
-  //   setTimeout(() => {
-  //     audio.play()
-  //       .then(() => setIsPlaying(true))
-  //       .catch(console.error);
-  //   }, 30);
-  // }, [canInteract]);
-
-  
-
-            {/* <button 
-              onClick={handleReplay}
-              disabled={!canInteract}
-              className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-500"
-            >
-              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button> */}
