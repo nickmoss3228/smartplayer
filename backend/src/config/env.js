@@ -8,4 +8,6 @@ export const config = {
     mongoUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
+    adminCode: process.env.ADMIN_CODE,
+    jwtSecret: process.env.JWT_SECRET,
 };
