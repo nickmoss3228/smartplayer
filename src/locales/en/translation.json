@@ -3,7 +3,20 @@
     "dashboard": "Dashboard",
     "settings": "Settings",
     "language": "Language",
-    "guide": "Guide"
+    "guide": "Guide",
+    "feedback": "Feedback"
+  },
+  "feedback": {
+    "title": "Leave feedback",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "message": "Message",
+    "messagePlaceholder": "Bug report or suggestion...",
+    "error": "Something went wrong. Try again.",
+    "success": "Thank you for your feedback!",
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "submit": "Submit"
   },
   "homepage": {
     "landing": "Immerse yourself in captivating stories that challenge your mind and spark your imagination",

@@ -48,7 +48,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-black text-sm font-medium text-gray-700 mb-1">
               {t("feedback.name", "Name")}
             </label>
             <input
@@ -57,7 +57,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
               placeholder={t("feedback.namePlaceholder", "Your name") as string}
             />
           </div>
@@ -72,7 +72,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
               maxLength={2000}
               required
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
+              className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
               placeholder={t("feedback.messagePlaceholder", "Bug report or suggestion...") as string}
             />
           </div>
