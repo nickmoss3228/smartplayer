@@ -5,7 +5,8 @@ export const corsMiddleware = (req, res, next) => {
     'https://www.infinityplayer.xyz',
     'http://localhost:3000',
     'http://localhost:8080',
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:8081'
   ];
   
   const origin = req.headers.origin;
