@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
-import { getAudioTracksByDifficulty } from "../modules/audiodata/audioDataByDiffculty";
+// import { getAudioTracksByDifficulty } from "../modules/audiodata/audioDataByDiffculty";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
 import { useProgress } from "../context/ProgressContext";
 import { FREE_TRIAL_STORIES } from "../constants/trial";

@@ -4,9 +4,7 @@ import {
   IoChevronBack,
   IoChevronForward,
   IoPause,
-  // IoChatbubbleEllipsesOutline,
   IoHelpCircle, // ← add this
-  IoInformationCircle,
 } from "react-icons/io5";
 
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
