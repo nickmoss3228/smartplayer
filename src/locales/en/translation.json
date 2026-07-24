@@ -371,16 +371,10 @@
   "quiz-bottom": "Listen until the end to open the quiz."
 },
 "stories": {
-  "easy": {
-      "leo": {
-        "title": "Leo's Adventures",
-        "description": "A young man from St.Petersburg with an unusual life."
-      },
       "leo-additional": {
         "title": "About Leo",
         "description": "People discuss Leo."
-      }
-    },
+      },
     "medium": {
       "maya": {
         "title": "Maya's Journey",
@@ -393,7 +387,7 @@
         "description": "Explore the complex and fascinating life of Daniel, a man with big dreams and tough decisions."
       }
     },
-  "easy-1": {
+  "easy-leo-1": {
     "title": "Leo's Life",
     "difficulty": "Easy",
     "duration": "~48 sec",
@@ -408,7 +402,7 @@
     "tip": "Listen for how Leo describes his daily routine and the things he enjoys."
   },
 
-  "easy-2": {
+  "easy-leo-2": {
     "title": "Leo's Mornings",
     "difficulty": "Easy",
     "duration": "~75 sec",
@@ -423,7 +417,7 @@
     "tip": "Pay attention to the order of events in Leo's morning and notice what goes differently on the bad day."
   },
 
-  "easy-3": {
+  "easy-leo-3": {
     "title": "Leo's Favorite Food",
     "difficulty": "Easy",
     "duration": "~55 sec",
@@ -438,7 +432,7 @@
     "tip": "Listen for all the different foods mentioned and notice which ones Leo makes himself versus which ones come from family."
   },
 
-  "easy-4": {
+  "easy-leo-4": {
     "title": "Leo's Family",
     "difficulty": "Easy",
     "duration": "~76 sec",
@@ -453,7 +447,7 @@
     "tip": "Try to remember each family member's name and their job — there will be questions about them!"
   },
 
-  "easy-5": {
+  "easy-leo-5": {
     "title": "Leo's Clothes",
     "difficulty": "Easy",
     "duration": "~73 sec",
@@ -468,7 +462,7 @@
     "tip": "Notice the difference between what Leo wears at home, at work, and in his free time."
   },
 
-  "easy-6": {
+"easy-leo-6": {
     "title": "A Day at the Beach",
     "difficulty": "Easy",
     "duration": "~78 sec",
@@ -483,7 +477,7 @@
     "tip": "This is a story told in the past tense — listen carefully to the sequence of events and what happens because of the shark."
   },
 
-  "easy-7": {
+  "easy-leo-7": {
     "title": "A Country Leo Wants to Visit",
     "difficulty": "Easy",
     "duration": "~74 sec",
@@ -498,7 +492,7 @@
     "tip": "Listen for the reasons Leo wants to visit Italy and compare them with his strong feelings about France."
   },
 
-  "easy-8": {
+  "easy-leo-8": {
     "title": "Leo's Hobbies",
     "difficulty": "Easy",
     "duration": "~78 sec",
@@ -513,7 +507,7 @@
     "tip": "Listen for the two main hobbies mentioned and all the specific details Leo shares about each one."
   },
 
-  "easy-9": {
+  "easy-leo-9": {
     "title": "Meeting a Friend",
     "difficulty": "Easy",
     "duration": "~71 sec",
@@ -528,7 +522,7 @@
     "tip": "Pay attention to what Sam is doing now and where he is going — and listen carefully to the very last line of the story."
   },
 
-  "easy-10": {
+  "easy-leo-10": {
     "title": "The Lost Kitten",
     "difficulty": "Easy",
     "duration": "~61 sec",
