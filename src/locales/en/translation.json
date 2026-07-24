@@ -374,7 +374,11 @@
   "easy": {
       "leo": {
         "title": "Leo's Adventures",
-        "description": "Follow Leo, a kind young man from St. Petersburg."
+        "description": "A young man from St.Petersburg with an unusual life."
+      },
+      "leo-additional": {
+        "title": "About Leo",
+        "description": "People discuss Leo."
       }
     },
     "medium": {

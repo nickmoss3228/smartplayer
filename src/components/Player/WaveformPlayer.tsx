@@ -14,6 +14,7 @@ import {
   setActiveSubtitle,
 } from "../../store/playerslice";
 import HelpModal from "./HelpModal/HelpModal";
+import FeedbackModal from "../Feedback/FeedbackModal";
 
 import { useWavesurferInit } from "./hooks/useWavesurferInit";
 import { useSegmentEngine } from "./hooks/useSegmentEngine";
@@ -38,6 +39,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     onWavesurferMount,
     level,
     difficulty,
+    storySlug,
     helpAudioUrls,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
@@ -63,23 +65,23 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const playbackRateRef = useRef(playbackRate);
     const [isEnhancedMode, setIsEnhancedMode] = useState(true);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
-    const [isEnhancedSessionActive, setIsEnhancedSessionActive] = useState(false);
+    const [isEnhancedSessionActive, setIsEnhancedSessionActive] =
+      useState(false);
     // const [isUserPaused, setIsUserPaused] = useState(false);
     // ── Updated toggle — reset session when switching modes ───────────────────
-const handleToggleEnhancedMode = () => {
-  setIsEnhancedMode((prev) => !prev);
-  setIsEnhancedSessionActive(false);               // ← NEW
+    const handleToggleEnhancedMode = () => {
+      setIsEnhancedMode((prev) => !prev);
+      setIsEnhancedSessionActive(false); // ← NEW
     };
-    
-        // ── Wrap onAudioComplete so completion resets the session ─────────────────
-const handleAudioComplete = useCallback(() => {
-  setIsEnhancedSessionActive(false);               // ← NEW
-  onAudioComplete?.();
-}, [onAudioComplete]);
 
+    // ── Wrap onAudioComplete so completion resets the session ─────────────────
+    const handleAudioComplete = useCallback(() => {
+      setIsEnhancedSessionActive(false); // ← NEW
+      onAudioComplete?.();
+    }, [onAudioComplete]);
 
     // ── inside the component (replaces the old STORY_TITLES constant) ─────────────
-    const storyTitles = Object.entries(trackFolderMap[difficulty] ?? {}).reduce<
+    const storyTitles = Object.entries(trackFolderMap[difficulty]?.[storySlug] ?? {}).reduce<
       Record<number, string>
     >((acc, [key, folderName]) => {
       acc[Number(key)] = formatStoryTitle(folderName);
@@ -180,9 +182,9 @@ const handleAudioComplete = useCallback(() => {
       else stopTimer();
     }, [isPlaying, startTimer, stopTimer]);
 
-    const { playVocabWord } = useVocabAudio(trackId, difficulty);
-    const currentVocabulary =
-      trackVocabulary[difficulty]?.[String(trackId)] ?? [];
+    const { playVocabWord } = useVocabAudio(trackId, difficulty, storySlug);
+   const currentVocabulary =
+      trackVocabulary[difficulty]?.[storySlug]?.[String(trackId)] ?? [];
 
     // console.log("[vocab]", { level, trackId, result: currentVocabulary });
 
@@ -232,86 +234,93 @@ const handleAudioComplete = useCallback(() => {
       setIsHelpOpen(true);
     }, [wavesurfer]);
 
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
-    
+    const handleOpenFeedback = useCallback(() => {
+      if (wavesurfer.current?.isPlaying()) {
+        wavesurfer.current.pause();
+        setIsEnhancedSessionActive(false);
+      }
+      setIsFeedbackOpen(true);
+    }, [wavesurfer]);
+
     return (
       <div className="waveform-overlay">
-        {/* ═══════════ MOBILE LAYOUT (< md) ═══════════ */}
-        <div className="md:hidden flex flex-col gap-4 px-4 pb-6">
-          {/* <ComicsPlaceholder /> */}
-          {/* {(() => { console.log("[JSX] passing difficulty as:", level); return null; })()} */}
-          <div data-tour="tour-comics">
-            <ComicsDisplay
-              storyIndex={Number(trackId)}
-              title={storyTitles[Number(trackId)]}
-              difficulty={difficulty} // ← new prop
-            />
-          </div>
+  <div className="md:hidden flex flex-col h-full min-h-0">
+    {/* MIDDLE ZONE — scrollable content, no more huge bottom padding */}
+    <div className="flex-1 min-h-0 flex flex-col gap-7 px-4 overflow-y-auto">
+      <div
+        data-tour="tour-comics"
+        className="max-h-[32vh] flex items-center justify-center py-1"
+      >
+        <ComicsDisplay
+          storyIndex={Number(trackId)}
+          title={storyTitles[Number(trackId)]}
+          difficulty={difficulty}
+        />
+      </div>
 
-          {currentVocabulary.length > 0 && (
-            <div data-tour="tour-vocabulary">
-              <VocabularyRow
-                words={currentVocabulary}
-                onPlay={playVocabWord}
-                volume={isMuted ? 0 : volume}
-              />
-            </div>
-          )}
-
-          {/* isMobile prop replaces mobilePrevNext; no more buttons here */}
-          <div data-tour="tour-player">
-            <WaveformDisplay
-              waveformRef={waveformRef}
-              isLoading={isLoading}
-              isInitialized={isInitialized}
-              currentTime={currentTime}
-              duration={duration}
-              durationSeconds={durationSeconds}
-              timeMarkers={timeMarkers}
-              subtitlesVisible={subtitlesVisible}
-              activeSubtitle={activeSubtitle}
-              onMarkerClick={handleMarkerClick}
-              onSeek={handleSeek}
-              getAudioTime={getAudioTime}
-              isMobile // ← replaces mobilePrevNext
-            />
-          </div>
-
-          <div
-            className="bg-white/60 rounded-2xl p-4 flex flex-col gap-4"
-            data-tour="tour-controls"
-          >
-            <PlayerControls
-              isPlaying={isPlaying}
-              isControlledMode={isControlledMode}
-              onPlayPause={handlePlayPause}
-              onToggleControlledMode={toggleControlledMode}
-              repeatCount={repeatCount}
-              onRepeatCountChange={handleSetRepeatCount}
-              playbackRate={playbackRate}
-              onSpeedChange={changePlaybackRate}
-              isEnhancedMode={isEnhancedMode}
-              onToggleEnhancedMode={handleToggleEnhancedMode}
-              isEnhancedSessionActive={isEnhancedSessionActive} // ← NEW
-              layout="mobile"
-              // ── segment nav now lives here ──
-              onPrev={handlePrevMarker}
-              onNext={handleNextMarker}
-              canGoPrev={canGoPrev}
-              canGoNext={canGoNext}
-            />
-            
-              <button
-                onClick={handleOpenHelp}
-               className="w-fit self-center flex items-center gap-2 px-5 py-2 rounded-lg
-             bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
-             transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
-              >
-              Help!
-              </button>
-            
-          </div>
+      {currentVocabulary.length > 0 && (
+        <div className="shrink-0" data-tour="tour-vocabulary">
+          <VocabularyRow
+            words={currentVocabulary}
+            onPlay={playVocabWord}
+            volume={isMuted ? 0 : volume}
+          />
         </div>
+      )}
+
+      <div className="shrink-0" data-tour="tour-player">
+        <WaveformDisplay
+          waveformRef={waveformRef}
+          isLoading={isLoading}
+          isInitialized={isInitialized}
+          currentTime={currentTime}
+          duration={duration}
+          durationSeconds={durationSeconds}
+          timeMarkers={timeMarkers}
+          subtitlesVisible={subtitlesVisible}
+          activeSubtitle={activeSubtitle}
+          onMarkerClick={handleMarkerClick}
+          onSeek={handleSeek}
+          getAudioTime={getAudioTime}
+          isMobile
+        />
+      </div>
+    </div>
+
+    {/* BOTTOM ZONE — normal flex child now, sits right under the content, no more fixed positioning */}
+    <div
+      className="shrink-0
+       px-[clamp(1rem,5vw,2rem)] pt-[clamp(0.25rem,1vh,0.75rem)]
+       pb-[max(1rem,env(safe-area-inset-bottom))]
+       mt-4
+       flex flex-col
+       min-h-[180px]"
+      data-tour="tour-controls"
+    >
+      <PlayerControls
+        isPlaying={isPlaying}
+        isControlledMode={isControlledMode}
+        onPlayPause={handlePlayPause}
+        onToggleControlledMode={toggleControlledMode}
+        repeatCount={repeatCount}
+        onRepeatCountChange={handleSetRepeatCount}
+        playbackRate={playbackRate}
+        onSpeedChange={changePlaybackRate}
+        isEnhancedMode={isEnhancedMode}
+        onToggleEnhancedMode={handleToggleEnhancedMode}
+        isEnhancedSessionActive={isEnhancedSessionActive}
+        layout="mobile"
+        onPrev={handlePrevMarker}
+        onNext={handleNextMarker}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+        onOpenHelp={handleOpenHelp}
+        onOpenFeedback={handleOpenFeedback}
+      />
+    </div>
+  </div>
 
         {/* ═══════════ DESKTOP LAYOUT (≥ md) — UNCHANGED ═══════════ */}
         <div className="hidden md:block">
@@ -358,16 +367,14 @@ const handleAudioComplete = useCallback(() => {
               onVolumeChange={handleVolumeChange}
             />
 
-            
-              <button
-                onClick={handleOpenHelp}
-             className="flex items-center gap-2 px-5 py-2 rounded-lg
+            <button
+              onClick={handleOpenHelp}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg
              bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
              transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
-              >
-                Help!
-              </button>
-            
+            >
+              Help!
+            </button>
           </div>
 
           {currentVocabulary.length > 0 && (
@@ -392,15 +399,18 @@ const handleAudioComplete = useCallback(() => {
             </div>
           )}
         </div>
-        
-          <HelpModal
-            isOpen={isHelpOpen}
-            onClose={() => setIsHelpOpen(false)}
-            helpAudioUrls={helpAudioUrls}
-            timeMarkers={timeMarkers}
-            initialMarkerIndex={currentMarkerIndex}
-          />
-        
+
+        <HelpModal
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+          helpAudioUrls={helpAudioUrls}
+          timeMarkers={timeMarkers}
+          initialMarkerIndex={currentMarkerIndex}
+        />
+
+        {isFeedbackOpen && (
+          <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />
+        )}
       </div>
     );
   },

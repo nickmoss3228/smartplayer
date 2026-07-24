@@ -6,14 +6,14 @@ import {
   storyFolderMap,
 } from '../modules/vocabulary/Vocabulary';
 import { getStorageUrl } from '../services/yandexStorage';
-import { getAudioTracksByDifficulty } from '../modules/audiodata/audioDataByDiffculty';
+import { getAudioTracksByStory } from '../modules/audiodata/audioDataByDifficulty';
 import type { Difficulty } from '../types/Player';
 
 /** Mirrors the URL-building logic from useVocabAudio. */
-function buildVocabUrls(difficulty: string, trackId: string): string[] {
-  const words       = trackVocabulary[difficulty]?.[trackId] ?? [];
-  const storyFolder = storyFolderMap[difficulty] ?? '';
-  const trackFolder = trackFolderMap[difficulty]?.[trackId] ?? '';
+function buildVocabUrls(difficulty: string, storySlug: string, trackId: string): string[] {
+  const words       = trackVocabulary[difficulty]?.[storySlug]?.[trackId] ?? [];
+  const storyFolder = storyFolderMap[difficulty]?.[storySlug] ?? '';
+  const trackFolder = trackFolderMap[difficulty]?.[storySlug]?.[trackId] ?? '';
 
   if (!storyFolder || !trackFolder || words.length === 0) return [];
 
@@ -28,7 +28,7 @@ function buildVocabUrls(difficulty: string, trackId: string): string[] {
  * It starts buffering the main audio track + all vocab clips so they're
  * ready by the time the user navigates to the Player.
  */
-export function usePreloadStoryAssets(difficulty: Difficulty) {
+export function usePreloadStoryAssets(difficulty: Difficulty, storySlug: string) {
   // Deduplication: never preload the same level twice in a session.
   const preloadedLevels = useRef<Set<number>>(new Set());
 
@@ -38,7 +38,7 @@ export function usePreloadStoryAssets(difficulty: Difficulty) {
       preloadedLevels.current.add(level);
 
       const trackId     = String(level);
-      const audioTracks = getAudioTracksByDifficulty(difficulty);
+      const audioTracks = getAudioTracksByStory(difficulty, storySlug);
       const track       = audioTracks.find(t => t.id === trackId);
 
       // Main story audio — may be several MB, so we start right when the modal opens.
@@ -48,11 +48,11 @@ export function usePreloadStoryAssets(difficulty: Difficulty) {
       }
 
       // Vocab clips are 50–100 KB each, loads almost instantly.
-      const vocabUrls = buildVocabUrls(difficulty, trackId);
+      const vocabUrls = buildVocabUrls(difficulty, storySlug, trackId);
       preloadAudios(vocabUrls, 'auto');
       console.debug(`[preload] ${vocabUrls.length} vocab clips for level ${level}`);
     },
-    [difficulty],
+    [difficulty, storySlug],
   );
 
   return { preloadAudioAssets };

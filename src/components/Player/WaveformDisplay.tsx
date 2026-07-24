@@ -152,6 +152,16 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
               />
             )}
 
+          </>
+        )}
+      </>
+    );
+  }
+);
+
+WaveformDisplay.displayName = "WaveformDisplay";
+
+
             {/* Prev / Next segment navigation
             <div className="flex items-center justify-between mt-1">
               <button
@@ -178,11 +188,3 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
                 <IoChevronForward className="w-5 h-5" />
               </button>
             </div> */}
-          </>
-        )}
-      </>
-    );
-  }
-);
-
-WaveformDisplay.displayName = "WaveformDisplay";

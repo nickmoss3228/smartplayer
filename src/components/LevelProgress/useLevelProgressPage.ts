@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { useLevelProgress } from '../../hooks/useLevelProgress';
 import { usePreloadStoryAssets } from '../../hooks/usePreloadStoryAssets';
+
 import {
   loadLastListened,
   saveLastListened,
 } from '../../modules/levelprogress/levelprogress.module';
-import { getAudioTracksByDifficulty } from '../../modules/audiodata/audioDataByDiffculty';
+// import { getAudioTracksByDifficulty } from '../../modules/audiodata/audioDataByDiffculty';
 import { themes } from '../../modules/levelprogress/themes.levelprogress';
 import {
   storyPreviewData,
@@ -19,6 +20,7 @@ import { preloadImages } from '../../services/preload';
 import { FREE_TRIAL_STORIES } from '../../constants/trial';
 import type { LevelProgressProps } from '../../types/LevelProgress';
 import type { Difficulty } from '../../types/Player';
+import { getAudioTracksByStory } from '../../modules/audiodata/audioDataByDifficulty';
 
 // ── Congrats localStorage helpers ─────────────────────────────────────────
 const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
@@ -58,7 +60,9 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     : storyData.completedParts;
   const currentLevel = props.currentLevel ?? storyData.currentPart;
 
-  const audioTracks = getAudioTracksByDifficulty(props.difficulty ?? 'easy');
+  const storySlug = props.storySlug ?? 'leo';
+
+  const audioTracks = getAudioTracksByStory(props.difficulty ?? 'easy', storySlug);
   const totalLevels =
     props.totalLevels ?? (storyData.totalParts || audioTracks.length);
 
@@ -72,7 +76,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   } = useLevelProgress({ ...props, completedLevels, currentLevel, totalLevels });
 
   const theme = themes[difficulty] || themes.easy;
-  const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty);
+const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, storySlug);
   const comics = getOrderedComics(difficulty);
 
   const isAllCompleted =
@@ -120,7 +124,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
       return;
     }
     setPreviewLevel(level);
-    setPreviewData(storyPreviewData[`${difficulty}-${level}`] ?? null);
+    setPreviewData(storyPreviewData[`${difficulty}-${storySlug}-${level}`] ?? null);
     preloadAudioAssets(level);
   };
 

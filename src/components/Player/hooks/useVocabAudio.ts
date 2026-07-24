@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { trackFolderMap, storyFolderMap } from "../../../modules/vocabulary/Vocabulary";
 import { getStorageUrl } from "../../../services/yandexStorage"; // ← adjust path if needed
 
-export function useVocabAudio(trackId: string, difficulty: string) {
+export function useVocabAudio(trackId: string, difficulty: string, storySlug: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const stop = useCallback(() => {
@@ -14,18 +14,18 @@ export function useVocabAudio(trackId: string, difficulty: string) {
 
   useEffect(() => {
     return stop;
-  }, [trackId, difficulty, stop]);
+  }, [trackId, difficulty, storySlug, stop]);
 
   const playVocabWord = useCallback(
     (fileName: string): HTMLAudioElement | null => {
       stop();
 
-      const storyFolder = storyFolderMap[difficulty] ?? "";
-      const trackFolder = trackFolderMap[difficulty]?.[trackId] ?? "";
+      const storyFolder = storyFolderMap[difficulty]?.[storySlug] ?? "";
+      const trackFolder = trackFolderMap[difficulty]?.[storySlug]?.[trackId] ?? "";
 
       if (!storyFolder || !trackFolder) {
         console.warn(
-          `[useVocabAudio] No folder mapping found for difficulty: "${difficulty}", trackId: "${trackId}"`
+          `[useVocabAudio] No folder mapping found for difficulty: "${difficulty}", storySlug: "${storySlug}", trackId: "${trackId}"`
         );
         return null;
       }
@@ -57,7 +57,7 @@ export function useVocabAudio(trackId: string, difficulty: string) {
 
       return audio;
     },
-    [trackId, difficulty, stop],
+    [trackId, difficulty, storySlug, stop],
   );
 
   return { playVocabWord, stop };

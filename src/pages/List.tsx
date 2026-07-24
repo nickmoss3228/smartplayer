@@ -10,6 +10,7 @@ import {
   IoCheckmarkCircle,
   IoEllipseOutline,
   IoPricetagOutline,
+  IoChevronForward,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
@@ -58,8 +59,6 @@ const difficultyThemes: Record<DifficultySlug, {
 type SortKey = 'title' | 'topic' | 'progress';
 type SortDir = 'asc' | 'desc';
 
-const MOBILE_SORT_KEYS: SortKey[] = ['title', 'topic', 'progress'];
-
 const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
   const navigate = useNavigate();
@@ -71,10 +70,10 @@ const List = () => {
   const theme = difficultyThemes[diff] || difficultyThemes.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
-  const storyData = getStoryData(diff, story.slug);
-  const completed = storyData.completedParts.length;
-  const total = story.totalTracks;
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const storyData = getStoryData(diff, story.slug);
+    const completed = storyData.completedParts.length;
+    const total = story.totalTracks;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completed, total, percentage };
   };
 
@@ -160,19 +159,19 @@ const List = () => {
             className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
           >
             <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M15 19l-7-7 7-7"
-      />
-    </svg>
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
           </button>
 
           <div className="text-center flex-1 min-w-0 px-2">
@@ -241,29 +240,6 @@ const List = () => {
             </button>
           </div>
 
-          {/* ── Mobile sort bar ── */}
-          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 bg-gray-50 border-b border-gray-200 overflow-x-auto">
-            <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider shrink-0 mr-1">
-              Sort:
-            </span>
-            {MOBILE_SORT_KEYS.map(key => (
-              <button
-                key={key}
-                onClick={() => handleSort(key)}
-                className={`shrink-0 px-2.5 py-1 rounded-full text-xs capitalize transition-colors ${
-                  sortKey === key
-                    ? `${theme.badgeBg} font-semibold`
-                    : 'text-gray-400 hover:bg-gray-100'
-                }`}
-              >
-                {key}
-                {sortKey === key && (
-                  <span className="ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>
-                )}
-              </button>
-            ))}
-          </div>
-
           {/* Rows */}
           {sortedFilteredStories.length > 0 ? (
             sortedFilteredStories.map((story, index) => {
@@ -284,59 +260,78 @@ const List = () => {
                 >
 
                   {/* ── MOBILE layout ── */}
-                  <div className="sm:hidden px-4 py-4">
-                    <p className="text-sm font-semibold text-gray-800 leading-snug">
-                      {story.title}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {story.description}
-                    </p>
+                  <div className="sm:hidden flex items-center gap-3 px-4 py-4">
 
-                    <div className="flex items-center justify-between gap-3 mt-2.5">
-                      <div className="flex items-center gap-1.5">
+                    {/* Circular progress indicator */}
+                    <div className="relative shrink-0 w-11 h-11">
+                      <svg viewBox="0 0 40 40" className="w-11 h-11 -rotate-90">
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="text-gray-100"
+                        />
+                        <circle
+                          cx="20"
+                          cy="20"
+                          r="16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 16}
+                          strokeDashoffset={2 * Math.PI * 16 * (1 - percentage / 100)}
+                          className={`${theme.textColor} transition-all duration-500`}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {isCompleted ? (
+                          <IoCheckmarkCircle size={16} className={theme.textColor} />
+                        ) : (
+                          <span className="text-[10px] font-semibold text-gray-500">
+                            {percentage}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 leading-snug truncate">
+                        {story.title}
+                      </p>
+
+                      {story.description && (
+                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
+                          {story.description}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-1.5 mt-2">
                         {topic && (
                           <span
-                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${theme.badgeBg}`}
-                            title={topic}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${theme.badgeBg}`}
                           >
-                            <IoPricetagOutline size={12} />
+                            <IoPricetagOutline size={11} />
+                            {topic}
                           </span>
                         )}
                         {duration && (
-                          <span
-                            className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-500"
-                            title={duration}
-                          >
-                            <IoTimeOutline size={12} />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px]">
+                            <IoTimeOutline size={11} />
+                            {duration}
                           </span>
                         )}
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-1 max-w-[9.5rem]">
-                        {isCompleted ? (
-                          <IoCheckmarkCircle
-                            size={15}
-                            className={`${theme.textColor} shrink-0`}
-                          />
-                        ) : (
-                          <IoEllipseOutline size={15} className="text-gray-300 shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between mb-1">
-                            <span className="text-xs text-gray-400">{completed}/{total}</span>
-                            <span className={`text-xs font-semibold ${theme.textColor}`}>
-                              {percentage}%
-                            </span>
-                          </div>
-                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${theme.progressColor} rounded-full transition-all duration-500`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
+                        <span className="text-[11px] text-gray-400 ml-auto">
+                          {completed}/{total}
+                        </span>
                       </div>
                     </div>
+
+                    <IoChevronForward size={16} className="text-gray-300 shrink-0" />
                   </div>
 
                   {/* ── DESKTOP layout ── */}
@@ -394,8 +389,6 @@ const List = () => {
           ) : (
             <div className="text-center py-16 text-gray-400">
               <IoSearchOutline size={32} className="mx-auto mb-3 opacity-40" />
-              {/* <p className="text-sm font-medium">No stories match your search.</p>
-              <p className="text-xs mt-1">Try a different keyword or reset the filters.</p> */}
             </div>
           )}
         </div>
@@ -405,7 +398,6 @@ const List = () => {
 };
 
 export default List;
-
 
 
 

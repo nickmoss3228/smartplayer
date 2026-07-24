@@ -48,8 +48,8 @@ export interface StoryPreview {
 }
 
 export const storyPreviewData: Record<string, StoryPreview> = {
-  "easy-1": {
-    id: "easy-1",
+  "easy-leo-1": {
+    id: "easy-leo-1",
     title: "Leo's Life",
     emoji: "🧑",
     image: leo1,
@@ -67,8 +67,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for how Leo describes his daily routine and the things he enjoys.",
   },
 
-  "easy-2": {
-    id: "easy-2",
+  "easy-leo-2": {
+    id: "easy-leo-2",
     title: "Leo's Mornings",
     emoji: "☀️",
     image: leo2,
@@ -86,8 +86,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Pay attention to the order of events in Leo's morning and notice what goes differently on the bad day.",
   },
 
-  "easy-3": {
-    id: "easy-3",
+  "easy-leo-3": {
+    id: "easy-leo-3",
     title: "Leo's Favorite Food",
     emoji: "🍕",
     image: leo3,
@@ -105,8 +105,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for all the different foods mentioned and notice which ones Leo makes himself versus which ones come from family.",
   },
 
-  "easy-4": {
-    id: "easy-4",
+  "easy-leo-4": {
+    id: "easy-leo-4",
     title: "Leo's Family",
     emoji: "👨‍👩‍👧‍👦",
     image: leo4,
@@ -124,8 +124,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Try to remember each family member's name and their job — there will be questions about them!",
   },
 
-  "easy-5": {
-    id: "easy-5",
+  "easy-leo-5": {
+    id: "easy-leo-5",
     title: "Leo's Clothes",
     emoji: "👕",
     image: leo5,
@@ -143,8 +143,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Notice the difference between what Leo wears at home, at work, and in his free time.",
   },
 
-  "easy-6": {
-    id: "easy-6",
+  "easy-leo-6": {
+    id: "easy-leo-6",
     title: "A Day at the Beach",
     emoji: "🏖️",
     image: leo6,
@@ -162,8 +162,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "This is a story told in the past tense — listen carefully to the sequence of events and what happens because of the shark.",
   },
 
-  "easy-7": {
-    id: "easy-7",
+  "easy-leo-7": {
+    id: "easy-leo-7",
     title: "A Country Leo Wants to Visit",
     emoji: "🇮🇹",
     image: leo7,
@@ -181,8 +181,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for the reasons Leo wants to visit Italy and compare them with his strong feelings about France.",
   },
 
-  "easy-8": {
-    id: "easy-8",
+  "easy-leo-8": {
+    id: "easy-leo-8",
     title: "Leo's Hobbies",
     emoji: "⚽",
     image: leo8,
@@ -200,8 +200,8 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for the two main hobbies mentioned and all the specific details Leo shares about each one.",
   },
 
-  "easy-9": {
-    id: "easy-9",
+  "easy-leo-9": {
+    id: "easy-leo-9",
     title: "Meeting a Friend",
     emoji: "☕",
     image: leo9,
@@ -219,11 +219,67 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Pay attention to what Sam is doing now and where he is going — and listen carefully to the very last line of the story.",
   },
 
-  "easy-10": {
-    id: "easy-10",
+  "easy-leo-10": {
+    id: "easy-leo-10",
     title: "The Lost Kitten",
     emoji: "🐱",
     image: leo10,
+    difficulty: "Easy",
+    duration: "~61 sec",
+    description:
+      "On his way home from meeting Sam, Leo hears a tiny meow and finds a lost kitten hiding under a car. His kindness leads to a heartwarming ending — and a new dream for Leo himself.",
+    grammar: [
+      "Past Simple narrative chain (he heard, he saw, he picked up, he took)",
+      "Past Simple passive feel (it was all alone, it was very thin)",
+      "Time expressions (the next day, a few days later)",
+      "Present Simple for new state/result (now Leo wants to have his own cat)", 
+    ],
+    topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
+    tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
+  },
+
+
+  "easy-leo-additional-1": {
+    id: "easy-leo-additional-1",
+    title: "Girls",
+    emoji: "🐱",
+    image: "1",
+    difficulty: "Easy",
+    duration: "~61 sec",
+    description:
+      "On his way home from meeting Sam, Leo hears a tiny meow and finds a lost kitten hiding under a car. His kindness leads to a heartwarming ending — and a new dream for Leo himself.",
+    grammar: [
+      "Past Simple narrative chain (he heard, he saw, he picked up, he took)",
+      "Past Simple passive feel (it was all alone, it was very thin)",
+      "Time expressions (the next day, a few days later)",
+      "Present Simple for new state/result (now Leo wants to have his own cat)", 
+    ],
+    topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
+    tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
+  },
+  "easy-leo-additional-2": {
+    id: "easy-leo-additional-2",
+    title: "Girls 2",
+    emoji: "🐱",
+    image: '2',
+    difficulty: "Easy",
+    duration: "~61 sec",
+    description:
+      "On his way home from meeting Sam, Leo hears a tiny meow and finds a lost kitten hiding under a car. His kindness leads to a heartwarming ending — and a new dream for Leo himself.",
+    grammar: [
+      "Past Simple narrative chain (he heard, he saw, he picked up, he took)",
+      "Past Simple passive feel (it was all alone, it was very thin)",
+      "Time expressions (the next day, a few days later)",
+      "Present Simple for new state/result (now Leo wants to have his own cat)", 
+    ],
+    topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
+    tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
+  },
+  "easy-leo-additional-3": {
+    id: "easy-leo-additional-3",
+    title: "Girls 3",
+    emoji: "🐱",
+    image: '3',
     difficulty: "Easy",
     duration: "~61 sec",
     description:
@@ -248,7 +304,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     image: maya1,
     difficulty: "Medium",
     duration: "~42 sec",
-    description:
+    description:  
       "Meet Maya — a curious journalist in her late twenties, based in New York City and working for an online magazine. She travels the world chasing stories, cultures, and the questions most people are afraid to ask.",
     grammar: [
       "Present Simple for facts and habits (I work, I travel, I live)",

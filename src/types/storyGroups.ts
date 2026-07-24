@@ -15,7 +15,8 @@ type StoryGroupRaw = Omit<StoryGroup, 'title' | 'description'>;
 
 const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
   easy: [
-    { slug: 'leo',    character: 'Leo',    totalTracks: 10, coverEmoji: '🧑' },
+    { slug: 'leo', character: 'Leo', totalTracks: 10, coverEmoji: '🧑' },
+    { slug: 'leo-additional',    character: 'Leo',    totalTracks: 3, coverEmoji: '🧑' },
   ],
   medium: [
     { slug: 'maya',   character: 'Maya',   totalTracks: 10, coverEmoji: '👩' },
@@ -42,23 +43,14 @@ export const storyGroups: Record<DifficultySlug, StoryGroup[]> = {
       totalTracks: 10,
       coverEmoji: '🧑',
     },
-    // {
-    //   slug: 'pete',
-    //   title: "Pete's Adventures",
-    //   description: "Follow Pete, a kind young man from Alwaysland, through his daily life, hobbies, and unexpected events.",
-    //   character: 'Pete',
-    //   totalTracks: 10,
-    //   coverEmoji: '🧑',
-    // },
-    // {
-    //   slug: 'shmepete',
-    //   title: "Shmpete's Adventures",
-    //   description: "Follow Pete, a kind young man from Alwaysland, through his daily life, hobbies, and unexpected events.",
-    //   character: 'Schmidt',
-    //   totalTracks: 10,
-    //   coverEmoji: '🧑',
-    // },
-    
+       {
+      slug: 'leo-additional',
+      title: "About Leo",
+      description: "123123123",
+      character: 'Leo',
+      totalTracks: 3,
+      coverEmoji: '🧑',
+    },
     // Add more story groups here later
   ],
   medium: [
@@ -70,14 +62,6 @@ export const storyGroups: Record<DifficultySlug, StoryGroup[]> = {
       totalTracks: 10,
       coverEmoji: '👩',
     },
-    // {
-    //   slug: 'Jessica',
-    //   title: "Jessica's Journey",
-    //   description: "Join Jessica as she navigates life's challenges and discovers new experiences around the world.",
-    //   character: 'Jessica',
-    //   totalTracks: 10,
-    //   coverEmoji: '👩',
-    // },
   ],
   hard: [
     {
@@ -88,14 +72,6 @@ export const storyGroups: Record<DifficultySlug, StoryGroup[]> = {
       totalTracks: 10,
       coverEmoji: '👨',
     },
-    // {
-    //   slug: 'Steven',
-    //   title: "Steven's World",
-    //   description: "Explore the complex and fascinating life of Daniel, a man with big dreams and tough decisions.",
-    //   character: 'Steven',
-    //   totalTracks: 10,
-    //   coverEmoji: '👨',
-    // },
   ],
 };
 

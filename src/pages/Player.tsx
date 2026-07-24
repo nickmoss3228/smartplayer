@@ -16,6 +16,9 @@ import { useProgress } from "../context/ProgressContext";
 import { FREE_TRIAL_STORIES } from "../constants/trial";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
+import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
+import FeedbackModal from "../components/Feedback/FeedbackModal";
+import { getAudioTracksByStory } from "../modules/audiodata/audioDataByDifficulty";
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -24,13 +27,14 @@ const Player = React.memo(() => {
 
   const {
     difficulty: urlDifficulty,
-    storySlug,
+    storySlug: storySlugParam,
     trackNumber: urlTrackNumber,
   } = useParams<{
     difficulty: string;
     storySlug: string;
     trackNumber: string;
   }>();
+  const storySlug = storySlugParam ?? "leo";
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -55,6 +59,15 @@ const Player = React.memo(() => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [_quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const handleOpenFeedback = useCallback(() => {
+    setShowFeedback(true);
+  }, []);
+
+  const handleCloseFeedback = useCallback(() => {
+    setShowFeedback(false);
+  }, []);
 
   // tracks whether the student has listened to the full audio
   const [hasListenedFully, setHasListenedFully] = useState(true);
@@ -90,9 +103,10 @@ const Player = React.memo(() => {
   }, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
 
   const audioTracks = useMemo(
-    () => getAudioTracksByDifficulty(difficulty),
+    () => getAudioTracksByStory(difficulty, storySlug),
     [difficulty],
   );
+;
 
   const resolvedStorySlug =
     storySlug ??
@@ -143,6 +157,10 @@ const Player = React.memo(() => {
     },
     [],
   );
+
+  
+  console.log('[Player] difficulty:', difficulty, 'storySlug:', storySlug, 'level:', level);
+console.log('[Player] resolved audioTrack:', audioTrack?.id, audioTrack?.title, audioTrack?.audio)
 
   // called by WaveformPlayer when the track ends
   const handleAudioComplete = useCallback(() => {
@@ -203,103 +221,92 @@ const Player = React.memo(() => {
   // }, [audioTrack]);
 
   return (
-    <div className={`min-h-screen pt-13 bg-gradient-to-br ${theme.background}`}>
-      <GuidedTour />
-      <div className="flex justify-center items-center align-center ">
-        <div className="relative w-full max-w-[1100px] md:mt-10 mx-auto my-0.5 md:p-10 bg-white/15 backdrop-blur-sm rounded-2xl text-center animate-fade-in">
-          {/* Back button */}
+  <div className={`h-dvh overflow-hidden bg-gradient-to-br ${theme.background} pt-13`}>
+    <GuidedTour />
+    <div className="flex justify-center items-center h-full">
+      <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 backdrop-blur-sm rounded-2xl text-center animate-fade-in flex flex-col overflow-hidden">
+
+        {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks ── */}
+       <div className="shrink-0 relative flex items-center justify-center min-h-[52px] px-2">
           <button
             onClick={() => (showQuiz ? setShowQuiz(false) : navigate(backPath))}
-            className="absolute top-5 left-5 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm z-10"
+            className="absolute left-3 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            {showQuiz ? "" : ""}
           </button>
 
-          {/* Track header */}
-          <div className="min-h-[60px] items-center flex flex-col justify-center rounded-lg">
-            {/* <h3 className="text-sm text-black">
-              Level {level} –{" "}
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} */}
-            {/* {storySlug && (
-                <span className="ml-1 text-black">
-                  · {storySlug.charAt(0).toUpperCase() + storySlug.slice(1)}'s Story
-                </span>
-              )} */}
-            {/* </h3> */}
-            <h1 className="text-xl -mt-1.5 text-black font-bold">
-              {audioTrack.title}
-            </h1>
-          </div>
+          <h1 className="text-lg text-black font-bold px-10 truncate">
+            {audioTrack.title}
+          </h1>
 
-          {/* Main content */}
-          {showQuiz ? (
+          <button
+            onClick={handleOpenFeedback}
+            aria-label={t("controls.feedback", "Send feedback")}
+            className="absolute right-3 p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer"
+          >
+            <IoChatbubbleEllipsesOutline className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
+        {showQuiz ? (
+         <div className="flex-1 min-h-0 overflow-y-auto pb-[180px]">
             <Quiz
               onTimeJump={handleTimeJump}
               questions={audioTrack.quiz}
               onQuizComplete={handleQuizComplete}
               isSubmitting={isSubmitting}
             />
-          ) : (
-            <>
-              <WaveformPlayer
-                key={`${difficulty}-${level}`}
-                audioUrl={audioTrack.audio}
-                trackId={audioTrack.id}
-                difficulty={difficulty}
-                level={String(level)}
-                subtitles={audioTrack.subtitles}
-                timeMarkers={audioTrack.timeMarkers}
-                onWavesurferMount={handleWavesurferMount}
-                  onAudioComplete={handleAudioComplete}
-                helpAudioUrls={audioTrack.helpAudio}
-              />
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 flex flex-col relative">
+            <WaveformPlayer
+              key={`${difficulty}-${level}`}
+              audioUrl={audioTrack.audio}
+              trackId={audioTrack.id}
+              difficulty={difficulty}
+              level={String(level)}
+              subtitles={audioTrack.subtitles}
+              timeMarkers={audioTrack.timeMarkers}
+              onWavesurferMount={handleWavesurferMount}
+              onAudioComplete={handleAudioComplete}
+              helpAudioUrls={audioTrack.helpAudio}
+              storySlug={storySlug}
+            />
 
-              {/* Step 4: highlight the quiz unlock area */}
-              <div
-                className="mb-4 flex flex-col items-center gap-2"
-                data-tour="tour-quiz"
+            {/* Quiz unlock button — floats above everything, shown only once available */}
+            {hasListenedFully && (
+              <button
+                onClick={() => setShowQuiz(true)}
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30
+                           px-5 py-2 rounded-full text-sm font-semibold
+                           bg-white/90 text-black shadow-lg backdrop-blur-sm
+                           hover:bg-white transition-all duration-200 active:scale-95"
               >
-                <button
-                  onClick={() => setShowQuiz(true)}
-                  disabled={!hasListenedFully}
-                  className={`px-6 py-3 font-semibold rounded-xl transition-all duration-200 backdrop-blur-sm border
-                    ${
-                      hasListenedFully
-                        ? "bg-white/20 hover:bg-white/30 text-white border-white/20 hover:border-white/40 cursor-pointer"
-                        : "bg-white/5 text-white/30 border-white/10 cursor-not-allowed"
-                    }`}
-                >
-                  {hasListenedFully
-                    ? t('player.quiz-incomp')
-                    : t('player.quiz')}
-                </button>
-                {!hasListenedFully && (
-                  <p className="text-white/40 text-xs">
-                    {t('player.quiz-bottom')}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+                {t("player.quiz-incomp")}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
-  );
+    {showFeedback && <FeedbackModal onClose={handleCloseFeedback} />}
+  </div>
+);
 });
 
 Player.displayName = "Player";
 export default Player;
+
+
+          {/* <h3 className="text-sm text-black">
+              Level {level} –{" "}
+              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} */}
+          {/* {storySlug && (
+                <span className="ml-1 text-black">
+                  · {storySlug.charAt(0).toUpperCase() + storySlug.slice(1)}'s Story
+                </span>
+              )} */}
+          {/* </h3> */}

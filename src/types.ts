@@ -25,6 +25,7 @@ export interface WaveformPlayerProps {
   audioUrl: string;
   trackId: string;
   difficulty: string;
+  storySlug: string;
   level: string; // "easy" | "medium" | "hard"
   onAudioComplete?: () => void;
   subtitles: {

@@ -12,33 +12,15 @@ export const SpeedControl: React.FC<SpeedControlProps> = React.memo(
   ({ playbackRate, onSpeedChange }) => (
     <div className="flex flex-col items-center w-full gap-2">
       <div className="flex items-center justify-evenly w-full gap-5 md:gap-3 sm:gap-2.5">
-        {/* <div className="flex items-center gap-[15px] md:gap-3 sm:gap-2.5">
-          {[3, 2, 1].map((count) => (
-            <button
-              key={count}
-              className={`border-2 rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
-                ${
-                  repeatCount === count
-                    ? "bg-[#05df3bff] text-black border-green-500"
-                    : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
-                }`}
-              onClick={() => onRepeatCountChange(count)}
-              title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
-            >
-              x{count}
-            </button>
-          ))}
-        </div> */}
-
         <div className="flex items-center gap-[15px] md:gap-3 sm:gap-2.5">
           {PLAYBACK_RATES.map((speed) => (
             <button
               key={speed}
-              className={`border-2 text-white rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
+              className={`text-white rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
                 ${
                   playbackRate === speed
                     ? "bg-[#05df3bff] text-black border-green-500"
-                    : "bg-black/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                    : "bg-black/20 hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
                 }`}
               onClick={() => onSpeedChange(speed)}
             >
@@ -47,9 +29,6 @@ export const SpeedControl: React.FC<SpeedControlProps> = React.memo(
           ))}
         </div>
       </div>
-      {/* <p className="text-black/80 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat']">
-        Repeat count 
-      </p> */}
     </div>
   ),
 );
@@ -107,3 +86,22 @@ SpeedControl.displayName = "SpeedControl";
 // });
 
 // SpeedControl.displayName = 'SpeedControl';
+
+
+        {/* <div className="flex items-center gap-[15px] md:gap-3 sm:gap-2.5">
+          {[3, 2, 1].map((count) => (
+            <button
+              key={count}
+              className={`border-2 rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
+                ${
+                  repeatCount === count
+                    ? "bg-[#05df3bff] text-black border-green-500"
+                    : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                }`}
+              onClick={() => onRepeatCountChange(count)}
+              title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+            >
+              x{count}
+            </button>
+          ))}
+        </div> */}
