@@ -10,6 +10,12 @@ export const storyRegistry = {
       characterIcon: "🦁",
       totalParts: 10,
     },
+    {
+      storyId: "leo-additional",
+      storyName: "About Leo",
+      characterIcon: "🦁",
+      totalParts: 3,
+    },
     // add more easy stories here later
   ],
   medium: [
