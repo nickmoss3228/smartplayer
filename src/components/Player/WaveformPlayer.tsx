@@ -1,7 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { WaveformPlayerProps } from "../../types";
 import { useAppSelector, useAppDispatch } from "../../hooks/hooks";
-import { trackVocabulary } from "../../modules/vocabulary/Vocabulary";
+import {
+  trackPhrasalVerbs,
+  trackVocabulary,
+} from "../../modules/vocabulary/Vocabulary";
 import { useListeningTimer } from "../../hooks/useListeningTimer";
 import {
   setCurrentMarkerIndex,
@@ -81,9 +84,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     }, [onAudioComplete]);
 
     // ── inside the component (replaces the old STORY_TITLES constant) ─────────────
-    const storyTitles = Object.entries(trackFolderMap[difficulty]?.[storySlug] ?? {}).reduce<
-      Record<number, string>
-    >((acc, [key, folderName]) => {
+    const storyTitles = Object.entries(
+      trackFolderMap[difficulty]?.[storySlug] ?? {},
+    ).reduce<Record<number, string>>((acc, [key, folderName]) => {
       acc[Number(key)] = formatStoryTitle(folderName);
       return acc;
     }, {});
@@ -183,9 +186,11 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     }, [isPlaying, startTimer, stopTimer]);
 
     const { playVocabWord } = useVocabAudio(trackId, difficulty, storySlug);
-   const currentVocabulary =
+    const currentVocabulary =
       trackVocabulary[difficulty]?.[storySlug]?.[String(trackId)] ?? [];
 
+    const currentPhrasalVerbs =
+      trackPhrasalVerbs[difficulty]?.[storySlug]?.[trackId] ?? [];
     // console.log("[vocab]", { level, trackId, result: currentVocabulary });
 
     const handleVolumeChange = (stepped: number) => {
@@ -246,81 +251,91 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
     return (
       <div className="waveform-overlay">
-  <div className="md:hidden flex flex-col h-full min-h-0">
-    {/* MIDDLE ZONE — scrollable content, no more huge bottom padding */}
-    <div className="flex-1 min-h-0 flex flex-col gap-7 px-4 overflow-y-auto">
-      <div
-        data-tour="tour-comics"
-        className="max-h-[32vh] flex items-center justify-center py-1"
-      >
-        <ComicsDisplay
-          storyIndex={Number(trackId)}
-          title={storyTitles[Number(trackId)]}
-          difficulty={difficulty}
-        />
-      </div>
+        <div className="md:hidden flex flex-col h-full min-h-0">
+          {/* MIDDLE ZONE — scrollable content, no more huge bottom padding */}
+          <div className="flex-1 min-h-0 flex flex-col gap-1 px-4 overflow-y-auto">
+            <div
+              data-tour="tour-comics"
+              className="max-h-[32vh] flex items-center justify-center py-1"
+            >
+              <ComicsDisplay
+                storyIndex={Number(trackId)}
+                title={storyTitles[Number(trackId)]}
+                difficulty={difficulty}
+              />
+            </div>
 
-      {currentVocabulary.length > 0 && (
-        <div className="shrink-0" data-tour="tour-vocabulary">
-          <VocabularyRow
-            words={currentVocabulary}
-            onPlay={playVocabWord}
-            volume={isMuted ? 0 : volume}
-          />
-        </div>
-      )}
+            {currentVocabulary.length > 0 && (
+              <div className="shrink-0" data-tour="tour-vocabulary">
+                <VocabularyRow
+                  words={currentVocabulary}
+                  onPlay={(fileName) => playVocabWord(fileName, "vocab")}
+                  volume={isMuted ? 0 : volume}
+                />
+              </div>
+            )}
 
-      <div className="shrink-0" data-tour="tour-player">
-        <WaveformDisplay
-          waveformRef={waveformRef}
-          isLoading={isLoading}
-          isInitialized={isInitialized}
-          currentTime={currentTime}
-          duration={duration}
-          durationSeconds={durationSeconds}
-          timeMarkers={timeMarkers}
-          subtitlesVisible={subtitlesVisible}
-          activeSubtitle={activeSubtitle}
-          onMarkerClick={handleMarkerClick}
-          onSeek={handleSeek}
-          getAudioTime={getAudioTime}
-          isMobile
-        />
-      </div>
-    </div>
+            {currentPhrasalVerbs.length > 0 && (
+              <div className="shrink-0" data-tour="tour-phrasal-verbs">
+                <VocabularyRow
+                  words={currentPhrasalVerbs}
+                  onPlay={(fileName) => playVocabWord(fileName, "phrasal")}
+                  volume={isMuted ? 0 : volume}
+                />
+              </div>
+            )}
 
-    {/* BOTTOM ZONE — normal flex child now, sits right under the content, no more fixed positioning */}
-    <div
-      className="shrink-0
+            <div className="shrink-0" data-tour="tour-player">
+              <WaveformDisplay
+                waveformRef={waveformRef}
+                isLoading={isLoading}
+                isInitialized={isInitialized}
+                currentTime={currentTime}
+                duration={duration}
+                durationSeconds={durationSeconds}
+                timeMarkers={timeMarkers}
+                subtitlesVisible={subtitlesVisible}
+                activeSubtitle={activeSubtitle}
+                onMarkerClick={handleMarkerClick}
+                onSeek={handleSeek}
+                getAudioTime={getAudioTime}
+                isMobile
+              />
+            </div>
+          </div>
+
+          {/* BOTTOM ZONE — normal flex child now, sits right under the content, no more fixed positioning */}
+          <div
+            className="shrink-0
        px-[clamp(1rem,5vw,2rem)] pt-[clamp(0.25rem,1vh,0.75rem)]
        pb-[max(1rem,env(safe-area-inset-bottom))]
        mt-4
        flex flex-col
        min-h-[180px]"
-      data-tour="tour-controls"
-    >
-      <PlayerControls
-        isPlaying={isPlaying}
-        isControlledMode={isControlledMode}
-        onPlayPause={handlePlayPause}
-        onToggleControlledMode={toggleControlledMode}
-        repeatCount={repeatCount}
-        onRepeatCountChange={handleSetRepeatCount}
-        playbackRate={playbackRate}
-        onSpeedChange={changePlaybackRate}
-        isEnhancedMode={isEnhancedMode}
-        onToggleEnhancedMode={handleToggleEnhancedMode}
-        isEnhancedSessionActive={isEnhancedSessionActive}
-        layout="mobile"
-        onPrev={handlePrevMarker}
-        onNext={handleNextMarker}
-        canGoPrev={canGoPrev}
-        canGoNext={canGoNext}
-        onOpenHelp={handleOpenHelp}
-        onOpenFeedback={handleOpenFeedback}
-      />
-    </div>
-  </div>
+            data-tour="tour-controls"
+          >
+            <PlayerControls
+              isPlaying={isPlaying}
+              isControlledMode={isControlledMode}
+              onPlayPause={handlePlayPause}
+              onToggleControlledMode={toggleControlledMode}
+              repeatCount={repeatCount}
+              onRepeatCountChange={handleSetRepeatCount}
+              playbackRate={playbackRate}
+              onSpeedChange={changePlaybackRate}
+              isEnhancedMode={isEnhancedMode}
+              onToggleEnhancedMode={handleToggleEnhancedMode}
+              isEnhancedSessionActive={isEnhancedSessionActive}
+              layout="mobile"
+              onPrev={handlePrevMarker}
+              onNext={handleNextMarker}
+              canGoPrev={canGoPrev}
+              canGoNext={canGoNext}
+              onOpenHelp={handleOpenHelp}
+              onOpenFeedback={handleOpenFeedback}
+            />
+          </div>
+        </div>
 
         {/* ═══════════ DESKTOP LAYOUT (≥ md) — UNCHANGED ═══════════ */}
         <div className="hidden md:block">

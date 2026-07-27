@@ -96,19 +96,19 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
-      const activeBtn = "bg-[#05df3bff] text-black border-green-500";
-      const idleBtn = "bg-black/20 text-white/90 ";
+      const activeBtn = "bg-[#05df3bff] text-green border-green-500";
+      const idleBtn = " text-white/90 ";
 
       return (
-        <div className="relative flex flex-col w-full h-full justify-start gap-10">
+        <div className="relative flex flex-col w-full h-full justify-start gap-6">
           {/* Row A — Help · Prev · Play/Pause · Next · Mode toggle */}
-          <div className="flex items-center justify-between gap-[clamp(0.6rem,3vw,1.5rem)]">
+          <div className="flex items-center justify-between gap-0">
             <button
               onClick={onOpenHelp}
               aria-label={t("controls.help", "Help")}
               className="shrink-0 flex items-center justify-center rounded-full
      w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)]
-     bg-black/20 hover:bg-red-600 text-white
+     text-white
      transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
             >
               <IoHelpCircle className="w-[clamp(22px,6.5vw,30px)] h-[clamp(22px,6.5vw,30px)]" />
@@ -119,7 +119,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               <button
                 onClick={onPrev}
                 disabled={!canGoPrev}
-                className="rounded-full bg-black/20 text-white
+                className="rounded-full text-white
                  flex items-center justify-center shadow
                  w-[clamp(44px,13vw,64px)] h-[clamp(44px,13vw,64px)]
                  disabled:opacity-30 disabled:pointer-events-none
@@ -152,7 +152,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               <button
                 onClick={onNext}
                 disabled={!canGoNext}
-                className="rounded-full bg-black/20 text-white
+                className="rounded-full text-white
                  flex items-center justify-center shadow
                  w-[clamp(44px,13vw,64px)] h-[clamp(44px,13vw,64px)]
                  disabled:opacity-30 disabled:pointer-events-none
@@ -178,7 +178,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               data-tour="tour-repeat"
             >
               {/* w-full + justify-between → pills spread across their column */}
-              <div className="flex items-center justify-between w-full max-w-[220px]">
+              <div className="flex items-center justify-evenly w-full max-w-[220px]">
                 {[3, 2, 1].map((count) => (
                   <button
                     key={count}
@@ -193,7 +193,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             </div>
 
             <div className="flex flex-col items-center" data-tour="tour-speed">
-              <div className="flex items-center justify-between w-full max-w-[220px]">
+              <div className="flex items-center justify-evenly w-full max-w-[220px]">
                 {PLAYBACK_RATES.map((speed) => (
                   <button
                     key={speed}

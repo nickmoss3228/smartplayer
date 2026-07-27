@@ -71,6 +71,63 @@ export const storyFolderMap: Record<string, Record<string, string>> = {
   },
 };
 
+export const trackPhrasalVerbs: Record<string, Record<string, Record<string, VocabEntry[]>>> = {
+  easy: {
+    leo: {
+      "2": [
+        { word: "просыпаться", definition: "1", audioKey: "wake up" },
+        { word: "вставать", definition: "1", audioKey: "get up" },
+        { word: "вставать с кровати", definition: "1", audioKey: "get out of bed" },
+        { word: "остывать", definition: "1", audioKey: "cool down" },
+        { word: "запускаться", definition: "1", audioKey: "start up" },
+        { word: "возвращаться", definition: "1", audioKey: "come back" },
+        { word: "надоесть", definition: "1", audioKey: "feed up" },
+        { word: "лечь", definition: "1", audioKey: "lie down" },
+        { word: "думать о", definition: "1", audioKey: "think about" },
+      ],
+      "3": [
+        { word: "звонить", definition: "1", audioKey: "call up" },
+      ],
+      "4": [
+        { word: "продолжаться", definition: "1", audioKey: "go on" },
+        { word: "быть не дома", definition: "1", audioKey: "be out" },
+        { word: "быть готовым на", definition: "1", audioKey: "be down for" },
+        { word: "присоединяться", definition: "1", audioKey: "join in" },
+        { word: "возвращаться", definition: "1", audioKey: "go back" },
+      ],
+      "5": [
+        { word: "надевать", definition: "1", audioKey: "put on" },
+        { word: "снимать", definition: "1", audioKey: "take off" },
+      ],
+      "6": [
+        { word: "оглядываться", definition: "1", audioKey: "look back" },
+        { word: "плыть обратно", definition: "1", audioKey: "swim back" },
+      ],
+      "7": [
+        { word: "повторять", definition: "1", audioKey: "follow along" },
+        { word: "сбываться", definition: "1", audioKey: "come true" },
+        { word: "ломаться", definition: "1", audioKey: "break down" },
+      ],
+      "8": [
+        { word: "продолжаться", definition: "1", audioKey: "go on" },
+        { word: "вырастать", definition: "1", audioKey: "grow up" },
+      ],
+      "9": [
+        { word: "встречаться", definition: "1", audioKey: "meet up" },
+        { word: "возвращаться", definition: "1", audioKey: "come back" },
+      ],
+      "10": [
+        { word: "оглядываться", definition: "1", audioKey: "look around" },
+        { word: "поднимать", definition: "1", audioKey: "pick up" },
+        { word: "убегать", definition: "1", audioKey: "run away" },
+        { word: "искать", definition: "1", audioKey: "look for" },
+        { word: "устанавливать", definition: "1", audioKey: "put up" },
+        { word: "возвращаться", definition: "1", audioKey: "go back" },
+      ],
+    },
+  },
+};
+
 export const trackVocabulary: Record<string, Record<string, Record<string, VocabEntry[]>>> = {
   easy: {
     leo: {
