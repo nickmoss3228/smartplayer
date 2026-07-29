@@ -19,7 +19,7 @@ const STEP_CONFIG: TourStepConfig[] = [
   { target: "tour-speed", side: "bottom", padding: 10 },
   { target: "tour-repeat",   side: "bottom",    padding: 10 },
   { target: "tour-vocabulary", side: "top",    padding: 10 },
-  { target: "tour-quiz",       side: "top",    padding: 12 },
+  // { target: "tour-quiz",       side: "top",    padding: 12 },
 ];
 
 // ─── Geometry helpers ─────────────────────────────────────────────────────────

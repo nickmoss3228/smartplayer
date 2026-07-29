@@ -296,7 +296,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
 
   // ─── MEDIUM ────────────────────────────────────────────────────────────────
 
-  "medium-1": {
+  "medium-maya-1": {
     id: "medium-1",
     title: "Meet Maya!",
     emoji: "✈️",
@@ -316,7 +316,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for how Maya describes both her professional and personal character — she gives you a lot of clues about who she really is.",
   },
 
-  "medium-2": {
+  "medium-maya-2": {
     id: "medium-2",
     title: "A Trip to Kyoto",
     emoji: "🏯",
@@ -336,7 +336,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Pay attention to what Maya came to Kyoto to write about — and what she actually ended up writing about instead.",
   },
 
-  "medium-3": {
+  "medium-maya-3": {
     id: "medium-3",
     title: "Trying Street Food in Bangkok",
     emoji: "🍜",
@@ -356,7 +356,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Notice the shift in Maya's attitude from the beginning of the story to the end — and listen for her practical advice to future travellers.",
   },
 
-  "medium-4": {
+  "medium-maya-4": {
     id: "medium-4",
     title: "A Missed Connection",
     emoji: "🚆",
@@ -376,7 +376,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen carefully to the sequence of events — what goes wrong, how Maya reacts, and what she gains from the experience.",
   },
 
-  "medium-5": {
+  "medium-maya-5": {
     id: "medium-5",
     title: "Budgeting for Adventure",
     emoji: "💸",
@@ -396,7 +396,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for all the specific strategies Maya uses to save money — and notice which one she admits she struggles with.",
   },
 
-  "medium-6": {
+  "medium-maya-6": {
     id: "medium-6",
     title: "Discussing Environmental Concerns",
     emoji: "🌊",
@@ -422,7 +422,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for the specific statistics Maya mentions — numbers are often the key detail in comprehension questions about this story.",
   },
 
-  "medium-7": {
+  "medium-maya-7": {
     id: "medium-7",
     title: "An Unexpected Interview",
     emoji: "🧵",
@@ -448,7 +448,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Focus on how Maya communicates without a shared language — and listen for the details about what the craftsman taught her beyond just his trade.",
   },
 
-  "medium-8": {
+  "medium-maya-8": {
     id: "medium-8",
     title: "Family Across Borders",
     emoji: "🌍",
@@ -474,7 +474,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for where each family member lives and what they do — and notice what Maya values most about her relationships with each of them.",
   },
 
-  "medium-9": {
+  "medium-maya-9": {
     id: "medium-9",
     title: "The Mountain Festival – Part 1",
     emoji: "🏔️",
@@ -500,7 +500,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "This is the first part of a two-part story — pay attention to how Maya earns the trust of the villagers, as it becomes important in Part 2.",
   },
 
-  "medium-10": {
+  "medium-maya-10": {
     id: "medium-10",
     title: "The Mountain Festival – Part 2",
     emoji: "🌌",
@@ -528,7 +528,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
 
   // ─── HARD ──────────────────────────────────────────────────────────────────
 
-  "hard-1": {
+  "hard-daniel-1": {
     id: "hard-1",
     title: "Introducing Myself",
     emoji: "🏢",
@@ -548,7 +548,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Daniel uses a lot of metaphors drawn from his seaside childhood — listen for how he connects the rhythm of tides to the rhythm of business decisions.",
   },
 
-  "hard-2": {
+  "hard-daniel-2": {
     id: "hard-2",
     title: "The Deal That Nearly Broke Me",
     emoji: "📦",
@@ -574,7 +574,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Pay close attention to the distinction Daniel draws between asking for schedule flexibility versus asking for more money — it's the core lesson of the whole story.",
   },
 
-  "hard-3": {
+  "hard-daniel-3": {
     id: "hard-3",
     title: "The Conference in Munich",
     emoji: "🇩🇪",
@@ -600,7 +600,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "This is the longest story in the Hard series — listen for the specific six-step plan Daniel sketches in the beer hall. Each step builds on the speaker's core idea.",
   },
 
-  "hard-4": {
+  "hard-daniel-4": {
     id: "hard-4",
     title: "A Failure with a Silver Lining",
     emoji: "🧀",
@@ -626,7 +626,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Notice how Daniel's relationship with Eliza evolves across the story — and listen for the exact condition she sets before giving him another chance.",
   },
 
-  "hard-5": {
+  "hard-daniel-5": {
     id: "hard-5",
     title: "The Bridge at Low Tide",
     emoji: "🌉",
@@ -652,7 +652,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "The bridge is a metaphor — Daniel spells it out in his notebook at the end. Listen for the exact phrase he writes down, as it captures his entire management style in one line.",
   },
 
-  "hard-6": {
+  "hard-daniel-6": {
     id: "hard-6",
     title: "Night of the Phantom Pallets",
     emoji: "🌙",
@@ -678,7 +678,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "This story moves fast — listen for the three-team split Daniel organises and what each group is assigned to do. The structure of his response is the real lesson here.",
   },
 
-  "hard-7": {
+  "hard-daniel-7": {
     id: "hard-7",
     title: "Family Weather Report",
     emoji: "🏠",
@@ -704,7 +704,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Listen for the phrase 'red day' and how Daniel defines it — it's a professional concept he's quietly imported into his personal life, and it says a lot about his character.",
   },
 
-  "hard-8": {
+  "hard-daniel-8": {
     id: "hard-8",
     title: "The Price of Enough",
     emoji: "💷",
@@ -730,7 +730,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "Daniel uses two key metaphors for money in this story — listen for both and think about how they contradict each other. That tension is the whole point of the episode.",
   },
 
-  "hard-9": {
+  "hard-daniel-9": {
     id: "hard-9",
     title: "Family on the Manifest – Part I",
     emoji: "✈️",
@@ -756,7 +756,7 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     tip: "This is Part I of a two-part story — pay attention to the rule Daniel declares aloud at Heathrow security. His ability to stick to that rule is tested hard in Part II.",
   },
 
-  "hard-10": {
+  "hard-daniel-10": {
     id: "hard-10",
     title: "Family on the Manifest – Part II",
     emoji: "⛵",

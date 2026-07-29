@@ -33,52 +33,11 @@ export const getStoryGroups = (diff: DifficultySlug, t: TFunction): StoryGroup[]
     description: t(`stories.${diff}.${story.slug}.description`),
   }));
 
-export const storyGroups: Record<DifficultySlug, StoryGroup[]> = {
-  easy: [
-    {
-      slug: 'leo',
-      title: "Leo's Adventures",
-      description: "Follow Leo, a kind young man from St.Petersburg.",
-      character: 'Leo',
-      totalTracks: 10,
-      coverEmoji: '🧑',
-    },
-       {
-      slug: 'leo-additional',
-      title: "About Leo",
-      description: "123123123",
-      character: 'Leo',
-      totalTracks: 3,
-      coverEmoji: '🧑',
-    },
-    // Add more story groups here later
-  ],
-  medium: [
-    {
-      slug: 'maya',
-      title: "Maya's Journey",
-      description: "Join Maya as she navigates life's challenges and discovers new experiences around the world.",
-      character: 'Maya',
-      totalTracks: 10,
-      coverEmoji: '👩',
-    },
-  ],
-  hard: [
-    {
-      slug: 'daniel',
-      title: "Daniel's World",
-      description: "Explore the complex and fascinating life of Daniel, a man with big dreams and tough decisions.",
-      character: 'Daniel',
-      totalTracks: 10,
-      coverEmoji: '👨',
-    },
-  ],
-};
-
-export const getStoryGroup = (difficulty: DifficultySlug, slug: string): StoryGroup | undefined => {
-  return storyGroups[difficulty]?.find(group => group.slug === slug);
-};
-
-// export const getStoryGroups = (difficulty: DifficultySlug): StoryGroup[] => {
-//   return storyGroups[difficulty] || [];
-// };
+// Single-story lookup — built on the same translated data as getStoryGroups,
+// so a story's title/description never drifts from what List.tsx shows.
+export const getStoryGroup = (
+  difficulty: DifficultySlug,
+  slug: string,
+  t: TFunction,
+): StoryGroup | undefined =>
+  getStoryGroups(difficulty, t).find(group => group.slug === slug);

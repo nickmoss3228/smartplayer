@@ -1,4 +1,5 @@
 import { useParams, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useProgress } from '../../context/ProgressContext';
 import LevelProgress from '../../components/LevelProgress';
 import { getStoryGroup } from '../../types/storyGroups';
@@ -23,6 +24,7 @@ const DifficultyDetail = () => {
     difficulty: string;
     storySlug: string;
   }>();
+  const { t } = useTranslation();
 
   // ← use new context shape
   const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
@@ -34,7 +36,7 @@ const DifficultyDetail = () => {
 
   const diff = difficulty as DifficultySlug;
   const resolvedSlug = storySlug || DEFAULT_SLUGS[diff];
-  const storyGroup = storySlug ? getStoryGroup(diff, storySlug) : undefined;
+  const storyGroup = storySlug ? getStoryGroup(diff, storySlug, t) : undefined;
 
   // Validate story slug if one was provided in the URL
   if (storySlug && !storyGroup) {
