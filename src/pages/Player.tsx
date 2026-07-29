@@ -10,7 +10,6 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
-// import { getAudioTracksByDifficulty } from "../modules/audiodata/audioDataByDiffculty";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
 import { useProgress } from "../context/ProgressContext";
 import { FREE_TRIAL_STORIES } from "../constants/trial";
@@ -250,7 +249,7 @@ const allVocabWords = useMemo(() => {
 
   return (
     <div
-      className={`h-dvh overflow-hidden bg-gradient-to-br ${theme.background} pt-13`}
+      className={`h-dvh overflow-hidden bg-gradient-to-br ${theme.background} pt-1`}
     >
       <GuidedTour />
       <div className="flex justify-center items-center h-full">
@@ -328,29 +327,10 @@ const allVocabWords = useMemo(() => {
                 onAudioComplete={handleAudioComplete}
                 helpAudioUrls={audioTrack.helpAudio}
                 storySlug={storySlug}
+                hasListenedFully={hasListenedFully}
+                onOpenQuiz={() => setShowQuiz(true)}
+                onOpenVocabQuiz={() => setShowVocabQuiz(true)}
               />
-
-              {/* Quiz unlock button — floats above everything, shown only once available */}
-              {hasListenedFully && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-                  <button
-                    onClick={() => setShowQuiz(true)}
-                    className="px-5 py-2 rounded-full text-sm font-semibold
-                     bg-white/90 text-black shadow-lg backdrop-blur-sm
-                     hover:bg-white transition-all duration-200 active:scale-95"
-                  >
-                    {t("player.quiz-incomp")}
-                  </button>
-                  <button
-                    onClick={() => setShowVocabQuiz(true)}
-                    className="px-5 py-2 rounded-full text-sm font-semibold
-                     bg-green/90 text-white shadow-lg backdrop-blur-sm
-                     hover:bg-green transition-all duration-200 active:scale-95"
-                  >
-                    {t("player.vocab-quiz", "Практика слов")}
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>

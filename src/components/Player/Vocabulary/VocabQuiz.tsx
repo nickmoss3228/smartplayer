@@ -114,12 +114,6 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
   return (
     <div className="flex flex-col h-full min-h-0 px-4 pb-4">
       <div className="shrink-0 flex items-center justify-center py-2">
-        {/* <button
-          onClick={onClose}
-          className="text-black/60 hover:text-black text-sm transition-colors"
-        >
-          ← Назад
-        </button> */}
         <span className="text-black/70 text-sm font-semibold">
           Счёт: {score} / {order.length}
         </span>

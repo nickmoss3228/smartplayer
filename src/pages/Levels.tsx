@@ -50,7 +50,7 @@ const Levels = () => {
 
  return (
     // ── outer: full-height flex column, no padding-top ──────────────────────
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 pt-16 sm:pt-20">
 
       {/* ── inner: flex-1 so it fills whatever the outer gives it ───────────── */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">

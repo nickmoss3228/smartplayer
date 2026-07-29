@@ -1,35 +1,29 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useCallback, useEffect } from "react";
 import { WaveformPlayerProps } from "../../types";
-import { useAppSelector, useAppDispatch } from "../../hooks/hooks";
-import {
-  trackPhrasalVerbs,
-  trackVocabulary,
-} from "../../modules/vocabulary/Vocabulary";
+import { useAppSelector } from "../../hooks/hooks";
 import { useListeningTimer } from "../../hooks/useListeningTimer";
-import {
-  setCurrentMarkerIndex,
-  setIsPlaying,
-  setVolume,
-  setIsMuted,
-  setCurrentTime,
-  setDurationSeconds,
-  setDuration,
-  setActiveSubtitle,
-} from "../../store/playerslice";
-import HelpModal from "./HelpModal/HelpModal";
-import FeedbackModal from "../Feedback/FeedbackModal";
 
 import { useWavesurferInit } from "./hooks/useWavesurferInit";
 import { useSegmentEngine } from "./hooks/useSegmentEngine";
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { useVocabAudio } from "./hooks/useVocabAudio";
+import { usePlaybackSettings } from "./hooks/usePlaybackSettings";
+import { useEnhancedMode } from "./hooks/useEnhancedMode";
+import { useStoryTitles } from "./hooks/useStoryTitles";
+import { useTrackVocabulary } from "./hooks/useTrackVocabulary";
+import { useMarkerNavigation } from "./hooks/useMarkerNavigation";
+import { useTrackReset } from "./hooks/useTrackReset";
+import { usePausableModal } from "./hooks/usePausableModal";
+import { useVolumeControl } from "./hooks/useVolumeControl";
+
+import HelpModal from "./HelpModal/HelpModal";
+import FeedbackModal from "../Feedback/FeedbackModal";
 import { WaveformDisplay } from "./WaveformDisplay";
 import { PlayerControls } from "./Controls/PlayerControls";
 import { VolumeControl } from "./Controls/VolumeControl";
 import { VocabChip } from "./Vocabulary/VocabChip";
 import { VocabularyRow } from "./Vocabulary/VocabularyRow";
 import ComicsDisplay from "./Comics/ComicsDisplay";
-import { trackFolderMap } from "../../modules/vocabulary/Vocabulary";
 import { useTranslation } from "react-i18next";
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
@@ -44,10 +38,12 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     difficulty,
     storySlug,
     helpAudioUrls,
+    hasListenedFully,
+    onOpenQuiz,
+    onOpenVocabQuiz,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
-    const dispatch = useAppDispatch();
     const { t } = useTranslation();
 
     const {
@@ -63,58 +59,29 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       activeSubtitle,
     } = useAppSelector((state) => state.player);
 
-    const [repeatCount, setRepeatCount] = useState(2);
-    const [isControlledMode, setIsControlledMode] = useState(false);
+    const { repeatCount, setRepeatCount, isControlledMode, setIsControlledMode } =
+      usePlaybackSettings();
     const playbackRateRef = useRef(playbackRate);
-    const [isEnhancedMode, setIsEnhancedMode] = useState(true);
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
-    const [isEnhancedSessionActive, setIsEnhancedSessionActive] =
-      useState(false);
-    // const [isUserPaused, setIsUserPaused] = useState(false);
-    // ── Updated toggle — reset session when switching modes ───────────────────
-    const handleToggleEnhancedMode = () => {
-      setIsEnhancedMode((prev) => !prev);
-      setIsEnhancedSessionActive(false); // ← NEW
-    };
+
+    const {
+      isEnhancedMode,
+      isEnhancedSessionActive,
+      setIsEnhancedSessionActive,
+      handleToggleEnhancedMode,
+    } = useEnhancedMode();
 
     // ── Wrap onAudioComplete so completion resets the session ─────────────────
     const handleAudioComplete = useCallback(() => {
-      setIsEnhancedSessionActive(false); // ← NEW
+      setIsEnhancedSessionActive(false);
       onAudioComplete?.();
-    }, [onAudioComplete]);
+    }, [onAudioComplete, setIsEnhancedSessionActive]);
 
-    // ── inside the component (replaces the old STORY_TITLES constant) ─────────────
-    const storyTitles = Object.entries(
-      trackFolderMap[difficulty]?.[storySlug] ?? {},
-    ).reduce<Record<number, string>>((acc, [key, folderName]) => {
-      acc[Number(key)] = formatStoryTitle(folderName);
-      return acc;
-    }, {});
-
-    // ── helper: folder name → readable title ─────────────────────────────────────
-    function formatStoryTitle(folderName: string): string {
-      return folderName
-        .replace(/^\d+\.\s*/, "") // strip "1. " or "1."
-        .split(" ")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" "); // "leo's life" → "Leo's Life"
-    }
+    const storyTitles = useStoryTitles(difficulty, storySlug);
 
     console.log("[Player] level:", level, "difficulty:", difficulty);
 
-    const previousAudioUrl = useRef<string | null>(null);
-    useEffect(() => {
-      if (previousAudioUrl.current !== audioUrl) {
-        dispatch(setCurrentMarkerIndex(0));
-        dispatch(setIsPlaying(false));
-        dispatch(setCurrentTime("0:00"));
-        dispatch(setDuration("0:00"));
-        dispatch(setDurationSeconds(0));
-        dispatch(setActiveSubtitle(""));
-        setIsEnhancedSessionActive(false);
-        previousAudioUrl.current = audioUrl;
-      }
-    }, [audioUrl, dispatch]);
+    // Reset marker/time/subtitle state (and the enhanced-mode session) on track change
+    useTrackReset(audioUrl, setIsEnhancedSessionActive);
 
     const { wavesurfer, isInitialized, isLoading } = useWavesurferInit({
       audioUrl,
@@ -186,35 +153,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     }, [isPlaying, startTimer, stopTimer]);
 
     const { playVocabWord } = useVocabAudio(trackId, difficulty, storySlug);
-    const currentVocabulary =
-      trackVocabulary[difficulty]?.[storySlug]?.[String(trackId)] ?? [];
+    const { currentVocabulary, currentPhrasalVerbs } = useTrackVocabulary(
+      difficulty,
+      storySlug,
+      trackId,
+    );
 
-    const currentPhrasalVerbs =
-      trackPhrasalVerbs[difficulty]?.[storySlug]?.[trackId] ?? [];
-    // console.log("[vocab]", { level, trackId, result: currentVocabulary });
+    const handleVolumeChange = useVolumeControl(wavesurfer);
 
-    const handleVolumeChange = (stepped: number) => {
-      const normalized = stepped / 10;
-      dispatch(setVolume(normalized));
-      dispatch(setIsMuted(stepped === 0));
-      wavesurfer.current?.setVolume(normalized);
-    };
-
-    // Prev/Next segment nav — uses existing handleMarkerClick (expects seconds)
-    const canGoPrev = currentMarkerIndex > 0;
-    const canGoNext = currentMarkerIndex < timeMarkers.length - 1;
-
-    const getMarkerTime = (idx: number): number => {
-      const m = timeMarkers[idx];
-      return typeof m === "object" ? m.time : (m as unknown as number);
-    };
-
-    const handlePrevMarker = () => {
-      if (canGoPrev) handleMarkerClick(getMarkerTime(currentMarkerIndex - 1));
-    };
-    const handleNextMarker = () => {
-      if (canGoNext) handleMarkerClick(getMarkerTime(currentMarkerIndex + 1));
-    };
+    const { canGoPrev, canGoNext, handlePrevMarker, handleNextMarker } =
+      useMarkerNavigation(currentMarkerIndex, timeMarkers, handleMarkerClick);
 
     // Seek WaveSurfer to a 0–1 progress value.
     // Works even though WaveSurfer is mounted on the hidden desktop div.
@@ -229,25 +177,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       [],
     );
 
-    const handleOpenHelp = useCallback(() => {
-      // Pause the main track before opening
-      if (wavesurfer.current?.isPlaying()) {
-        wavesurfer.current.pause();
-        setIsEnhancedSessionActive(false);
-        // the wavesurfer 'pause' event fires → dispatches setIsPlaying(false) automatically
-      }
-      setIsHelpOpen(true);
-    }, [wavesurfer]);
-
-    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-
-    const handleOpenFeedback = useCallback(() => {
-      if (wavesurfer.current?.isPlaying()) {
-        wavesurfer.current.pause();
-        setIsEnhancedSessionActive(false);
-      }
-      setIsFeedbackOpen(true);
-    }, [wavesurfer]);
+    const help = usePausableModal(wavesurfer, setIsEnhancedSessionActive);
+    const feedback = usePausableModal(wavesurfer, setIsEnhancedSessionActive);
 
     return (
       <div className="waveform-overlay">
@@ -331,9 +262,30 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               onNext={handleNextMarker}
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
-              onOpenHelp={handleOpenHelp}
-              onOpenFeedback={handleOpenFeedback}
+              onOpenHelp={help.open}
+              onOpenFeedback={feedback.open}
             />
+
+            {hasListenedFully && (
+              <div className="flex justify-center gap-2 mt-3">
+                <button
+                  onClick={onOpenQuiz}
+                  className="px-5 py-2 rounded-lg text-sm font-semibold
+                   bg-blue-600/90 text-white shadow-lg backdrop-blur-sm
+                   hover:bg-blue-600 transition-all duration-200 active:scale-95"
+                >
+                  {t("player.quiz-incomp")}
+                </button>
+                <button
+                  onClick={onOpenVocabQuiz}
+                  className="px-5 py-2 rounded-lg text-sm font-semibold
+                   bg-purple-600/90 text-white shadow-lg backdrop-blur-sm
+                   hover:bg-purple-600 transition-all duration-200 active:scale-95"
+                >
+                  {t("player.vocab-quiz")}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -383,7 +335,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             />
 
             <button
-              onClick={handleOpenHelp}
+              onClick={help.open}
               className="flex items-center gap-2 px-5 py-2 rounded-lg
              bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
              transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
@@ -391,6 +343,27 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               Help!
             </button>
           </div>
+
+          {hasListenedFully && (
+            <div className="max-w-[1100px] mx-auto flex justify-center gap-2 mt-4">
+              <button
+                onClick={onOpenQuiz}
+                className="px-5 py-2 rounded-lg text-sm font-semibold
+                 bg-blue-600/90 text-white shadow-lg backdrop-blur-sm
+                 hover:bg-blue-600 transition-all duration-200 active:scale-95"
+              >
+                {t("player.quiz-incomp")}
+              </button>
+              <button
+                onClick={onOpenVocabQuiz}
+                className="px-5 py-2 rounded-lg text-sm font-semibold
+                 bg-purple-600/90 text-white shadow-lg backdrop-blur-sm
+                 hover:bg-purple-600 transition-all duration-200 active:scale-95"
+              >
+                {t("player.vocab-quiz")}
+              </button>
+            </div>
+          )}
 
           {currentVocabulary.length > 0 && (
             <div
@@ -416,16 +389,14 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         </div>
 
         <HelpModal
-          isOpen={isHelpOpen}
-          onClose={() => setIsHelpOpen(false)}
+          isOpen={help.isOpen}
+          onClose={help.close}
           helpAudioUrls={helpAudioUrls}
           timeMarkers={timeMarkers}
           initialMarkerIndex={currentMarkerIndex}
         />
 
-        {isFeedbackOpen && (
-          <FeedbackModal onClose={() => setIsFeedbackOpen(false)} />
-        )}
+        {feedback.isOpen && <FeedbackModal onClose={feedback.close} />}
       </div>
     );
   },

@@ -39,7 +39,10 @@ export interface WaveformPlayerProps {
     color: string;
   }[];
   onWavesurferMount: (wavesurfer: WaveSurfer) => void;
-  helpAudioUrls?: string[]; 
+  helpAudioUrls?: string[];
+  hasListenedFully?: boolean;
+  onOpenQuiz?: () => void;
+  onOpenVocabQuiz?: () => void;
 }
 
 export interface QuizQuestion {

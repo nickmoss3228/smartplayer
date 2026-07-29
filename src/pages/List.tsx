@@ -176,7 +176,7 @@ const List = () => {
 
           <div className="text-center flex-1 min-w-0 px-2">
             <div className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide">
-              {t(`levelProgress.${diff}Title`)}
+              {t(`list.difficultyTitle.${diff}`)}
             </div>
             <p className="text-gray-400 text-sm mt-1">
               {sortedFilteredStories.length} / {stories.length} {t(`list.stories`)}

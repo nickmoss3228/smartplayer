@@ -275,24 +275,24 @@ export const storyPreviewData: Record<string, StoryPreview> = {
     topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
     tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
   },
-  "easy-leo-additional-3": {
-    id: "easy-leo-additional-3",
-    title: "Girls 3",
-    emoji: "🐱",
-    image: '3',
-    difficulty: "Easy",
-    duration: "~61 sec",
-    description:
-      "On his way home from meeting Sam, Leo hears a tiny meow and finds a lost kitten hiding under a car. His kindness leads to a heartwarming ending — and a new dream for Leo himself.",
-    grammar: [
-      "Past Simple narrative chain (he heard, he saw, he picked up, he took)",
-      "Past Simple passive feel (it was all alone, it was very thin)",
-      "Time expressions (the next day, a few days later)",
-      "Present Simple for new state/result (now Leo wants to have his own cat)", 
-    ],
-    topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
-    tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
-  },
+  // "easy-leo-additional-3": {
+  //   id: "easy-leo-additional-3",
+  //   title: "Girls 3",
+  //   emoji: "🐱",
+  //   image: '3',
+  //   difficulty: "Easy",
+  //   duration: "~61 sec",
+  //   description:
+  //     "On his way home from meeting Sam, Leo hears a tiny meow and finds a lost kitten hiding under a car. His kindness leads to a heartwarming ending — and a new dream for Leo himself.",
+  //   grammar: [
+  //     "Past Simple narrative chain (he heard, he saw, he picked up, he took)",
+  //     "Past Simple passive feel (it was all alone, it was very thin)",
+  //     "Time expressions (the next day, a few days later)",
+  //     "Present Simple for new state/result (now Leo wants to have his own cat)", 
+  //   ],
+  //   topics: ["Animals & kindness", "Helping others", "Community", "Pets"],
+  //   tip: "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character.",
+  // },
 
   // ─── MEDIUM ────────────────────────────────────────────────────────────────
 

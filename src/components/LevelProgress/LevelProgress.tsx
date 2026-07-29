@@ -12,7 +12,7 @@ import type { LevelProgressProps } from '../../types/LevelProgress';
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const {
-    user, difficulty, theme,
+    user, difficulty, storyTitle, theme,
     audioTracks, comics, completedLevels, totalLevels,
     lastListenedLevel, progressPercentage, navigationState,
     isLoading, getLevelData, isTrialLocked,
@@ -28,7 +28,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     <div className={`min-h-screen bg-gradient-to-br ${theme.background} p-8 transition-all duration-1000 ease-in-out`}>
       <div className="max-w-4xl pt-12 mx-auto">
 
-        <LevelProgressHeader difficulty={difficulty} theme={theme} />
+        <LevelProgressHeader difficulty={difficulty} theme={theme} storyTitle={storyTitle} />
 
         <LevelProgressBar
           completedCount={completedLevels.length}

@@ -20,7 +20,7 @@ export const comicManifest: Record<string, string[]> = {
     "7. A Country Leo Wants to Visit",
     "8. Leo's hobbies",
     "9. Meeting a friend",
-    "10. The Lost Kitten", // ← no trailing space
+    "10. The Lost Kitten",
   ],
   medium: [
     "1. Meet Maya",
@@ -39,7 +39,7 @@ export const comicManifest: Record<string, string[]> = {
     "2. The deal that nearly broke me",
     "3. The Conference in Munich",
     "4. A Failure with a Silver Lining",
-    "5. The Bridge at Low Tide", // ← no trailing dot
+    "5. The Bridge at Low Tide",
     "6. Night of the Phantom Pallets",
     "7. Family Weather Report",
     "8. The Price of Enough",

@@ -39,11 +39,16 @@
     "step4Desc": "Every story earned is harder and richer than the last."
   },
   "list": {
-    "stories": "stories",
-    "title": "Title",
-    "topic": "Topic",
-    "progress": "Progress"
-  },
+  "title": "Title",
+  "topic": "Topic",
+  "progress": "Progress",
+  "stories": "stories",
+  "difficultyTitle": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  }
+},
   "levels": {
     "easy": "Easy",
     "medium": "Medium",
@@ -368,25 +373,34 @@
   "vocabulary": "Vocabulary",
   "quiz-incomp": "Take the Quiz!",
   "quiz": "Quiz",
-  "quiz-bottom": "Listen until the end to open the quiz."
+  "quiz-bottom": "Listen until the end to open the quiz.",
+  "vocab-quiz": "Vocab Quiz"
 },
 "stories": {
-      "leo-additional": {
-        "title": "About Leo",
-        "description": "People discuss Leo."
-      },
-    "medium": {
-      "maya": {
-        "title": "Maya's Journey",
-        "description": "Join Maya as she navigates life's challenges and discovers new experiences around the world."
-      }
+  "easy": {
+    "leo": {
+      "title": "Leo's Adventures",
+      "description": "A young man from Saint-Petersburg and his life."
     },
-    "hard": {
-      "daniel": {
-        "title": "Daniel's World",
-        "description": "Explore the complex and fascinating life of Daniel, a man with big dreams and tough decisions."
-      }
-    },
+    "leo-additional": {
+      "title": "Gossiping about Leo",
+      "description": "People surrounding Leo talk about him!"
+    }
+  },
+  "medium": {
+    "maya": {
+      "title": "Путешествие Майи",
+      "description": "Присоединяйтесь к Майе, которая преодолевает жизненные трудности и открывает для себя новый мир."
+    }
+  },
+  "hard": {
+    "daniel": {
+      "title": "Мир Даниэля",
+      "description": "Погрузитесь в сложную и захватывающую жизнь Даниэля — человека с большими мечтами и непростыми решениями."
+    }
+  }
+},
+"storyPreviews": {
   "easy-leo-1": {
     "title": "Leo's Life",
     "difficulty": "Easy",
@@ -536,6 +550,28 @@
     "topics": ["Animals & kindness", "Helping others", "Community", "Pets"],
     "tip": "Notice all the steps Leo takes to help the kitten — and think about how this story connects back to what we know about Leo's character."
   },
+  "easy-leo-additional-1": {
+  "title": "Ava and Kathrin are gossiping",
+  "difficulty": "Easy",
+  "duration": "~140 sec",
+  "description": "Rumors about Leo spread fast, and even his friends Ava and Kathrin can't resist talking about Leo and his life.",
+  "grammar": [
+    "Present Simple for a new state/result"
+  ],
+  "topics": ["Gossip", "Question forms"],
+  "tip": "-"
+},
+"easy-leo-additional-2": {
+  "title": "Ava and Sophia are gossiping",
+  "difficulty": "Easy",
+  "duration": "~150 sec",
+  "description": "No one can resist charming Leo, not even his acquaintance Sophia, who ran into Ava and started discussing the latest news about Leo.",
+  "grammar": [
+    "Present Simple for a new state/result"
+  ],
+  "topics": ["Gossip", "Question forms"],
+  "tip": "-"
+},
 
   "medium-1": {
     "title": "Знакомьтесь — Майя!",
@@ -838,3 +874,6 @@
   }
 }
 }
+
+
+

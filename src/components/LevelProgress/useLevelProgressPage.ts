@@ -9,7 +9,6 @@ import {
   loadLastListened,
   saveLastListened,
 } from '../../modules/levelprogress/levelprogress.module';
-// import { getAudioTracksByDifficulty } from '../../modules/audiodata/audioDataByDiffculty';
 import { themes } from '../../modules/levelprogress/themes.levelprogress';
 import {
   storyPreviewData,
@@ -68,6 +67,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
 
   const {
     difficulty,
+    storyTitle,
     handleLevelClick,
     goToDifficulty,
     getLevelData,
@@ -149,6 +149,7 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     // data
     user,
     difficulty,
+    storyTitle,
     theme,
     audioTracks,
     comics,

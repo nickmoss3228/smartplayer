@@ -22,13 +22,13 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   if (!isOpen || !preview) return null;
   console.log("storyKey →", `stories.${preview.id}`);
 
-  const storyKey = `stories.${preview.id}`;
+  const storyKey = `storyPreviews.${preview.id}`;
   // const grammarPoints = t(`${storyKey}.grammar`, { returnObjects: true }) as string[];
-const title       = t(`${storyKey}.title`,      );
-const description = t(`${storyKey}.description`, );
-const tip         = t(`${storyKey}.tip`,          );
-const difficulty  = t(`${storyKey}.difficulty`,  );
-const duration    = t(`${storyKey}.duration`,    );
+const title       = t(`${storyKey}.title`, { defaultValue: preview.title });
+const description = t(`${storyKey}.description`, { defaultValue: preview.description });
+const tip         = t(`${storyKey}.tip`, { defaultValue: preview.tip });
+const difficulty  = t(`${storyKey}.difficulty`, { defaultValue: preview.difficulty });
+const duration    = t(`${storyKey}.duration`, { defaultValue: preview.duration });
   
   // Grammar: prefer the translated array from i18next;
 // if the key is missing or returns a non-array, fall back to preview.grammar.

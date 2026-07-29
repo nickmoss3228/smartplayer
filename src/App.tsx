@@ -16,7 +16,6 @@ import HowToUse from "./pages/HowToUse";
 import "./App.css";
 import Login from "./auth/Login/Login";
 import SignUp from "./auth/SignUp/SignUp";
-import Navbar from "./components/Navbar/Navbar";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Dashboard from "./auth/Dashboard/Dashboard";
 import { ProgressProvider } from "./context/ProgressContext";
@@ -26,6 +25,7 @@ import DifficultyDetail from './modules/levelprogress/DifficultyDetail';
 import { ProfileProvider } from './context/ProfileContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
 import AdminPanel from "./components/Admin/AdminPanel";
+import { Layout } from "./Layout"
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -62,7 +62,8 @@ function App() {
         <ProgressProvider>
           <Provider store={store}>
             <Router>
-              <Navbar />
+              <Layout>
+              {/* <Navbar /> */}
               <Routes>
                 {/* ── Fully public ── */}
                 <Route path="/"                element={<Homepage />} />
@@ -101,7 +102,8 @@ function App() {
 
                 {/* ── Catch-all ── */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                </Routes>
+                </Layout>
             </Router>
           </Provider>
         </ProgressProvider>

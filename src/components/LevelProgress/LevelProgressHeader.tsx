@@ -6,9 +6,10 @@ import type { Theme } from '../../types/LevelProgress';
 interface Props {
   difficulty: string;
   theme: Theme;
+  storyTitle?: string;
 }
 
-export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme }) => {
+export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme, storyTitle }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -36,7 +37,7 @@ export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme }) => {
           {t(`levelProgress.${difficulty}Title`)}
         </div>
         <h1 className="text-2xl sm:text-4xl font-bold text-black/80 transition-all duration-700 animate-slide-up break-words">
-          {theme.subtitle}
+          {storyTitle ?? theme.subtitle}
         </h1>
       </div>
     </div>
