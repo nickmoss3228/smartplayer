@@ -4,10 +4,10 @@ import AchievementCard from "./AchievementCard";
 import { ACHIEVEMENT_CATEGORIES } from "../../config/achievementsConfig";
 import {
   fetchAchievements,
-  syncListeningTime,
   AchievementsResponse,
 } from "../../services/achievementServices";
 import { getTotalListeningSeconds } from "../../hooks/useListeningTimer";
+import { useListeningTimeSync } from "../../hooks/useListeningTimeSync";
 
 const AchievementsRow: React.FC = () => {
   const [data, setData] = useState<AchievementsResponse | null>(null);
@@ -29,19 +29,7 @@ const AchievementsRow: React.FC = () => {
   }, []);
 
   // Sync listening time to backend on mount, then every 5 minutes
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    syncListeningTime(token, localListeningSeconds).catch(() => {});
-
-    const id = setInterval(() => {
-      const seconds = getTotalListeningSeconds();
-      syncListeningTime(token, seconds).catch(() => {});
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(id);
-  }, []);
+  useListeningTimeSync(true);
 
   useEffect(() => {
     load();
@@ -58,15 +46,15 @@ const AchievementsRow: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="flex-1 min-w-[140px] border-2 border-black rounded-lg p-4 animate-pulse"
+            className="rounded-3xl bg-white border border-black/5 p-4 sm:p-5 animate-pulse"
           >
-            <div className="h-4 bg-gray-300 rounded w-3/4 mb-3" />
-            <div className="h-6 bg-gray-300 rounded w-1/2 mb-2" />
-            <div className="h-2 bg-gray-300 rounded" />
+            <div className="w-9 h-9 rounded-2xl bg-gray-200 mb-3" />
+            <div className="h-6 bg-gray-200 rounded w-2/3 mb-3" />
+            <div className="h-2 bg-gray-200 rounded" />
           </div>
         ))}
       </div>
@@ -75,15 +63,16 @@ const AchievementsRow: React.FC = () => {
 
   return (
   <div className="mb-6">
-    <h2 className="text-sm text-black font-bold text-black mb-3 uppercase tracking-wide">
+    <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
       Achievements
     </h2>
-    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-      {ACHIEVEMENT_CATEGORIES.map((category) => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {ACHIEVEMENT_CATEGORIES.map((category, index) => (
         <AchievementCard
           key={category.key}
           category={category}
           value={valueMap[category.key] ?? 0}
+          index={index}
         />
       ))}
     </div>

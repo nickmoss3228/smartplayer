@@ -21,6 +21,7 @@ import { getAudioTracksByStory } from "../modules/audiodata/audioDataByDifficult
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
 import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabulary"
+import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -73,6 +74,10 @@ const Player = React.memo(() => {
 
   // tracks whether the student has listened to the full audio
   const [hasListenedFully, setHasListenedFully] = useState(true);
+
+  // Push accumulated listening time to the backend while actually on the
+  // player, not just when the Dashboard happens to be open.
+  useListeningTimeSync(!!user);
 
   useEffect(() => {
     window.scrollTo(0, 0);

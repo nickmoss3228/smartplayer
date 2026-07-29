@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
+import { fetchAchievements, syncListeningTime } from '../services/achievementServices';
+import {
+  getTotalListeningSeconds,
+  setTotalListeningSeconds,
+  clearListeningTime,
+} from '../hooks/useListeningTimer';
 import {
   User,
   AuthResult,
@@ -39,6 +45,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // The local listening-time counter is a single global localStorage key,
+  // shared by whichever account is currently signed in on this browser. Seed
+  // it from the server's authoritative total on every login/signup so a
+  // previous account's leftover count (or a stale value from an abnormal
+  // session end) never bleeds into the newly signed-in user's stats.
+  const seedListeningTimeFromServer = async (token: string): Promise<void> => {
+    try {
+      const { stats } = await fetchAchievements(token);
+      setTotalListeningSeconds(stats.listeningSeconds ?? 0);
+    } catch (error) {
+      console.error('Failed to seed listening time on login:', error);
+    }
+  };
+
   const checkTokenValidity = async (token: string): Promise<void> => {
     try {
       const response = await axios.get<TokenValidationResponse>(`${API_BASE_URL}/api/validate-token`, {
@@ -65,7 +85,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-      
+      seedListeningTimeFromServer(token);
+
     // Prefetch progress data immediately after successful login
       setTimeout(async () => {
         try {
@@ -113,7 +134,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-      
+      seedListeningTimeFromServer(token);
+
       // Also prefetch on signup
       setTimeout(async () => {
         try {
@@ -148,21 +170,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async (): Promise<void> => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Flush the final unsynced seconds before wiping the counter below —
+      // independent of the /api/logout call so a logout-endpoint failure
+      // can't also swallow this user's last few minutes of listening time.
+      await syncListeningTime(token, getTotalListeningSeconds()).catch((error) => {
+        console.error('Failed to flush listening time on logout:', error);
+      });
+      try {
         await axios.post(`${API_BASE_URL}/api/logout`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
+      } catch (error) {
+        console.error('Logout error:', error);
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('progressData');
-      localStorage.removeItem('progressCacheTime');
-      setUser(null);
     }
+    localStorage.removeItem('token');
+    localStorage.removeItem('progressData');
+    localStorage.removeItem('progressCacheTime');
+    // Prevent this account's local total from bleeding into whichever
+    // account signs in next on this browser.
+    clearListeningTime();
+    setUser(null);
   };
 
   const requestPasswordReset = async (email: string): Promise<ResetPasswordResult> => {

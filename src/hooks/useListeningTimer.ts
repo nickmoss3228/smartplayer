@@ -19,6 +19,20 @@ const saveTotalSeconds = (seconds: number): void => {
   }
 };
 
+// Exposed so the auth flow can (re)seed the counter with the server's
+// authoritative total on login, and wipe it on logout — otherwise this key
+// is global and would bleed a previous account's time into the next one
+// signed in on the same browser.
+export const setTotalListeningSeconds = saveTotalSeconds;
+
+export const clearListeningTime = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    console.error("Failed to clear listening time");
+  }
+};
+
 export const formatListeningTime = (totalSeconds: number): string => {
   const hours   = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

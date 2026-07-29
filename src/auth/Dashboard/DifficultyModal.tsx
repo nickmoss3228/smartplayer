@@ -1,8 +1,18 @@
 // components/Dashboard/DifficultyModal.tsx
 import React, { useState } from "react";
-// import { useTranslation } from "react-i18next";
+import {
+  IoClose,
+  IoCheckmark,
+  IoPlay,
+  IoLockClosedOutline,
+  IoChevronDown,
+} from "react-icons/io5";
 import { DifficultyOverview, LevelStatus } from "../../types/Dashboard";
-import { getDifficultyIcon, getLevelStatus } from "./dashboardModule";
+import {
+  getDifficultyIcon,
+  getDifficultyTheme,
+  getLevelStatus,
+} from "./dashboardModule";
 
 interface DifficultyModalProps {
   difficulty: string;
@@ -15,32 +25,34 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
   overview,
   onClose,
 }) => {
-  // const { t } = useTranslation();
   const [expandedStory, setExpandedStory] = useState<string | null>(
     // Auto-expand if there's only one story
     overview.stories.length === 1 ? overview.stories[0].storyId : null
   );
 
+  const theme = getDifficultyTheme(difficulty);
+  const DifficultyIcon = getDifficultyIcon(difficulty);
+
   const getStatusStyle = (status: LevelStatus): string => {
     switch (status) {
       case "completed":
-        return "bg-black text-white border-2 border-black";
+        return `${theme.bg} text-white`;
       case "current":
-        return "bg-white text-black border-2 border-black ring-2 ring-black ring-offset-2";
+        return "bg-white text-black ring-2 ring-black/70 ring-offset-2";
       case "available":
-        return "bg-white text-black border-2 border-black hover:bg-gray-100";
+        return "bg-black/[0.04] text-black/70 hover:bg-black/[0.08]";
       case "locked":
       default:
-        return "bg-white text-gray-300 border-2 border-gray-200 cursor-not-allowed";
+        return "bg-black/[0.03] text-black/25 cursor-not-allowed";
     }
   };
 
-  const getStatusIcon = (status: LevelStatus): string => {
+  const renderStatusIcon = (status: LevelStatus) => {
     switch (status) {
-      case "completed": return "✓";
-      case "current":   return "▶";
-      case "available": return "";
-      case "locked":    return "🔒";
+      case "completed": return <IoCheckmark size={14} />;
+      case "current":   return <IoPlay size={12} />;
+      case "locked":    return <IoLockClosedOutline size={12} />;
+      default:          return null;
     }
   };
 
@@ -51,53 +63,55 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 sm:p-4 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-white border-2 border-black rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[88vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-scale-in shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 border-b-2 border-black flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{getDifficultyIcon(difficulty)}</span>
-            <div>
-              <h2 className="text-xl font-bold text-black capitalize">
+        <div className="p-5 flex items-center justify-between flex-shrink-0 border-b border-black/5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-11 h-11 rounded-2xl ${theme.soft} flex items-center justify-center flex-shrink-0`}>
+              <DifficultyIcon className={theme.text} size={22} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-black capitalize truncate">
                 {difficulty}
               </h2>
-              <p className="text-sm text-gray-500">
-                {overview.completed} / {overview.total} parts completed •{" "}
-                {overallPct}%
+              <p className="text-xs text-black/40">
+                {overview.completed} / {overview.total} parts · {overallPct}%
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-black hover:bg-black hover:text-white transition-colors font-bold text-lg"
+            className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/10 transition-colors active:scale-90 duration-150"
+            aria-label="Close"
           >
-            ×
+            <IoClose size={18} className="text-black/60" />
           </button>
         </div>
 
         {/* Overall progress bar */}
         <div className="px-5 pt-4 pb-2 flex-shrink-0">
-          <div className="w-full h-3 border-2 border-black rounded-full overflow-hidden bg-white">
+          <div className="w-full h-2.5 rounded-full overflow-hidden bg-black/[0.06]">
             <div
-              className="h-full bg-black transition-all duration-500 rounded-full"
+              className={`h-full ${theme.bg} transition-all duration-700 ease-out rounded-full`}
               style={{ width: `${overallPct}%` }}
             />
           </div>
         </div>
 
         {/* Stories list */}
-        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+        <div className="overflow-y-auto flex-1 p-5 space-y-3">
           {overview.stories.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">
+            <p className="text-center text-black/30 text-sm py-8">
               No stories available yet.
             </p>
           ) : (
-            overview.stories.map((story) => {
+            overview.stories.map((story, storyIndex) => {
               const storyPct =
                 story.totalParts > 0
                   ? Math.round(
@@ -109,47 +123,49 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
               return (
                 <div
                   key={story.storyId}
-                  className="border-2 border-black rounded-xl overflow-hidden"
+                  className="rounded-2xl overflow-hidden bg-black/[0.02] border border-black/5 animate-fade-in"
+                  style={{ animationDelay: `${storyIndex * 60}ms`, animationFillMode: "backwards" }}
                 >
                   {/* Story header — click to expand/collapse */}
                   <button
-                    className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-4 hover:bg-black/[0.03] transition-colors text-left"
                     onClick={() =>
                       setExpandedStory(isExpanded ? null : story.storyId)
                     }
                   >
-                    <span className="text-3xl flex-shrink-0">
+                    <span className="text-2xl flex-shrink-0 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
                       {story.characterIcon}
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-black truncate">
+                        <p className="font-bold text-black/85 truncate text-sm">
                           {story.storyName}
                         </p>
-                        <span className="text-sm font-bold text-black flex-shrink-0">
+                        <span className="text-xs font-bold text-black/50 flex-shrink-0">
                           {storyPct}%
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-[11px] text-black/35 mt-0.5">
                         {story.completedParts.length} / {story.totalParts} parts
                       </p>
                       {/* Mini bar */}
-                      <div className="w-full h-2 border border-black rounded-full overflow-hidden bg-white mt-2">
+                      <div className="w-full h-1.5 rounded-full overflow-hidden bg-black/[0.06] mt-2">
                         <div
-                          className="h-full bg-black rounded-full transition-all duration-500"
+                          className={`h-full ${theme.bg} rounded-full transition-all duration-500`}
                           style={{ width: `${storyPct}%` }}
                         />
                       </div>
                     </div>
-                    <span className="text-black font-bold text-lg ml-2 flex-shrink-0">
-                      {isExpanded ? "▲" : "▼"}
-                    </span>
+                    <IoChevronDown
+                      size={16}
+                      className={`text-black/30 ml-1 flex-shrink-0 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+                    />
                   </button>
 
                   {/* Parts grid — shown when expanded */}
                   {isExpanded && (
-                    <div className="border-t-2 border-black p-4 bg-gray-50">
-                      <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">
+                    <div className="px-4 pb-4 pt-1 animate-fade-in">
+                      <p className="text-[10px] uppercase tracking-widest text-black/30 font-semibold mb-3">
                         Story Parts
                       </p>
                       <div className="grid grid-cols-5 gap-2">
@@ -162,23 +178,22 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                               story.completedParts,
                               story.currentPart
                             );
-                            const icon = getStatusIcon(status);
 
                             return (
                               <div
                                 key={partNumber}
                                 className={`
-                                  aspect-square rounded-xl flex flex-col items-center justify-center gap-1
+                                  aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5
                                   text-sm font-bold transition-all duration-200
                                   ${getStatusStyle(status)}
-                                  ${status !== "locked" ? "cursor-pointer active:scale-95 hover:scale-105" : ""}
+                                  ${status !== "locked" ? "cursor-pointer active:scale-90 hover:scale-105" : ""}
                                 `}
                                 title={`Part ${partNumber} — ${status}`}
                               >
-                                <span className="text-xs opacity-60">
+                                <span className="text-[10px] opacity-60">
                                   {partNumber}
                                 </span>
-                                {icon && <span>{icon}</span>}
+                                {renderStatusIcon(status)}
                               </div>
                             );
                           }
@@ -186,7 +201,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                       </div>
 
                       {/* Legend */}
-                      <div className="mt-4 flex flex-wrap gap-3 text-xs text-gray-500">
+                      <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-black/40">
                         {(
                           [
                             { status: "completed" as LevelStatus, label: "Completed" },
@@ -197,14 +212,14 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                         ).map(({ status, label }) => (
                           <div key={status} className="flex items-center gap-1.5">
                             <div
-                              className={`w-3 h-3 rounded border-2 ${
+                              className={`w-2.5 h-2.5 rounded-full ${
                                 status === "completed"
-                                  ? "bg-black border-black"
+                                  ? theme.bg
                                   : status === "current"
-                                  ? "bg-white border-black ring-1 ring-black ring-offset-1"
+                                  ? "bg-white ring-2 ring-black/60"
                                   : status === "available"
-                                  ? "bg-white border-black"
-                                  : "bg-white border-gray-200"
+                                  ? "bg-black/15"
+                                  : "bg-black/5"
                               }`}
                             />
                             <span>{label}</span>

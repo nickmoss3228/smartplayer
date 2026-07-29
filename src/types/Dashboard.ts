@@ -1,4 +1,6 @@
 // types/Dashboard.ts
+import type { IconType } from "react-icons";
+
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface StoryOverview {
@@ -28,7 +30,9 @@ export interface DetailedProgressMap {
 
 export interface RankInfo {
   title: string;
-  emoji: string;
+  icon: IconType;
+  /** Tailwind gradient classes for the rank badge background */
+  gradient: string;
 }
 
 export type LevelStatus = "completed" | "current" | "available" | "locked";

@@ -1,8 +1,10 @@
 // components/Dashboard/AchievementCard.tsx
 import React, { useState } from "react";
+import { IoTrophyOutline } from "react-icons/io5";
 import {
   AchievementCategory,
   AchievementTier,
+  TIER_COLORS,
   getEarnedTiers,
   getNextTier,
   getTierProgress,
@@ -12,10 +14,12 @@ import {
 interface Props {
   category: AchievementCategory;
   value: number;
+  index: number;
 }
- 
-const AchievementCard: React.FC<Props> = ({ category, value }) => {
+
+const AchievementCard: React.FC<Props> = ({ category, value, index }) => {
   const [hoveredTier, setHoveredTier] = useState<AchievementTier | null>(null);
+  const Icon = category.icon;
 
   const earnedTiers = getEarnedTiers(category.tiers, value);
   const nextTier = getNextTier(category.tiers, value);
@@ -29,35 +33,45 @@ const AchievementCard: React.FC<Props> = ({ category, value }) => {
     : null;
 
   return (
-    <div className="flex-1 min-w-[130px] border-2 border-black rounded-lg p-3 sm:p-4 flex flex-col gap-2">
+    <div
+      className="bg-white rounded-3xl p-4 sm:p-5 flex flex-col gap-3
+                 shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-black/5
+                 animate-scale-in"
+      style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
+    >
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{category.icon}</span>
-        <span className="font-bold capitalize text-sm sm:text-base text-black">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-2xl bg-black/5 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4.5 h-4.5 text-black/70" size={18} />
+        </div>
+        <span className="font-bold text-sm sm:text-base text-black/85 leading-tight">
           {category.title}
         </span>
       </div>
 
       {/* Current value */}
-      <p className="text-2xl text-black  font-bold text-black mb-2">
+      <p className="text-2xl sm:text-3xl font-extrabold text-black tracking-tight">
         {formatValue(category.key, value)}
       </p>
 
       {/* Next goal or max */}
       {allEarned ? (
-        <p className="text-xs font-semibold text-black">👑 Maximum achieved!</p>
+        <p className="text-xs font-semibold text-purple-600 flex items-center gap-1">
+          <IoTrophyOutline size={14} />
+          Maximum achieved!
+        </p>
       ) : (
         <>
-          <p className="text-xs text-black opacity-60 mb-2">
-            Next: {nextTier!.emoji} {nextTier!.label}
+          <p className="text-xs text-black/45">
+            Next: {nextTier!.label}
           </p>
-          <div className="w-full h-2 text-black border border-black rounded-full overflow-hidden bg-white">
+          <div className="w-full h-2 rounded-full overflow-hidden bg-black/[0.06]">
             <div
-              className="h-full text-black  bg-black rounded-full transition-all duration-500"
+              className={`h-full rounded-full transition-all duration-700 ease-out ${TIER_COLORS[nextTier!.tier]}`}
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-black  mt-2 opacity-60">
+          <p className="text-[11px] text-black/35">
             {formatValue(category.key, prevTierThreshold ?? 0)} →{" "}
             {formatValue(category.key, nextTier!.threshold)}
           </p>
@@ -66,7 +80,7 @@ const AchievementCard: React.FC<Props> = ({ category, value }) => {
 
       {/* Earned medals */}
       {earnedTiers.length > 0 && (
-        <div className="flex items-center text-black  gap-1 mt-1 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
           {earnedTiers.map((t) => (
             <div
               key={t.tier}
@@ -74,13 +88,13 @@ const AchievementCard: React.FC<Props> = ({ category, value }) => {
               onMouseEnter={() => setHoveredTier(t)}
               onMouseLeave={() => setHoveredTier(null)}
             >
-              <span className="text-lg cursor-default select-none">
-                {t.emoji}
-              </span>
+              <div
+                className={`w-3.5 h-3.5 rounded-full ${TIER_COLORS[t.tier]} ring-2 ring-white shadow-sm`}
+              />
               {hoveredTier?.tier === t.tier && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 pointer-events-none">
-                  <div className="bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                    {t.emoji} {t.label} {category.unit}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-10 pointer-events-none animate-fade-in">
+                  <div className="bg-black text-white text-[11px] rounded-lg px-2 py-1 whitespace-nowrap font-medium">
+                    {t.label} {category.unit}
                   </div>
                   <div className="w-2 h-2 bg-black rotate-45 mx-auto -mt-1" />
                 </div>

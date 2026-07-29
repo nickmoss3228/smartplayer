@@ -1,5 +1,6 @@
 // components/Dashboard/ProfileEditor.tsx
 import React, { useState, useRef, useEffect } from "react";
+import { IoPencil, IoClose } from "react-icons/io5";
 import { UserProfile } from "../../types/Dashboard";
 import { AVATAR_OPTIONS, getAvatarById } from "../../config/avatars";
 import { updateProfile } from "../../services/profileServices";
@@ -83,7 +84,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
       <div className="relative" ref={pickerRef}>
         <button
           onClick={() => setShowAvatarPicker((v) => !v)}
-          className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-black overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2"
+          className="group relative w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full ring-2 ring-black/10 overflow-hidden flex-shrink-0 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/40 focus:ring-offset-2"
           title="Change avatar"
         >
           <img
@@ -92,15 +93,15 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
             className="w-full h-full object-cover"
           />
           {/* Edit overlay */}
-          <span className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity text-white text-xs font-bold">
-            ✏️
+          <span className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">
+            <IoPencil size={16} />
           </span>
         </button>
 
         {/* Avatar picker dropdown */}
         {showAvatarPicker && (
-          <div className="absolute top-full left-0 mt-2 z-50 bg-white border-2 border-black rounded-xl p-3 shadow-lg w-64">
-            <p className="text-xs font-bold text-black uppercase tracking-widest mb-2">
+          <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl p-3 shadow-xl border border-black/5 w-64 animate-scale-in">
+            <p className="text-[11px] font-bold text-black/40 uppercase tracking-widest mb-2 px-1">
               Choose Avatar
             </p>
             <div className="grid grid-cols-5 gap-2">
@@ -110,10 +111,10 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                   onClick={() => saveAvatar(av.id)}
                   disabled={saving}
                   className={`
-                    w-10 h-10 rounded-full border-2 overflow-hidden transition-all
+                    w-10 h-10 rounded-full overflow-hidden transition-all active:scale-90
                     ${profile.avatar === av.id
-                      ? "border-black ring-2 ring-black ring-offset-1"
-                      : "border-gray-300 hover:border-black"}
+                      ? "ring-2 ring-black ring-offset-1"
+                      : "ring-1 ring-black/10 hover:ring-black/40"}
                     disabled:opacity-50
                   `}
                   title={av.label}
@@ -146,12 +147,12 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 }
               }}
               maxLength={30}
-              className="border-2 border-black rounded-lg px-2 py-1 text-base font-bold text-black focus:outline-none focus:ring-2 focus:ring-black w-full max-w-[180px]"
+              className="bg-black/[0.04] rounded-xl px-3 py-1.5 text-base font-bold text-black focus:outline-none focus:ring-2 focus:ring-black/30 w-full max-w-[180px]"
             />
             <button
               onClick={saveNickname}
               disabled={saving}
-              className="px-2 py-1 bg-black text-white rounded-lg text-sm font-bold hover:bg-gray-800 disabled:opacity-50"
+              className="px-3 py-1.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/80 disabled:opacity-50 transition-colors"
             >
               {saving ? "…" : "Save"}
             </button>
@@ -160,9 +161,10 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 setEditingNickname(false);
                 setNicknameInput(profile.nickname);
               }}
-              className="px-2 py-1 border-2 border-black rounded-lg text-sm font-bold hover:bg-gray-100"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/[0.04] hover:bg-black/10 transition-colors flex-shrink-0"
+              aria-label="Cancel"
             >
-              ✕
+              <IoClose size={16} className="text-black/60" />
             </button>
           </div>
         ) : (
@@ -174,12 +176,10 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
             <span className="text-lg sm:text-xl font-bold text-black break-words">
               {profile.nickname}
             </span>
-            <span className="text-xs text-gray-400 group-hover:text-black transition-colors">
-              ✏️
-            </span>
+            <IoPencil size={13} className="text-black/25 group-hover:text-black/60 transition-colors flex-shrink-0" />
           </button>
         )}
-        <p className="text-xs text-gray-500 mt-0.5 truncate">{profile.email}</p>
+        <p className="text-xs text-black/40 mt-0.5 truncate">{profile.email}</p>
         {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
       </div>
     </div>
