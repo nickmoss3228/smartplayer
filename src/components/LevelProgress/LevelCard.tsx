@@ -18,9 +18,9 @@ interface Props {
 
 const getStatusRingClass = (status: string) => {
   switch (status) {
-    case 'completed': return 'ring-2 ring-green-400/80';
-    case 'current':   return 'ring-2 ring-white/80';
-    default:          return 'ring-1 ring-white/20';
+    case 'completed':    return 'ring-2 ring-green-400/80';
+    case 'lastListened': return 'ring-2 ring-white/50';
+    default:             return 'ring-1 ring-white/20';
   }
 };
 
@@ -45,6 +45,14 @@ export const LevelCard: React.FC<Props> = ({
           ${getStatusRingClass(status)}
         `}
       >
+        {/* Blinking highlight for the last story listened to but not yet finished — colored to the difficulty, not a fixed color */}
+        {status === 'lastListened' && (
+          <div
+            aria-hidden
+            className={`absolute inset-0 rounded-xl z-20 pointer-events-none border-4 ${theme.lastListenedBorder} animate-blink-ring`}
+          />
+        )}
+
         {/* Artwork */}
         {comicSrc ? (
           <img

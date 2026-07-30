@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
-// import { t } from "i18next";
 import { useTranslation } from "react-i18next";
 
 interface StoryPreviewModalProps {
@@ -20,27 +19,25 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
   const [showDetails, setShowDetails] = useState(false);
 
   if (!isOpen || !preview) return null;
-  console.log("storyKey →", `stories.${preview.id}`);
 
   const storyKey = `storyPreviews.${preview.id}`;
-  // const grammarPoints = t(`${storyKey}.grammar`, { returnObjects: true }) as string[];
-const title       = t(`${storyKey}.title`, { defaultValue: preview.title });
-const description = t(`${storyKey}.description`, { defaultValue: preview.description });
-const tip         = t(`${storyKey}.tip`, { defaultValue: preview.tip });
-const difficulty  = t(`${storyKey}.difficulty`, { defaultValue: preview.difficulty });
-const duration    = t(`${storyKey}.duration`, { defaultValue: preview.duration });
-  
+  const title       = t(`${storyKey}.title`, { defaultValue: preview.title });
+  const description = t(`${storyKey}.description`, { defaultValue: preview.description });
+  const tip         = t(`${storyKey}.tip`, { defaultValue: preview.tip });
+  const difficulty  = t(`${storyKey}.difficulty`, { defaultValue: preview.difficulty });
+  const duration    = t(`${storyKey}.duration`, { defaultValue: preview.duration });
+
   // Grammar: prefer the translated array from i18next;
-// if the key is missing or returns a non-array, fall back to preview.grammar.
-const grammarFromI18n = t(`${storyKey}.grammar`, {
-  returnObjects: true,
-  defaultValue: null,
-});
-const safeGrammarPoints: string[] = Array.isArray(grammarFromI18n)
-  ? (grammarFromI18n as string[])
-  : Array.isArray(preview.grammar)
-  ? preview.grammar
-  : [];
+  // if the key is missing or returns a non-array, fall back to preview.grammar.
+  const grammarFromI18n = t(`${storyKey}.grammar`, {
+    returnObjects: true,
+    defaultValue: null,
+  });
+  const safeGrammarPoints: string[] = Array.isArray(grammarFromI18n)
+    ? (grammarFromI18n as string[])
+    : Array.isArray(preview.grammar)
+    ? preview.grammar
+    : [];
 
   return (
     <div

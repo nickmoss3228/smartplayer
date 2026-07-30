@@ -26,6 +26,8 @@ export interface Theme {
   gradient: string;
   incompleteGradient: string;
   incompleteColor: string;
+  /** Border color for the "last listened, not yet finished" blinking highlight — keyed to the difficulty's identity color, not currentColor. */
+  lastListenedBorder: string;
 }
 
 export interface NavigationState {

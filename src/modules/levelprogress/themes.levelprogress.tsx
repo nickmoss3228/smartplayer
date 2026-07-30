@@ -14,6 +14,8 @@ export const themes = {
     incompleteGradient: "from-teal-600 to-emerald-700",
     incompleteColor: "border-teal-400",
     progressGradient: "from-green-400 to-green-600",
+    // Blinking "last listened, not finished" highlight — easy = green
+    lastListenedBorder: "border-green-500",
     statColors: {
       completed: "text-green-400",
       remaining: "text-emerald-400",
@@ -35,6 +37,8 @@ export const themes = {
     incompleteGradient: "from-orange-700 to-red-800",
     incompleteColor: "border-orange-500",
     progressGradient: "from-yellow-400 to-orange-500",
+    // Blinking "last listened, not finished" highlight — medium = orange
+    lastListenedBorder: "border-orange-500",
     statColors: {
       completed: "text-yellow-400",
       remaining: "text-orange-400",
@@ -56,6 +60,8 @@ export const themes = {
     incompleteGradient: "from-purple-700 to-pink-800",
     incompleteColor: "border-purple-500",
     progressGradient: "from-red-400 to-purple-600",
+    // Blinking "last listened, not finished" highlight — hard = purple
+    lastListenedBorder: "border-purple-500",
     statColors: {
       completed: "text-red-400",
       remaining: "text-purple-400",

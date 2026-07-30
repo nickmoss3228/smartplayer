@@ -64,8 +64,13 @@ module.exports = {
             opacity: "1",
           },
         },
+        "blink-ring": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.25" },
+        },
       },
       animation: {
+        "blink-ring": "blink-ring 1.2s ease-in-out infinite",
         "slide-down": "slide-down 0.7s ease-out",
         "slide-up": "slide-up 0.7s ease-out",
         "scale-in": "scale-in 0.5s ease-out both",

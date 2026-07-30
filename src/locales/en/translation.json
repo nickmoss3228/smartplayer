@@ -397,14 +397,14 @@
   },
   "medium": {
     "maya": {
-      "title": "Путешествие Майи",
-      "description": "Присоединяйтесь к Майе, которая преодолевает жизненные трудности и открывает для себя новый мир."
+      "title": "Maya's Adventures",
+      "description": "Join Maya as she overcomes life's challenges and discovers a new world."
     }
   },
   "hard": {
     "daniel": {
-      "title": "Мир Даниэля",
-      "description": "Погрузитесь в сложную и захватывающую жизнь Даниэля — человека с большими мечтами и непростыми решениями."
+      "title": "Daniel's World",
+      "description": "Dive into the complex and thrilling life of Daniel — a man with big dreams and difficult decisions."
     }
   }
 },
@@ -582,303 +582,303 @@
 },
 
   "medium-1": {
-    "title": "Знакомьтесь — Майя!",
-    "difficulty": "Средний",
-    "duration": "~42 сек",
-    "description": "Познакомьтесь с Майей — любопытным журналистом чуть за двадцать, живущим в Нью-Йорке и работающим в онлайн-журнале. Она путешествует по миру в поисках историй, культур и вопросов, которые большинство людей боятся задать.",
+    "title": "Meet Maya!",
+    "difficulty": "Medium",
+    "duration": "~42 sec",
+    "description": "Meet Maya — a curious journalist in her late twenties, based in New York City and working for an online magazine. She travels the world chasing stories, cultures, and the questions most people are afraid to ask.",
     "grammar": [
-      "Present Simple для фактов и привычек (I work, I travel, I live)",
-      "Present Continuous для текущей ситуации (I'm working, I'm living)",
-      "Прилагательные для описания личности (curious, passionate, expressive)",
-      "Инфинитив цели (to reflect, to write, to discover)"
+      "Present Simple for facts and habits (I work, I travel, I live)",
+      "Present Continuous for current situation (I'm working, I'm living)",
+      "Adjectives describing personality (curious, passionate, expressive)",
+      "Infinitive of purpose (to reflect, to write, to discover)"
     ],
-    "topics": ["Журналистика", "Путешествия", "Личность", "Нью-Йорк"],
-    "tip": "Слушайте, как Майя описывает и профессиональную, и личную стороны своего характера — она даёт много подсказок о том, кто она на самом деле."
+    "topics": ["Journalism", "Travel", "Personality", "New York City"],
+    "tip": "Listen for how Maya describes both her professional and personal character — she gives you a lot of clues about who she really is."
   },
 
   "medium-2": {
-    "title": "Поездка в Киото",
-    "difficulty": "Средний",
-    "duration": "~69 сек",
-    "description": "Майя едет в Киото по заданию редакции и открывает для себя древние храмы, загадочный район Гион и разговорчивых местных торговцев. Но самое неожиданное — беседа о росте цен на жильё, которая приносит ей заслуженное повышение.",
+    "title": "A Trip to Kyoto",
+    "difficulty": "Medium",
+    "duration": "~69 sec",
+    "description": "Maya heads to Kyoto on assignment and discovers ancient temples, the mysterious Gion district, and local shopkeepers eager to talk. But the most surprising part? A conversation about rising living costs — and a well-earned promotion.",
     "grammar": [
-      "Past Simple для рассказа (I spent, I learned, I gathered)",
-      "Пассивный Past Simple (I was captivated, I was surprised)",
-      "Косвенная речь — Past Simple (they said that…)",
-      "Придаточное следствия с 'so' (I got promoted after…)"
+      "Past Simple narrative (I spent, I learned, I gathered)",
+      "Past Simple passive (I was captivated, I was surprised)",
+      "Reported speech – Past Simple (they said that…)",
+      "Result clause with 'so' (I got promoted after…)"
     ],
-    "topics": ["Япония", "Культура", "Стоимость жизни", "Журналистика", "Путешествия"],
-    "tip": "Обратите внимание на то, о чём Майя приехала писать в Киото — и о чём она написала в итоге."
+    "topics": ["Japan", "Culture", "Cost of living", "Journalism", "Travel"],
+    "tip": "Pay attention to what Maya came to Kyoto to write about — and what she actually ended up writing about instead."
   },
 
   "medium-3": {
-    "title": "Уличная еда в Бангкоке",
-    "difficulty": "Средний",
-    "duration": "~81 сек",
-    "description": "Отправившись в Таиланд изучать культуру уличной еды, Майя с головой окунается в легендарную кулинарную сцену Бангкока — от пад тая до жареных насекомых. Ночная жизнь восхищает её, но последствия преподают важный урок.",
+    "title": "Trying Street Food in Bangkok",
+    "difficulty": "Medium",
+    "duration": "~81 sec",
+    "description": "Sent to Thailand to research street food culture, Maya dives headfirst into Bangkok's legendary culinary scene — from Pad Thai to fried insects. The nightlife dazzles her, but the aftermath teaches her an important lesson.",
     "grammar": [
-      "Past Simple для последовательности событий (I tried, I got, I had)",
-      "Отрицательный Past Simple (I didn't go there to sunbathe)",
-      "Наречия образа действия (hesitantly, carefully)",
-      "Союз противопоставления 'but' (I liked the food, but you need to be careful)"
+      "Past Simple for sequence of events (I tried, I got, I had)",
+      "Past Simple negative (I didn't go there to sunbathe)",
+      "Adverbs of manner (hesitantly, carefully)",
+      "Contrast connector 'but' (I liked the food, but you need to be careful)"
     ],
-    "topics": ["Таиланд", "Уличная еда", "Культура", "Советы путешественникам", "Здоровье"],
-    "tip": "Обратите внимание на то, как меняется отношение Майи с начала истории к концу — и послушайте её практические советы будущим путешественникам."
+    "topics": ["Thailand", "Street food", "Culture", "Travel tips", "Health"],
+    "tip": "Notice the shift in Maya's attitude from the beginning of the story to the end — and listen for her practical advice to future travellers."
   },
 
   "medium-4": {
-    "title": "Упущенная пересадка",
-    "difficulty": "Средний",
-    "duration": "~80 сек",
-    "description": "В своей самой первой международной командировке молодая стажёр Майя опаздывает на пересадку в Дрездене из-за задержки. Застряв в чужом городе без знания местного языка, она находит способ превратить стрессовую ситуацию в неожиданное открытие.",
+    "title": "A Missed Connection",
+    "difficulty": "Medium",
+    "duration": "~80 sec",
+    "description": "On her very first international assignment, a young intern Maya misses her connecting train in Dresden after a delay. Stranded and unable to speak the local language, she finds a way to turn a stressful situation into an unexpected discovery.",
     "grammar": [
-      "Цепочка Past Simple (I missed, I felt, I found, I managed)",
-      "Пассивный оттенок в Past Simple (I was stranded, I was delayed)",
-      "Наречия последовательности в прошлом (while, although, in the end)",
-      "Придаточное следствия (it led to me exploring…)"
+      "Past Simple narrative chain (I missed, I felt, I found, I managed)",
+      "Past Simple passive feel (I was stranded, I was delayed)",
+      "Sequence adverbs in the past (while, although, in the end)",
+      "Result clause (it led to me exploring…)"
     ],
-    "topics": ["Германия", "Проблемы в поездке", "Решение проблем", "Знакомство с городом"],
-    "tip": "Внимательно следите за последовательностью событий — что идёт не так, как реагирует Майя и что она получает в итоге."
+    "topics": ["Germany", "Travel problems", "Problem-solving", "Exploration"],
+    "tip": "Listen carefully to the sequence of events — what goes wrong, how Maya reacts, and what she gains from the experience."
   },
 
   "medium-5": {
-    "title": "Бюджет для приключений",
-    "difficulty": "Средний",
-    "duration": "~81 сек",
-    "description": "Жизнь журналиста-путешественника не так гламурна, как кажется — по крайней мере для кошелька. Майя честно рассказывает о том, как управляет деньгами в дороге: хостелы, местные рынки, приложения и соблазн ненужных сувениров.",
+    "title": "Budgeting for Adventure",
+    "difficulty": "Medium",
+    "duration": "~81 sec",
+    "description": "Life as a travelling journalist isn't as glamorous as it sounds — at least not for your wallet. Maya shares her honest approach to managing money on the road, from hostels and local markets to travel apps and the temptation of pointless souvenirs.",
     "grammar": [
-      "Present Perfect для опыта (I've become, I've noticed)",
-      "Present Simple для привычек и мнений (I create, I use, I look for)",
-      "Герундий в роли подлежащего или дополнения (buying things, finding accommodation)",
-      "Союз противопоставления 'although' (although it comes with risk…)"
+      "Present Perfect for experience (I've become, I've noticed)",
+      "Present Simple for habits and opinions (I create, I use, I look for)",
+      "Gerund as subject or object (buying things, finding accommodation)",
+      "Contrast connector 'although' (although it comes with risk…)"
     ],
-    "topics": ["Деньги и бюджет", "Советы путешественникам", "Личные финансы", "Привычки"],
-    "tip": "Слушайте все конкретные стратегии экономии, которые использует Майя — и обратите внимание, с какой из них ей труднее всего."
+    "topics": ["Money & budgeting", "Travel tips", "Personal finance", "Habits"],
+    "tip": "Listen for all the specific strategies Maya uses to save money — and notice which one she admits she struggles with."
   },
 
   "medium-6": {
-    "title": "Экологические проблемы",
-    "difficulty": "Средний",
-    "duration": "~73 сек",
-    "description": "Майя едет в небольшую прибрежную деревню во Вьетнаме, чтобы написать о загрязнении окружающей среды. Разговор с местным рыбаком рисует тревожную картину: сокращение рыбных запасов, пластик в сетях и практически непригодная для питья вода.",
+    "title": "Discussing Environmental Concerns",
+    "difficulty": "Medium",
+    "duration": "~73 sec",
+    "description": "Maya travels to a small coastal village in Vietnam to report on environmental pollution. A conversation with a local fisherman reveals a troubling picture — declining fish stocks, plastic in the nets, and a water supply that is barely drinkable.",
     "grammar": [
-      "Past Simple для завершённых событий (I visited, I had, I listened)",
-      "Present Perfect для продолжающегося воздействия (has suffered, has risen)",
-      "Косвенная речь — Past Simple (he spoke about, they stated that…)",
-      "Пассивный залог (the water supply has suffered, measures have been taken)"
+      "Past Simple for completed events (I visited, I had, I listened)",
+      "Present Perfect for ongoing impact (has suffered, has risen)",
+      "Reported speech – Past Simple (he spoke about, they stated that…)",
+      "Passive voice (the water supply has suffered, measures have been taken)"
     ],
-    "topics": ["Экология", "Вьетнам", "Загрязнение", "Журналистика", "Местные сообщества"],
-    "tip": "Слушайте конкретные цифры, которые упоминает Майя — именно они часто становятся ключевыми деталями в вопросах на понимание."
+    "topics": ["Environment", "Vietnam", "Pollution", "Journalism", "Local communities"],
+    "tip": "Listen for the specific statistics Maya mentions — numbers are often the key detail in comprehension questions about this story."
   },
 
   "medium-7": {
-    "title": "Неожиданное интервью",
-    "difficulty": "Средний",
-    "duration": "~84 сек",
-    "description": "В Марокко, освещая местные ремёсла, Майя случайно заходит в мастерскую пожилого кожевника. Без общего языка — только приложение-переводчик и терпение — она узнаёт историю, ради которой стоило остаться.",
+    "title": "An Unexpected Interview",
+    "difficulty": "Medium",
+    "duration": "~84 sec",
+    "description": "In Morocco to cover local crafts, Maya ducks through a small door and stumbles into the workshop of an elderly leather craftsman. With no shared language and only a translation app and patience, she uncovers a story worth staying for.",
     "grammar": [
-      "Past Simple для рассказа (I saw, I went in, I tapped, I followed)",
-      "Past Perfect для предыстории (I'd learned a long time ago…)",
-      "Косвенная речь (he told me how his craft was passed down)",
-      "Временные выражения (hours flew by, when I finally looked…)"
+      "Past Simple narrative (I saw, I went in, I tapped, I followed)",
+      "Past Perfect for background context (I'd learned a long time ago…)",
+      "Reported speech – indirect (he told me how his craft was passed down)",
+      "Time expressions (hours flew by, when I finally looked…)"
     ],
-    "topics": ["Марокко", "Традиционные ремёсла", "Коммуникация", "Культура", "Журналистика"],
-    "tip": "Обратите внимание на то, как Майя общается без общего языка — и послушайте, чему мастер научил её помимо своего ремесла."
+    "topics": ["Morocco", "Traditional crafts", "Communication", "Culture", "Journalism"],
+    "tip": "Focus on how Maya communicates without a shared language — and listen for the details about what the craftsman taught her beyond just his trade."
   },
 
   "medium-8": {
-    "title": "Семья по всему миру",
-    "difficulty": "Средний",
-    "duration": "~83 сек",
-    "description": "Семья Майи живёт на трёх разных континентах — родители в Канаде, брат в Германии, сестра учится искусству в Италии. История о том, как они остаются близкими несмотря на расстояние, и о том, что значит семья для человека, который никогда не останавливается.",
+    "title": "Family Across Borders",
+    "difficulty": "Medium",
+    "duration": "~83 sec",
+    "description": "Maya's family lives on three different continents — her parents in Canada, her brother in Germany, and her sister studying art in Italy. This story explores how they stay close despite the distance, and what family means to someone who never stops moving.",
     "grammar": [
-      "Present Simple для текущих фактов (my brother is, my sister studies)",
-      "Past Simple для конкретных воспоминаний (I remember once finishing…, we wandered)",
-      "Герундий после глаголов (staying connected, recording sounds)",
-      "Союзы противопоставления и добавления (but, and, between… and…)"
+      "Present Simple for current facts (my brother is, my sister studies)",
+      "Past Simple for specific memories (I remember once finishing…, we wandered)",
+      "Gerund after verbs (staying connected, recording sounds)",
+      "Contrast and addition connectors (but, and, between… and…)"
     ],
-    "topics": ["Семья", "Жизнь за рубежом", "Общение", "Отношения", "Идентичность"],
-    "tip": "Слушайте, где живёт каждый член семьи и чем занимается — и обратите внимание, что Майя ценит больше всего в отношениях с каждым из них."
+    "topics": ["Family", "Living abroad", "Communication", "Relationships", "Identity"],
+    "tip": "Listen for where each family member lives and what they do — and notice what Maya values most about her relationships with each of them."
   },
 
   "medium-9": {
-    "title": "Горный фестиваль — Часть 1",
-    "difficulty": "Средний",
-    "duration": "~82 сек",
-    "description": "Майя отправляется в перуанское высокогорье, чтобы запечатлеть редкий древний фестиваль, связанный с урожаем, погодой и памятью предков. Подъём крутой, деревня насторожена, а ритуал не похож ни на что, что она видела прежде.",
+    "title": "The Mountain Festival – Part 1",
+    "difficulty": "Medium",
+    "duration": "~82 sec",
+    "description": "Maya treks into the Peruvian highlands to document a rare ancient festival tied to harvests, weather, and ancestral memory. The journey is steep, the village is cautious, and the ritual is unlike anything she has witnessed before.",
     "grammar": [
-      "Past Simple для рассказа (I went, I reached, I spent, I wrote)",
-      "Пассивный Past Simple (costumes burst with color, faces were softened)",
-      "Наречия последовательности и временные выражения (at first, by sunset, when I finally)",
-      "Относительное придаточное (a ritual tied to weather, a language I didn't understand)"
+      "Past Simple narrative (I went, I reached, I spent, I wrote)",
+      "Past Simple passive (costumes burst with color, faces were softened)",
+      "Sequence and time expressions (at first, by sunset, when I finally)",
+      "Relative clause (a ritual tied to weather, a language I didn't understand)"
     ],
-    "topics": ["Перу", "Культура коренных народов", "Фестивали", "Журналистика", "Традиции"],
-    "tip": "Это первая часть двухсерийной истории — обратите внимание на то, как Майя завоёвывает доверие жителей деревни: это станет важным во второй части."
+    "topics": ["Peru", "Indigenous culture", "Festivals", "Journalism", "Tradition"],
+    "tip": "This is the first part of a two-part story — pay attention to how Maya earns the trust of the villagers, as it becomes important in Part 2."
   },
 
   "medium-10": {
-    "title": "Горный фестиваль — Часть 2",
-    "difficulty": "Средний",
-    "duration": "~101 сек",
-    "description": "Когда фестиваль продолжается ночью, Майя наблюдает древние ритуалы, танец вызова дождя и тихий разговор со старейшиной, который меняет её взгляд на всю карьеру. Самая сильная журналистика, понимает она, состоит в том, чтобы просто быть свидетелем.",
+    "title": "The Mountain Festival – Part 2",
+    "difficulty": "Medium",
+    "duration": "~101 sec",
+    "description": "As the festival continues into the night, Maya witnesses ancient rituals, a rain-calling dance, and a quiet moment with an elder that changes how she sees her entire career. The most powerful journalism, she learns, is simply about bearing witness.",
     "grammar": [
-      "Past Simple — расширенный рассказ (I followed, I watched, I left, I realized)",
-      "Пассивный Past Simple (offerings were set, food was shared)",
-      "Номинализация — абстрактные существительные (continuity, resilience, vulnerability)",
-      "Придаточное цели с 'to' + инфинитив (to witness how communities…)"
+      "Past Simple extended narrative (I followed, I watched, I left, I realized)",
+      "Past Simple passive (offerings were set, food was shared)",
+      "Nominalization – abstract nouns (continuity, resilience, vulnerability)",
+      "Reason clause with 'to' + infinitive (to witness how communities…)"
     ],
-    "topics": ["Перу", "Ритуалы и обряды", "Рефлексия", "Журналистика", "Человеческие связи"],
-    "tip": "Этот эпизод — самый рефлексивный во всей серии. Слушайте вывод, который делает Майя в самом конце — в нём раскрывается её главная мотивация как журналиста."
+    "topics": ["Peru", "Ritual & ceremony", "Reflection", "Journalism", "Human connection"],
+    "tip": "This episode is the most reflective of the whole series — listen for the conclusion Maya draws at the very end, as it reveals her core motivation as a journalist."
   },
 
   "hard-1": {
-    "title": "О себе",
-    "difficulty": "Сложный",
-    "duration": "~101 сек",
-    "description": "Познакомьтесь с Дэниелом Мерсером — 52-летним английским бизнесменом, который построил среднюю логистическую компанию с двух ноутбуков и взятого в долг фургона. Спокойный, методичный, выросший у моря, Дэниел делится философией, которая помогла ему пройти через пятнадцать лет сложных решений.",
+    "title": "Introducing Myself",
+    "difficulty": "Hard",
+    "duration": "~101 sec",
+    "description": "Meet Daniel Mercer — a 52-year-old English businessman who built a mid-sized logistics company from two laptops and a borrowed van. Calm, methodical, and shaped by a coastal upbringing, Daniel shares the philosophy that has carried him through fifteen years of hard decisions.",
     "grammar": [
-      "Present Simple для личных фактов и философии (I run, I believe, I read)",
-      "Past Simple для определяющего опыта (I grew up, I've navigated, I learned)",
-      "Конструкции с пассивным оттенком (calm was trained, not gifted)",
-      "Инфинитив цели (to respect timing, to design exits)"
+      "Present Simple for personal facts and philosophy (I run, I believe, I read)",
+      "Past Simple for formative experience (I grew up, I've navigated, I learned)",
+      "Passive-like constructions (calm was trained, not gifted)",
+      "Infinitive of purpose (to respect timing, to design exits)"
     ],
-    "topics": ["Бизнес", "Предпринимательство", "Философия", "Личные ценности"],
-    "tip": "Дэниел использует много метафор из детства у моря — слушайте, как он связывает ритм приливов с ритмом бизнес-решений."
+    "topics": ["Business", "Entrepreneurship", "Philosophy", "Personal values"],
+    "tip": "Daniel uses a lot of metaphors drawn from his seaside childhood — listen for how he connects the rhythm of tides to the rhythm of business decisions."
   },
 
   "hard-2": {
-    "title": "Сделка, которая едва не сломала меня",
-    "difficulty": "Сложный",
-    "duration": "~87 сек",
-    "description": "Первый крупный контракт Дэниела выглядел как прорыв — пока за одну неделю не подскочили цены на дизель, не уволился водитель и протекающая крыша не испортила два поддона. История о том, как честность, гибкость и одно правило из блокнота спасли сделку — и компанию.",
+    "title": "The Deal That Nearly Broke Me",
+    "difficulty": "Hard",
+    "duration": "~87 sec",
+    "description": "Daniel's first major contract looked like a breakthrough — until diesel prices spiked, a driver quit, and a leaky warehouse roof ruined two pallets in the same week. This is the story of how honesty, flexibility, and a notebook rule saved the deal — and the company.",
     "grammar": [
-      "Цепочка Past Simple (I priced, I called, I learned, I wrote)",
-      "Пассивный Past Simple (the roof had a leak, the contract was extended)",
-      "Условная логика без 'if' (price for volatility — if luck goes bad, can you survive?)",
-      "Союзы противопоставления (but, unfortunately, instead)"
+      "Past Simple narrative chain (I priced, I called, I learned, I wrote)",
+      "Past Simple passive (the roof had a leak, the contract was extended)",
+      "Conditional logic without 'if' (price for volatility — if luck goes bad, can you survive?)",
+      "Contrast connectors (but, unfortunately, instead)"
     ],
-    "topics": ["Бизнес", "Антикризисное управление", "Контракты", "Честность", "Логистика"],
-    "tip": "Внимательно следите за различием, которое Дэниел проводит между просьбой о гибком графике и просьбой о дополнительных деньгах — в этом и состоит главный урок истории."
+    "topics": ["Business", "Crisis management", "Contracts", "Honesty", "Logistics"],
+    "tip": "Pay close attention to the distinction Daniel draws between asking for schedule flexibility versus asking for more money — it's the core lesson of the whole story."
   },
 
   "hard-3": {
-    "title": "Конференция в Мюнхене",
-    "difficulty": "Сложный",
-    "duration": "~163 сек",
-    "description": "В 48 лет Дэниел летит на логистическую конференцию в Мюнхен почти без подготовки — и получает куда больше, чем ожидал. Один разговор с докладчиком разрушает его главное убеждение об оптимизации и отправляет домой с шестимесячным планом, который преобразит компанию.",
+    "title": "The Conference in Munich",
+    "difficulty": "Hard",
+    "duration": "~163 sec",
+    "description": "At 48, Daniel flies to a logistics conference in Munich without much preparation — and gets far more than he bargained for. A single conversation with a keynote speaker dismantles his core belief about optimization and sends him home with a six-month plan that transforms his company.",
     "grammar": [
-      "Past Simple для событий и поворотных моментов (I flew, I admitted, I sketched)",
-      "Косвенная речь (he said that optimization is a human coordination problem)",
-      "Сложные именные группы (commercial-driver upskilling, team error rates)",
-      "Метафорический язык в деловом контексте (pouring fine wine into paper cups, trust on wheels)"
+      "Past Simple for events and turning points (I flew, I admitted, I sketched)",
+      "Reported speech — indirect (he said that optimization is a human coordination problem)",
+      "Complex noun phrases (commercial-driver upskilling, team error rates)",
+      "Metaphorical language in business context (pouring fine wine into paper cups, trust on wheels)"
     ],
-    "topics": ["Лидерство", "Бизнес-стратегия", "Управление командой", "Германия", "Конференции"],
-    "tip": "Это самая длинная история в серии «Сложный» — слушайте конкретный шестишаговый план, который Дэниел набрасывает в пивной. Каждый шаг основан на ключевой идее докладчика."
+    "topics": ["Leadership", "Business strategy", "Team management", "Germany", "Conferences"],
+    "tip": "This is the longest story in the Hard series — listen for the specific six-step plan Daniel sketches in the beer hall. Each step builds on the speaker's core idea."
   },
 
   "hard-4": {
-    "title": "Провал с серебряной подкладкой",
-    "difficulty": "Сложный",
-    "duration": "~120 сек",
-    "description": "Дэниел расширяет бизнес на рефрижераторные перевозки, не до конца понимая специфику — и за это расплачивается партия авторских сыров. Следуют смущение, упрямая поставщица по имени Элиза, три выходных обучения «в тени» и неожиданный второй шанс.",
+    "title": "A Failure with a Silver Lining",
+    "difficulty": "Hard",
+    "duration": "~120 sec",
+    "description": "Daniel expands into refrigerated transport without fully understanding the craft — and a shipment of artisan cheeses pays the price. What follows is a story of embarrassment, a fierce vendor named Eliza, three weekends of shadow-learning, and an unlikely second chance.",
     "grammar": [
-      "Past Simple с деталями повествования (I bought, I spent, I returned, I realized)",
-      "Каузативные конструкции (had to pay, had to make, had to withstand)",
-      "Условное в прошлом (if the reefers would've been working)",
-      "Существительное + инфинитив (failure becomes instructive when you pay its tuition)"
+      "Past Simple with narrative detail (I bought, I spent, I returned, I realized)",
+      "Causative structure (had to pay, had to make, had to withstand)",
+      "Conditional in the past (if the reefers would've been working)",
+      "Noun + infinitive structure (failure becomes instructive when you pay its tuition)"
     ],
-    "topics": ["Бизнес-провал", "Обучение", "Рефрижераторная логистика", "Стойкость", "Ответственность"],
-    "tip": "Обратите внимание на то, как меняются отношения Дэниела с Элизой на протяжении истории — и послушайте точное условие, которое она ставит, прежде чем дать ему ещё один шанс."
+    "topics": ["Business failure", "Learning", "Refrigerated logistics", "Resilience", "Accountability"],
+    "tip": "Notice how Daniel's relationship with Eliza evolves across the story — and listen for the exact condition she sets before giving him another chance."
   },
 
   "hard-5": {
-    "title": "Мост в отлив",
-    "difficulty": "Сложный",
-    "duration": "~100 сек",
-    "description": "Застрявший грузовик для переезда, упрямый тракторист и очередь нетерпеливых водителей — Дэниел оказывается посредником в противостоянии на узком каменном мосту близ Саутгемптона. Казалось бы, обычный дорожный курьёз оборачивается точным уроком по лидерству и логистике.",
+    "title": "The Bridge at Low Tide",
+    "difficulty": "Hard",
+    "duration": "~100 sec",
+    "description": "A wedged removal lorry, a stubborn tractor driver, and a queue of impatient commuters — Daniel finds himself mediating a standoff on a narrow stone bridge near Southampton. What seems like a traffic anecdote turns into a precise lesson in leadership and logistics.",
     "grammar": [
-      "Past Simple в рассказе с описательными деталями (I reached, I walked, I asked)",
-      "Противопоставление прошлого и нынешнего «я» (My younger self would've honked — instead, I…)",
-      "Модальные глаголы для гипотетического прошлого (would've honked, would've fumed)",
-      "Предложные обороты места и образа действия (at dawn, on the quay, without any title)"
+      "Past Simple storytelling with descriptive detail (I reached, I walked, I asked)",
+      "Contrast between past and present self (My younger self would've honked — instead, I…)",
+      "Modal verbs for hypothetical past (would've honked, would've fumed)",
+      "Prepositional phrases of place and manner (at dawn, on the quay, without any title)"
     ],
-    "topics": ["Лидерство", "Решение проблем", "Философия логистики", "Англия", "Коммуникация"],
-    "tip": "Мост — это метафора. В конце Дэниел сам её расшифровывает в блокноте. Слушайте точную фразу, которую он записывает — в ней весь его стиль управления в одной строке."
+    "topics": ["Leadership", "Problem-solving", "Logistics philosophy", "England", "Communication"],
+    "tip": "The bridge is a metaphor — Daniel spells it out in his notebook at the end. Listen for the exact phrase he writes down, as it captures his entire management style in one line."
   },
 
   "hard-6": {
-    "title": "Ночь призрачных поддонов",
-    "difficulty": "Сложный",
-    "duration": "~130 сек",
-    "description": "В 1:12 ночи команда Дэниела обнаруживает пять поддонов, которых не существует — следствие ошибки в таможенных документах, сбоя сканера и срочной партии, построенной на пустом месте. Пока часы тикают, Дэниел делит команду на три группы и мчится превратить вымысел в реальность до рассвета.",
+    "title": "Night of the Phantom Pallets",
+    "difficulty": "Hard",
+    "duration": "~130 sec",
+    "description": "At 1:12 a.m., Daniel's team discovers five pallets that don't exist — a cascade of a customs typo, a scanner glitch, and a time-critical shipment built on nothing. With the clock running, Daniel splits his team into three and races to turn fiction into reality before dawn.",
     "grammar": [
-      "Past Simple для кризисной последовательности (we discovered, I split, we paid, we retired)",
-      "Пассивный залог в операционном контексте (the shipment was built on air, the scanner model was retired)",
-      "Сложные временные выражения (at 1:12 a.m., before lunch, by 6:40 a.m.)",
-      "Метафорический стиль в деловой речи (phantom pallets, turned fiction into reality, a choir not a solo)"
+      "Past Simple for crisis sequence (we discovered, I split, we paid, we retired)",
+      "Passive voice in operational context (the shipment was built on air, the scanner model was retired)",
+      "Complex time expressions (at 1:12 a.m., before lunch, by 6:40 a.m.)",
+      "Metaphorical register in professional speech (phantom pallets, turned fiction into reality, a choir not a solo)"
     ],
-    "topics": ["Логистический кризис", "Ночные операции", "Командная работа", "Ошибки данных", "Управление складом"],
-    "tip": "История развивается стремительно — слушайте, как Дэниел делит команду на три группы и что поручает каждой. Структура его реакции и есть главный урок."
+    "topics": ["Logistics crisis", "Night operations", "Teamwork", "Data errors", "Warehouse management"],
+    "tip": "This story moves fast — listen for the three-team split Daniel organises and what each group is assigned to do. The structure of his response is the real lesson here."
   },
 
   "hard-7": {
-    "title": "Семейная сводка погоды",
-    "difficulty": "Сложный",
-    "duration": "~102 сек",
-    "description": "Дэниел переводит взгляд со склада на кухонный стол: жена Сандра, дочь-студентка, трёхлетний сын и собака с личной местью против почтальона. Тёплый и остроумный портрет того, как бизнесмен пытается применить профессиональные привычки дома, не превращая семейную жизнь в логистическую операцию.",
+    "title": "Family Weather Report",
+    "difficulty": "Hard",
+    "duration": "~102 sec",
+    "description": "Daniel turns his gaze from the warehouse to the kitchen table — introducing his wife Sandra, his university-age daughter, his three-year-old son, and a dog with a vendetta against the postman. A warm and witty portrait of how a businessman tries to apply his professional habits at home without turning family life into a logistics operation.",
     "grammar": [
-      "Present Simple для привычной семейной динамики (I take the calls, we hold a Sunday council)",
-      "Present Perfect для устойчивых паттернов (I've learned to declare, she has absorbed)",
-      "Метафора как грамматическая структура (observing a volatile compound, compound interest)",
-      "Условное будущее (if the business will be successful, he won't mind)"
+      "Present Simple for habitual family dynamics (I take the calls, we hold a Sunday council)",
+      "Present Perfect for ongoing patterns (I've learned to declare, she has absorbed)",
+      "Metaphor used as grammar structure (observing a volatile compound, compound interest)",
+      "Conditional future (if the business will be successful, he won't mind)"
     ],
-    "topics": ["Семья", "Баланс работы и личной жизни", "Отношения", "Привычки", "Юмор"],
-    "tip": "Слушайте фразу «красный день» и то, как Дэниел её определяет — это профессиональное понятие, которое он тихо перенёс в личную жизнь, и оно многое говорит о его характере."
+    "topics": ["Family", "Work-life balance", "Relationships", "Habits", "Humour"],
+    "tip": "Listen for the phrase 'red day' and how Daniel defines it — it's a professional concept he's quietly imported into his personal life, and it says a lot about his character."
   },
 
   "hard-8": {
-    "title": "Цена достаточного",
-    "difficulty": "Сложный",
-    "duration": "~96 сек",
-    "description": "Когда людей интересовало, сколько можно заработать в логистике, Дэниел раньше отвечал таблицами. Теперь называет совсем другую цифру. Эта размышляющая история исследует его меняющуюся философию о деньгах, росте и скрытой цене погони за числами, которые выглядят как призы, но оказываются якорями.",
+    "title": "The Price of Enough",
+    "difficulty": "Hard",
+    "duration": "~96 sec",
+    "description": "When people ask Daniel how much a logistics business can make, he used to answer with spreadsheets. Now he gives a different number entirely. This reflective story explores his evolving philosophy on money, growth, and the hidden cost of chasing numbers that look like prizes but turn out to be anchors.",
     "grammar": [
-      "Контраст Past Simple и Present Simple (I used to answer — now I give)",
-      "Used to + инфинитив для прошлых привычек (I used to answer with spreadsheets)",
-      "Абстрактные именные группы (the price of yes, unused options, the journey of choosing)",
-      "Развёрнутая метафора как аргумент (money is fuel; the journey is choosing where not to drive)"
+      "Past Simple vs Present Simple contrast (I used to answer — now I give)",
+      "Used to + infinitive for past habits (I used to answer with spreadsheets)",
+      "Abstract noun phrases (the price of yes, unused options, the journey of choosing)",
+      "Extended metaphor as argument structure (money is fuel; the journey is choosing where not to drive)"
     ],
-    "topics": ["Бизнес-философия", "Деньги", "Рост", "Принятие решений", "Личные ценности"],
-    "tip": "В этой истории Дэниел использует две ключевые метафоры для денег — слушайте обе и думайте о том, как они противоречат друг другу. Именно в этом противоречии и заключается смысл эпизода."
+    "topics": ["Business philosophy", "Money", "Growth", "Decision-making", "Personal values"],
+    "tip": "Daniel uses two key metaphors for money in this story — listen for both and think about how they contradict each other. That tension is the whole point of the episode."
   },
 
   "hard-9": {
-    "title": "Семья в грузовом манифесте — Часть I",
-    "difficulty": "Сложный",
-    "duration": "~118 сек",
-    "description": "Дэниел пытается совместить деловой тур по северной Испании с семейным отдыхом — Бильбао, Сан-Себастьян и предприятие по хранению охлаждённых продуктов под Витория-Гастейсом. Ещё до посадки бизнес вмешивается. История человека, который пытается везти три груза с одной накладной.",
+    "title": "Family on the Manifest – Part I",
+    "difficulty": "Hard",
+    "duration": "~118 sec",
+    "description": "Daniel attempts to fold a client tour of northern Spain into a family holiday — Bilbao, San Sebastián, and a cold-chain facility outside Vitoria-Gasteiz. Before the plane even lands, the business intrudes. This is the story of a man trying to carry three cargoes with one airway bill.",
     "grammar": [
-      "Past Simple для путевого рассказа (we tried, I told myself, I took the call, I wrote)",
-      "Декларативные речевые акты — правила, озвученные вслух (We don't let the business colonise the trip)",
-      "Параллельные конструкции в списках (the meeting, the marriage, and the memories)",
-      "Вставные придаточные предложения (She has absorbed more of my life than she admits)"
+      "Past Simple for travel narrative (we tried, I told myself, I took the call, I wrote)",
+      "Declarative speech acts — rules stated aloud (We don't let the business colonise the trip)",
+      "Parallel structure in lists (the meeting, the marriage, and the memories)",
+      "Embedded clauses (She has absorbed more of my life than she admits)"
     ],
-    "topics": ["Баланс работы и личной жизни", "Испания", "Деловые поездки", "Семья", "Личные границы"],
-    "tip": "Это первая часть двухсерийной истории — запомните правило, которое Дэниел объявляет вслух в зоне безопасности Хитроу. Его способность соблюдать его будет серьёзно проверена во второй части."
+    "topics": ["Work-life balance", "Spain", "Business travel", "Family", "Boundaries"],
+    "tip": "This is Part I of a two-part story — pay attention to the rule Daniel declares aloud at Heathrow security. His ability to stick to that rule is tested hard in Part II."
   },
 
   "hard-10": {
-    "title": "Семья в грузовом манифесте — Часть II",
-    "difficulty": "Сложный",
-    "duration": "~197 сек",
-    "description": "Выходной в Сан-Себастьяне должен был стать наградой — велосипеды вдоль Ла-Конча, споры о тортилье, никаких звонков. Потом налетает шквал, рефрижераторная партия выдаёт температурную тревогу, и у Дэниела ровно два часа до точки невозврата. Семья наблюдает. И совесть — тоже.",
+    "title": "Family on the Manifest – Part II",
+    "difficulty": "Hard",
+    "duration": "~197 sec",
+    "description": "The rest day in San Sebastián was supposed to be the reward — bikes along La Concha, tortilla debates, no phone. Then a freak squall rolls in, a refrigerated shipment throws a temperature alarm, and Daniel has exactly two hours before the point of no return. His family is watching. So is his integrity.",
     "grammar": [
-      "Past Simple — кульминационный рассказ (the sea changed, I stepped out, I asked, I returned)",
-      "Modal perfect для рефлексии (I thought I'd perfected the blend)",
-      "Косвенная речь — прямая и косвенная вперемешку (she said 'you made it about us first')",
-      "Философский афоризм (Boundaries aren't walls; they're promises with timestamps)"
+      "Past Simple climax narrative (the sea changed, I stepped out, I asked, I returned)",
+      "Modal perfect for reflection (I thought I'd perfected the blend)",
+      "Reported speech — direct and indirect mixed (she said 'you made it about us first')",
+      "Philosophical aphorism structure (Boundaries aren't walls; they're promises with timestamps)"
     ],
-    "topics": ["Семья", "Антикризисное управление", "Испания", "Рефрижераторная логистика", "Баланс работы и личной жизни"],
-    "tip": "Это самый эмоционально насыщенный эпизод во всей серии «Сложный». Слушайте финальную фразу, которую Дэниел записывает в блокнот — она переосмысливает всё, что он говорил на протяжении всех десяти историй."
+    "topics": ["Family", "Crisis management", "Spain", "Refrigerated logistics", "Work-life balance"],
+    "tip": "This is the most emotionally layered episode in the entire Hard series. Listen for the final line Daniel writes in his notebook — it reframes everything he has said across all ten stories."
   }
 }
 }
