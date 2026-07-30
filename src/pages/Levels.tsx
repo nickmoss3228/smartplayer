@@ -50,16 +50,16 @@ const Levels = () => {
 
  return (
     // ── outer: full-height flex column, no padding-top ──────────────────────
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 pt-16 sm:pt-20">
+    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 pt-14 sm:pt-20">
 
       {/* ── inner: flex-1 so it fills whatever the outer gives it ───────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-14">
 
         {/* Header */}
-        <div className={`text-center mb-6 sm:mb-10 md:mb-14 px-4 transform transition-all duration-1000 ${
+        <div className={`text-center mb-4 sm:mb-10 md:mb-14 px-4 transform transition-all duration-1000 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
-          <h1 className="text-xl sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
+          <h1 className="text-lg sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
             {t('levels.selectProficiency')}{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
               {t('levels.proficiencyLevel')}
@@ -68,7 +68,7 @@ const Levels = () => {
         </div>
 
         {/* Level Circles */}
-        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-5 sm:gap-10 md:gap-14 w-full max-w-4xl">
+        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-3 sm:gap-10 md:gap-14 w-full max-w-4xl">
           {levels.map((level, index) => (
             <div
               key={level.id}
@@ -80,7 +80,7 @@ const Levels = () => {
               <button
                 onClick={() => setSelectedLevel(level.id)}
                 className={`
-                  w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52
+                  w-28 h-28 sm:w-44 sm:h-44 md:w-52 md:h-52
                   rounded-full border-4 transition-all duration-300
                   flex items-center justify-center
                   bg-white cursor-pointer
@@ -98,14 +98,14 @@ const Levels = () => {
         </div>
 
         {/* Continue Button */}
-        <div className={`mt-8 sm:mt-12 md:mt-16 transform transition-all duration-700 delay-300 ${
+        <div className={`mt-5 sm:mt-12 md:mt-16 transform transition-all duration-700 delay-300 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           {selectedLevel ? (
             <Link to={`/levels/${selectedLevel}`}>
               <button
                 className={`
-                  px-10 sm:px-14 py-3 sm:py-4 rounded-lg font-medium text-white text-sm sm:text-base
+                  px-10 sm:px-14 py-2.5 sm:py-4 rounded-lg font-medium text-white text-sm sm:text-base
                   bg-gradient-to-r ${levels.find(l => l.id === selectedLevel)?.accent}
                   shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
                 `}
@@ -116,7 +116,7 @@ const Levels = () => {
           ) : (
             <button
               disabled
-              className="px-10 sm:px-14 py-3 sm:py-4 rounded-lg font-medium text-gray-400 text-sm sm:text-base
+              className="px-10 sm:px-14 py-2.5 sm:py-4 rounded-lg font-medium text-gray-400 text-sm sm:text-base
                 bg-gray-100 border border-gray-200 cursor-not-allowed shadow-sm"
             >
               {t('levels.continue')}
@@ -125,7 +125,7 @@ const Levels = () => {
         </div>
 
         {/* Additional Info */}
-        <div className={`mt-5 sm:mt-8 text-center px-4 transform transition-all duration-1000 delay-500 ${
+        <div className={`mt-3 sm:mt-8 text-center px-4 transform transition-all duration-1000 delay-500 ${
           isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
         }`}>
           <p className="text-xs sm:text-sm text-gray-500">

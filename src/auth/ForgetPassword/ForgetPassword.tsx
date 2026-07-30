@@ -1,7 +1,39 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import {
+  IoKeyOutline,
+  IoLockClosedOutline,
+  IoMailOutline,
+  IoEyeOutline,
+  IoEyeOffOutline,
+  IoAlertCircleOutline,
+  IoSyncOutline,
+  IoCheckmarkCircleOutline,
+  IoMailOpenOutline,
+} from 'react-icons/io5'
 import { useAuth } from '../../context/AuthContext'
+
+const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-blue-200/30 blur-3xl" />
+    <div className="pointer-events-none absolute -bottom-24 -right-20 w-72 h-72 rounded-full bg-red-200/30 blur-3xl" />
+    <div className="relative z-10 max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-black/5 animate-fade-in">
+      {children}
+    </div>
+  </div>
+)
+
+const IconBadge: React.FC<{ icon: React.ReactNode; gradient?: string }> = ({
+  icon,
+  gradient = 'from-red-500 to-blue-600',
+}) => (
+  <div
+    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4 shadow-lg animate-scale-in`}
+  >
+    {icon}
+  </div>
+)
 
 const ForgotPassword = () => {
   const { t } = useTranslation()
@@ -17,6 +49,8 @@ const ForgotPassword = () => {
   // Step 2: Reset password with token
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [resetSuccess, setResetSuccess] = useState(false)
 
   // Common states
@@ -29,13 +63,13 @@ const ForgotPassword = () => {
     setIsLoading(true)
 
     const result = await requestPasswordReset(email)
-    
+
     if (result.error) {
       setError(result.error.message)
     } else {
       setEmailSent(true)
     }
-    
+
     setIsLoading(false)
   }
 
@@ -61,7 +95,7 @@ const ForgotPassword = () => {
     setIsLoading(true)
 
     const result = await confirmPasswordReset(token, newPassword)
-    
+
     if (result.error) {
       setError(result.error.message)
     } else {
@@ -70,7 +104,7 @@ const ForgotPassword = () => {
         navigate('/login')
       }, 3000)
     }
-    
+
     setIsLoading(false)
   }
 
@@ -78,193 +112,219 @@ const ForgotPassword = () => {
   if (token) {
     if (resetSuccess) {
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h1 className="text-3xl font-bold text-black mb-2">
-                {t('forgotPassword.resetSuccess.title')}
-              </h1>
-              <p className="text-gray-600">{t('forgotPassword.resetSuccess.message')}</p>
-              <p className="text-gray-600 mt-2">{t('forgotPassword.resetSuccess.redirecting')}</p>
-            </div>
-            <Link
-              to="/login"
-              className="inline-block py-3 px-6 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300"
-            >
-              {t('forgotPassword.resetSuccess.goToLogin')}
-            </Link>
+        <AuthShell>
+          <div className="text-center">
+            <IconBadge
+              icon={<IoCheckmarkCircleOutline size={26} className="text-white" />}
+              gradient="from-green-500 to-emerald-600"
+            />
+            <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
+              {t('forgotPassword.resetSuccess.title')}
+            </h1>
+            <p className="text-black/50 text-sm">{t('forgotPassword.resetSuccess.message')}</p>
+            <p className="text-black/40 text-sm mt-1">{t('forgotPassword.resetSuccess.redirecting')}</p>
           </div>
-        </div>
+          <Link
+            to="/login"
+            className="mt-7 w-full inline-flex items-center justify-center py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+          >
+            {t('forgotPassword.resetSuccess.goToLogin')}
+          </Link>
+        </AuthShell>
       )
     }
 
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-black mb-2">
-              {t('forgotPassword.resetPassword.title')}
-            </h1>
-            <p className="text-gray-600">{t('forgotPassword.resetPassword.subtitle')}</p>
+      <AuthShell>
+        <div className="text-center mb-7">
+          <IconBadge icon={<IoKeyOutline size={24} className="text-white" />} />
+          <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
+            {t('forgotPassword.resetPassword.title')}
+          </h1>
+          <p className="text-black/40 text-sm">{t('forgotPassword.resetPassword.subtitle')}</p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm flex items-start gap-2 animate-fade-in">
+            <IoAlertCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleResetPassword} className="space-y-6">
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-black mb-2">
-                {t('forgotPassword.resetPassword.newPasswordLabel')}
-              </label>
+        <form onSubmit={handleResetPassword} className="space-y-5">
+          <div>
+            <label htmlFor="newPassword" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
+              {t('forgotPassword.resetPassword.newPasswordLabel')}
+            </label>
+            <div className="relative">
+              <IoLockClosedOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
               <input
                 id="newPassword"
-                type="password"
+                type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-11 pr-11 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
                 placeholder={t('forgotPassword.resetPassword.newPasswordPlaceholder')}
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((v) => !v)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors"
+                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+              >
+                {showNewPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+              </button>
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-black mb-2">
-                {t('forgotPassword.resetPassword.confirmPasswordLabel')}
-              </label>
+          <div>
+            <label htmlFor="confirmPassword" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
+              {t('forgotPassword.resetPassword.confirmPasswordLabel')}
+            </label>
+            <div className="relative">
+              <IoLockClosedOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
               <input
                 id="confirmPassword"
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-11 pr-11 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
                 placeholder={t('forgotPassword.resetPassword.confirmPasswordPlaceholder')}
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors"
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading 
-                ? t('forgotPassword.resetPassword.submitting') 
-                : t('forgotPassword.resetPassword.submitButton')
-              }
-            </button>
-          </form>
-
-          <div className="mt-8 text-center">
-            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-              {t('forgotPassword.backToLogin')}
-            </Link>
           </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <IoSyncOutline size={18} className="animate-spin" />
+                {t('forgotPassword.resetPassword.submitting')}
+              </>
+            ) : (
+              t('forgotPassword.resetPassword.submitButton')
+            )}
+          </button>
+        </form>
+
+        <div className="mt-7 text-center">
+          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+            {t('forgotPassword.backToLogin')}
+          </Link>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 
   // Request reset email form
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg text-center">
-          <div className="mb-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-black mb-2">
-              {t('forgotPassword.emailSent.title')}
-            </h1>
-            <p className="text-gray-600 mb-4">
-              {t('forgotPassword.emailSent.message')} <span className="font-semibold">{email}</span>
-            </p>
-            <p className="text-gray-500 text-sm">
-              {t('forgotPassword.emailSent.instructions')}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => setEmailSent(false)}
-              className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300"
-            >
-              {t('forgotPassword.emailSent.tryAnother')}
-            </button>
-            <Link
-              to="/login"
-              className="block text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {t('forgotPassword.backToLogin')}
-            </Link>
-          </div>
+      <AuthShell>
+        <div className="text-center">
+          <IconBadge
+            icon={<IoMailOpenOutline size={24} className="text-white" />}
+            gradient="from-blue-500 to-indigo-600"
+          />
+          <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
+            {t('forgotPassword.emailSent.title')}
+          </h1>
+          <p className="text-black/50 text-sm mb-1">
+            {t('forgotPassword.emailSent.message')} <span className="font-semibold text-black/80">{email}</span>
+          </p>
+          <p className="text-black/40 text-xs">{t('forgotPassword.emailSent.instructions')}</p>
         </div>
-      </div>
+
+        <div className="mt-7 space-y-3">
+          <button
+            onClick={() => setEmailSent(false)}
+            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+          >
+            {t('forgotPassword.emailSent.tryAnother')}
+          </button>
+          <Link
+            to="/login"
+            className="block text-center text-blue-600 hover:text-blue-700 font-semibold text-sm"
+          >
+            {t('forgotPassword.backToLogin')}
+          </Link>
+        </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white rounded-2xl p-8 border-2 border-gray-200 shadow-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">
-            {t('forgotPassword.title')}
-          </h1>
-          <p className="text-gray-600">
-            {t('forgotPassword.subtitle')}
-          </p>
+    <AuthShell>
+      <div className="text-center mb-7">
+        <IconBadge icon={<IoKeyOutline size={24} className="text-white" />} />
+        <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
+          {t('forgotPassword.title')}
+        </h1>
+        <p className="text-black/40 text-sm">{t('forgotPassword.subtitle')}</p>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm flex items-start gap-2 animate-fade-in">
+          <IoAlertCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleRequestReset} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
-              {t('forgotPassword.emailLabel')}
-            </label>
+      <form onSubmit={handleRequestReset} className="space-y-5">
+        <div>
+          <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
+            {t('forgotPassword.emailLabel')}
+          </label>
+          <div className="relative">
+            <IoMailOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-11 pr-4 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
               placeholder={t('forgotPassword.emailPlaceholder')}
             />
           </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? t('forgotPassword.sending') : t('forgotPassword.sendButton')}
-          </button>
-        </form>
-
-        <div className="mt-8 text-center">
-          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
-            {t('forgotPassword.backToLogin')}
-          </Link>
         </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isLoading ? (
+            <>
+              <IoSyncOutline size={18} className="animate-spin" />
+              {t('forgotPassword.sending')}
+            </>
+          ) : (
+            t('forgotPassword.sendButton')
+          )}
+        </button>
+      </form>
+
+      <div className="mt-7 text-center">
+        <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+          {t('forgotPassword.backToLogin')}
+        </Link>
       </div>
-    </div>
+    </AuthShell>
   )
 }
 
