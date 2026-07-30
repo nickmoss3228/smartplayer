@@ -22,6 +22,7 @@ import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
 import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabulary"
 import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
+import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -78,6 +79,10 @@ const Player = React.memo(() => {
   // Push accumulated listening time to the backend while actually on the
   // player, not just when the Dashboard happens to be open.
   useListeningTimeSync(!!user);
+
+  // Which vocab words the student has ever correctly identified — colors
+  // their chips in the Player and feeds the Dashboard's "Words Learned" stat.
+  const { learnedWords, markLearned } = useVocabProgress(!!user);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -316,6 +321,7 @@ const allVocabWords = useMemo(() => {
                 words={allVocabWords}
                 onPlay={playVocabWord}
                 onClose={() => setShowVocabQuiz(false)}
+                onComplete={markLearned}
               />
             </div>
           ) : (
@@ -335,6 +341,7 @@ const allVocabWords = useMemo(() => {
                 hasListenedFully={hasListenedFully}
                 onOpenQuiz={() => setShowQuiz(true)}
                 onOpenVocabQuiz={() => setShowVocabQuiz(true)}
+                learnedWords={learnedWords}
               />
             </div>
           )}

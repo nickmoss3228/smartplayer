@@ -5,6 +5,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { IoCheckmarkCircle, IoRefresh, IoArrowBack } from "react-icons/io5";
+import { playChime } from "../../../utils/soundEffects";
 
 type VocabType = "vocab" | "phrasal";
 
@@ -18,6 +20,8 @@ interface VocabQuizProps {
   words: VocabWord[];
   onPlay: (audioKey: string, type?: VocabType) => HTMLAudioElement | null;
   onClose: () => void;
+  /** Called once, when a round finishes, with the keys of correctly-answered words */
+  onComplete?: (correctKeys: string[]) => void;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -33,6 +37,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
   words,
   onPlay,
   onClose,
+  onComplete,
 }) => {
   const [order, setOrder] = useState<VocabWord[]>(() => shuffle(words));
   const [roundIndex, setRoundIndex] = useState(0);
@@ -40,9 +45,17 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const correctKeysRef = useRef<string[]>([]);
 
   const current = order[roundIndex];
   const finished = roundIndex >= order.length;
+
+  // Fire onComplete exactly once per finished round.
+  useEffect(() => {
+    if (!finished) return;
+    playChime();
+    onComplete?.(correctKeysRef.current);
+  }, [finished, onComplete]);
 
   const playCurrent = useCallback(() => {
     if (!current) return;
@@ -64,7 +77,13 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
       setSelected(choice.word);
       setStatus(isCorrect ? "correct" : "wrong");
 
-      if (isCorrect) setScore((s) => s + 1);
+      if (isCorrect) {
+        setScore((s) => s + 1);
+        const key = (current.audioKey ?? current.word).toLowerCase();
+        if (!correctKeysRef.current.includes(key)) {
+          correctKeysRef.current = [...correctKeysRef.current, key];
+        }
+      }
 
       setTimeout(() => {
         setSelected(null);
@@ -81,6 +100,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
     setScore(0);
     setSelected(null);
     setStatus("idle");
+    correctKeysRef.current = [];
   }, [words]);
 
   // Grid sizing: shrink cell size and font when there are many words,
@@ -120,21 +140,27 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
       </div>
 
       {finished ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <p className="text-lg font-bold text-black">
-            Готово! Результат: {score} из {order.length}
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 animate-scale-in">
+          <div className="w-16 h-16 rounded-full bg-green-500/15 flex items-center justify-center mb-2">
+            <IoCheckmarkCircle className="text-green-500" size={40} />
+          </div>
+          <p className="text-xl font-bold text-black">Молодец!</p>
+          <p className="text-black/50 text-sm mb-4">
+            Результат: {score} из {order.length}
           </p>
           <div className="flex gap-3">
             <button
               onClick={handleRestart}
-              className="px-5 py-2 rounded-full bg-green/90 text-white font-semibold hover:bg-green transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500 text-white font-semibold shadow-sm hover:bg-green-600 active:scale-95 transition-all"
             >
+              <IoRefresh size={16} />
               Играть снова
             </button>
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-full bg-white/90 text-black shadow-sm hover:bg-white transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 text-black shadow-sm hover:bg-white active:scale-95 transition-all"
             >
+              <IoArrowBack size={16} />
               Назад
             </button>
           </div>
@@ -148,7 +174,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
             <button
               onClick={playCurrent}
               aria-label="Повторить произношение"
-              className="w-14 h-14 rounded-full bg-green/90 hover:bg-green text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+              className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -162,8 +188,8 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
 
             <div className="h-6 flex items-center justify-center">
               {status === "correct" && (
-                <p className="text-green font-bold text-sm animate-bounce">
-                  Молодец! 🎉
+                <p className="text-green-600 font-bold text-sm animate-bounce">
+                  Молодец!
                 </p>
               )}
               {status === "wrong" && (
@@ -188,7 +214,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
                 if (isThisCorrectWord) {
                   // always highlight the correct word once an answer is given,
                   // whether the player picked it or not
-                  stateClasses = "bg-green/95 text-white ring-2 ring-white/60";
+                  stateClasses = "bg-green-500 text-white ring-2 ring-white/60";
                 } else if (isThisSelected && status === "wrong") {
                   stateClasses = "bg-red-500 text-white ring-2 ring-white/60";
                 }

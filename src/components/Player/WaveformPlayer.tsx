@@ -41,6 +41,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     hasListenedFully,
     onOpenQuiz,
     onOpenVocabQuiz,
+    learnedWords,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
@@ -202,6 +203,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                   words={currentVocabulary}
                   onPlay={(fileName) => playVocabWord(fileName, "vocab")}
                   volume={isMuted ? 0 : volume}
+                  learnedWords={learnedWords}
                 />
               </div>
             )}
@@ -212,6 +214,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                   words={currentPhrasalVerbs}
                   onPlay={(fileName) => playVocabWord(fileName, "phrasal")}
                   volume={isMuted ? 0 : volume}
+                  learnedWords={learnedWords}
                 />
               </div>
             )}
@@ -381,6 +384,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                     audioKey={audioKey}
                     onPlay={playVocabWord}
                     volume={isMuted ? 0 : volume}
+                    isLearned={learnedWords?.has((audioKey ?? word).toLowerCase())}
                   />
                 ))}
               </div>

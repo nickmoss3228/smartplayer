@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { IoPlay, IoTimerOutline, IoRefresh } from "react-icons/io5";
 import { PlayState } from "./useQuestionAudio";
 
 interface QuestionAudioButtonProps {
@@ -6,14 +8,6 @@ interface QuestionAudioButtonProps {
   onPress: () => void;
   hasAudio: boolean;
 }
-
-const labels: Record<PlayState, string> = {
-  idle:          "▶ Play Question",
-  "playing-fast": "🔊 Playing...",
-  "played-fast":  "🐢 Play Slowly",
-  "playing-slow": "🔊 Playing slowly...",
-  "played-slow":  "↩ Play Again",
-};
 
 const colors: Record<PlayState, string> = {
   idle:           "bg-indigo-500 hover:bg-indigo-600 text-white",
@@ -28,24 +22,42 @@ const QuestionAudioButton: React.FC<QuestionAudioButtonProps> = ({
   onPress,
   hasAudio,
 }) => {
+  const { t } = useTranslation();
   if (!hasAudio) return null;
 
   const isPlaying = playState === "playing-fast" || playState === "playing-slow";
 
+  const labels: Record<PlayState, string> = {
+    idle:           t("quiz.audio.playQuestion"),
+    "playing-fast": t("quiz.audio.playing"),
+    "played-fast":  t("quiz.audio.playSlowly"),
+    "playing-slow": t("quiz.audio.playingSlowly"),
+    "played-slow":  t("quiz.audio.playAgain"),
+  };
+
+  const Icon =
+    playState === "played-fast" || playState === "playing-slow"
+      ? IoTimerOutline
+      : playState === "played-slow"
+      ? IoRefresh
+      : IoPlay;
+
   return (
-    <div className="flex items-center gap-3 mb-6">
+    // Stacked, not side-by-side — the hint text can wrap freely on mobile
+    // without ever squeezing (and wrapping) the button's own label.
+    <div className="flex flex-col items-start gap-1.5 mb-6">
       <button
         onClick={onPress}
         disabled={isPlaying}
         className={`
           inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
-          transition-all duration-200 shadow-sm
+          whitespace-nowrap transition-all duration-200 shadow-sm
           ${colors[playState]}
         `}
       >
-        {/* Animated sound waves when playing */}
+        {/* Animated sound waves when playing, otherwise a static icon */}
         {isPlaying ? (
-          <span className="flex gap-0.5 items-end h-4">
+          <span className="flex gap-0.5 items-end h-4 flex-shrink-0">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
@@ -58,9 +70,7 @@ const QuestionAudioButton: React.FC<QuestionAudioButtonProps> = ({
             ))}
           </span>
         ) : (
-          <span className="text-base leading-none">
-            {playState === "played-fast" ? "🐢" : "🔊"}
-          </span>
+          <Icon size={16} className="flex-shrink-0" />
         )}
         {labels[playState]}
       </button>
@@ -68,7 +78,7 @@ const QuestionAudioButton: React.FC<QuestionAudioButtonProps> = ({
       {/* Helper hint */}
       {playState === "played-fast" && (
         <span className="text-xs text-amber-600 font-medium animate-pulse">
-          Click again for a slower version
+          {t("quiz.audio.slowerHint")}
         </span>
       )}
     </div>

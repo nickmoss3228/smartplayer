@@ -11,26 +11,32 @@ interface VocabularyRowProps {
   words: VocabWord[];
   onPlay: (audioKey: string) => HTMLAudioElement | null; // ← updated
   volume: number;
+  /** Keys (lowercased audioKey ?? word) the student has already answered correctly */
+  learnedWords?: Set<string>;
 }
 
 
-export const VocabularyRow: React.FC<VocabularyRowProps> = ({ words, onPlay, volume }) => {
-  // const { t } = useTranslation(); // ← now you have a place for it
-
+export const VocabularyRow: React.FC<VocabularyRowProps> = ({ words, onPlay, volume, learnedWords }) => {
   return (
     <div>
-      {/* <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-2">
-        {t('player.vocabulary')}
-      </p> */}
       <div
         className="flex pt-2 gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4
                    [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {words.map(({ word, audioKey }) => (
-          <div key={word} className="snap-start shrink-0">
-            <VocabChip word={word} audioKey={audioKey} onPlay={onPlay} volume={volume} />
-          </div>
-        ))}
+        {words.map(({ word, audioKey }) => {
+          const key = (audioKey ?? word).toLowerCase();
+          return (
+            <div key={word} className="snap-start shrink-0">
+              <VocabChip
+                word={word}
+                audioKey={audioKey}
+                onPlay={onPlay}
+                volume={volume}
+                isLearned={learnedWords?.has(key)}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

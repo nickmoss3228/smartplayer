@@ -5,6 +5,7 @@ import {
   IoCheckmarkDoneCircleOutline,
   IoFlameOutline,
   IoLibraryOutline,
+  IoLanguageOutline,
 } from "react-icons/io5";
 
 export type TierKey = "bronze" | "silver" | "gold" | "platinum" | "crown";
@@ -74,6 +75,19 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
       { tier: "gold",     threshold: 10, label: "10 stories" },
       { tier: "platinum", threshold: 20, label: "20 stories" },
       { tier: "crown",    threshold: 30, label: "30 stories" },
+    ],
+  },
+  {
+    key: "wordsLearned",
+    title: "Words Learned",
+    icon: IoLanguageOutline,
+    unit: "words learned",
+    tiers: [
+      { tier: "bronze",   threshold: 10,  label: "10 words" },
+      { tier: "silver",   threshold: 50,  label: "50 words" },
+      { tier: "gold",     threshold: 150, label: "150 words" },
+      { tier: "platinum", threshold: 300, label: "300 words" },
+      { tier: "crown",    threshold: 600, label: "600 words" },
     ],
   },
 ];

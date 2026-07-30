@@ -5,10 +5,12 @@ interface VocabChipProps {
   audioKey?: string;
   onPlay: (audioKey: string) => HTMLAudioElement | null;
   volume?: number;
+  /** True once the student has correctly identified this word in the VocabQuiz */
+  isLearned?: boolean;
 }
 
 export const VocabChip: React.FC<VocabChipProps> = React.memo(
-  ({ word, audioKey, onPlay, volume = 1 }) => {
+  ({ word, audioKey, onPlay, volume = 1, isLearned = false }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -49,12 +51,13 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
       <div className="group relative">
         <button
           onClick={handleClick}
-          className={`inline-flex items-center gap-1.5 transition-colors duration-200 text-xs font-semibold font-['Montserrat'] px-3 py-1.5 rounded-full cursor-pointer select-none
+          className={`inline-flex items-center gap-1.5 transition-all duration-200 text-xs font-semibold font-['Montserrat'] px-3 py-1.5 rounded-full cursor-pointer select-none
             ${
-              isPlaying
-                ? "bg-green/95 text-white ring-1 ring-white/40"
-                : "bg-green/30 text-white/90 hover:bg-white/20"
-            }`}
+              isLearned
+                ? "bg-green-500 text-white ring-1 ring-green-300/70 shadow-sm shadow-green-500/30"
+                : "bg-white/15 text-white/90 hover:bg-white/25"
+            }
+            ${isPlaying ? "ring-2 ring-white/70 scale-105" : ""}`}
           title={`Hear pronunciation of "${word}"`}
         >
           <svg

@@ -11,6 +11,7 @@ export interface AchievementsResponse {
     currentStreak: number;
     longestStreak: number;
     uniqueStoriesCount: number;
+    wordsLearned: number;
   };
 }
 

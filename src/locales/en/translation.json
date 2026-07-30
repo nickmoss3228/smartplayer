@@ -91,7 +91,7 @@
     "question": "Question",
     "score": "Score",
     "welldone": "Well Done!",
-    "keepgoing": "Keep Going! 💪",
+    "keepgoing": "Keep Going!",
     "correct": "Correct",
     "not-correct": "Incorrect",
     "pass": "Pass",
@@ -100,7 +100,15 @@
     "return-btn": "Return",
     "tryagain": "Try Again",
     "correctanswers": "Correct Answers",
-    "incorrectanswers": "Incorrect Answers"
+    "incorrectanswers": "Incorrect Answers",
+    "audio": {
+      "playQuestion": "Play Question",
+      "playing": "Playing...",
+      "playSlowly": "Play Slowly",
+      "playingSlowly": "Playing slowly...",
+      "playAgain": "Play Again",
+      "slowerHint": "Click again for a slower version"
+    }
   },
   "login": {
     "title": "Welcome!",

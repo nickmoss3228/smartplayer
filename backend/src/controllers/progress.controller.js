@@ -421,7 +421,7 @@ export async function getAchievements(req, res) {
 
     const [user, questionsAnswered, uniqueStoriesCount] = await Promise.all([
       User.findById(userId).select(
-        "achievements streak totalListeningSeconds"
+        "achievements streak totalListeningSeconds learnedWords"
       ),
       countCompletedQuestions(userId),
       countUniqueCompletedStories(userId),
@@ -437,10 +437,62 @@ export async function getAchievements(req, res) {
         currentStreak:     user.streak?.current ?? 0,
         longestStreak:     user.streak?.longest ?? 0,
         uniqueStoriesCount,
+        wordsLearned:      user.learnedWords?.length ?? 0,
       },
     });
   } catch (error) {
     console.error("Get achievements error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── GET /progress/vocab-learned ─────────────────────────────────────────────
+// Returns every vocab word key the student has ever correctly identified, so
+// the Player can pre-color already-learned words on load.
+
+export async function getLearnedWords(req, res) {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("learnedWords");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ learnedWords: user.learnedWords ?? [] });
+  } catch (error) {
+    console.error("Get learned words error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── POST /progress/vocab-complete ───────────────────────────────────────────
+// Called when a VocabQuiz round finishes; merges the newly-correct word keys
+// into the student's permanent learned-words set (no duplicates, no loss on
+// retries) and recomputes the "Words Learned" achievement tier.
+
+export async function completeVocabQuiz(req, res) {
+  try {
+    const { words } = req.body;
+    const userId = req.user._id;
+
+    if (
+      !Array.isArray(words) ||
+      words.length === 0 ||
+      !words.every((w) => typeof w === "string")
+    ) {
+      return res
+        .status(400)
+        .json({ message: "words must be a non-empty array of strings" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { learnedWords: { $each: words } } },
+      { new: true, select: "learnedWords" }
+    );
+
+    await updateAchievements(userId, { wordsLearned: user.learnedWords.length });
+
+    res.json({ learnedWords: user.learnedWords });
+  } catch (error) {
+    console.error("Complete vocab quiz error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

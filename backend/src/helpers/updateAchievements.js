@@ -7,10 +7,11 @@ import { computeHighestTier, isTierHigher } from "../config/achievements.js";
  *
  * @param {ObjectId} userId
  * @param {{
- *   listeningSeconds: number,
- *   questionsAnswered: number,
- *   currentStreak: number,
- *   uniqueStoriesCount: number,
+ *   listeningSeconds?: number,
+ *   questionsAnswered?: number,
+ *   currentStreak?: number,
+ *   uniqueStoriesCount?: number,
+ *   wordsLearned?: number,
  * }} stats
  */
 export async function updateAchievements(userId, stats) {
@@ -22,6 +23,7 @@ export async function updateAchievements(userId, stats) {
     questionsAnswered: stats.questionsAnswered,
     studyStreak:       stats.currentStreak,
     storiesListened:   stats.uniqueStoriesCount,
+    wordsLearned:      stats.wordsLearned,
   };
 
   const updates = {};

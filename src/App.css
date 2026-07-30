@@ -1,9 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@200..800&family=Reddit+Sans:ital,wght@0,200..900;1,200..900&display=swap');
 @import "tailwindcss";
+@config "./tailwind.config.js";
 
 @font-face {
     font-family: "Montserrat", sans-serif, 'Manrope', 'reddit-sans', 'inter';
     font-optical-sizing: auto;
     font-style: normal;
     src: url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+}
+
+/* Quiz-completion confetti — plain CSS since tailwind.config.js's keyframe
+   extensions aren't loaded by this project's Tailwind v4 setup (no @config
+   directive above), unlike v3. */
+@keyframes confetti-pop {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% {
+    transform: translate(var(--confetti-dx), var(--confetti-dy)) rotate(var(--confetti-rot));
+    opacity: 0;
+  }
+}
+
+.animate-confetti-pop {
+  animation: confetti-pop 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

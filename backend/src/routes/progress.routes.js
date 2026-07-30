@@ -8,6 +8,8 @@ import {
   getStoryProgress,
   syncListeningTime,
   getAchievements,
+  getLearnedWords,
+  completeVocabQuiz,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
@@ -15,6 +17,8 @@ const router = Router();
 router.get("/progress/overview",                   authenticateToken, getOverview);
 router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);
 router.get("/progress/achievements",               authenticateToken, getAchievements);
+router.get("/progress/vocab-learned",              authenticateToken, getLearnedWords);
+router.post("/progress/vocab-complete",            authenticateToken, completeVocabQuiz);
 router.post("/progress/complete",                  authenticateToken, completeLevel);
 router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);

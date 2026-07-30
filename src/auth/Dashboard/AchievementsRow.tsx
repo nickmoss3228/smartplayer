@@ -42,12 +42,13 @@ const AchievementsRow: React.FC = () => {
     questionsAnswered: data?.stats.questionsAnswered ?? 0,
     studyStreak:       data?.stats.currentStreak ?? 0,
     storiesListened:   data?.stats.uniqueStoriesCount ?? 0,
+    wordsLearned:      data?.stats.wordsLearned ?? 0,
   };
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        {[0, 1, 2, 3].map((i) => (
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
             className="rounded-3xl bg-white border border-black/5 p-4 sm:p-5 animate-pulse"
@@ -66,7 +67,7 @@ const AchievementsRow: React.FC = () => {
     <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
       Achievements
     </h2>
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       {ACHIEVEMENT_CATEGORIES.map((category, index) => (
         <AchievementCard
           key={category.key}

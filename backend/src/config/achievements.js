@@ -28,6 +28,13 @@ export const ACHIEVEMENT_TIERS = {
     { tier: "platinum", threshold: 20, label: "20 stories",emoji: "🏆" },
     { tier: "crown",    threshold: 30, label: "30 stories", emoji: "👑" },
   ],
+  wordsLearned: [
+    { tier: "bronze",   threshold: 10,  label: "10 words",  emoji: "🥉" },
+    { tier: "silver",   threshold: 50,  label: "50 words",  emoji: "🥈" },
+    { tier: "gold",     threshold: 150, label: "150 words", emoji: "🥇" },
+    { tier: "platinum", threshold: 300, label: "300 words", emoji: "🏆" },
+    { tier: "crown",    threshold: 600, label: "600 words", emoji: "👑" },
+  ],
 };
 
 const TIER_ORDER = ["bronze", "silver", "gold", "platinum", "crown"];

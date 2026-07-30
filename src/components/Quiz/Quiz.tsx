@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { IoCheckmark, IoClose, IoRocketOutline } from "react-icons/io5";
 import { QuizProps } from "../../types/Quiz";
 import { useQuestionAudio } from "./useQuestionAudio";
 import QuestionAudioButton from "./QuestionAudioButton";
+import QuizConfetti from "./QuizConfetti";
+import { playFanfare } from "../../utils/soundEffects";
 import { useTranslation } from "react-i18next";
 
 type FeedbackState = "idle" | "correct" | "incorrect";
@@ -18,6 +21,7 @@ const Quiz: React.FC<QuizProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>("idle");
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [celebrate, setCelebrate] = useState(false);
   const { t } = useTranslation()
 
   const navigate = useNavigate();
@@ -35,6 +39,15 @@ const Quiz: React.FC<QuizProps> = ({
     }, 1500);
     return () => clearTimeout(timer);
   }, [feedback]);
+
+  // Fire the confetti + fanfare exactly once, right as a passing result appears.
+  useEffect(() => {
+    if (!showResults) return;
+    if (score >= Math.ceil(questions.length * 0.7)) {
+      setCelebrate(true);
+      playFanfare();
+    }
+  }, [showResults]);
 
   const handleAnswer = (selectedOption: number) => {
     if (selectedAnswer !== null || feedback !== "idle") return;
@@ -76,6 +89,7 @@ const Quiz: React.FC<QuizProps> = ({
     setSelectedAnswer(null);
     setUserAnswers([]);
     setFeedback("idle");
+    setCelebrate(false);
   };
 
   const handleReturn = () => {
@@ -120,9 +134,17 @@ const Quiz: React.FC<QuizProps> = ({
     }
     if (selectedAnswer === index) {
       if (feedback === "correct") {
-        return <span className={`${baseIcon} bg-green-500 text-white`}>✓</span>;
+        return (
+          <span className={`${baseIcon} bg-green-500 text-white`}>
+            <IoCheckmark size={16} />
+          </span>
+        );
       } else {
-        return <span className={`${baseIcon} bg-red-500 text-white`}>✗</span>;
+        return (
+          <span className={`${baseIcon} bg-red-500 text-white`}>
+            <IoClose size={16} />
+          </span>
+        );
       }
     }
     return (
@@ -190,8 +212,8 @@ const Quiz: React.FC<QuizProps> = ({
                 : "opacity-100 bg-red-50 border border-red-200 text-red-700"
             }`}
           >
-            {feedback === "correct" && (<><span className="text-green-500 text-base">✓</span> {t('quiz.correct')}</>)}
-            {feedback === "incorrect" && (<><span className="text-red-500 text-base">✗</span> {t('quiz.not-correct')}</>)}
+            {feedback === "correct" && (<><IoCheckmark className="text-green-500 flex-shrink-0" size={18} /> {t('quiz.correct')}</>)}
+            {feedback === "incorrect" && (<><IoClose className="text-red-500 flex-shrink-0" size={18} /> {t('quiz.not-correct')}</>)}
             {feedback === "idle" && <span>&nbsp;</span>}
           </div>
 
@@ -205,6 +227,8 @@ const Quiz: React.FC<QuizProps> = ({
 
   return (
     <div className="w-full mx-auto mt-4 bg-white/80 rounded-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+
+      <QuizConfetti active={celebrate} />
 
       {/* Top accent bar */}
       <div className={`h-2 w-full ${passed ? "bg-gradient-to-r from-green-400 to-emerald-500" : "bg-gradient-to-r from-orange-400 to-red-500"}`} />
@@ -239,7 +263,8 @@ const Quiz: React.FC<QuizProps> = ({
         </div>
 
         {/* Pass / Fail message */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+          {!passed && <IoRocketOutline className="text-orange-500 flex-shrink-0" size={24} />}
           {passed ? t('quiz.welldone'): t('quiz.keepgoing')}
         </h2>
         {/* ↓ mb-6 on mobile, mb-8 on sm+ */}

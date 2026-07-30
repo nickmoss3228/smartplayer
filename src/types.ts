@@ -43,6 +43,8 @@ export interface WaveformPlayerProps {
   hasListenedFully?: boolean;
   onOpenQuiz?: () => void;
   onOpenVocabQuiz?: () => void;
+  /** Vocab word keys (lowercased audioKey ?? word) already answered correctly */
+  learnedWords?: Set<string>;
 }
 
 export interface QuizQuestion {

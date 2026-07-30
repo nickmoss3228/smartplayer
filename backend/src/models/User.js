@@ -46,8 +46,11 @@ const userSchema = new mongoose.Schema({
     questionsAnswered: { type: String, default: null },
     studyStreak:       { type: String, default: null },
     storiesListened:   { type: String, default: null },
+    wordsLearned:      { type: String, default: null },
   },
   totalListeningSeconds: { type: Number, default: 0 },
+  // Keys (lowercased audioKey/word) of vocab words correctly identified in a VocabQuiz
+  learnedWords: { type: [String], default: [] },
 });
 
 export const User = mongoose.model("User", userSchema);

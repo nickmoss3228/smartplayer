@@ -91,7 +91,7 @@
     "question": "Вопрос",
     "score": "Счёт",
     "welldone": "Отличная работа!",
-    "keepgoing": "Нужно поднажать! 💪",
+    "keepgoing": "Нужно поднажать!",
     "correct": "Верно!",
     "not-correct": "Неверно!",
     "pass": "Выполнено",
@@ -100,7 +100,15 @@
     "return-btn": "Вернуться",
     "tryagain": "Заново",
     "correctanswers": "Правильные ответы",
-    "incorrectanswers": "Неверные ответы"
+    "incorrectanswers": "Неверные ответы",
+    "audio": {
+      "playQuestion": "Слушать вопрос",
+      "playing": "Играет...",
+      "playSlowly": "Медленнее",
+      "playingSlowly": "Играет медленно...",
+      "playAgain": "Ещё раз",
+      "slowerHint": "Нажми ещё раз для медленной версии"
+    }
   },
   "login": {
     "title": "Добро пожаловать!",
