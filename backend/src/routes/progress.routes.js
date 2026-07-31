@@ -10,6 +10,7 @@ import {
   getAchievements,
   getLearnedWords,
   completeVocabQuiz,
+  migrateGuestProgress,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
@@ -20,6 +21,7 @@ router.get("/progress/achievements",               authenticateToken, getAchieve
 router.get("/progress/vocab-learned",              authenticateToken, getLearnedWords);
 router.post("/progress/vocab-complete",            authenticateToken, completeVocabQuiz);
 router.post("/progress/complete",                  authenticateToken, completeLevel);
+router.post("/progress/migrate-guest",             authenticateToken, migrateGuestProgress);
 router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
 

@@ -3,6 +3,8 @@ import { Progress } from "../models/Progress.js";
 import { StoryProgress } from "../models/StoryProgress.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
+import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
+import { FREE_TRIAL_STORIES } from "../config/trial.js";
 import { User } from "../models/User.js";
 
 const difficulties = ["easy", "medium", "hard"];
@@ -247,61 +249,15 @@ export async function completeLevel(req, res) {
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
 
-    const minCorrect = Math.ceil(totalQuestions * 0.7);
-    const isCompleted = correctAnswers >= minCorrect;
-
-    // ── Update StoryProgress ──────────────────────────────────────────────
-    let storyProgress = await StoryProgress.findOne({ userId, difficulty, storyId });
-    if (!storyProgress) {
-      storyProgress = new StoryProgress({
-        userId,
-        difficulty,
-        storyId,
-        completedParts: [],
-        currentPart: 1,
-      });
-    }
-
-    if (isCompleted) {
-      if (!storyProgress.completedParts.includes(partNumber)) {
-        storyProgress.completedParts.push(partNumber);
-        storyProgress.completedParts.sort((a, b) => a - b);
-      }
-      if (
-        partNumber === storyProgress.currentPart &&
-        partNumber < storyMeta.totalParts
-      ) {
-        storyProgress.currentPart = partNumber + 1;
-      }
-    }
-
-    await storyProgress.save();
-
-    // ── Update legacy Progress doc ────────────────────────────────────────
-    let progress = await Progress.findOne({ userId, difficulty });
-    if (!progress) {
-      progress = new Progress({
-        userId,
-        difficulty,
-        completedLevels: [],
-        currentLevel: 1,
-        levelResults: new Map(),
-      });
-    }
-
-    // Only write the result if the part isn't already marked completed,
-    // so that re-attempts never overwrite a completed:true entry.
-    const resultKey = `${storyId}:${partNumber}`;
-    const existing = progress.levelResults.get(resultKey);
-    if (!existing?.completed) {
-      progress.levelResults.set(resultKey, {
-        completed: isCompleted,
-        correctAnswers,
-        totalQuestions,
-        completedAt: new Date(),
-      });
-      await progress.save();
-    }
+    const { isCompleted, storyProgress } = await applyLevelCompletion({
+      userId,
+      difficulty,
+      storyId,
+      partNumber,
+      correctAnswers,
+      totalQuestions,
+      storyMeta,
+    });
 
     // ── Streak update (only on completed submissions) ─────────────────────
     let newStreak = 0;
@@ -362,6 +318,95 @@ export async function completeLevel(req, res) {
     });
   } catch (error) {
     console.error("Complete level error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── POST /progress/migrate-guest ───────────────────────────────────────────
+// Folds a guest's locally-saved trial-level progress (from before they had
+// an account) into their freshly created/logged-in account. Never trusts
+// the client's claims blindly — every entry is re-validated the same way a
+// real-time /progress/complete submission would be, plus a hard bound on
+// partNumber, since a guest could only ever have legitimately unlocked
+// levels 1..FREE_TRIAL_STORIES.
+
+export async function migrateGuestProgress(req, res) {
+  try {
+    const { stories, learnedWords } = req.body;
+    const userId = req.user._id;
+
+    if (stories !== undefined && !Array.isArray(stories))
+      return res.status(400).json({ message: "stories must be an array" });
+    if (
+      learnedWords !== undefined &&
+      (!Array.isArray(learnedWords) || !learnedWords.every((w) => typeof w === "string"))
+    )
+      return res.status(400).json({ message: "learnedWords must be an array of strings" });
+
+    for (const entry of stories ?? []) {
+      const { difficulty, storyId, results } = entry ?? {};
+      if (!difficulties.includes(difficulty)) continue;
+
+      const storyMeta = (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId);
+      if (!storyMeta) continue;
+      if (!Array.isArray(results)) continue;
+
+      for (const r of results) {
+        const { partNumber, correctAnswers, totalQuestions } = r ?? {};
+        const isValid =
+          typeof partNumber === "number" &&
+          partNumber >= 1 &&
+          partNumber <= FREE_TRIAL_STORIES &&
+          partNumber <= storyMeta.totalParts &&
+          typeof correctAnswers === "number" &&
+          typeof totalQuestions === "number" &&
+          totalQuestions > 0 &&
+          correctAnswers >= 0 &&
+          correctAnswers <= totalQuestions;
+
+        if (!isValid) continue; // skip anything out of trial bounds or malformed
+
+        await applyLevelCompletion({
+          userId,
+          difficulty,
+          storyId,
+          partNumber,
+          correctAnswers,
+          totalQuestions,
+          storyMeta,
+        });
+      }
+    }
+
+    let updatedUser;
+    if (learnedWords && learnedWords.length > 0) {
+      updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $addToSet: { learnedWords: { $each: learnedWords } } },
+        { new: true, select: "learnedWords totalListeningSeconds streak" }
+      );
+    } else {
+      updatedUser = await User.findById(userId).select(
+        "learnedWords totalListeningSeconds streak"
+      );
+    }
+
+    const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
+      countCompletedQuestions(userId),
+      countUniqueCompletedStories(userId),
+    ]);
+
+    await updateAchievements(userId, {
+      listeningSeconds: updatedUser?.totalListeningSeconds ?? 0,
+      questionsAnswered,
+      currentStreak: updatedUser?.streak?.current ?? 0,
+      uniqueStoriesCount,
+      wordsLearned: updatedUser?.learnedWords?.length ?? 0,
+    });
+
+    res.json({ migrated: true });
+  } catch (error) {
+    console.error("Migrate guest progress error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }
