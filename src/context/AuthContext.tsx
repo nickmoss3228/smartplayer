@@ -7,6 +7,12 @@ import {
   clearListeningTime,
 } from '../hooks/useListeningTimer';
 import {
+  hasGuestProgress,
+  buildGuestMigrationPayload,
+  clearGuestProgress,
+} from '../services/guestProgress';
+import { migrateGuestProgress } from '../services/guestProgressServices';
+import {
   User,
   AuthResult,
   AuthContextValue,
@@ -56,6 +62,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setTotalListeningSeconds(stats.listeningSeconds ?? 0);
     } catch (error) {
       console.error('Failed to seed listening time on login:', error);
+    }
+  };
+
+  // A guest who tried the free trial levels before signing up (or before
+  // logging into an existing account) has their level/quiz/vocab progress
+  // sitting in localStorage — fold it into the account here so they never
+  // have to redo the trial. Fire-and-forget: a migration failure must never
+  // block the sign-in/sign-up flow itself, and nothing is lost since the
+  // local copy is only cleared once the server confirms it was applied.
+  const migrateGuestProgressIfAny = async (token: string): Promise<void> => {
+    if (!hasGuestProgress()) return;
+    try {
+      await migrateGuestProgress(token, buildGuestMigrationPayload());
+      clearGuestProgress();
+      // Avoid the fire-and-forget progress prefetch below caching stale
+      // pre-migration data under the same keys Dashboard/List read from.
+      localStorage.removeItem('progressData');
+      localStorage.removeItem('progressCacheTime');
+    } catch (error) {
+      console.error('Failed to migrate guest progress:', error);
     }
   };
 
@@ -112,7 +138,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Failed to prefetch progress:', error);
         }
       }, 0);
-      
+
+      migrateGuestProgressIfAny(token);
+
       return { user, error: null };
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -160,7 +188,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.error('Failed to prefetch progress:', error);
         }
       }, 0);
-      
+
+      migrateGuestProgressIfAny(token);
+
       return { user, error: null };
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;

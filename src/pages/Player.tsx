@@ -23,6 +23,7 @@ import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
 import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabulary"
 import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
+import { saveGuestQuizResult } from "../services/guestProgress";
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -128,15 +129,6 @@ const Player = React.memo(() => {
           ? "daniel"
           : "leo");
 
-  // useEffect(() => {
-  //   const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
-  //   if (nextTrack) {
-  //     const audio = new Audio();
-  //     audio.preload = "auto";
-  //     audio.src = nextTrack.audio;
-  //   }
-  // }, [level, audioTracks]);
-
   useEffect(() => {
     const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
     if (!nextTrack) return;
@@ -191,9 +183,18 @@ const Player = React.memo(() => {
   // Replace handleQuizComplete in Player.tsx
   const handleQuizComplete = useCallback(
     async (results: QuizResults) => {
-      // Guest completed a trial track — no progress to save, just show results
+      // Guest completed a trial track — save locally so it isn't lost if
+      // they sign up later (AuthContext migrates this into their account).
       if (!user) {
         setQuizResults(results);
+        saveGuestQuizResult(
+          difficulty,
+          resolvedStorySlug,
+          level,
+          results.correctAnswers,
+          results.totalQuestions,
+          audioTracks.length,
+        );
         return;
       }
 
@@ -235,6 +236,7 @@ const Player = React.memo(() => {
       resolvedStorySlug,
       isSubmitting,
       refreshStoryProgress,
+      audioTracks,
     ],
   );
 
@@ -354,19 +356,3 @@ const allVocabWords = useMemo(() => {
 
 Player.displayName = "Player";
 export default Player;
-
-{
-  /* <h3 className="text-sm text-black">
-              Level {level} –{" "}
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} */
-}
-{
-  /* {storySlug && (
-                <span className="ml-1 text-black">
-                  · {storySlug.charAt(0).toUpperCase() + storySlug.slice(1)}'s Story
-                </span>
-              )} */
-}
-{
-  /* </h3> */
-}

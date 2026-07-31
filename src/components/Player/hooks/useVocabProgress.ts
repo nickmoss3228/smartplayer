@@ -3,18 +3,26 @@ import {
   fetchLearnedWords,
   submitLearnedWords,
 } from "../../../services/vocabProgressServices";
+import {
+  getGuestLearnedWords,
+  saveGuestLearnedWords,
+} from "../../../services/guestProgress";
 
 // Tracks which vocab words (by lowercased audioKey/word) the student has
 // ever correctly identified in a VocabQuiz — fetched once so chips in the
 // Player stay colored across visits, and pushed to the backend whenever a
 // new round finishes so it also drives the Dashboard's "Words Learned" stat.
+// For guests (no token), the same set persists to localStorage instead, so
+// it survives a reload and can be migrated into their account on signup.
 export function useVocabProgress(enabled: boolean) {
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!enabled) return;
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!enabled || !token) {
+      setLearnedWords(new Set(getGuestLearnedWords()));
+      return;
+    }
     fetchLearnedWords(token)
       .then((words) => setLearnedWords(new Set(words)))
       .catch(() => {});
@@ -29,7 +37,10 @@ export function useVocabProgress(enabled: boolean) {
     });
 
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      saveGuestLearnedWords(words);
+      return;
+    }
     submitLearnedWords(token, words).catch(() => {});
   }, []);
 

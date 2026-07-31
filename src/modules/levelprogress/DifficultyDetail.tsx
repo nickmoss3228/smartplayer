@@ -1,6 +1,8 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
+import { getGuestStoryProgress } from '../../services/guestProgress';
 import LevelProgress from '../../components/LevelProgress';
 import { getStoryGroup } from '../../types/storyGroups';
 import { DifficultySlug } from '../../types/storyGroups';
@@ -25,6 +27,7 @@ const DifficultyDetail = () => {
     storySlug: string;
   }>();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   // ← use new context shape
   const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
@@ -43,8 +46,11 @@ const DifficultyDetail = () => {
     return <Navigate to={`/levels/${diff}`} replace />;
   }
 
-  // Get story-level progress from the new context
+  // Get story-level progress from the new context — for guests this is
+  // always empty (ProgressContext never fetches without a user), so fall
+  // back to the locally-saved trial progress instead.
   const storyData = getStoryData(diff, resolvedSlug);
+  const guestStoryData = !user ? getGuestStoryProgress(diff, resolvedSlug) : null;
 
   if (isInitialLoad) {
     return (
@@ -61,8 +67,8 @@ const DifficultyDetail = () => {
       difficulty={diff}
       storySlug={resolvedSlug}
       storyTitle={storyGroup?.title}
-      completedLevels={storyData.completedParts}      // ← was diffData.completedLevels
-      currentLevel={storyData.currentPart}            // ← was diffData.currentLevel
+      completedLevels={guestStoryData ? guestStoryData.completedParts : storyData.completedParts}
+      currentLevel={guestStoryData ? guestStoryData.currentPart : storyData.currentPart}
       totalLevels={storyGroup?.totalTracks ?? storyData.totalParts}  // ← was diffData.totalLevels
       onRefresh={() => refreshStoryProgress(diff, resolvedSlug)}     // ← was refreshProgress(diff)
     />

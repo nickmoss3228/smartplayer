@@ -96,7 +96,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
-      const activeBtn = "bg-[#05df3bff] text-green border-green-500";
+      const activeBtn = "bg-gray-700/30 text-green border-green-500";
       const idleBtn = " text-white/90 ";
 
       return (

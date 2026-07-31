@@ -348,7 +348,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
           </div>
 
           {hasListenedFully && (
-            <div className="max-w-[1100px] mx-auto flex justify-center gap-2 mt-4">
+            <div className="max-w-[1100px] mx-auto flex justify-center pt-3 gap-3 mt-6">
               <button
                 onClick={onOpenQuiz}
                 className="px-5 py-2 rounded-lg text-sm font-semibold
