@@ -132,6 +132,22 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user, fetchAll]);
 
+  // AuthContext migrates a guest's local trial progress into the account via
+  // a fire-and-forget POST that resolves after the initial fetchAll() above
+  // has already run (and cached its now-stale result). Without this, List/
+  // LevelProgress would keep showing pre-migration data for the rest of the
+  // session even though Dashboard (which refetches on every mount) shows the
+  // correct, up-to-date state.
+  useEffect(() => {
+    const handleMigrated = () => {
+      if (!user) return;
+      hasFetched.current = false;
+      fetchAll();
+    };
+    window.addEventListener("guest-progress-migrated", handleMigrated);
+    return () => window.removeEventListener("guest-progress-migrated", handleMigrated);
+  }, [user, fetchAll]);
+
   // Called by Player after a quiz is submitted
   const refreshStoryProgress = useCallback(
     async (difficulty: string, storySlug: string) => {

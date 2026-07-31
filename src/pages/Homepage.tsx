@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import '../App.css';
 import { useTranslation } from 'react-i18next';
+import WhyCloudsSection from '../components/Homepage/WhyClouds/WhyCloudsSection';
 
 const Homepage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -54,10 +55,14 @@ const Homepage = () => {
 
 
       <div
-        className={`relative z-10 min-h-screen flex flex-col md:flex-row
+        className={`relative z-10 min-h-screen flex flex-col
           transition-all duration-1000 ease-out
           ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       >
+
+        <WhyCloudsSection />
+
+        <div className="flex-1 flex flex-col md:flex-row">
 
         {/* ── LEFT PANEL ── */}
 <div
@@ -152,6 +157,7 @@ const Homepage = () => {
             </p>
           </div>
 
+        </div>
         </div>
       </div>
     </div>

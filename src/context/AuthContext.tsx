@@ -80,6 +80,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // pre-migration data under the same keys Dashboard/List read from.
       localStorage.removeItem('progressData');
       localStorage.removeItem('progressCacheTime');
+      sessionStorage.removeItem('dashboardData');
+      // ProgressContext already ran its one-time post-login fetch before this
+      // migration finished, so its in-memory cache is now stale — tell it to
+      // refetch (List.tsx/LevelProgress.tsx read from that cache and would
+      // otherwise never see the migrated progress for the rest of the session).
+      window.dispatchEvent(new Event('guest-progress-migrated'));
     } catch (error) {
       console.error('Failed to migrate guest progress:', error);
     }

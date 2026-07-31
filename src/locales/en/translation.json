@@ -36,7 +36,49 @@
     "step3Title": "Pass the Quiz",
     "step3Desc": "Answer comprehension questions to prove you understood.",
     "step4Title": "Unlock the Next Story",
-    "step4Desc": "Every story earned is harder and richer than the last."
+    "step4Desc": "Every story earned is harder and richer than the last.",
+    "why": {
+      "sectionLabel": "The Questions You're Skipping",
+      "replay": "Replay",
+      "close": "Close",
+      "repetition": {
+        "cloud": "Why 3 repetitions?",
+        "title": "Repeat until it sticks",
+        "tag1": "1×",
+        "tag2": "2×",
+        "tag3": "3×",
+        "takeaway": "Repetition builds memory. Every method uses it — ours just makes it audible."
+      },
+      "speeds": {
+        "cloud": "Why 3 speeds?",
+        "title": "Speed hides the words",
+        "tagFast": "1.0×",
+        "tagMid": "0.7×",
+        "tagSlow": "0.4×",
+        "takeaway": "Slow down first. Speed up once you're sure."
+      },
+      "noSubtitles": {
+        "cloud": "Why no subtitles?",
+        "title": "Your eyes did the work",
+        "eyeLabel": "Eyes",
+        "earLabel": "Ears",
+        "takeaway": "If you could read it, you didn't have to listen."
+      },
+      "earsOnly": {
+        "cloud": "Why only my ears?",
+        "title": "Immersion, not grammar",
+        "leftLabel": "Can't spell it",
+        "rightLabel": "Understands it",
+        "takeaway": "Real fluency starts in the ear, not on the page."
+      },
+      "visualThinking": {
+        "cloud": "Why visual thinking?",
+        "title": "Skip the translation",
+        "viaTranslation": "chair → стол → chair",
+        "direct": "chair → chair",
+        "takeaway": "Translating doubles the work. See it — don't say it twice."
+      }
+    }
   },
   "list": {
   "title": "Title",
