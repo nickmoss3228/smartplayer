@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { IoCheckmark, IoClose, IoRocketOutline } from "react-icons/io5";
+import { IoCheckmark, IoClose, IoRocketOutline, IoLockClosedOutline } from "react-icons/io5";
 import { QuizProps } from "../../types/Quiz";
 import { useQuestionAudio } from "./useQuestionAudio";
 import QuestionAudioButton from "./QuestionAudioButton";
@@ -22,6 +22,7 @@ const Quiz: React.FC<QuizProps> = ({
   const [feedback, setFeedback] = useState<FeedbackState>("idle");
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [celebrate, setCelebrate] = useState(false);
+  const [hasListened, setHasListened] = useState(false);
   const { t } = useTranslation()
 
   const navigate = useNavigate();
@@ -31,6 +32,24 @@ const Quiz: React.FC<QuizProps> = ({
     fastSrc: currentQ.audio?.fast,
     slowSrc: currentQ.audio?.slow,
   });
+
+  // Only lock answers behind a listen if there's actually audio to listen to —
+  // a question with no audio source would otherwise be permanently unanswerable.
+  const requiresListen = !!currentQ.audio?.fast;
+
+  // Reset the listen-gate every time we move to a new question.
+  useEffect(() => {
+    setHasListened(false);
+  }, [currentQuestion]);
+
+  // Unlock once the question has actually finished playing at least once —
+  // "playing-fast" alone isn't enough, since a user could tap play and
+  // immediately try to answer before hearing anything.
+  useEffect(() => {
+    if (playState === "played-fast" || playState === "playing-slow" || playState === "played-slow") {
+      setHasListened(true);
+    }
+  }, [playState]);
 
   useEffect(() => {
     if (feedback === "idle") return;
@@ -51,6 +70,7 @@ const Quiz: React.FC<QuizProps> = ({
 
   const handleAnswer = (selectedOption: number) => {
     if (selectedAnswer !== null || feedback !== "idle") return;
+    if (requiresListen && !hasListened) return;
     stop();
     setSelectedAnswer(selectedOption);
     const newAnswers = [...userAnswers];
@@ -90,6 +110,7 @@ const Quiz: React.FC<QuizProps> = ({
     setUserAnswers([]);
     setFeedback("idle");
     setCelebrate(false);
+    setHasListened(false);
   };
 
   const handleReturn = () => {
@@ -100,6 +121,8 @@ const Quiz: React.FC<QuizProps> = ({
   const progressPercentage = (currentQuestion / questions.length) * 100;
   const finalPercentage = Math.round((score / questions.length) * 100);
 
+  const isLocked = requiresListen && !hasListened;
+
   // ── Option button styles ──────────────────────────────────────────────────
   const getOptionClasses = (index: number) => {
     const base =
@@ -107,6 +130,9 @@ const Quiz: React.FC<QuizProps> = ({
       "w-full p-3 sm:p-4 text-left rounded-xl border-2 font-medium transition-all duration-200 flex items-center gap-2 sm:gap-3 group";
 
     if (feedback === "idle" || selectedAnswer === null) {
+      if (isLocked) {
+        return `${base} bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed`;
+      }
       return `${base} bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer`;
     }
     if (selectedAnswer === index) {
@@ -126,6 +152,13 @@ const Quiz: React.FC<QuizProps> = ({
       "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 transition-all duration-200";
 
     if (feedback === "idle" || selectedAnswer === null) {
+      if (isLocked) {
+        return (
+          <span className={`${baseIcon} bg-gray-100 text-gray-400`}>
+            <IoLockClosedOutline size={13} />
+          </span>
+        );
+      }
       return (
         <span className={`${baseIcon} bg-gray-100 text-gray-500 group-hover:bg-indigo-100 group-hover:text-indigo-600`}>
           {letter}
@@ -154,7 +187,7 @@ const Quiz: React.FC<QuizProps> = ({
 
   if (!showResults) {
     return (
-      <div className="w-full mx-auto mt-4 bg-white/60 rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full mx-auto bg-white/60 rounded-2xl shadow-xl overflow-hidden">
 
         {/* Progress bar */}
         <div className="h-1.5 bg-gray-100 w-full">
@@ -177,21 +210,15 @@ const Quiz: React.FC<QuizProps> = ({
             </span>
           </div>
 
-          {/* Audio button */}
-          <QuestionAudioButton
-            playState={playState}
-            onPress={handlePress}
-            hasAudio={!!currentQ.audio}
-          />
-
-          {/* Options — ↓ gap-2 on mobile, gap-3 on sm+  |  mb-5 on mobile, mb-8 on sm+ */}
+          {/* Options — locked until the question has been listened to at least
+              once (when it has audio) — ↓ gap-2 on mobile, gap-3 on sm+  |  mb-5 on mobile, mb-8 on sm+ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-5 sm:mb-8">
             {currentQ.options.map((option, index) => (
               <button
                 key={index}
                 className={getOptionClasses(index)}
                 onClick={() => handleAnswer(index)}
-                disabled={selectedAnswer !== null || isSubmitting}
+                disabled={selectedAnswer !== null || isSubmitting || isLocked}
               >
                 {getOptionIcon(index)}
                 {/* ↓ text-sm on mobile, text-base on sm+ */}
@@ -201,6 +228,20 @@ const Quiz: React.FC<QuizProps> = ({
               </button>
             ))}
           </div>
+
+          {/* Audio button — kept below the options so it's within easy thumb
+              reach on mobile (QuestionAudioButton has its own bottom margin) */}
+          <QuestionAudioButton
+            playState={playState}
+            onPress={handlePress}
+            hasAudio={!!currentQ.audio}
+          />
+          {isLocked && (
+            <p className="flex items-center gap-1.5 text-xs text-gray-400 mb-4 sm:mb-6">
+              <IoLockClosedOutline size={13} />
+              {t('quiz.listenFirst')}
+            </p>
+          )}
 
           {/* Feedback banner — ↓ mb-4 on mobile, mb-6 on sm+  |  tighter padding on mobile */}
           <div

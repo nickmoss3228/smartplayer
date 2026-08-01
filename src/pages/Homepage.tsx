@@ -60,42 +60,39 @@ const Homepage = () => {
           ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       >
 
+        {/* ── HEADER: eyebrow + title, full width, above the clouds so the
+              questions get the visual spotlight right below it ── */}
+        <div className="px-8 sm:px-12 md:px-20 lg:px-32 pt-18 sm:pt-6 md:pt-18 text-center">
+          <p className="text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-3 sm:mb-4">
+            {t('homepage.eyebrow')}
+          </p>
+
+          {/* Stacks on mobile (where 3 short lines read better) but flows as
+              one line at md+ so the huge hero title doesn't dominate the
+              page height now that the clouds are meant to be the centerpiece. */}
+          <h1
+            className="text-4xl sm:text-6xl md:text-6xl lg:text-7xl
+              font-black text-black leading-none tracking-tighter"
+          >
+            <span className="block md:inline">The</span>{' '}
+            <span className="block md:inline">Infinity</span>{' '}
+            <span className="block md:inline">Player</span>
+          </h1>
+        </div>
+
         <WhyCloudsSection />
 
-        <div className="flex-1 flex flex-col md:flex-row">
+        {/* ── Everything below the clouds stays in one centered column
+              instead of a left/right split, and "how it works" runs as a
+              compact horizontal row (rather than a tall vertical list) so
+              the whole page has a shot at fitting without a scrollbar on
+              typical desktop viewports ── */}
+        <div className="flex flex-col items-center px-8 sm:px-12 md:px-16 pt-2 pb-6 sm:pt-2 sm:pb-4">
 
-        {/* ── LEFT PANEL ── */}
-<div
-  className="flex-1 flex flex-col justify-between
-    p-8
-    sm:p-12
-    md:py-16 md:pr-16 md:pl-32
-    lg:py-20 lg:pr-20 lg:pl-40
-    mt-12
-    border-b md:border-b-0 md:border-r border-gray-200"
->
-          <div>
-            <p className="text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-12 sm:mb-16">
-              {t('homepage.eyebrow')}
-            </p>
-
-            <h1
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl
-                font-black text-black leading-none tracking-tighter mb-6"
-            >
-              The<br />Infinity<br />Player
-            </h1>
-
-            <p className="text-sm text-gray-500 leading-relaxed max-w-xs mb-12">
-              {t('homepage.tagline')}
-            </p>
-          </div>
-
-          {/* Buttons anchored to bottom of left panel */}
-          <div className="flex flex-col gap-3 max-w-xs">
+          <div className="flex flex-col gap-2 w-full max-w-xs md:gap-3">
             <Link to="/levels">
               <button
-                className="w-full py-4 bg-black text-white
+                className="w-full py-3 bg-black text-white
                   font-bold text-sm tracking-[0.2em] uppercase
                   hover:bg-gray-800 transition-colors cursor-pointer"
               >
@@ -104,7 +101,7 @@ const Homepage = () => {
             </Link>
             <Link to="/how-to-use">
               <button
-                className="w-full py-4 border border-gray-300 text-black
+                className="w-full py-3 border border-gray-300 text-black
                   font-bold text-sm tracking-[0.2em] uppercase
                   hover:border-black transition-colors cursor-pointer"
               >
@@ -121,43 +118,35 @@ const Homepage = () => {
               </p>
             </Link>
           </div>
-        </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div className="flex-1 flex flex-col justify-center p-8 sm:p-12 md:p-16 lg:p-20">
+          {/* "How it works" — compact horizontal row on sm+, stacked on mobile */}
+          <div className="w-full max-w-4xl mt-6 sm:mt-4 pt-6">
+            <p className="text-center text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-2 sm:mb-3">
+              {t('homepage.howItWorks')}
+            </p>
 
-          <p className="text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-10">
-            {t('homepage.howItWorks')}
-          </p>
-
-          {/* Steps list */}
-          <div>
-            {steps.map((s, i) => (
-              <div
-                key={i}
-                className={`flex gap-6 py-6
-                  ${i < steps.length - 1 ? 'border-b border-gray-100' : ''}`}
-              >
-                <span className="flex-shrink-0 text-[9px] tracking-[0.3em] text-gray-300 font-bold pt-0.5">
-                  {s.num}
-                </span>
-                <div>
-                  <h3 className="font-bold text-black text-base mb-1">{s.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+              {steps.map((s, i) => (
+                <div
+                  key={i}
+                  className="text-center md:text-left md:border-l md:border-gray-100 md:pl-4 md:first:border-l-0 md:first:pl-0"
+                >
+                  <span className="text-[9px] tracking-[0.3em] text-gray-300 font-bold">{s.num}</span>
+                  <h3 className="font-bold text-black text-sm mt-1 mb-1">{s.title}</h3>
+                  <p className="text-xs text-gray-500 leading-snug">{s.desc}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* "No subtitles" badge */}
-          <div className="mt-10 flex items-center gap-3 border border-gray-200 px-4 py-3 self-start">
+          <div className="mt-3 sm:mt-2 flex items-center gap-3 border border-gray-200 px-4 py-1.5">
             <div className="w-2 h-2 bg-black rounded-full flex-shrink-0" />
             <p className="text-[9px] tracking-[0.3em] uppercase text-gray-500 font-bold">
               {t('homepage.badge')}
             </p>
           </div>
 
-        </div>
         </div>
       </div>
     </div>

@@ -53,13 +53,13 @@
         "cloud": "Why 3 speeds?",
         "title": "Speed hides the words",
         "tagFast": "1.0×",
-        "tagMid": "0.7×",
-        "tagSlow": "0.4×",
+        "tagMid": "0.8×",
+        "tagSlow": "0.5×",
         "takeaway": "Slow down first. Speed up once you're sure."
       },
       "noSubtitles": {
         "cloud": "Why no subtitles?",
-        "title": "Your eyes did the work",
+        "title": "Your eyes did the work, not the ears",
         "eyeLabel": "Eyes",
         "earLabel": "Ears",
         "takeaway": "If you could read it, you didn't have to listen."
@@ -68,13 +68,13 @@
         "cloud": "Why only my ears?",
         "title": "Immersion, not grammar",
         "leftLabel": "Can't spell it",
-        "rightLabel": "Understands it",
+        "rightLabel": "Understand it",
         "takeaway": "Real fluency starts in the ear, not on the page."
       },
       "visualThinking": {
         "cloud": "Why visual thinking?",
         "title": "Skip the translation",
-        "viaTranslation": "chair → стол → chair",
+        "viaTranslation": "chair → 'стул' → chair",
         "direct": "chair → chair",
         "takeaway": "Translating doubles the work. See it — don't say it twice."
       }
@@ -143,6 +143,7 @@
     "tryagain": "Try Again",
     "correctanswers": "Correct Answers",
     "incorrectanswers": "Incorrect Answers",
+    "listenFirst": "Listen to the question to unlock the answers",
     "audio": {
       "playQuestion": "Play Question",
       "playing": "Playing...",

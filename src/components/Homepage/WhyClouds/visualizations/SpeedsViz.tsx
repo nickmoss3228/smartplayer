@@ -5,11 +5,10 @@ import { useTranslation } from 'react-i18next';
 const WORDS = ['What', 'do', 'you', 'want', 'to', 'do', 'tonight'];
 const BEAT_MS = 1000;
 
-const STAGE_STYLE = [
-  { gap: '0em', blur: 4 },
-  { gap: '0.12em', blur: 1.5 },
-  { gap: '0.35em', blur: 0 },
-];
+// Word/letter spacing alone conveys "mashed together → legible" — earlier
+// this also animated `filter: blur()`, but that forces a per-frame GPU blur
+// recompute and was the main cause of choppiness on mobile (iPhone 12).
+const STAGE_GAP = ['0em', '0.12em', '0.35em'];
 
 const SpeedsViz = () => {
   const { t } = useTranslation();
@@ -18,7 +17,7 @@ const SpeedsViz = () => {
 
   useEffect(() => {
     if (shouldReduceMotion) return;
-    const timers = [1, 2].map((s) => setTimeout(() => setStage(s), s * BEAT_MS));
+    const timers = [1, 2  ].map((s) => setTimeout(() => setStage(s), s * BEAT_MS));
     return () => timers.forEach(clearTimeout);
   }, [shouldReduceMotion]);
 
@@ -27,12 +26,12 @@ const SpeedsViz = () => {
     t('homepage.why.speeds.tagMid'),
     t('homepage.why.speeds.tagSlow'),
   ];
-  const current = STAGE_STYLE[stage];
+  const currentGap = STAGE_GAP[stage];
 
   return (
     <div className="flex flex-col items-center gap-6 text-center">
       <motion.div
-        animate={{ gap: current.gap, filter: `blur(${current.blur}px)` }}
+        animate={{ gap: currentGap }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
         className="flex flex-wrap justify-center text-lg sm:text-xl font-bold text-gray-800"
       >

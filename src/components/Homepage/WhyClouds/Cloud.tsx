@@ -4,54 +4,60 @@ interface CloudProps {
   label: string;
   index: number;
   onClick: () => void;
+  isPaused?: boolean;
 }
 
-// Blurred blob pairs, one per cloud, cycling through a soft pastel set.
-const BLOB_PALETTES: [string, string][] = [
-  ['from-sky-200 to-blue-300', 'from-indigo-200 to-purple-300'],
-  ['from-rose-200 to-pink-300', 'from-orange-200 to-amber-300'],
-  ['from-emerald-200 to-teal-300', 'from-cyan-200 to-sky-300'],
-  ['from-violet-200 to-fuchsia-300', 'from-blue-200 to-indigo-300'],
-  ['from-amber-200 to-orange-300', 'from-pink-200 to-rose-300'],
+// Blob color pairs, one per cloud, cycling through a soft pastel set.
+// Rendered as radial-gradient fades rather than a solid shape + `blur()` —
+// `filter: blur()` forces a per-frame GPU blur pass on the element (and is
+// especially costly on mobile Safari), whereas a gradient with a transparent
+// edge is just a paint, no filter, so it composites for free alongside the
+// bob animation below. Confirmed via user report: original blur-based
+// version was smooth on desktop but choppy on an iPhone 12.
+const BLOB_COLORS: [string, string][] = [
+  ['#bae6fd', '#c7d2fe'], // sky -> indigo
+  ['#fecdd3', '#fed7aa'], // rose -> orange
+  ['#a7f3d0', '#a5f3fc'], // emerald -> cyan
+  ['#ddd6fe', '#bfdbfe'], // violet -> blue
+  ['#fde68a', '#fbcfe8'], // amber -> pink
 ];
 
-const Cloud: React.FC<CloudProps> = ({ label, index, onClick }) => {
+const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
   const shouldReduceMotion = useReducedMotion();
-  const [blobA, blobB] = BLOB_PALETTES[index % BLOB_PALETTES.length];
+  const [colorA, colorB] = BLOB_COLORS[index % BLOB_COLORS.length];
   const bobDuration = 5 + (index % 3) * 0.6;
   const bobDelay = index * 0.35;
+  const bobbing = !shouldReduceMotion && !isPaused;
 
   return (
     <motion.div
-      className="relative w-36 h-24 sm:w-44 sm:h-28 flex items-center justify-center"
-      animate={shouldReduceMotion ? undefined : { y: [0, -10, 0] }}
+      className="relative w-32 h-20 sm:w-48 sm:h-32 flex items-center justify-center"
+      style={{ willChange: 'transform' }}
+      animate={bobbing ? { y: [0, -10, 0] } : { y: 0 }}
       transition={
-        shouldReduceMotion
-          ? undefined
-          : {
-              duration: bobDuration,
-              delay: bobDelay,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }
+        bobbing
+          ? { duration: bobDuration, delay: bobDelay, repeat: Infinity, ease: 'easeInOut' }
+          : { duration: 0.3 }
       }
     >
-      {/* Decorative blurred blob cluster — reads as a cloud/smoke puff.
+      {/* Decorative gradient blob cluster — reads as a cloud/smoke puff.
           Deliberately NOT wrapped in overflow-hidden so the button's own
           hover/focus glow below is never invisibly clipped. */}
       <div
         aria-hidden
-        className={`absolute -top-2 left-2 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${blobA} blur-2xl opacity-60 pointer-events-none`}
+        className="absolute -top-2 left-2 w-24 h-24 sm:w-28 sm:h-28 rounded-full opacity-70 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${colorA} 0%, ${colorA}00 72%)` }}
       />
       <div
         aria-hidden
-        className={`absolute -bottom-2 right-2 w-24 h-20 sm:w-28 sm:h-24 rounded-full bg-gradient-to-br ${blobB} blur-3xl opacity-50 pointer-events-none`}
+        className="absolute -bottom-2 right-2 w-28 h-24 sm:w-32 sm:h-28 rounded-full opacity-60 pointer-events-none"
+        style={{ background: `radial-gradient(circle, ${colorB} 0%, ${colorB}00 72%)` }}
       />
 
       <button
         type="button"
         onClick={onClick}
-        className="relative z-10 px-4 py-3 max-w-[10rem] text-center text-xs sm:text-sm font-semibold text-gray-700
+        className="relative z-10 px-3 py-2.5 sm:px-4 sm:py-3 max-w-[9.5rem] sm:max-w-[11rem] text-center text-xs sm:text-sm font-semibold text-gray-700
           hover:text-black hover:scale-105 focus-visible:scale-105 focus-visible:outline-none
           focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400
           transition-transform duration-200 cursor-pointer rounded-2xl"

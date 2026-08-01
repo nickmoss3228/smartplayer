@@ -19,18 +19,19 @@ const WhyCloudsSection = () => {
   const handleReplay = () => setPlayKey((k) => k + 1);
 
   return (
-    <section className="relative z-10 px-6 pt-14 pb-6 sm:pt-16 sm:pb-8">
-      <p className="text-center text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-6 sm:mb-8">
+    <section className="relative z-10 px-6 pt-4 pb-1 sm:pt-5 sm:pb-1">
+      {/* <p className="text-center text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-2 sm:mb-3">
         {t('homepage.why.sectionLabel')}
-      </p>
+      </p> */}
 
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-8 sm:gap-y-4 max-w-3xl mx-auto">
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 sm:gap-x-6 sm:gap-y-0 max-w-3xl mx-auto">
         {whyQuestions.map((q, i) => (
           <Cloud
             key={q.id}
             index={i}
             label={t(`homepage.why.${q.id}.cloud`)}
             onClick={() => handleOpen(q.id)}
+            isPaused={active !== null}
           />
         ))}
       </div>

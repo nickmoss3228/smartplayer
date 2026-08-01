@@ -81,7 +81,7 @@ const NoSubtitlesViz = () => {
               key="subtitle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, filter: 'blur(4px)' }}
+              exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.5 }}
               className="text-sm text-gray-500 italic border-b border-dashed border-gray-300 pb-1"
             >

@@ -219,6 +219,20 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     return (
       <div className="flex flex-col items-center w-full gap-2">
         <div className="flex items-end justify-between w-full">
+          {/* ── HELP ── */}
+          <div className="flex flex-col items-center gap-1 min-w-[80px]">
+            <button
+              onClick={onOpenHelp}
+              aria-label={t("controls.help", "Help")}
+              className="flex items-center justify-center rounded-full w-10 h-10
+                bg-black/90 hover:bg-black/50 text-white
+                transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+            >
+              <IoHelpCircle className="w-6 h-6" />
+            </button>
+            <span className={labelClass}>{t("controls.help", "Help")}</span>
+          </div>
+
           {/* ── LEFT SLOT: circular comics button ── */}
           <div
             className="flex flex-col items-center gap-1 min-w-[80px]"
@@ -246,13 +260,13 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               {[3, 2, 1].map((count) => (
                 <button
                   key={count}
-                  className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
+                  className={`rounded-full w-10 h-10 flex items-center justify-center
                     cursor-pointer text-xs font-medium font-['Montserrat']
                     transition-all duration-200 active:scale-95
                     ${
                       repeatCount === count
-                        ? "bg-[#05df3bff] text-black border-green-500"
-                        : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                        ? "bg-[#05df3bff] text-black"
+                        : "bg-black/90 text-white/90 hover:bg-black/50"
                     }`}
                   onClick={() => onRepeatCountChange(count)}
                   title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
@@ -304,14 +318,14 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 <button
                   key={speed}
                   disabled={!isEnhancedMode}
-                  className={`border-2 rounded-full w-10 h-10 flex items-center justify-center
+                  className={`rounded-full w-10 h-10 flex items-center justify-center
       cursor-pointer text-xs font-medium font-['Montserrat']
       transition-all duration-200 active:scale-95
       disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
       ${
         playbackRate === speed
-          ? "bg-[#05df3bff] text-black border-green-500"
-          : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+          ? "bg-[#05df3bff] text-black"
+          : "bg-black/90 text-white/90 hover:bg-black/50"
       }`}
                   onClick={() => onSpeedChange(speed)}
                 >
@@ -341,56 +355,3 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 );
 
 PlayerControls.displayName = "PlayerControls";
-
-// import { MdReplay } from "react-icons/md";
-
-{
-  /* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
-              <button
-                className={`p-2 border-2 rounded-full cursor-pointer transition-all active:scale-95 flex items-center justify-center
-                  ${
-                    isControlledMode
-                      ? "bg-[#05df3bff] border-green-500"
-                      : "bg-black/90 border-[#ddd]"
-                  }`}
-                onClick={onToggleControlledMode}
-                title={
-                  isControlledMode
-                    ? "Controlled mode ON — stops after each segment"
-                    : "Controlled mode OFF — plays continuously"
-                }
-                aria-label="Toggle step mode"
-              >
-                <MdReplay className="text-white w-6 h-6" />
-              </button>
-              <span className={labelClass}>Step</span>
-            </div> */
-}
-
-{
-  /* <div className={`flex flex-col items-center gap-1 ${disabledClass}`}>
-                <button
-                  className={`p-2 border-2 rounded-full cursor-pointer
-                    transition-all duration-200 active:scale-95 flex items-center justify-center
-                    ${isControlledMode
-                      ? "bg-[#05df3bff] border-green-500 hover:bg-[#04c934]"
-                      : "bg-black/90 border-[#ddd] hover:bg-black/50"
-                    }`}
-                  onClick={onToggleControlledMode}
-                  title={isControlledMode
-                    ? "Controlled mode ON — stops after each segment"
-                    : "Controlled mode OFF — plays continuously"}
-                > */
-}
-{
-  /* <MdReplay className="text-white w-[30px] h-[30px]" /> */
-}
-{
-  /* </button> */
-}
-{
-  /* <span className={labelClass}>Step</span> */
-}
-{
-  /* </div> */
-}

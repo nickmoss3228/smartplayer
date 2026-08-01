@@ -182,7 +182,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const feedback = usePausableModal(wavesurfer, setIsEnhancedSessionActive);
 
     return (
-      <div className="waveform-overlay">
+      <div className="waveform-overlay h-full min-h-0">
         <div className="md:hidden flex flex-col h-full min-h-0">
           {/* MIDDLE ZONE — scrollable content, no more huge bottom padding */}
           <div className="flex-1 min-h-0 flex flex-col gap-1 px-4 overflow-y-auto">
@@ -270,20 +270,20 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             />
 
             {hasListenedFully && (
-              <div className="flex justify-center gap-2 mt-3">
+              <div className="flex justify-center gap-2 mt-6">
                 <button
                   onClick={onOpenQuiz}
                   className="px-5 py-2 rounded-lg text-sm font-semibold
-                   bg-blue-600/90 text-white shadow-lg backdrop-blur-sm
-                   hover:bg-blue-600 transition-all duration-200 active:scale-95"
+                   bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                   hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
                 >
                   {t("player.quiz-incomp")}
                 </button>
                 <button
                   onClick={onOpenVocabQuiz}
                   className="px-5 py-2 rounded-lg text-sm font-semibold
-                   bg-purple-600/90 text-white shadow-lg backdrop-blur-sm
-                   hover:bg-purple-600 transition-all duration-200 active:scale-95"
+                   bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                   hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
                 >
                   {t("player.vocab-quiz")}
                 </button>
@@ -329,6 +329,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               storyIndex={Number(trackId)}
               comicsTitle={storyTitles[Number(trackId)]}
               difficulty={difficulty}
+              onOpenHelp={help.open}
             />
             <VolumeControl
               isMuted={isMuted}
@@ -336,15 +337,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               onMuteToggle={handleMuteToggle}
               onVolumeChange={handleVolumeChange}
             />
-
-            <button
-              onClick={help.open}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg
-             bg-red-500 hover:bg-red-600 text-white text-sm font-semibold
-             transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer shadow-sm"
-            >
-              Help!
-            </button>
           </div>
 
           {hasListenedFully && (
@@ -352,16 +344,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               <button
                 onClick={onOpenQuiz}
                 className="px-5 py-2 rounded-lg text-sm font-semibold
-                 bg-blue-600/90 text-white shadow-lg backdrop-blur-sm
-                 hover:bg-blue-600 transition-all duration-200 active:scale-95"
+                 bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                 hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
               >
                 {t("player.quiz-incomp")}
               </button>
               <button
                 onClick={onOpenVocabQuiz}
                 className="px-5 py-2 rounded-lg text-sm font-semibold
-                 bg-purple-600/90 text-white shadow-lg backdrop-blur-sm
-                 hover:bg-purple-600 transition-all duration-200 active:scale-95"
+                 bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                 hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
               >
                 {t("player.vocab-quiz")}
               </button>

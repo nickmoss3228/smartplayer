@@ -25,6 +25,20 @@ import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
 import { saveGuestQuizResult } from "../services/guestProgress";
 
+// Whether a track's "Take the quiz" / "Vocab quiz" buttons should stay
+// unlocked persists across visits (not just the current session) once the
+// student has heard the whole track once — otherwise navigating away and
+// back would make them re-listen just to see the buttons again.
+const getListenedKey = (difficulty: string, storySlug: string, level: number) =>
+  `listenedFully_${difficulty}_${storySlug}_${level}`;
+
+const hasListenedFullyStored = (difficulty: string, storySlug: string, level: number): boolean =>
+  localStorage.getItem(getListenedKey(difficulty, storySlug, level)) === "true";
+
+const markListenedFullyStored = (difficulty: string, storySlug: string, level: number): void => {
+  localStorage.setItem(getListenedKey(difficulty, storySlug, level), "true");
+};
+
 const Player = React.memo(() => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -74,8 +88,11 @@ const Player = React.memo(() => {
     setShowFeedback(false);
   }, []);
 
-  // tracks whether the student has listened to the full audio
-  const [hasListenedFully, setHasListenedFully] = useState(true);
+  // tracks whether the student has listened to the full audio — seeded from
+  // localStorage so returning to a finished track keeps the quiz buttons visible
+  const [hasListenedFully, setHasListenedFully] = useState(() =>
+    hasListenedFullyStored(difficulty, storySlug, level),
+  );
 
   // Push accumulated listening time to the backend while actually on the
   // player, not just when the Dashboard happens to be open.
@@ -97,13 +114,14 @@ const Player = React.memo(() => {
 
   const theme = themes[difficulty] || themes.easy;
 
-  // Reset audio gate whenever the level changes
+  // Reset per-track UI state whenever the level changes, but restore the
+  // listened-gate from storage instead of always relocking it.
   useEffect(() => {
     setSelectedTrackId(level.toString());
     setShowQuiz(false);
     setQuizResults(null);
-    setHasListenedFully(false);
-  }, [level]);
+    setHasListenedFully(hasListenedFullyStored(difficulty, storySlug, level));
+  }, [level, difficulty, storySlug]);
 
   useEffect(() => {
     // Route layer (TrackProtectedRoute) already blocks guests on tracks > FREE_TRIAL_STORIES.
@@ -178,7 +196,8 @@ const Player = React.memo(() => {
   // called by WaveformPlayer when the track ends
   const handleAudioComplete = useCallback(() => {
     setHasListenedFully(true);
-  }, []);
+    markListenedFullyStored(difficulty, storySlug, level);
+  }, [difficulty, storySlug, level]);
 
   // Replace handleQuizComplete in Player.tsx
   const handleQuizComplete = useCallback(
@@ -309,7 +328,7 @@ const allVocabWords = useMemo(() => {
 
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
-            <div className="flex-1 min-h-0 overflow-y-auto pb-[180px]">
+            <div className="flex-1 min-h-0 overflow-y-auto pb-[180px] flex flex-col justify-center">
               <Quiz
                 onTimeJump={handleTimeJump}
                 questions={audioTrack.quiz}
