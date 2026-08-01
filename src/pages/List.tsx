@@ -59,6 +59,8 @@ const difficultyThemes: Record<DifficultySlug, {
 type SortKey = 'title' | 'topic' | 'progress';
 type SortDir = 'asc' | 'desc';
 
+const categoryOrder: StoryGroup['category'][] = ['general', 'news'];
+
 const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
   const navigate = useNavigate();
@@ -138,6 +140,18 @@ const List = () => {
     return result;
   }, [stories, search, topicFilter, sortKey, sortDir, getStoryData, diff]);
 
+  const groupedStories = useMemo(() => {
+    const byCategory = new Map<StoryGroup['category'], StoryGroup[]>();
+    for (const story of sortedFilteredStories) {
+      const list = byCategory.get(story.category) ?? [];
+      list.push(story);
+      byCategory.set(story.category, list);
+    }
+    return categoryOrder
+      .filter(cat => byCategory.has(cat))
+      .map(cat => ({ category: cat, stories: byCategory.get(cat)! }));
+  }, [sortedFilteredStories]);
+
   const SortIcon = ({ col }: { col: SortKey }) => {
     if (sortKey !== col) return <span className="text-gray-300 ml-1">↕</span>;
     return (
@@ -146,6 +160,175 @@ const List = () => {
       </span>
     );
   };
+
+  const renderRow = (story: StoryGroup, index: number, list: StoryGroup[]) => {
+    const { completed, total, percentage } = getStoryProgress(story);
+    const isCompleted = percentage === 100;
+    const topic = (story as any).topic as string | undefined;
+    const duration = (story as any).duration as string | undefined;
+    const borderClass = index !== list.length - 1 ? 'border-b border-gray-100' : '';
+
+    return (
+      <div
+        key={story.slug}
+        onClick={() => navigate(`/levels/${diff}/${story.slug}`)}
+        className={`cursor-pointer transition-colors duration-150 ${theme.rowHover} ${borderClass}`}
+      >
+
+        {/* ── MOBILE layout ── */}
+        <div className="sm:hidden flex items-center gap-3 px-4 py-4">
+
+          {/* Circular progress indicator */}
+          <div className="relative shrink-0 w-11 h-11">
+            <svg viewBox="0 0 40 40" className="w-11 h-11 -rotate-90">
+              <circle
+                cx="20"
+                cy="20"
+                r="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="text-gray-100"
+              />
+              <circle
+                cx="20"
+                cy="20"
+                r="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 16}
+                strokeDashoffset={2 * Math.PI * 16 * (1 - percentage / 100)}
+                className={`${theme.textColor} transition-all duration-500`}
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              {isCompleted ? (
+                <IoCheckmarkCircle size={16} className={theme.textColor} />
+              ) : (
+                <span className="text-[10px] font-semibold text-gray-500">
+                  {percentage}%
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 leading-snug truncate">
+              {story.title}
+            </p>
+
+            {story.description && (
+              <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
+                {story.description}
+              </p>
+            )}
+
+            <div className="flex items-center gap-1.5 mt-2">
+              {topic && (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${theme.badgeBg}`}
+                >
+                  <IoPricetagOutline size={11} />
+                  {topic}
+                </span>
+              )}
+              {duration && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px]">
+                  <IoTimeOutline size={11} />
+                  {duration}
+                </span>
+              )}
+              <span className="text-[11px] text-gray-400 ml-auto">
+                {completed}/{total}
+              </span>
+            </div>
+          </div>
+
+          <IoChevronForward size={16} className="text-gray-300 shrink-0" />
+        </div>
+
+        {/* ── DESKTOP layout ── */}
+        <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-1 px-5 py-4">
+          {/* Title + description */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-800 truncate">
+                {story.title}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {story.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Topic */}
+          <div className="flex items-center">
+            {topic ? (
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${theme.badgeBg}`}>
+                {topic}
+              </span>
+            ) : (
+              <span className="text-xs text-gray-300">—</span>
+            )}
+          </div>
+
+          {/* Progress */}
+          <div className="flex items-center gap-2">
+            {isCompleted ? (
+              <IoCheckmarkCircle size={16} className={theme.textColor} />
+            ) : (
+              <IoEllipseOutline size={16} className="text-gray-300" />
+            )}
+            <div className="flex-1">
+              <div className="flex justify-between mb-1">
+                <span className="text-xs text-gray-400">{completed}/{total}</span>
+                <span className={`text-xs font-semibold ${theme.textColor}`}>
+                  {percentage}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${theme.progressColor} rounded-full transition-all duration-500`}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  };
+
+  const TableHeader = () => (
+    <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+      <button
+        onClick={() => handleSort('title')}
+        className="flex items-center text-left hover:text-gray-600 transition-colors"
+      >
+        <IoBookOutline size={13} className="mr-1.5" />
+        {t(`list.title`)}
+        <SortIcon col="title" />
+      </button>
+      <button
+        onClick={() => handleSort('topic')}
+        className="flex items-center hover:text-gray-600 transition-colors"
+      >
+        {t(`list.topic`)}
+        <SortIcon col="topic" />
+      </button>
+      <button
+        onClick={() => handleSort('progress')}
+        className="flex items-center hover:text-gray-600 transition-colors"
+      >
+        {t(`list.progress`)}
+        <SortIcon col="progress" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -210,188 +393,29 @@ const List = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-          {/* ── Desktop table header ── */}
-          <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            <button
-              onClick={() => handleSort('title')}
-              className="flex items-center text-left hover:text-gray-600 transition-colors"
-            >
-              <IoBookOutline size={13} className="mr-1.5" />
-              {t(`list.title`)}
-              <SortIcon col="title" />
-            </button>
-            <button
-              onClick={() => handleSort('topic')}
-              className="flex items-center hover:text-gray-600 transition-colors"
-            >
-              {t(`list.topic`)}
-              <SortIcon col="topic" />
-            </button>
-            <button
-              onClick={() => handleSort('progress')}
-              className="flex items-center hover:text-gray-600 transition-colors"
-            >
-              {t(`list.progress`)}
-              <SortIcon col="progress" />
-            </button>
-          </div>
-
-          {/* Rows */}
-          {sortedFilteredStories.length > 0 ? (
-            sortedFilteredStories.map((story, index) => {
-              const { completed, total, percentage } = getStoryProgress(story);
-              const isCompleted = percentage === 100;
-              const topic = (story as any).topic as string | undefined;
-              const duration = (story as any).duration as string | undefined;
-              const borderClass =
-                index !== sortedFilteredStories.length - 1
-                  ? 'border-b border-gray-100'
-                  : '';
-
-              return (
-                <div
-                  key={story.slug}
-                  onClick={() => navigate(`/levels/${diff}/${story.slug}`)}
-                  className={`cursor-pointer transition-colors duration-150 ${theme.rowHover} ${borderClass}`}
-                >
-
-                  {/* ── MOBILE layout ── */}
-                  <div className="sm:hidden flex items-center gap-3 px-4 py-4">
-
-                    {/* Circular progress indicator */}
-                    <div className="relative shrink-0 w-11 h-11">
-                      <svg viewBox="0 0 40 40" className="w-11 h-11 -rotate-90">
-                        <circle
-                          cx="20"
-                          cy="20"
-                          r="16"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          className="text-gray-100"
-                        />
-                        <circle
-                          cx="20"
-                          cy="20"
-                          r="16"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 16}
-                          strokeDashoffset={2 * Math.PI * 16 * (1 - percentage / 100)}
-                          className={`${theme.textColor} transition-all duration-500`}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        {isCompleted ? (
-                          <IoCheckmarkCircle size={16} className={theme.textColor} />
-                        ) : (
-                          <span className="text-[10px] font-semibold text-gray-500">
-                            {percentage}%
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 leading-snug truncate">
-                        {story.title}
-                      </p>
-
-                      {story.description && (
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
-                          {story.description}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-1.5 mt-2">
-                        {topic && (
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${theme.badgeBg}`}
-                          >
-                            <IoPricetagOutline size={11} />
-                            {topic}
-                          </span>
-                        )}
-                        {duration && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px]">
-                            <IoTimeOutline size={11} />
-                            {duration}
-                          </span>
-                        )}
-                        <span className="text-[11px] text-gray-400 ml-auto">
-                          {completed}/{total}
-                        </span>
-                      </div>
-                    </div>
-
-                    <IoChevronForward size={16} className="text-gray-300 shrink-0" />
-                  </div>
-
-                  {/* ── DESKTOP layout ── */}
-                  <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-1 px-5 py-4">
-                    {/* Title + description */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {story.title}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {story.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Topic */}
-                    <div className="flex items-center">
-                      {topic ? (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${theme.badgeBg}`}>
-                          {topic}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-300">—</span>
-                      )}
-                    </div>
-
-                    {/* Progress */}
-                    <div className="flex items-center gap-2">
-                      {isCompleted ? (
-                        <IoCheckmarkCircle size={16} className={theme.textColor} />
-                      ) : (
-                        <IoEllipseOutline size={16} className="text-gray-300" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-400">{completed}/{total}</span>
-                          <span className={`text-xs font-semibold ${theme.textColor}`}>
-                            {percentage}%
-                          </span>
-                        </div>
-                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${theme.progressColor} rounded-full transition-all duration-500`}
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              );
-            })
-          ) : (
+      {/* Story groups */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16 space-y-8">
+        {groupedStories.length > 0 ? (
+          groupedStories.map(({ category, stories: groupStories }) => (
+            <div key={category}>
+              {groupedStories.length > 1 && (
+                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                  {t(`list.category.${category}`)}
+                </h2>
+              )}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <TableHeader />
+                {groupStories.map((story, index) => renderRow(story, index, groupStories))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="text-center py-16 text-gray-400">
               <IoSearchOutline size={32} className="mx-auto mb-3 opacity-40" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

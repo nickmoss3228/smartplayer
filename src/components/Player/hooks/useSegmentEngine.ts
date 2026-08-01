@@ -22,9 +22,12 @@ interface UseSegmentEngineOptions {
   repeatCount: number;
   isControlledMode: boolean;
   playbackRateRef: React.MutableRefObject<number>;
-  isEnhancedMode: boolean; 
+  isEnhancedMode: boolean;
   onAudioComplete: (() => void) | undefined;
   userPlaybackRateRef: React.MutableRefObject<number>;
+  /** Fired once each time a segment finishes its full auto-repeat cycle, with
+   *  the repeat-count setting (1/2/3) that was active during that cycle. */
+  onSegmentRepeatComplete?: (repeatCount: number) => void;
 }
 
 export const useSegmentEngine = ({
@@ -41,6 +44,7 @@ export const useSegmentEngine = ({
   onAudioComplete,
   isEnhancedMode,
   userPlaybackRateRef,
+  onSegmentRepeatComplete,
 }: UseSegmentEngineOptions) => {
   const dispatch = useAppDispatch();
 
@@ -51,6 +55,7 @@ export const useSegmentEngine = ({
   const durationSecondsRef = useRef(durationSeconds);
   const timeMarkersRef = useRef(timeMarkers);
   const onAudioCompleteRef = useRef(onAudioComplete);
+  const onSegmentRepeatCompleteRef = useRef(onSegmentRepeatComplete);
   const currentRepeatRef = useRef(0);
   const isSegmentTransitioningRef = useRef(false);
   const pausedByVisibilityRef = useRef(false);
@@ -82,6 +87,9 @@ export const useSegmentEngine = ({
   useEffect(() => {
     onAudioCompleteRef.current = onAudioComplete;
   }, [onAudioComplete]);
+  useEffect(() => {
+    onSegmentRepeatCompleteRef.current = onSegmentRepeatComplete;
+  }, [onSegmentRepeatComplete]);
 
   const getSegmentBounds = useCallback(
     (markerIndex: number): { start: number; end: number } => {
@@ -170,6 +178,7 @@ export const useSegmentEngine = ({
                 }, 50);
               }, 1000);
             } else {
+              onSegmentRepeatCompleteRef.current?.(repeatCountRef.current);
               currentRepeatRef.current = 0;
               const restoreRate = userPlaybackRateRef.current ?? 1.0;
               dispatch(setPlaybackRate(restoreRate));

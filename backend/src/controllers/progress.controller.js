@@ -4,6 +4,8 @@ import { StoryProgress } from "../models/StoryProgress.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
 import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
+import { awardCurrency } from "../helpers/awardCurrency.js";
+import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { FREE_TRIAL_STORIES } from "../config/trial.js";
 import { User } from "../models/User.js";
 
@@ -261,6 +263,7 @@ export async function completeLevel(req, res) {
 
     // ── Streak update (only on completed submissions) ─────────────────────
     let newStreak = 0;
+    let wallet = null;
     if (isCompleted) {
       const user = await User.findById(userId).select("streak totalListeningSeconds");
       const today = todayUTC();
@@ -304,6 +307,9 @@ export async function completeLevel(req, res) {
         currentStreak: current,
         uniqueStoriesCount,
       });
+
+      // ── BitAward: flat payout for passing the quiz ───────────────────────
+      wallet = await awardCurrency(userId, { bitAward: QUIZ_PASS_BITAWARD });
     }
 
     res.json({
@@ -315,6 +321,7 @@ export async function completeLevel(req, res) {
         completedParts: storyProgress.completedParts,
         currentPart: storyProgress.currentPart,
       },
+      wallet,
     });
   } catch (error) {
     console.error("Complete level error:", error);
@@ -527,6 +534,14 @@ export async function completeVocabQuiz(req, res) {
         .json({ message: "words must be a non-empty array of strings" });
     }
 
+    // Snapshot before the merge so we can tell which words are genuinely new —
+    // $addToSet silently no-ops on repeats, so it can't tell us the diff itself,
+    // and re-answering already-learned words must not mint more BitWord.
+    const existingUser = await User.findById(userId).select("learnedWords");
+    if (!existingUser) return res.status(404).json({ message: "User not found" });
+    const alreadyLearned = new Set(existingUser.learnedWords ?? []);
+    const newlyLearnedCount = words.filter((w) => !alreadyLearned.has(w)).length;
+
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { learnedWords: { $each: words } } },
@@ -535,9 +550,52 @@ export async function completeVocabQuiz(req, res) {
 
     await updateAchievements(userId, { wordsLearned: user.learnedWords.length });
 
-    res.json({ learnedWords: user.learnedWords });
+    const wallet = await awardCurrency(userId, { bitWord: newlyLearnedCount });
+
+    res.json({ learnedWords: user.learnedWords, wallet });
   } catch (error) {
     console.error("Complete vocab quiz error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── POST /progress/phrase-repeat ────────────────────────────────────────────
+// Called when a marker-to-marker segment finishes its full auto-repeat cycle
+// in Enhanced mode. Coins are keyed by which repeat-count setting (1x/2x/3x)
+// was active for that cycle — 1x mints nothing since nothing was repeated,
+// and staying in Free (non-enhanced) mode never fires this at all.
+
+export async function recordPhraseRepeat(req, res) {
+  try {
+    const { repeatCount } = req.body;
+    const userId = req.user._id;
+
+    if (![1, 2, 3].includes(repeatCount)) {
+      return res.status(400).json({ message: "repeatCount must be 1, 2, or 3" });
+    }
+
+    const bitPhrase = PHRASE_REPEAT_BITPHRASE[repeatCount] ?? 0;
+    const wallet = bitPhrase > 0
+      ? await awardCurrency(userId, { bitPhrase })
+      : (await User.findById(userId).select("wallet"))?.wallet ?? null;
+
+    res.json({ wallet });
+  } catch (error) {
+    console.error("Record phrase repeat error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── GET /progress/wallet ─────────────────────────────────────────────────────
+
+export async function getWallet(req, res) {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("wallet");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ wallet: user.wallet });
+  } catch (error) {
+    console.error("Get wallet error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

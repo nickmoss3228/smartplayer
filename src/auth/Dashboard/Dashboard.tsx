@@ -15,6 +15,7 @@ import { OverviewData, DetailedProgressMap } from "../../types/Dashboard";
 import ProfileEditor from "./ProfileEditor";
 import DifficultyModal from "./DifficultyModal";
 import AchievementsRow from "./AchievementsRow";
+import WalletRow from "./WalletRow";
 import { useProfile } from "../../context/ProfileContext";
 
 const Dashboard: React.FC = () => {
@@ -218,6 +219,11 @@ const Dashboard: React.FC = () => {
                     </button>
                   );
                 })}
+            </div>
+
+            {/* ── Wallet ── */}
+            <div className="animate-fade-in-delay-2">
+              <WalletRow />
             </div>
 
             {/* ── Achievements ── */}

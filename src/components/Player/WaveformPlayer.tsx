@@ -25,6 +25,7 @@ import { VocabChip } from "./Vocabulary/VocabChip";
 import { VocabularyRow } from "./Vocabulary/VocabularyRow";
 import ComicsDisplay from "./Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
+import { submitPhraseRepeat } from "../../services/walletServices";
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
   ({
@@ -79,6 +80,15 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
     const storyTitles = useStoryTitles(difficulty, storySlug);
 
+    // BitPhrase: fired by useSegmentEngine whenever a segment finishes its
+    // full auto-repeat cycle. Guests simply don't earn currency yet — no
+    // guest-side accrual/migration exists for the wallet (see currency plan).
+    const handleSegmentRepeatComplete = useCallback((repeatCount: number) => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      submitPhraseRepeat(token, repeatCount).catch(() => {});
+    }, []);
+
     console.log("[Player] level:", level, "difficulty:", difficulty);
 
     // Reset marker/time/subtitle state (and the enhanced-mode session) on track change
@@ -116,6 +126,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       onAudioComplete: handleAudioComplete,
       isEnhancedMode,
       userPlaybackRateRef,
+      onSegmentRepeatComplete: handleSegmentRepeatComplete,
     });
 
     const {
@@ -184,8 +195,14 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     return (
       <div className="waveform-overlay h-full min-h-0">
         <div className="md:hidden flex flex-col h-full min-h-0">
-          {/* MIDDLE ZONE — scrollable content, no more huge bottom padding */}
-          <div className="flex-1 min-h-0 flex flex-col gap-1 px-4 overflow-y-auto">
+          {/* MIDDLE ZONE — scrollable content, no more huge bottom padding.
+              justify-between puts any leftover vertical space (tall viewports,
+              e.g. iPhone 14+) between the comics block and the vocab+progress-bar
+              group below — keeping vocab chips tight against the progress bar
+              (easy thumb reach) instead of spreading evenly and pushing them apart.
+              Has no effect once content overflows (shorter viewports keep
+              scrolling as before). */}
+          <div className="flex-1 min-h-0 flex flex-col justify-between gap-3 px-4 overflow-y-auto">
             <div
               data-tour="tour-comics"
               className="max-h-[32vh] flex items-center justify-center py-1"
@@ -197,44 +214,46 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               />
             </div>
 
-            {currentVocabulary.length > 0 && (
-              <div className="shrink-0" data-tour="tour-vocabulary">
-                <VocabularyRow
-                  words={currentVocabulary}
-                  onPlay={(fileName) => playVocabWord(fileName, "vocab")}
-                  volume={isMuted ? 0 : volume}
-                  learnedWords={learnedWords}
+            <div className="shrink-0 flex flex-col gap-2">
+              {currentVocabulary.length > 0 && (
+                <div className="shrink-0" data-tour="tour-vocabulary">
+                  <VocabularyRow
+                    words={currentVocabulary}
+                    onPlay={(fileName) => playVocabWord(fileName, "vocab")}
+                    volume={isMuted ? 0 : volume}
+                    learnedWords={learnedWords}
+                  />
+                </div>
+              )}
+
+              {currentPhrasalVerbs.length > 0 && (
+                <div className="shrink-0" data-tour="tour-phrasal-verbs">
+                  <VocabularyRow
+                    words={currentPhrasalVerbs}
+                    onPlay={(fileName) => playVocabWord(fileName, "phrasal")}
+                    volume={isMuted ? 0 : volume}
+                    learnedWords={learnedWords}
+                  />
+                </div>
+              )}
+
+              <div className="shrink-0" data-tour="tour-player">
+                <WaveformDisplay
+                  waveformRef={waveformRef}
+                  isLoading={isLoading}
+                  isInitialized={isInitialized}
+                  currentTime={currentTime}
+                  duration={duration}
+                  durationSeconds={durationSeconds}
+                  timeMarkers={timeMarkers}
+                  subtitlesVisible={subtitlesVisible}
+                  activeSubtitle={activeSubtitle}
+                  onMarkerClick={handleMarkerClick}
+                  onSeek={handleSeek}
+                  getAudioTime={getAudioTime}
+                  isMobile
                 />
               </div>
-            )}
-
-            {currentPhrasalVerbs.length > 0 && (
-              <div className="shrink-0" data-tour="tour-phrasal-verbs">
-                <VocabularyRow
-                  words={currentPhrasalVerbs}
-                  onPlay={(fileName) => playVocabWord(fileName, "phrasal")}
-                  volume={isMuted ? 0 : volume}
-                  learnedWords={learnedWords}
-                />
-              </div>
-            )}
-
-            <div className="shrink-0" data-tour="tour-player">
-              <WaveformDisplay
-                waveformRef={waveformRef}
-                isLoading={isLoading}
-                isInitialized={isInitialized}
-                currentTime={currentTime}
-                duration={duration}
-                durationSeconds={durationSeconds}
-                timeMarkers={timeMarkers}
-                subtitlesVisible={subtitlesVisible}
-                activeSubtitle={activeSubtitle}
-                onMarkerClick={handleMarkerClick}
-                onSeek={handleSeek}
-                getAudioTime={getAudioTime}
-                isMobile
-              />
             </div>
           </div>
 

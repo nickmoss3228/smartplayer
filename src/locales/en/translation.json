@@ -89,6 +89,10 @@
     "easy": "Easy",
     "medium": "Medium",
     "hard": "Hard"
+  },
+  "category": {
+    "general": "Stories",
+    "news": "News & Interesting Things"
   }
 },
   "levels": {
@@ -436,6 +440,18 @@
     "leo-additional": {
       "title": "Gossiping about Leo",
       "description": "People surrounding Leo talk about him!"
+    },
+    "news-roland-garros": {
+      "title": "[Placeholder] Roland Garros 2026",
+      "description": "[Placeholder] Based on the news article \"Love & Money: only pleasant news\" — coming soon."
+    },
+    "news-family-visit": {
+      "title": "[Placeholder] Leo Visits Family Friends",
+      "description": "[Placeholder] Based on the news article \"Ugh, nothing to wear again! And that's not news\" — coming soon."
+    },
+    "news-grazing-board": {
+      "title": "[Placeholder] Grazing Board: Italian Antipasti",
+      "description": "[Placeholder] Based on a food-news article about trendy recipes — coming soon."
     }
   },
   "medium": {

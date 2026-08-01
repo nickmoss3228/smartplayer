@@ -13,6 +13,7 @@ type FeedbackState = "idle" | "correct" | "incorrect";
 const Quiz: React.FC<QuizProps> = ({
   questions,
   onQuizComplete,
+  onAnswerResult,
   isSubmitting = false,
 }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -78,6 +79,7 @@ const Quiz: React.FC<QuizProps> = ({
     setUserAnswers(newAnswers);
     const isCorrect = selectedOption === questions[currentQuestion].correctAnswer;
     setFeedback(isCorrect ? "correct" : "incorrect");
+    onAnswerResult?.(isCorrect, currentQuestion);
   };
 
   const handleNext = () => {

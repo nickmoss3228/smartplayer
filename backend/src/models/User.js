@@ -51,6 +51,15 @@ const userSchema = new mongoose.Schema({
   totalListeningSeconds: { type: Number, default: 0 },
   // Keys (lowercased audioKey/word) of vocab words correctly identified in a VocabQuiz
   learnedWords: { type: [String], default: [] },
+
+  // In-app currency balances. bitAward is the general/main currency (quiz
+  // completion); bitWord and bitPhrase are earned by specific activities
+  // (vocab quiz, phrase-repeat listening) — see config/currency.js.
+  wallet: {
+    bitAward:  { type: Number, default: 0 },
+    bitWord:   { type: Number, default: 0 },
+    bitPhrase: { type: Number, default: 0 },
+  },
 });
 
 export const User = mongoose.model("User", userSchema);

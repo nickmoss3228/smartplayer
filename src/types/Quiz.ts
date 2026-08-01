@@ -13,5 +13,7 @@ export interface QuizProps {
   onTimeJump: (time: number) => void;
   questions: QuizQuestion[];
   onQuizComplete?: (results: { correctAnswers: number; totalQuestions: number }) => void;
+  /** Fired once per answered question, ahead of the aggregate onQuizComplete result. */
+  onAnswerResult?: (isCorrect: boolean, questionIndex: number) => void;
   isSubmitting?: boolean;
 }
