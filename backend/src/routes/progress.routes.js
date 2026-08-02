@@ -15,6 +15,7 @@ import {
   recordPhraseRepeat,
   getRoom,
   purchaseItem,
+  equipItem,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
@@ -31,6 +32,7 @@ router.get("/progress/wallet",                     authenticateToken, getWallet)
 router.post("/progress/phrase-repeat",             authenticateToken, recordPhraseRepeat);
 router.get("/progress/room",                       authenticateToken, getRoom);
 router.post("/progress/room/purchase",             authenticateToken, purchaseItem);
+router.post("/progress/room/equip",                authenticateToken, equipItem);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
 
 export default router;

@@ -651,6 +651,37 @@ export async function purchaseItem(req, res) {
   }
 }
 
+// POST /progress/room/equip  { itemId }
+// Re-selects an already-owned item into its slot — no currency involved,
+// unlike purchaseItem. This is how a player switches back to something they
+// bought earlier instead of whatever is currently placed.
+export async function equipItem(req, res) {
+  try {
+    const userId = req.user._id;
+    const { itemId } = req.body;
+
+    const item = getShopItem(itemId);
+    if (!item) return res.status(400).json({ message: "Unknown item" });
+
+    const existing = await User.findById(userId).select("room");
+    if (!existing) return res.status(404).json({ message: "User not found" });
+    if (!existing.room.ownedItemIds.includes(itemId)) {
+      return res.status(400).json({ message: "Item not owned" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { [`room.placedItems.${item.slot}`]: itemId } },
+      { new: true, select: "room" },
+    );
+
+    res.json({ room: user.room });
+  } catch (error) {
+    console.error("Equip item error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 // GET /progress/overview
 export async function getOverview(req, res) {
   try {

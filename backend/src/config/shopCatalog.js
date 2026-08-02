@@ -5,7 +5,10 @@
 // shape (plus its own display-only swatch info) but this file is what the
 // purchase controller actually checks prices against. Demo catalog —
 // expect this to be replaced/expanded once real item designs land.
-export const SLOTS = ["wallpaper", "flooring", "furniture1", "furniture2", "poster"];
+export const SLOTS = [
+  "wallpaper", "flooring", "furniture1", "furniture2", "poster",
+  "wardrobe", "table", "shelf",
+];
 
 export const SHOP_CATALOG = [
   { id: "wallpaper-stripe-blue",  slot: "wallpaper",  name: "Blue Stripes", priceBitAward: 20 },
@@ -28,6 +31,12 @@ export const SHOP_CATALOG = [
   { id: "poster-map",             slot: "poster",     name: "World Map",    priceBitAward: 8 },
   { id: "poster-music",           slot: "poster",     name: "Music Notes",  priceBitAward: 8 },
   { id: "poster-abstract",        slot: "poster",     name: "Abstract Art", priceBitAward: 10 },
+  { id: "wardrobe-oak",           slot: "wardrobe",   name: "Oak Wardrobe", priceBitAward: 40 },
+  { id: "wardrobe-white",         slot: "wardrobe",   name: "White Wardrobe", priceBitAward: 40 },
+  { id: "table-wood",             slot: "table",      name: "Wood Table",   priceBitAward: 18 },
+  { id: "table-white",            slot: "table",      name: "White Table",  priceBitAward: 18 },
+  { id: "shelf-oak",              slot: "shelf",      name: "Oak Shelf",    priceBitAward: 15 },
+  { id: "shelf-white",            slot: "shelf",      name: "White Shelf",  priceBitAward: 15 },
 ];
 
 export const getShopItem = (itemId) => SHOP_CATALOG.find((item) => item.id === itemId) ?? null;

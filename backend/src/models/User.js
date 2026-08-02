@@ -73,6 +73,9 @@ const userSchema = new mongoose.Schema({
       furniture1: { type: String, default: null }, // bed slot
       furniture2: { type: String, default: null }, // plant/rug slot
       poster:     { type: String, default: null },
+      wardrobe:   { type: String, default: null },
+      table:      { type: String, default: null },
+      shelf:      { type: String, default: null },
     },
   },
 });
