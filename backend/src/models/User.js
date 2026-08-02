@@ -60,6 +60,21 @@ const userSchema = new mongoose.Schema({
     bitWord:   { type: Number, default: 0 },
     bitPhrase: { type: Number, default: 0 },
   },
+
+  // "My Room" decorating game — items bought with bitAward, see
+  // config/shopCatalog.js. apartmentTier is a breadcrumb for a future
+  // bigger-apartment upgrade path; not used for anything yet.
+  room: {
+    apartmentTier: { type: String, default: "studio" },
+    ownedItemIds: { type: [String], default: [] },
+    placedItems: {
+      wallpaper:  { type: String, default: null },
+      flooring:   { type: String, default: null },
+      furniture1: { type: String, default: null }, // bed slot
+      furniture2: { type: String, default: null }, // plant/rug slot
+      poster:     { type: String, default: null },
+    },
+  },
 });
 
 export const User = mongoose.model("User", userSchema);

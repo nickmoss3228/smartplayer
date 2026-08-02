@@ -5,7 +5,9 @@ import { storyRegistry } from "../config/storyRegistry.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
 import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
+import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
+import { getShopItem } from "../config/shopCatalog.js";
 import { FREE_TRIAL_STORIES } from "../config/trial.js";
 import { User } from "../models/User.js";
 
@@ -596,6 +598,55 @@ export async function getWallet(req, res) {
     res.json({ wallet: user.wallet });
   } catch (error) {
     console.error("Get wallet error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// GET /progress/room
+export async function getRoom(req, res) {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("room wallet.bitAward");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ room: user.room, bitAward: user.wallet.bitAward });
+  } catch (error) {
+    console.error("Get room error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /progress/room/purchase  { itemId }
+export async function purchaseItem(req, res) {
+  try {
+    const userId = req.user._id;
+    const { itemId } = req.body;
+
+    const item = getShopItem(itemId);
+    if (!item) return res.status(400).json({ message: "Unknown item" });
+
+    const existing = await User.findById(userId).select("room");
+    if (!existing) return res.status(404).json({ message: "User not found" });
+    if (existing.room.ownedItemIds.includes(itemId)) {
+      return res.status(400).json({ message: "Item already owned" });
+    }
+
+    const wallet = await spendCurrency(userId, item.priceBitAward);
+    if (!wallet) {
+      return res.status(400).json({ message: "Insufficient BitAward balance" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { "room.ownedItemIds": itemId },
+        $set: { [`room.placedItems.${item.slot}`]: itemId },
+      },
+      { new: true, select: "room" },
+    );
+
+    res.json({ room: user.room, bitAward: wallet.bitAward });
+  } catch (error) {
+    console.error("Purchase item error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

@@ -13,6 +13,8 @@ import {
   migrateGuestProgress,
   getWallet,
   recordPhraseRepeat,
+  getRoom,
+  purchaseItem,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
@@ -27,6 +29,8 @@ router.post("/progress/migrate-guest",             authenticateToken, migrateGue
 router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
 router.get("/progress/wallet",                     authenticateToken, getWallet);
 router.post("/progress/phrase-repeat",             authenticateToken, recordPhraseRepeat);
+router.get("/progress/room",                       authenticateToken, getRoom);
+router.post("/progress/room/purchase",             authenticateToken, purchaseItem);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
 
 export default router;
