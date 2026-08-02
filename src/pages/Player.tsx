@@ -343,6 +343,7 @@ const allVocabWords = useMemo(() => {
                 onPlay={playVocabWord}
                 onClose={() => setShowVocabQuiz(false)}
                 onComplete={markLearned}
+                learnedWords={learnedWords}
               />
             </div>
           ) : (

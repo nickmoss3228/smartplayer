@@ -7,6 +7,10 @@ import QuestionAudioButton from "./QuestionAudioButton";
 import QuizConfetti from "./QuizConfetti";
 import { playFanfare } from "../../utils/soundEffects";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
+import { CURRENCIES, QUIZ_PASS_BITAWARD } from "../../config/currencies";
+
+const BitAwardIcon = CURRENCIES[0].icon;
 
 type FeedbackState = "idle" | "correct" | "incorrect";
 
@@ -25,6 +29,7 @@ const Quiz: React.FC<QuizProps> = ({
   const [celebrate, setCelebrate] = useState(false);
   const [hasListened, setHasListened] = useState(false);
   const { t } = useTranslation()
+  const { user } = useAuth();
 
   const navigate = useNavigate();
 
@@ -310,6 +315,16 @@ const Quiz: React.FC<QuizProps> = ({
           {!passed && <IoRocketOutline className="text-orange-500 flex-shrink-0" size={24} />}
           {passed ? t('quiz.welldone'): t('quiz.keepgoing')}
         </h2>
+
+        {/* Reward badge — only for signed-in students; guests aren't credited server-side */}
+        {passed && user && (
+          <div className="flex justify-center mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-600 text-xs sm:text-sm font-semibold">
+              <BitAwardIcon size={15} />
+              {t('quiz.rewardEarned', { amount: QUIZ_PASS_BITAWARD })}
+            </div>
+          </div>
+        )}
         {/* ↓ mb-6 on mobile, mb-8 on sm+ */}
         <p className="text-gray-500 text-sm sm:text-base mb-6 sm:mb-8 max-w-sm mx-auto">
           {passed

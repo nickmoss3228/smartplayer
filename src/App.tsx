@@ -25,6 +25,7 @@ import DifficultyDetail from './modules/levelprogress/DifficultyDetail';
 import { ProfileProvider } from './context/ProfileContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
 import AdminPanel from "./components/Admin/AdminPanel";
+import Room from "./pages/Room";
 import { Layout } from "./Layout"
 
 interface ProtectedRouteProps {
@@ -77,6 +78,10 @@ function App() {
                 <Route
                   path="/dashboard"
                   element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+                />
+                <Route
+                  path="/room"
+                  element={<ProtectedRoute><Room /></ProtectedRoute>}
                 />
 
                 {/* ── Trial-accessible (open to guests) ── */}

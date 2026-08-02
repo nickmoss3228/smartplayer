@@ -4,7 +4,30 @@
     "settings": "Настройки",
     "language": "Язык",
     "guide": "Руководство",
-    "feedback": "Обратная связь"
+    "feedback": "Обратная связь",
+    "room": "Моя комната"
+  },
+  "room": {
+    "slots": {
+      "wallpaper": "Обои",
+      "flooring": "Пол",
+      "furniture1": "Кровать",
+      "furniture2": "Декор",
+      "poster": "Постер",
+      "wardrobe": "Шкаф",
+      "table": "Стол",
+      "shelf": "Полка"
+    },
+    "upgradeBanner": "Квартира побольше — скоро",
+    "upgradeComingSoon": "Улучшение квартиры появится в будущем обновлении!",
+    "confirmBuyTitle": "Купить этот предмет?",
+    "confirmBuy": "Купить",
+    "cancel": "Отмена",
+    "equip": "Выбрать",
+    "insufficientFunds": "Недостаточно BitAward для этого предмета.",
+    "purchaseFailed": "Не удалось совершить покупку. Попробуйте снова.",
+    "equipFailed": "Не удалось переключить предмет. Попробуйте снова.",
+    "loadFailed": "Не удалось загрузить вашу комнату. Попробуйте позже."
   },
   "feedback": {
     "title": "Мы хотим сделать наш плеер максимально удобным!",
@@ -86,9 +109,9 @@
   "progress": "Прогресс",
   "stories": "историй",
   "difficultyTitle": {
-    "easy": "Лёгкий",
+    "easy": "Базовый",
     "medium": "Средний",
-    "hard": "Сложный"
+    "hard": "Продвинутый"
   },
   "category": {
     "general": "Истории",
@@ -148,6 +171,7 @@
     "correctanswers": "Правильные ответы",
     "incorrectanswers": "Неверные ответы",
     "listenFirst": "Прослушайте вопрос, чтобы разблокировать ответы",
+    "rewardEarned": "+{{amount}} BitAward заработано!",
     "audio": {
       "playQuestion": "Слушать вопрос",
       "playing": "Играет...",
@@ -375,8 +399,9 @@
   "congrats": {
     "title": "Поздравляем!",
     "message": "Вы завершили все уровни в {{difficulty}}!",
-    "allLevelsCompleted": "Все уровни пройдены",
-    "nextDifficulty": "Попробовать следующую сложность",
+    "allLevelsCompleted": "Все уровни пройдены!",
+    "browseStories": "Другие истории",
+    "nextDifficulty": "Другая сложность",
     "close": "Продолжить"
   },
   "trial": {

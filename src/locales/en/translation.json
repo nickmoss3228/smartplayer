@@ -4,7 +4,30 @@
     "settings": "Settings",
     "language": "Language",
     "guide": "Guide",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "room": "My Room"
+  },
+  "room": {
+    "slots": {
+      "wallpaper": "Wallpaper",
+      "flooring": "Flooring",
+      "furniture1": "Bed",
+      "furniture2": "Decor",
+      "poster": "Poster",
+      "wardrobe": "Wardrobe",
+      "table": "Table",
+      "shelf": "Shelf"
+    },
+    "upgradeBanner": "Bigger apartment — coming soon",
+    "upgradeComingSoon": "Apartment upgrades are coming in a future update!",
+    "confirmBuyTitle": "Buy this item?",
+    "confirmBuy": "Buy",
+    "cancel": "Cancel",
+    "equip": "Equip",
+    "insufficientFunds": "Not enough BitAward for this item.",
+    "purchaseFailed": "Purchase failed. Please try again.",
+    "equipFailed": "Couldn't switch to this item. Please try again.",
+    "loadFailed": "Couldn't load your room. Please try again later."
   },
   "feedback": {
     "title": "Leave feedback",
@@ -148,6 +171,7 @@
     "correctanswers": "Correct Answers",
     "incorrectanswers": "Incorrect Answers",
     "listenFirst": "Listen to the question to unlock the answers",
+    "rewardEarned": "+{{amount}} BitAward earned!",
     "audio": {
       "playQuestion": "Play Question",
       "playing": "Playing...",
@@ -376,6 +400,7 @@
     "title": "Congratulations!",
     "message": "You've completed all levels in {{difficulty}}!",
     "allLevelsCompleted": "All Levels Completed",
+    "browseStories": "Explore More Stories",
     "nextDifficulty": "Try Next Difficulty",
     "close": "Continue"
   },

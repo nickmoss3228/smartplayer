@@ -4,6 +4,7 @@ import {
   GlobeAltIcon,
   UserCircleIcon,
   ChatBubbleLeftRightIcon,
+  HomeModernIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import Infinity from "../../assets/infinity.svg";
@@ -13,6 +14,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useProfile } from "../../context/ProfileContext";
 import { getAvatarById } from "../../config/avatars";
 import FeedbackModal from "../Feedback/FeedbackModal";
+import WalletChips from "./WalletChips";
 
 const FLAG_URLS: Record<string, string> = {
   EN: "https://flagcdn.com/w40/gb.png",
@@ -92,6 +94,18 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center space-x-2">
+
+              {user && <WalletChips />}
+
+              {user && (
+                <button
+                  onClick={() => navigate("/room")}
+                  title={t("navbar.room")}
+                  className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <HomeModernIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                </button>
+              )}
 
               <button
                 onClick={() => navigate("/dashboard")}

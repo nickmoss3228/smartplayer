@@ -1,9 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { IoTrophy, IoLibraryOutline} from "react-icons/io5";
 import { Theme } from "../../types/LevelProgress";
 import { DifficultyType } from "../../types/Progress";
-// import { useNavigate } from "react-router";
-
 
 interface CongratsModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface CongratsModalProps {
   hasNextDifficulty: boolean;
 }
 
-export const CongratsModal:React.FC<CongratsModalProps> = ({
+export const CongratsModal: React.FC<CongratsModalProps> = ({
   isOpen,
   onClose,
   difficulty,
@@ -23,15 +23,18 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
   hasNextDifficulty,
 }) => {
   const { t } = useTranslation();
-//   const navigate = useNavigate();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
+  const handleBrowseStories = () => {
+    onClose();
+    navigate(`/levels/${difficulty}`);
+  };
+
   const handleNextDifficulty = () => {
     onClose();
-    if (onNextDifficulty) {
-      onNextDifficulty();
-    }
+    onNextDifficulty?.();
   };
 
   // Confetti pieces configuration
@@ -46,7 +49,7 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
     { left: "70%", delay: "0.2s", duration: "3.4s", color: "bg-indigo-400" },
     { left: "80%", delay: "0.4s", duration: "2.7s", color: "bg-yellow-400" },
     { left: "90%", delay: "0.1s", duration: "3.3s", color: "bg-pink-400" },
-    
+
     // Row 2 - different colors and timings
     { left: "15%", delay: "0.6s", duration: "3.6s", color: "bg-cyan-400" },
     { left: "25%", delay: "0.3s", duration: "2.9s", color: "bg-orange-400" },
@@ -56,7 +59,7 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
     { left: "65%", delay: "0.1s", duration: "3.5s", color: "bg-violet-400" },
     { left: "75%", delay: "0.3s", duration: "3.1s", color: "bg-amber-400" },
     { left: "85%", delay: "0.5s", duration: "2.9s", color: "bg-emerald-400" },
-    
+
     // Row 3 - more variety
     { left: "12%", delay: "0.7s", duration: "3.3s", color: "bg-fuchsia-400" },
     { left: "28%", delay: "0.4s", duration: "3.0s", color: "bg-sky-400" },
@@ -94,11 +97,13 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
       <div
         className={`relative bg-gradient-to-br ${theme.gradient} rounded-3xl shadow-2xl max-w-md w-full p-8 transform transition-all duration-300 animate-scale-in`}
       >
-        {/* Trophy Icon */}
+        {/* Trophy */}
         <div className="flex justify-center mb-6">
-          <div className="relative">
-            <div className="text-8xl animate-bounce-in">🏆</div>
+          <div className="relative w-20 h-20 animate-bounce-in">
             <div className="absolute inset-0 bg-yellow-400/30 rounded-full blur-xl animate-pulse"></div>
+            <div className="relative w-20 h-20 rounded-full bg-white/15 border border-white/25 flex items-center justify-center">
+              <IoTrophy className="text-yellow-300" size={36} />
+            </div>
           </div>
         </div>
 
@@ -115,33 +120,33 @@ export const CongratsModal:React.FC<CongratsModalProps> = ({
 
         {/* Buttons */}
         <div className="flex flex-col gap-3 animate-fade-in-delay-3">
+          <button
+            onClick={handleBrowseStories}
+            className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 font-semibold py-4 px-6 rounded-xl
+              hover:bg-white/90 transform hover:scale-105 transition-all duration-300
+              shadow-lg hover:shadow-xl active:scale-95"
+          >
+            <IoLibraryOutline size={20} />
+            {t("congrats.browseStories")}
+          </button>
+
           {hasNextDifficulty && (
             <button
               onClick={handleNextDifficulty}
-              className={`w-full bg-white text-gray-800 font-semibold py-4 px-6 rounded-xl
-                hover:bg-white/90 transform hover:scale-105 transition-all duration-300
-                shadow-lg hover:shadow-xl active:scale-95`}
+              className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold py-4 px-6 rounded-xl
+                hover:bg-white/30 transform hover:scale-105 transition-all duration-300
+                border-2 border-white/30 hover:border-white/50 active:scale-95"
             >
-              {t("congrats.nextDifficulty")} →
+              {t("congrats.nextDifficulty")}
             </button>
           )}
 
           <button
             onClick={onClose}
-            className="w-full bg-white/20 backdrop-blur-sm text-white font-semibold py-4 px-6 rounded-xl
-              hover:bg-white/30 transform hover:scale-105 transition-all duration-300
-              border-2 border-white/30 hover:border-white/50 active:scale-95"
+            className="w-full text-white/70 hover:text-white font-medium py-2 transition-colors duration-200"
           >
             {t("congrats.close")}
           </button>
-        </div>
-
-        {/* Decorative stars */}
-        <div className="absolute -top-6 -right-6 text-6xl animate-bounce-in" style={{ animationDelay: '0.3s' }}>
-          ✨
-        </div>
-        <div className="absolute -bottom-6 -left-6 text-6xl animate-bounce-in" style={{ animationDelay: '0.5s' }}>
-          ✨
         </div>
       </div>
     </div>

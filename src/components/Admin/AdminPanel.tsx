@@ -20,6 +20,11 @@ const AdminPanel = () => {
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [fetchError, setFetchError] = useState("");
 
+  const [grantEmail, setGrantEmail] = useState("");
+  const [grantAmount, setGrantAmount] = useState("100");
+  const [granting, setGranting] = useState(false);
+  const [grantMessage, setGrantMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const fetchFeedback = useCallback(async (authToken: string) => {
     setLoading(true);
     setFetchError("");
@@ -78,6 +83,37 @@ const AdminPanel = () => {
     setCode("");
   };
 
+  const handleGrantCurrency = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setGranting(true);
+    setGrantMessage(null);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/grant-currency`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: grantEmail, bitAward: Number(grantAmount) || 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGrantMessage({ type: "error", text: data.error ?? "Failed to grant currency." });
+        return;
+      }
+      setGrantMessage({
+        type: "success",
+        text: `Done — ${grantEmail} now has ${data.wallet.bitAward} BitAward.`,
+      });
+    } catch (err) {
+      console.error(err);
+      setGrantMessage({ type: "error", text: "Something went wrong." });
+    } finally {
+      setGranting(false);
+    }
+  };
+
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -115,7 +151,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-black">Feedback Messages</h1>
+          <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
           <button
             onClick={handleLogout}
             className="px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
@@ -123,6 +159,48 @@ const AdminPanel = () => {
             Log out
           </button>
         </div>
+
+        <div className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-8">
+          <h2 className="font-semibold text-black mb-3">Wallet Tools</h2>
+          <form onSubmit={handleGrantCurrency} className="flex flex-col sm:flex-row gap-2 sm:items-end">
+            <div className="flex-1">
+              <label className="block text-xs text-gray-500 mb-1">Account email</label>
+              <input
+                type="email"
+                value={grantEmail}
+                onChange={(e) => setGrantEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <div className="sm:w-32">
+              <label className="block text-xs text-gray-500 mb-1">BitAward</label>
+              <input
+                type="number"
+                min={1}
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+                required
+                className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={granting}
+              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {granting ? "Granting..." : "Grant BitAward"}
+            </button>
+          </form>
+          {grantMessage && (
+            <p className={`text-sm mt-2 ${grantMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+              {grantMessage.text}
+            </p>
+          )}
+        </div>
+
+        <h2 className="text-lg font-bold text-black mb-4">Feedback Messages</h2>
 
         {loading && <p className="text-gray-500">Loading...</p>}
         {fetchError && <p className="text-red-600">{fetchError}</p>}

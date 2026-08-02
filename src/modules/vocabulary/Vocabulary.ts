@@ -126,6 +126,99 @@ export const trackPhrasalVerbs: Record<string, Record<string, Record<string, Voc
       ],
     },
   },
+  medium: {
+  maya: {
+    "1": [
+      { word: "искать", definition: "1", audioKey: "search for" },
+    ],
+    "2": [
+      { word: "общаться с", definition: "1", audioKey: "connect with" },
+      { word: "говорить с", definition: "1", audioKey: "talk to" },
+      { word: "подниматься, расти", definition: "1", audioKey: "rise up" },
+    ],
+    "3": [
+      { word: "слышать о", definition: "1", audioKey: "hear about" },
+    ],
+    "4": [
+      { word: "столкнуться с, наткнуться на", definition: "1", audioKey: "run into" },
+      { word: "приводить к", definition: "1", audioKey: "lead to" },
+    ],
+    "5": [
+      { word: "раскинуться по, быть разбросанным по", definition: "1", audioKey: "spread across" },
+      { word: "наверстывать, делиться новостями", definition: "1", audioKey: "catch up on" },
+    ],
+    "6": [
+      { word: "есть вне дома", definition: "1", audioKey: "eat out" },
+      { word: "искать", definition: "1", audioKey: "look for" },
+    ],
+    "7": [
+      { word: "заканчиваться, оказываться в итоге", definition: "1", audioKey: "end up" },
+      { word: "приводить к", definition: "1", audioKey: "lead to" },
+      { word: "попадать в", definition: "1", audioKey: "get into" },
+    ],
+    "8": [
+      { word: "склоняться над", definition: "1", audioKey: "bend over" },
+      { word: "передавать по наследству", definition: "1", audioKey: "pass down" },
+      { word: "быстро пролетать (о времени)", definition: "1", audioKey: "fly by" },
+      { word: "смотреть на", definition: "1", audioKey: "look at" },
+    ],
+    "9": [
+      { word: "быть переполненным чем-то", definition: "1", audioKey: "burst with" },
+      { word: "смотреть на", definition: "1", audioKey: "look at" },
+      { word: "устанавливать, организовывать", definition: "1", audioKey: "set up" },
+      { word: "направляться к", definition: "1", audioKey: "go toward" },
+    ],
+    "10": [
+      { word: "впадать в", definition: "1", audioKey: "fall into" },
+    ],
+  },
+},hard: {
+  daniel: {
+    "1": [
+      { word: "вырастать", definition: "1", audioKey: "grow up" },
+    ],
+    "2": [
+      { word: "вернуть, восстановить упущенное", definition: "1", audioKey: "claw back" },
+    ],
+    "3": [
+      { word: "полагаться на, делать ставку на", definition: "1", audioKey: "bet on" },
+    ],
+    "4": [
+      { word: "расширяться в новую сферу", definition: "1", audioKey: "expand into" },
+      { word: "готовиться к неприятностям", definition: "1", audioKey: "brace for" },
+      { word: "возвращаться к", definition: "1", audioKey: "return to" },
+    ],
+    "5": [
+      { word: "вступать в, входить в", definition: "1", audioKey: "step into" },
+      { word: "записывать в", definition: "1", audioKey: "write in" },
+    ],
+    "6": [
+      { word: "начинаться с", definition: "1", audioKey: "start with" },
+      { word: "платить за", definition: "1", audioKey: "pay for" },
+      { word: "превращаться в", definition: "1", audioKey: "turn into" },
+    ],
+    "7": [],
+    "8": [
+      { word: "просить, запрашивать", definition: "1", audioKey: "ask for" },
+      { word: "отказываться от, передавать", definition: "1", audioKey: "pass on" },
+    ],
+    "9": [
+      { word: "включать в, объединять с", definition: "1", audioKey: "fold into" },
+      { word: "стоять в очереди за", definition: "1", audioKey: "queue for" },
+      { word: "смотреть на", definition: "1", audioKey: "look at" },
+      { word: "убирать, откладывать", definition: "1", audioKey: "put away" },
+    ],
+    "10": [
+      { word: "накатывать, наступать", definition: "1", audioKey: "roll in" },
+      { word: "превращаться в", definition: "1", audioKey: "turn into" },
+      { word: "забежать в, укрыться в", definition: "1", audioKey: "duck into" },
+      { word: "просить, запрашивать", definition: "1", audioKey: "ask for" },
+      { word: "вступать в, входить в", definition: "1", audioKey: "step into" },
+      { word: "смотреть на", definition: "1", audioKey: "look at" },
+      { word: "легко пройти через", definition: "1", audioKey: "sail through" },
+    ],
+  },
+}
 };
 
 export const trackVocabulary: Record<string, Record<string, Record<string, VocabEntry[]>>> = {
@@ -298,15 +391,17 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         // vocab entries for track 3
       ],
     },
-    medium: {
+  },
+  medium: {
+    maya: {
       "1": [
-        { word: "журналист", definition: "1", audioKey: "journalist" },
-        { word: "онлайн-журнал", definition: "1", audioKey: "online magazine" },
-        { word: "гибкость", definition: "1", audioKey: "flexibility" },
-        { word: "увлечённый", definition: "1", audioKey: "passionate" },
-        { word: "любопытный", definition: "1", audioKey: "curious" },
-        { word: "острые ощущения", definition: "1", audioKey: "thrill" },
-        { word: "размышлять", definition: "1", audioKey: "reflect" },
+        { word: "журналист", definition: "1", audioKey: "journalist"},
+        { word: "онлайн-журнал", definition: "1", audioKey: "online magazine"},
+        { word: "гибкость", definition: "1", audioKey: "flexibility"},
+        { word: "увлечённый", definition: "1", audioKey: "passionate"},
+        { word: "любопытный", definition: "1", audioKey: "curious"},
+        { word: "острые ощущения", definition: "1", audioKey: "thrill"},
+        { word: "размышлять", definition: "1", audioKey: "reflect"},
         {
           word: "разные точки зрения",
           definition: "1",
@@ -469,7 +564,7 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           definition: "1",
           audioKey: "plastic waste",
         },
-        { word: "микропластик", definition: "1", audioKey: "microplastic" },
+        { word: "микропластика", definition: "1", audioKey: "microplastic" },
         { word: "кровоток", definition: "1", audioKey: "bloodstream" },
         { word: "питьевая вода", definition: "1", audioKey: "drinking water" },
         { word: "принимать меры", definition: "1", audioKey: "take measures" },
@@ -528,7 +623,9 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "голосовые заметки", definition: "1", audioKey: "voice memos" },
       ],
     },
-    hard: {
+  },
+  hard: {
+    daniel: {
       "1": [
         { word: "логистика", definition: "1", audioKey: "logistics" },
         {
@@ -810,5 +907,5 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "расслабиться", definition: "1", audioKey: "unwind" },
       ],
     },
-  }
-}
+  },
+};

@@ -1,15 +1,3 @@
-// Hard level Audios
-// import Introducing from "../../assets/daniel/1. Introducing Myself.mp3";
-// import TheDeal from "../../assets/daniel/2. The deal that nearly broke me..mp3";
-// import Conference from "../../assets/daniel/3. The Conference in Munich.mp3";
-// import AFailure from "../../assets/daniel/4. A Failure with a Silver Lining.mp3";
-// import TheBridge from "../../assets/daniel/5. The Bridge at Low Tide.mp3";
-// import Night from "../../assets/daniel/6. Night of the Phantom Pallets.mp3";
-// import FamilyReport from "../../assets/daniel/7. Family Weather Report.mp3";
-// import ThePrice from "../../assets/daniel/8. The Price of Enough.mp3";
-// import FamilyOnTheManifest1 from "../../assets/daniel/9. Family on the Manifest, Part I The Itinerary That Blinked..mp3";
-// import FamilyOnTheManifest2 from "../../assets/daniel/10. Family on the Manifest, Part II The Break That Tested the Break..mp3";
-
 import { AudioTrack } from "../../types";
 import { getStorageUrl } from "../../services/yandexStorage";
 

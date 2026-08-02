@@ -7,6 +7,10 @@ import React, {
 } from "react";
 import { IoCheckmarkCircle, IoRefresh, IoArrowBack } from "react-icons/io5";
 import { playChime } from "../../../utils/soundEffects";
+import { useAuth } from "../../../context/AuthContext";
+import { CURRENCIES } from "../../../config/currencies";
+
+const BitWordIcon = CURRENCIES[1].icon;
 
 type VocabType = "vocab" | "phrasal";
 
@@ -22,6 +26,10 @@ interface VocabQuizProps {
   onClose: () => void;
   /** Called once, when a round finishes, with the keys of correctly-answered words */
   onComplete?: (correctKeys: string[]) => void;
+  /** Words already learned before this round — used only to compute how many
+   * BitWord this round actually newly earned (matches backend: only genuinely
+   * new words are awarded, repeats aren't). */
+  learnedWords?: Set<string>;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -38,24 +46,34 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
   onPlay,
   onClose,
   onComplete,
+  learnedWords,
 }) => {
+  const { user } = useAuth();
   const [order, setOrder] = useState<VocabWord[]>(() => shuffle(words));
   const [roundIndex, setRoundIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
+  const [newlyLearnedCount, setNewlyLearnedCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const correctKeysRef = useRef<string[]>([]);
+  const hasFiredCompletionRef = useRef(false);
 
   const current = order[roundIndex];
   const finished = roundIndex >= order.length;
 
-  // Fire onComplete exactly once per finished round.
+  // Fire onComplete exactly once per finished round. Guarded by a ref (not
+  // just the `finished` dep) because `learnedWords` changes right after
+  // onComplete runs (parent's markLearned updates it) — without the guard
+  // this effect would refire on that update and double-count/replay the chime.
   useEffect(() => {
-    if (!finished) return;
+    if (!finished || hasFiredCompletionRef.current) return;
+    hasFiredCompletionRef.current = true;
     playChime();
+    const newlyLearned = correctKeysRef.current.filter((k) => !learnedWords?.has(k));
+    setNewlyLearnedCount(newlyLearned.length);
     onComplete?.(correctKeysRef.current);
-  }, [finished, onComplete]);
+  }, [finished, onComplete, learnedWords]);
 
   const playCurrent = useCallback(() => {
     if (!current) return;
@@ -100,7 +118,9 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
     setScore(0);
     setSelected(null);
     setStatus("idle");
+    setNewlyLearnedCount(0);
     correctKeysRef.current = [];
+    hasFiredCompletionRef.current = false;
   }, [words]);
 
   // Grid sizing: shrink cell size and font when there are many words,
@@ -145,9 +165,15 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
             <IoCheckmarkCircle className="text-green-500" size={40} />
           </div>
           <p className="text-xl font-bold text-black">Молодец!</p>
-          <p className="text-black/50 text-sm mb-4">
+          <p className="text-black/50 text-sm mb-2">
             Результат: {score} из {order.length}
           </p>
+          {user && newlyLearnedCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-600 text-sm font-semibold">
+              <BitWordIcon size={15} />
+              +{newlyLearnedCount} BitWord
+            </div>
+          )}
           <div className="flex gap-3">
             <button
               onClick={handleRestart}

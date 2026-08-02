@@ -1,23 +1,8 @@
 // components/Dashboard/WalletRow.tsx
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  IoDiamondOutline,
-  IoBookmarkOutline,
-  IoChatbubbleEllipsesOutline,
-} from "react-icons/io5";
 import { fetchWallet } from "../../services/walletServices";
 import { Wallet } from "../../types/Wallet";
-
-const CURRENCIES: {
-  key: keyof Wallet;
-  label: string;
-  icon: React.ComponentType<{ size?: number }>;
-  color: string;
-}[] = [
-  { key: "bitAward", label: "BitAward", icon: IoDiamondOutline, color: "bg-amber-50 text-amber-600" },
-  { key: "bitWord", label: "BitWord", icon: IoBookmarkOutline, color: "bg-sky-50 text-sky-600" },
-  { key: "bitPhrase", label: "BitPhrase", icon: IoChatbubbleEllipsesOutline, color: "bg-emerald-50 text-emerald-600" },
-];
+import { CURRENCIES } from "../../config/currencies";
 
 const WalletRow: React.FC = () => {
   const [wallet, setWallet] = useState<Wallet | null>(null);
@@ -62,13 +47,13 @@ const WalletRow: React.FC = () => {
         Wallet
       </h2>
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        {CURRENCIES.map(({ key, label, icon: Icon, color }) => (
+        {CURRENCIES.map(({ key, label, icon: Icon, chipClasses }) => (
           <div
             key={key}
             className="bg-white rounded-3xl p-4 sm:p-5 flex flex-col gap-2
                        shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-black/5"
           >
-            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${color}`}>
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${chipClasses}`}>
               <Icon size={18} />
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold text-black tracking-tight">

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
 import { useTranslation } from "react-i18next";
+import { CURRENCIES, QUIZ_PASS_BITAWARD } from "../../config/currencies";
 
 interface StoryPreviewModalProps {
   isOpen: boolean;
@@ -80,11 +81,26 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
         <div className="flex-1 overflow-y-auto px-6 pt-6 pb-2 space-y-4
                         [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 
-          {/* Title + meta */}
+          {/* Title + meta — earn-currency icons share the same line as
+              difficulty/duration to keep this compact for the grammar dropdown below */}
           <div>
-            <p className="text-xs text-white/45 uppercase tracking-widest mb-1">
-      {difficulty} · {duration}
-    </p>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <p className="text-xs text-white/45 uppercase tracking-widest">
+                {difficulty} · {duration}
+              </p>
+              <div className="flex items-center gap-3 shrink-0">
+                {[
+                  { meta: CURRENCIES[0], amount: `+${QUIZ_PASS_BITAWARD}` },
+                  { meta: CURRENCIES[1], amount: "+1" },
+                  { meta: CURRENCIES[2], amount: "+1–2" },
+                ].map(({ meta, amount }) => (
+                  <div key={meta.key} className="flex items-center gap-1 text-xs">
+                    <meta.icon size={14} className={meta.textClasses} />
+                    <span className={`font-semibold ${meta.textClasses}`}>{amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
             <h2 className="text-2xl font-bold text-white leading-snug">
       {title}
     </h2>
