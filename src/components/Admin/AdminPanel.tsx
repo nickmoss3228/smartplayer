@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import FeedbackTab from "./FeedbackTab";
+import PlayersTab from "./PlayersTab";
+import StoryBuilderTab from "./StoryBuilderTab";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 const TOKEN_KEY = "admin_token";
 
-interface FeedbackItem {
-  _id: string;
-  name: string;
-  message: string;
-  createdAt: string;
-}
+type Tab = "feedback" | "players" | "story-builder";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "feedback", label: "Feedback" },
+  { id: "players", label: "Players" },
+  { id: "story-builder", label: "Story Builder" },
+];
 
 const AdminPanel = () => {
   const [token, setToken] = useState<string | null>(() =>
@@ -17,40 +20,9 @@ const AdminPanel = () => {
   const [code, setCode] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
-  const [fetchError, setFetchError] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("feedback");
 
-  const [grantEmail, setGrantEmail] = useState("");
-  const [grantAmount, setGrantAmount] = useState("100");
-  const [granting, setGranting] = useState(false);
-  const [grantMessage, setGrantMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const fetchFeedback = useCallback(async (authToken: string) => {
-    setLoading(true);
-    setFetchError("");
-    try {
-      const res = await fetch(`${API_URL}/api/feedback`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (res.status === 401) {
-        sessionStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        return;
-      }
-      if (!res.ok) throw new Error("Failed to fetch");
-      const data = await res.json();
-      setFeedback(data.feedback ?? []);
-    } catch (err) {
-      console.error(err);
-      setFetchError("Could not load messages.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (token) fetchFeedback(token);
-  }, [token, fetchFeedback]);
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,37 +53,6 @@ const AdminPanel = () => {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setCode("");
-  };
-
-  const handleGrantCurrency = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setGranting(true);
-    setGrantMessage(null);
-    try {
-      const res = await fetch(`${API_URL}/api/admin/grant-currency`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: grantEmail, bitAward: Number(grantAmount) || 0 }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setGrantMessage({ type: "error", text: data.error ?? "Failed to grant currency." });
-        return;
-      }
-      setGrantMessage({
-        type: "success",
-        text: `Done — ${grantEmail} now has ${data.wallet.bitAward} BitAward.`,
-      });
-    } catch (err) {
-      console.error(err);
-      setGrantMessage({ type: "error", text: "Something went wrong." });
-    } finally {
-      setGranting(false);
-    }
   };
 
   if (!token) {
@@ -160,70 +101,25 @@ const AdminPanel = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 border border-gray-200 mb-8">
-          <h2 className="font-semibold text-black mb-3">Wallet Tools</h2>
-          <form onSubmit={handleGrantCurrency} className="flex flex-col sm:flex-row gap-2 sm:items-end">
-            <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-1">Account email</label>
-              <input
-                type="email"
-                value={grantEmail}
-                onChange={(e) => setGrantEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-                className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-            <div className="sm:w-32">
-              <label className="block text-xs text-gray-500 mb-1">BitAward</label>
-              <input
-                type="number"
-                min={1}
-                value={grantAmount}
-                onChange={(e) => setGrantAmount(e.target.value)}
-                required
-                className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
+        <div className="flex gap-1 mb-6 border-b border-gray-200">
+          {TABS.map((tab) => (
             <button
-              type="submit"
-              disabled={granting}
-              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
+                activeTab === tab.id
+                  ? "bg-white text-black border border-b-0 border-gray-200"
+                  : "text-gray-500 hover:text-black"
+              }`}
             >
-              {granting ? "Granting..." : "Grant BitAward"}
+              {tab.label}
             </button>
-          </form>
-          {grantMessage && (
-            <p className={`text-sm mt-2 ${grantMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
-              {grantMessage.text}
-            </p>
-          )}
-        </div>
-
-        <h2 className="text-lg font-bold text-black mb-4">Feedback Messages</h2>
-
-        {loading && <p className="text-gray-500">Loading...</p>}
-        {fetchError && <p className="text-red-600">{fetchError}</p>}
-        {!loading && feedback.length === 0 && !fetchError && (
-          <p className="text-gray-500">No messages yet.</p>
-        )}
-
-        <div className="space-y-3">
-          {feedback.map((item) => (
-            <div
-              key={item._id}
-              className="bg-white rounded-lg shadow p-4 border border-gray-200"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-black">{item.name}</span>
-                <span className="text-xs text-gray-400">
-                  {new Date(item.createdAt).toLocaleString()}
-                </span>
-              </div>
-              <p className="text-gray-700 whitespace-pre-wrap">{item.message}</p>
-            </div>
           ))}
         </div>
+
+        {activeTab === "feedback" && <FeedbackTab token={token} />}
+        {activeTab === "players" && <PlayersTab token={token} />}
+        {activeTab === "story-builder" && <StoryBuilderTab />}
       </div>
     </div>
   );
