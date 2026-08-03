@@ -27,6 +27,9 @@ const userSchema = new mongoose.Schema({
     minLength: 6,
   },
   isEmailVerified: { type: Boolean, default: false },
+  // Admin moderation flag — checked at login and on every authenticated
+  // request (middleware/auth.js) so a ban also kills already-issued sessions.
+  banned: { type: Boolean, default: false },
   emailVerificationToken: { type: String, default: null },
   emailVerificationExpires: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },

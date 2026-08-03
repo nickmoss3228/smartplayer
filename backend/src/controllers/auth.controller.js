@@ -88,6 +88,10 @@ export async function login(req, res) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    if (user.banned) {
+      return res.status(403).json({ message: "This account has been banned." });
+    }
+
     const token = jwt.sign({ userId: user._id }, config.jwtSecret, {
       expiresIn: "7d",
     });

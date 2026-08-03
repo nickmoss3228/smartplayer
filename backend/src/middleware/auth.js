@@ -12,6 +12,7 @@ export async function authenticateToken(req, res, next) {
     const user = await User.findById(decoded.userId).select("-password");
     
     if (!user) return res.status(401).json({ message: "Invalid token" });
+    if (user.banned) return res.status(403).json({ message: "This account has been banned." });
 
     req.user = user;
     next();

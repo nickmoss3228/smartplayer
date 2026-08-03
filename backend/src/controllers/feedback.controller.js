@@ -28,3 +28,13 @@ export const getAllFeedback = async (req, res) => {
     res.status(500).json({ error: "Failed to load feedback." });
   }
 };
+
+export const deleteFeedback = async (req, res) => {
+  try {
+    await Feedback.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("deleteFeedback error:", err);
+    res.status(500).json({ error: "Failed to delete feedback." });
+  }
+};

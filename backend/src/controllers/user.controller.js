@@ -10,6 +10,7 @@
 // }
 // controllers/user.controller.js
 import { User } from "../models/User.js";
+import { escapeRegex } from "../helpers/regex.js";
 
 const VALID_AVATARS = [
   "cat", "fox", "bear", "rabbit", "owl",
@@ -19,12 +20,6 @@ const VALID_AVATARS = [
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_RESULTS_LIMIT = 20;
-
-// Escapes regex metacharacters so a search term is matched literally instead
-// of being interpreted as a (possibly expensive/crashy) regex pattern.
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 export async function getProfile(req, res) {
   try {
