@@ -5,6 +5,7 @@ import {
   UserCircleIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import Infinity from "../../assets/infinity.svg";
@@ -107,6 +108,16 @@ const Navbar = () => {
                 </button>
               )}
 
+              {user && (
+                <button
+                  onClick={() => navigate("/players")}
+                  title={t("navbar.players")}
+                  className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <UsersIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                </button>
+              )}
+
               <button
                 onClick={() => navigate("/dashboard")}
                 title={t("navbar.dashboard")}
@@ -138,6 +149,22 @@ const Navbar = () => {
 
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[10000]">
+                    {/* Wallet — sm:hidden because the navbar row (WalletChips
+                        default variant) already shows this on desktop; on
+                        mobile there's no space for it up top, so it lives
+                        here instead. */}
+                    {user && (
+                      <>
+                        <div className="sm:hidden px-4 py-2">
+                          <div className="flex items-center text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
+                            {t("navbar.wallet")}
+                          </div>
+                          <WalletChips variant="dropdown" />
+                        </div>
+                        <div className="sm:hidden border-t border-gray-200 my-1" />
+                      </>
+                    )}
+
                     <button
                       onClick={handleGuideClick}
                       className="w-full flex cursor-pointer items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"

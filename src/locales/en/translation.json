@@ -5,7 +5,21 @@
     "language": "Language",
     "guide": "Guide",
     "feedback": "Feedback",
-    "room": "My Room"
+    "room": "My Room",
+    "wallet": "Wallet",
+    "players": "Players"
+  },
+  "players": {
+    "title": "Find a player",
+    "online": "Online",
+    "offline": "Offline",
+    "visit": "Visit",
+    "searchPlaceholder": "Search by username or email...",
+    "searchHint": "Type at least 2 characters to search.",
+    "noResults": "No players found.",
+    "loadFailed": "Couldn't search players. Please try again later.",
+    "back": "Back to search",
+    "roomLoadFailed": "Couldn't load this player's room. Please try again later."
   },
   "room": {
     "slots": {

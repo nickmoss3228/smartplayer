@@ -7,6 +7,7 @@ import {
   getGuestLearnedWords,
   saveGuestLearnedWords,
 } from "../../../services/guestProgress";
+import { useWallet } from "../../../context/WalletContext";
 
 // Tracks which vocab words (by lowercased audioKey/word) the student has
 // ever correctly identified in a VocabQuiz — fetched once so chips in the
@@ -16,6 +17,7 @@ import {
 // it survives a reload and can be migrated into their account on signup.
 export function useVocabProgress(enabled: boolean) {
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
+  const { setWalletDirect } = useWallet();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -41,8 +43,12 @@ export function useVocabProgress(enabled: boolean) {
       saveGuestLearnedWords(words);
       return;
     }
-    submitLearnedWords(token, words).catch(() => {});
-  }, []);
+    submitLearnedWords(token, words)
+      .then(({ wallet }) => {
+        if (wallet) setWalletDirect(wallet);
+      })
+      .catch(() => {});
+  }, [setWalletDirect]);
 
   return { learnedWords, markLearned };
 }

@@ -26,6 +26,7 @@ import { VocabularyRow } from "./Vocabulary/VocabularyRow";
 import ComicsDisplay from "./Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
 import { submitPhraseRepeat } from "../../services/walletServices";
+import { useWallet } from "../../context/WalletContext";
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
   ({
@@ -47,6 +48,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
     const { t } = useTranslation();
+    const { setWalletDirect } = useWallet();
 
     const {
       currentMarkerIndex,
@@ -83,11 +85,13 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     // BitPhrase: fired by useSegmentEngine whenever a segment finishes its
     // full auto-repeat cycle. Guests simply don't earn currency yet — no
     // guest-side accrual/migration exists for the wallet (see currency plan).
+    // The endpoint returns the updated wallet directly, so push it into the
+    // shared cache instead of letting the display go stale until next fetch.
     const handleSegmentRepeatComplete = useCallback((repeatCount: number) => {
       const token = localStorage.getItem("token");
       if (!token) return;
-      submitPhraseRepeat(token, repeatCount).catch(() => {});
-    }, []);
+      submitPhraseRepeat(token, repeatCount).then(setWalletDirect).catch(() => {});
+    }, [setWalletDirect]);
 
     console.log("[Player] level:", level, "difficulty:", difficulty);
 

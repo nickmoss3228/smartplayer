@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useWallet } from "../context/WalletContext";
 import axios from "axios";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
@@ -43,6 +44,7 @@ const markListenedFullyStored = (difficulty: string, storySlug: string, level: n
 
 const Player = React.memo(() => {
   const { user } = useAuth();
+  const { setWalletDirect } = useWallet();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
 
@@ -266,6 +268,11 @@ const Player = React.memo(() => {
         );
         console.log("Progress saved:", response.data);
 
+        // The endpoint only awards BitAward (and returns a wallet) on an
+        // actual pass — push it straight into the shared cache so the navbar
+        // chip updates immediately, no extra fetch needed.
+        if (response.data.wallet) setWalletDirect(response.data.wallet);
+
         await refreshStoryProgress(difficulty, resolvedStorySlug);
       } catch (error) {
         console.error("Failed to save progress:", error);
@@ -285,6 +292,7 @@ const Player = React.memo(() => {
       isSubmitting,
       refreshStoryProgress,
       audioTracks,
+      setWalletDirect,
     ],
   );
 

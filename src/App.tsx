@@ -14,6 +14,7 @@ import "./App.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProgressProvider } from "./context/ProgressContext";
 import { ProfileProvider } from './context/ProfileContext';
+import { WalletProvider } from './context/WalletContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
 import { Layout } from "./Layout"
 
@@ -31,6 +32,8 @@ const List = lazy(() => import('./pages/List'));
 const DifficultyDetail = lazy(() => import('./modules/levelprogress/DifficultyDetail'));
 const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
+const Players = lazy(() => import("./pages/Players"));
+const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -64,6 +67,7 @@ function App() {
   return (
     <AuthProvider>
       <ProfileProvider>
+        <WalletProvider>
         <ProgressProvider>
           <Provider store={store}>
             <Router>
@@ -87,6 +91,14 @@ function App() {
                 <Route
                   path="/room"
                   element={<ProtectedRoute><Room /></ProtectedRoute>}
+                />
+                <Route
+                  path="/players"
+                  element={<ProtectedRoute><Players /></ProtectedRoute>}
+                />
+                <Route
+                  path="/players/:userId"
+                  element={<ProtectedRoute><PlayerRoom /></ProtectedRoute>}
                 />
 
                 {/* ── Trial-accessible (open to guests) ── */}
@@ -118,6 +130,7 @@ function App() {
             </Router>
           </Provider>
         </ProgressProvider>
+        </WalletProvider>
       </ProfileProvider>
     </AuthProvider>
   );

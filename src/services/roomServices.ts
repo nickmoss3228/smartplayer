@@ -15,6 +15,24 @@ export const fetchRoom = async (token: string): Promise<RoomResponse> => {
   return res.data;
 };
 
+export interface PlayerRoomResponse {
+  username: string;
+  nickname: string;
+  avatar: string;
+  room: RoomState;
+}
+
+// Read-only snapshot of another player's room for the "visit" view.
+export const fetchPlayerRoom = async (
+  token: string,
+  userId: string,
+): Promise<PlayerRoomResponse> => {
+  const res = await axios.get(`${API_BASE}/api/progress/room/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
+
 export const purchaseItem = async (
   token: string,
   itemId: string,

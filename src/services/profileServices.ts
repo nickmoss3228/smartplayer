@@ -24,3 +24,34 @@ export const updateProfile = async (
   });
   return res.data;
 };
+
+export const sendHeartbeat = async (token: string): Promise<void> => {
+  await axios.patch(`${API_BASE}/api/user/heartbeat`, null, {
+    headers: authHeaders(token),
+  });
+};
+
+export interface PlayerListItem {
+  id: string;
+  username: string;
+  nickname: string;
+  avatar: string;
+  online: boolean;
+}
+
+interface SearchPlayersResponse {
+  players: PlayerListItem[];
+}
+
+// Looks up a specific player by username/nickname (partial match) or exact
+// email — there's no endpoint to browse the full user roster.
+export const searchPlayers = async (
+  token: string,
+  query: string
+): Promise<SearchPlayersResponse> => {
+  const res = await axios.get(`${API_BASE}/api/user/search`, {
+    headers: authHeaders(token),
+    params: { q: query },
+  });
+  return res.data;
+};
