@@ -17,7 +17,14 @@ const VALID_AVATARS = [
 ];
 
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
-const PLAYERS_PAGE_LIMIT = 30;
+const SEARCH_MIN_LENGTH = 2;
+const SEARCH_RESULTS_LIMIT = 20;
+
+// Escapes regex metacharacters so a search term is matched literally instead
+// of being interpreted as a (possibly expensive/crashy) regex pattern.
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export async function getProfile(req, res) {
   try {
@@ -78,7 +85,7 @@ export async function updateProfile(req, res) {
 
 // PATCH /user/heartbeat — called periodically by the frontend while a
 // session is open, so other players see this user as "online" (see
-// listPlayers below). Stateless JWT auth means there's no session table to
+// searchPlayers below). Stateless JWT auth means there's no session table to
 // query, so a bumped timestamp is the simplest presence signal.
 export async function heartbeat(req, res) {
   try {
@@ -90,22 +97,31 @@ export async function heartbeat(req, res) {
   }
 }
 
-// GET /user/players?page=1 — the multiplayer player list. Every user is
-// visible to every other logged-in user (no friends/classes concept exists),
-// so this is a simple paginated scan excluding the requester.
-export async function listPlayers(req, res) {
+// GET /user/search?q=... — find a specific player by username/nickname or
+// exact email, rather than exposing a full browsable roster (no directory of
+// every signed-up user — you have to already know who you're looking for).
+// An email match must be exact (case-insensitive) so a partial guess can't
+// be used to enumerate other users' addresses; username/nickname allow a
+// partial, case-insensitive match since those are already shown to other
+// players once found.
+export async function searchPlayers(req, res) {
   try {
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = PLAYERS_PAGE_LIMIT;
+    const q = (req.query.q ?? "").trim();
+    if (q.length < SEARCH_MIN_LENGTH) return res.json({ players: [] });
 
-    const [users, total] = await Promise.all([
-      User.find({ _id: { $ne: req.user._id } })
-        .select("username nickname avatar lastActiveAt")
-        .sort({ lastActiveAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit),
-      User.countDocuments({ _id: { $ne: req.user._id } }),
-    ]);
+    const isEmail = q.includes("@");
+    const filter = isEmail
+      ? { email: q.toLowerCase() }
+      : {
+          $or: [
+            { username: new RegExp(escapeRegex(q), "i") },
+            { nickname: new RegExp(escapeRegex(q), "i") },
+          ],
+        };
+
+    const users = await User.find({ $and: [filter, { _id: { $ne: req.user._id } }] })
+      .select("username nickname avatar lastActiveAt")
+      .limit(SEARCH_RESULTS_LIMIT);
 
     const now = Date.now();
     res.json({
@@ -116,11 +132,9 @@ export async function listPlayers(req, res) {
         avatar: user.avatar ?? "cat",
         online: now - new Date(user.lastActiveAt).getTime() < ONLINE_THRESHOLD_MS,
       })),
-      page,
-      hasMore: page * limit < total,
     });
   } catch (error) {
-    console.error("List players error:", error);
+    console.error("Search players error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

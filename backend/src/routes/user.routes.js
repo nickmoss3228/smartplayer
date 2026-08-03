@@ -5,7 +5,7 @@ import {
   getProfile,
   updateProfile,
   heartbeat,
-  listPlayers,
+  searchPlayers,
 } from "../controllers/user.controller.js";
 
 const router = Router();
@@ -13,6 +13,6 @@ const router = Router();
 router.get("/user/profile", authenticateToken, getProfile);
 router.patch("/user/profile", authenticateToken, updateProfile);
 router.patch("/user/heartbeat", authenticateToken, heartbeat);
-router.get("/user/players", authenticateToken, listPlayers);
+router.get("/user/search", authenticateToken, searchPlayers);
 
 export default router;
