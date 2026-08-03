@@ -34,6 +34,9 @@ const userSchema = new mongoose.Schema({
   passwordResetExpires: { type: Date, default: undefined },
   avatar: { type: String, default: "cat" },
   nickname: { type: String, default: null, trim: true, maxLength: 30 },
+  // Bumped by the heartbeat endpoint while a session is open; drives the
+  // "online" dot in the multiplayer player list (see user.controller.js).
+  lastActiveAt: { type: Date, default: Date.now },
 
   // ── NEW ──
   streak: {

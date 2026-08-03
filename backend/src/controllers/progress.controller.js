@@ -668,6 +668,27 @@ export async function getRoom(req, res) {
   }
 }
 
+// GET /progress/room/:userId — read-only snapshot of another player's room
+// for the multiplayer "visit" view. No bitAward/ownedItemIds exposure since
+// only placedItems is needed to render RoomScene, plus identity for the header.
+export async function getPlayerRoom(req, res) {
+  try {
+    const user = await User.findById(req.params.userId).select(
+      "username nickname avatar room"
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({
+      username: user.username,
+      nickname: user.nickname ?? user.username,
+      avatar: user.avatar ?? "cat",
+      room: user.room,
+    });
+  } catch (error) {
+    console.error("Get player room error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 // POST /progress/room/purchase  { itemId }
 export async function purchaseItem(req, res) {
   try {

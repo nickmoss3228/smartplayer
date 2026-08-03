@@ -14,6 +14,7 @@ import {
   getWallet,
   recordPhraseRepeat,
   getRoom,
+  getPlayerRoom,
   purchaseItem,
   equipItem,
   getQuiz,
@@ -38,6 +39,7 @@ router.patch("/progress/listening-time",           authenticateToken, syncListen
 router.get("/progress/wallet",                     authenticateToken, getWallet);
 router.post("/progress/phrase-repeat",             authenticateToken, recordPhraseRepeat);
 router.get("/progress/room",                       authenticateToken, getRoom);
+router.get("/progress/room/:userId",               authenticateToken, getPlayerRoom);
 router.post("/progress/room/purchase",             authenticateToken, purchaseItem);
 router.post("/progress/room/equip",                authenticateToken, equipItem);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
