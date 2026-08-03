@@ -259,7 +259,9 @@
     "loading": "Loading...",
     "welcome": "Welcome back, {{username}}!",
     "subtitle": "Everything about your learning journey",
+    "defaultSubtitle": "Here's an overview of your learning progress.",
     "signOut": "Sign Out",
+    "partsCount": "{{completed}} / {{total}} parts",
     "stats": {
       "overallProgress": "Overall Progress",
       "completedLevels": "Completed Levels",
@@ -283,7 +285,63 @@
     "status": {
       "completed": "Completed",
       "current": "Current",
+      "available": "Available",
       "locked": "Locked"
+    },
+    "story": {
+      "finished": "Finished",
+      "partsProgress": "{{completed}}/{{total}} parts",
+      "notStarted": "Not started"
+    },
+    "modal": {
+      "partsCompleted": "parts completed",
+      "progress": "Progress",
+      "storyParts": "Story Parts",
+      "part": "Part",
+      "noStories": "No stories available yet.",
+      "close": "Close"
+    },
+    "wallet": {
+      "title": "Wallet"
+    },
+    "achievements": {
+      "title": "Achievements",
+      "maxAchieved": "Maximum achieved!",
+      "next": "Next: {{label}}",
+      "categories": {
+        "listeningTime": { "title": "Listening Time", "unit": "of listening" },
+        "questionsAnswered": { "title": "Questions Done", "unit": "questions answered" },
+        "studyStreak": { "title": "Study Streak", "unit": "day streak" },
+        "storiesListened": { "title": "Stories Heard", "unit": "stories completed" },
+        "wordsLearned": { "title": "Words Learned", "unit": "words learned" }
+      },
+      "units": {
+        "hours_one": "{{count}} hour",
+        "hours_other": "{{count}} hours",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "stories_one": "{{count}} story",
+        "stories_other": "{{count}} stories",
+        "words_one": "{{count}} word",
+        "words_other": "{{count}} words"
+      },
+      "compactHours": "{{count}}h",
+      "compactMinutes": "{{count}}m",
+      "compactHoursMinutes": "{{hours}}h {{minutes}}m"
+    },
+    "profile": {
+      "changeAvatar": "Change avatar",
+      "chooseAvatar": "Choose Avatar",
+      "editNickname": "Edit nickname",
+      "save": "Save",
+      "cancel": "Cancel",
+      "avatarSaveError": "Failed to save avatar.",
+      "nicknameSaveError": "Failed to save nickname."
+    },
+    "difficultyModal": {
+      "close": "Close"
     }
   },
   "howToUse": {

@@ -104,6 +104,7 @@ const Quiz: React.FC<QuizProps> = ({
         onQuizComplete({
           correctAnswers: newScore,
           totalQuestions: questions.length,
+          answers: userAnswers,
         });
       }
     }
@@ -249,21 +250,6 @@ const Quiz: React.FC<QuizProps> = ({
               {t('quiz.listenFirst')}
             </p>
           )}
-
-          {/* Feedback banner — ↓ mb-4 on mobile, mb-6 on sm+  |  tighter padding on mobile */}
-          <div
-            className={`mb-4 sm:mb-6 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium flex items-center gap-2 transition-all duration-300 ${
-              feedback === "idle"
-                ? "opacity-0 bg-transparent"
-                : feedback === "correct"
-                ? "opacity-100 bg-green-50 border border-green-200 text-green-700"
-                : "opacity-100 bg-red-50 border border-red-200 text-red-700"
-            }`}
-          >
-            {feedback === "correct" && (<><IoCheckmark className="text-green-500 flex-shrink-0" size={18} /> {t('quiz.correct')}</>)}
-            {feedback === "incorrect" && (<><IoClose className="text-red-500 flex-shrink-0" size={18} /> {t('quiz.not-correct')}</>)}
-            {feedback === "idle" && <span>&nbsp;</span>}
-          </div>
 
         </div>
       </div>

@@ -1,5 +1,5 @@
 import './i18n';
-import { ReactNode } from 'react';
+import { ReactNode, Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,26 +7,30 @@ import {
   Navigate,
   useParams,
 } from "react-router-dom";
-import Player from "./pages/Player";
 import Homepage from "./pages/Homepage";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
-import Levels from "./pages/Levels";
-import HowToUse from "./pages/HowToUse";
 import "./App.css";
-import Login from "./auth/Login/Login";
-import SignUp from "./auth/SignUp/SignUp";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import Dashboard from "./auth/Dashboard/Dashboard";
 import { ProgressProvider } from "./context/ProgressContext";
-import ForgotPassword from "./auth/ForgetPassword/ForgetPassword";
-import List from './pages/List';
-import DifficultyDetail from './modules/levelprogress/DifficultyDetail';
 import { ProfileProvider } from './context/ProfileContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
-import AdminPanel from "./components/Admin/AdminPanel";
-import Room from "./pages/Room";
 import { Layout } from "./Layout"
+
+// Lazy-loaded — each becomes its own chunk, fetched only when its route is
+// actually visited, instead of shipping in the single main bundle everyone
+// downloads on first load (Room alone pulls in all of three.js/@react-three).
+const Player = lazy(() => import("./pages/Player"));
+const Levels = lazy(() => import("./pages/Levels"));
+const HowToUse = lazy(() => import("./pages/HowToUse"));
+const Login = lazy(() => import("./auth/Login/Login"));
+const SignUp = lazy(() => import("./auth/SignUp/SignUp"));
+const Dashboard = lazy(() => import("./auth/Dashboard/Dashboard"));
+const ForgotPassword = lazy(() => import("./auth/ForgetPassword/ForgetPassword"));
+const List = lazy(() => import('./pages/List'));
+const DifficultyDetail = lazy(() => import('./modules/levelprogress/DifficultyDetail'));
+const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
+const Room = lazy(() => import("./pages/Room"));
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -65,6 +69,7 @@ function App() {
             <Router>
               <Layout>
               {/* <Navbar /> */}
+              <Suspense fallback={<div>Loading...</div>}>
               <Routes>
                 {/* ── Fully public ── */}
                 <Route path="/"                element={<Homepage />} />
@@ -108,6 +113,7 @@ function App() {
                 {/* ── Catch-all ── */}
                 <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+              </Suspense>
                 </Layout>
             </Router>
           </Provider>

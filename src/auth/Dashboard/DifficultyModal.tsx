@@ -1,5 +1,6 @@
 // components/Dashboard/DifficultyModal.tsx
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   IoClose,
   IoCheckmark,
@@ -25,6 +26,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
   overview,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [expandedStory, setExpandedStory] = useState<string | null>(
     // Auto-expand if there's only one story
     overview.stories.length === 1 ? overview.stories[0].storyId : null
@@ -78,17 +80,17 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-black capitalize truncate">
-                {difficulty}
+                {t(`dashboard.difficulty.${difficulty}`)}
               </h2>
               <p className="text-xs text-black/40">
-                {overview.completed} / {overview.total} parts · {overallPct}%
+                {t("dashboard.partsCount", { completed: overview.completed, total: overview.total })} · {overallPct}%
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/10 transition-colors active:scale-90 duration-150"
-            aria-label="Close"
+            aria-label={t("dashboard.difficultyModal.close")}
           >
             <IoClose size={18} className="text-black/60" />
           </button>
@@ -108,7 +110,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
         <div className="overflow-y-auto flex-1 p-5 space-y-3">
           {overview.stories.length === 0 ? (
             <p className="text-center text-black/30 text-sm py-8">
-              No stories available yet.
+              {t("dashboard.modal.noStories")}
             </p>
           ) : (
             overview.stories.map((story, storyIndex) => {
@@ -146,7 +148,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                         </span>
                       </div>
                       <p className="text-[11px] text-black/35 mt-0.5">
-                        {story.completedParts.length} / {story.totalParts} parts
+                        {t("dashboard.partsCount", { completed: story.completedParts.length, total: story.totalParts })}
                       </p>
                       {/* Mini bar */}
                       <div className="w-full h-1.5 rounded-full overflow-hidden bg-black/[0.06] mt-2">
@@ -166,7 +168,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 animate-fade-in">
                       <p className="text-[10px] uppercase tracking-widest text-black/30 font-semibold mb-3">
-                        Story Parts
+                        {t("dashboard.modal.storyParts")}
                       </p>
                       <div className="grid grid-cols-5 gap-2">
                         {Array.from(
@@ -188,7 +190,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                                   ${getStatusStyle(status)}
                                   ${status !== "locked" ? "cursor-pointer active:scale-90 hover:scale-105" : ""}
                                 `}
-                                title={`Part ${partNumber} — ${status}`}
+                                title={`${t("dashboard.modal.part")} ${partNumber} — ${t(`dashboard.status.${status}`)}`}
                               >
                                 <span className="text-[10px] opacity-60">
                                   {partNumber}
@@ -204,10 +206,10 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                       <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-black/40">
                         {(
                           [
-                            { status: "completed" as LevelStatus, label: "Completed" },
-                            { status: "current"   as LevelStatus, label: "Current"   },
-                            { status: "available" as LevelStatus, label: "Available" },
-                            { status: "locked"    as LevelStatus, label: "Locked"    },
+                            { status: "completed" as LevelStatus, label: t("dashboard.status.completed") },
+                            { status: "current"   as LevelStatus, label: t("dashboard.status.current")   },
+                            { status: "available" as LevelStatus, label: t("dashboard.status.available") },
+                            { status: "locked"    as LevelStatus, label: t("dashboard.status.locked")    },
                           ]
                         ).map(({ status, label }) => (
                           <div key={status} className="flex items-center gap-1.5">

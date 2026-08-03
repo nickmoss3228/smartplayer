@@ -199,7 +199,6 @@ const Player = React.memo(() => {
     markListenedFullyStored(difficulty, storySlug, level);
   }, [difficulty, storySlug, level]);
 
-  // Replace handleQuizComplete in Player.tsx
   const handleQuizComplete = useCallback(
     async (results: QuizResults) => {
       // Guest completed a trial track — save locally so it isn't lost if
@@ -230,8 +229,7 @@ const Player = React.memo(() => {
             difficulty,
             storyId: resolvedStorySlug,
             partNumber: level,
-            correctAnswers: results.correctAnswers,
-            totalQuestions: results.totalQuestions,
+            answers: results.answers,
           },
           { headers: { Authorization: `Bearer ${token}` } },
         );

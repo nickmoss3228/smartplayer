@@ -115,7 +115,7 @@ const StoryProgressModal: React.FC<StoryProgressModalProps> = ({
                     ${getStatusStyle(status)}
                     ${status !== "locked" ? "cursor-pointer active:scale-95 hover:scale-105" : ""}
                   `}
-                  title={`Part ${partNumber} — ${status}`}
+                  title={`${t("dashboard.modal.part")} ${partNumber} — ${t(`dashboard.status.${status}`)}`}
                 >
                   <span className="text-xs opacity-60">
                     {t("dashboard.modal.part")} {partNumber}

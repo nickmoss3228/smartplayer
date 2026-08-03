@@ -1,5 +1,6 @@
 // components/Dashboard/AchievementCard.tsx
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IoTrophyOutline } from "react-icons/io5";
 import {
   AchievementCategory,
@@ -8,6 +9,7 @@ import {
   getEarnedTiers,
   getNextTier,
   getTierProgress,
+  getTierLabel,
   formatValue,
 } from "../../config/achievementsConfig";
 
@@ -18,6 +20,7 @@ interface Props {
 }
 
 const AchievementCard: React.FC<Props> = ({ category, value, index }) => {
+  const { t } = useTranslation();
   const [hoveredTier, setHoveredTier] = useState<AchievementTier | null>(null);
   const Icon = category.icon;
 
@@ -45,25 +48,27 @@ const AchievementCard: React.FC<Props> = ({ category, value, index }) => {
           <Icon className="w-4.5 h-4.5 text-black/70" size={18} />
         </div>
         <span className="font-bold text-sm sm:text-base text-black/85 leading-tight">
-          {category.title}
+          {t(`dashboard.achievements.categories.${category.key}.title`)}
         </span>
       </div>
 
       {/* Current value */}
       <p className="text-2xl sm:text-3xl font-extrabold text-black tracking-tight">
-        {formatValue(category.key, value)}
+        {formatValue(t, category.key, value)}
       </p>
 
       {/* Next goal or max */}
       {allEarned ? (
         <p className="text-xs font-semibold text-purple-600 flex items-center gap-1">
           <IoTrophyOutline size={14} />
-          Maximum achieved!
+          {t("dashboard.achievements.maxAchieved")}
         </p>
       ) : (
         <>
           <p className="text-xs text-black/45">
-            Next: {nextTier!.label}
+            {t("dashboard.achievements.next", {
+              label: getTierLabel(t, category, nextTier!.threshold),
+            })}
           </p>
           <div className="w-full h-2 rounded-full overflow-hidden bg-black/[0.06]">
             <div
@@ -72,8 +77,8 @@ const AchievementCard: React.FC<Props> = ({ category, value, index }) => {
             />
           </div>
           <p className="text-[11px] text-black/35">
-            {formatValue(category.key, prevTierThreshold ?? 0)} →{" "}
-            {formatValue(category.key, nextTier!.threshold)}
+            {formatValue(t, category.key, prevTierThreshold ?? 0)} →{" "}
+            {formatValue(t, category.key, nextTier!.threshold)}
           </p>
         </>
       )}
@@ -81,20 +86,21 @@ const AchievementCard: React.FC<Props> = ({ category, value, index }) => {
       {/* Earned medals */}
       {earnedTiers.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-          {earnedTiers.map((t) => (
+          {earnedTiers.map((tier) => (
             <div
-              key={t.tier}
+              key={tier.tier}
               className="relative"
-              onMouseEnter={() => setHoveredTier(t)}
+              onMouseEnter={() => setHoveredTier(tier)}
               onMouseLeave={() => setHoveredTier(null)}
             >
               <div
-                className={`w-3.5 h-3.5 rounded-full ${TIER_COLORS[t.tier]} ring-2 ring-white shadow-sm`}
+                className={`w-3.5 h-3.5 rounded-full ${TIER_COLORS[tier.tier]} ring-2 ring-white shadow-sm`}
               />
-              {hoveredTier?.tier === t.tier && (
+              {hoveredTier?.tier === tier.tier && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-10 pointer-events-none animate-fade-in">
                   <div className="bg-black text-white text-[11px] rounded-lg px-2 py-1 whitespace-nowrap font-medium">
-                    {t.label} {category.unit}
+                    {getTierLabel(t, category, tier.threshold)}{" "}
+                    {t(`dashboard.achievements.categories.${category.key}.unit`)}
                   </div>
                   <div className="w-2 h-2 bg-black rotate-45 mx-auto -mt-1" />
                 </div>

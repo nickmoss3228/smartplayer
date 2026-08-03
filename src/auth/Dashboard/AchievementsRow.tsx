@@ -1,5 +1,6 @@
 // components/Dashboard/AchievementsRow.tsx
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import AchievementCard from "./AchievementCard";
 import { ACHIEVEMENT_CATEGORIES } from "../../config/achievementsConfig";
 import {
@@ -10,6 +11,7 @@ import { getTotalListeningSeconds } from "../../hooks/useListeningTimer";
 import { useListeningTimeSync } from "../../hooks/useListeningTimeSync";
 
 const AchievementsRow: React.FC = () => {
+  const { t } = useTranslation();
   const [data, setData] = useState<AchievementsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +67,7 @@ const AchievementsRow: React.FC = () => {
   return (
   <div className="mb-6">
     <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
-      Achievements
+      {t("dashboard.achievements.title")}
     </h2>
     <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
       {ACHIEVEMENT_CATEGORIES.map((category, index) => (

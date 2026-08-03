@@ -1,5 +1,6 @@
 // config/achievementConfig.ts
 import type { IconType } from "react-icons";
+import type { TFunction } from "i18next";
 import {
   IoHeadsetOutline,
   IoCheckmarkDoneCircleOutline,
@@ -10,84 +11,81 @@ import {
 
 export type TierKey = "bronze" | "silver" | "gold" | "platinum" | "crown";
 
+// Which translation.json `dashboard.achievements.units.*` family a category's
+// tier thresholds are expressed in (see getTierCount for unit conversion).
+export type UnitKey = "hours" | "questions" | "days" | "stories" | "words";
+
 export interface AchievementTier {
   tier: TierKey;
   threshold: number;
-  label: string;
 }
 
 export interface AchievementCategory {
   key: string;
-  title: string;
   icon: IconType;
   tiers: AchievementTier[];
-  unit: string; // used in tooltip, e.g. "questions answered"
+  unitKey: UnitKey;
 }
 
 export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
   {
     key: "listeningTime",
-    title: "Listening Time",
     icon: IoHeadsetOutline,
-    unit: "of listening",
+    unitKey: "hours",
     tiers: [
-      { tier: "bronze",   threshold: 3_600,   label: "1 hour" },
-      { tier: "silver",   threshold: 18_000,  label: "5 hours" },
-      { tier: "gold",     threshold: 36_000,  label: "10 hours" },
-      { tier: "platinum", threshold: 108_000, label: "30 hours" },
-      { tier: "crown",    threshold: 360_000, label: "100 hours" },
+      { tier: "bronze",   threshold: 3_600 },
+      { tier: "silver",   threshold: 18_000 },
+      { tier: "gold",     threshold: 36_000 },
+      { tier: "platinum", threshold: 108_000 },
+      { tier: "crown",    threshold: 360_000 },
     ],
   },
   {
     key: "questionsAnswered",
-    title: "Questions Done",
     icon: IoCheckmarkDoneCircleOutline,
-    unit: "questions answered",
+    unitKey: "questions",
     tiers: [
-      { tier: "bronze",   threshold: 50,   label: "50 questions" },
-      { tier: "silver",   threshold: 150,  label: "150 questions" },
-      { tier: "gold",     threshold: 300,  label: "300 questions" },
-      { tier: "platinum", threshold: 600,  label: "600 questions" },
-      { tier: "crown",    threshold: 1000, label: "1000 questions" },
+      { tier: "bronze",   threshold: 50 },
+      { tier: "silver",   threshold: 150 },
+      { tier: "gold",     threshold: 300 },
+      { tier: "platinum", threshold: 600 },
+      { tier: "crown",    threshold: 1000 },
     ],
   },
   {
     key: "studyStreak",
-    title: "Study Streak",
     icon: IoFlameOutline,
-    unit: "day streak",
+    unitKey: "days",
     tiers: [
-      { tier: "bronze",   threshold: 3,   label: "3 days" },
-      { tier: "silver",   threshold: 7,   label: "7 days" },
-      { tier: "gold",     threshold: 30,  label: "30 days" },
-      { tier: "platinum", threshold: 60,  label: "60 days" },
-      { tier: "crown",    threshold: 100, label: "100 days" },
+      { tier: "bronze",   threshold: 3 },
+      { tier: "silver",   threshold: 7 },
+      { tier: "gold",     threshold: 30 },
+      { tier: "platinum", threshold: 60 },
+      { tier: "crown",    threshold: 100 },
     ],
   },
   {
     key: "storiesListened",
-    title: "Stories Heard",
     icon: IoLibraryOutline,
-    unit: "stories completed",
+    unitKey: "stories",
     tiers: [
-      { tier: "bronze",   threshold: 1,  label: "1 story" },
-      { tier: "silver",   threshold: 5,  label: "5 stories" },
-      { tier: "gold",     threshold: 10, label: "10 stories" },
-      { tier: "platinum", threshold: 20, label: "20 stories" },
-      { tier: "crown",    threshold: 30, label: "30 stories" },
+      { tier: "bronze",   threshold: 1 },
+      { tier: "silver",   threshold: 5 },
+      { tier: "gold",     threshold: 10 },
+      { tier: "platinum", threshold: 20 },
+      { tier: "crown",    threshold: 30 },
     ],
   },
   {
     key: "wordsLearned",
-    title: "Words Learned",
     icon: IoLanguageOutline,
-    unit: "words learned",
+    unitKey: "words",
     tiers: [
-      { tier: "bronze",   threshold: 10,  label: "10 words" },
-      { tier: "silver",   threshold: 50,  label: "50 words" },
-      { tier: "gold",     threshold: 150, label: "150 words" },
-      { tier: "platinum", threshold: 300, label: "300 words" },
-      { tier: "crown",    threshold: 600, label: "600 words" },
+      { tier: "bronze",   threshold: 10 },
+      { tier: "silver",   threshold: 50 },
+      { tier: "gold",     threshold: 150 },
+      { tier: "platinum", threshold: 300 },
+      { tier: "crown",    threshold: 600 },
     ],
   },
 ];
@@ -137,16 +135,34 @@ export function getTierProgress(
 }
 
 /** Human-readable value label, e.g. "2h 14m" for listening, "47" for questions */
-export function formatValue(categoryKey: string, value: number): string {
+export function formatValue(t: TFunction, categoryKey: string, value: number): string {
   if (categoryKey === "listeningTime") {
     const h = Math.floor(value / 3600);
     const m = Math.floor((value % 3600) / 60);
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
+    if (h === 0) return t("dashboard.achievements.compactMinutes", { count: m });
+    if (m === 0) return t("dashboard.achievements.compactHours", { count: h });
+    return t("dashboard.achievements.compactHoursMinutes", { hours: h, minutes: m });
   }
-  if (categoryKey === "studyStreak") return `${value} day${value !== 1 ? "s" : ""}`;
+  if (categoryKey === "studyStreak")
+    return t("dashboard.achievements.units.days", { count: value });
   if (categoryKey === "storiesListened")
-    return `${value} stor${value !== 1 ? "ies" : "y"}`;
+    return t("dashboard.achievements.units.stories", { count: value });
   return `${value}`;
+}
+
+/** Converts a raw tier threshold into the count used for its unit label
+ *  (listeningTime thresholds are stored in seconds but shown in whole hours). */
+function getTierCount(unitKey: UnitKey, threshold: number): number {
+  return unitKey === "hours" ? threshold / 3600 : threshold;
+}
+
+/** Full "N unit" phrase for a tier threshold, e.g. "5 hours", "150 questions" */
+export function getTierLabel(
+  t: TFunction,
+  category: AchievementCategory,
+  threshold: number
+): string {
+  return t(`dashboard.achievements.units.${category.unitKey}`, {
+    count: getTierCount(category.unitKey, threshold),
+  });
 }

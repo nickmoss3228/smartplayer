@@ -1,5 +1,6 @@
 // components/Dashboard/ProfileEditor.tsx
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { IoPencil, IoClose } from "react-icons/io5";
 import { UserProfile } from "../../types/Dashboard";
 import { AVATAR_OPTIONS, getAvatarById } from "../../config/avatars";
@@ -14,6 +15,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
   profile,
   onProfileUpdate,
 }) => {
+  const { t } = useTranslation();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(profile.nickname);
@@ -50,7 +52,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
       onProfileUpdate(updated);
       setShowAvatarPicker(false);
     } catch {
-      setError("Failed to save avatar.");
+      setError(t("dashboard.profile.avatarSaveError"));
     } finally {
       setSaving(false);
     }
@@ -72,7 +74,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
       onProfileUpdate(updated);
       setEditingNickname(false);
     } catch {
-      setError("Failed to save nickname.");
+      setError(t("dashboard.profile.nicknameSaveError"));
     } finally {
       setSaving(false);
     }
@@ -85,7 +87,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
         <button
           onClick={() => setShowAvatarPicker((v) => !v)}
           className="group relative w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full ring-2 ring-black/10 overflow-hidden flex-shrink-0 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/40 focus:ring-offset-2"
-          title="Change avatar"
+          title={t("dashboard.profile.changeAvatar")}
         >
           <img
             src={currentAvatar.url}
@@ -102,7 +104,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
         {showAvatarPicker && (
           <div className="absolute top-full left-0 mt-2 z-50 bg-white rounded-2xl p-3 shadow-xl border border-black/5 w-64 animate-scale-in">
             <p className="text-[11px] font-bold text-black/40 uppercase tracking-widest mb-2 px-1">
-              Choose Avatar
+              {t("dashboard.profile.chooseAvatar")}
             </p>
             <div className="grid grid-cols-5 gap-2">
               {AVATAR_OPTIONS.map((av) => (
@@ -154,7 +156,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
               disabled={saving}
               className="px-3 py-1.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/80 disabled:opacity-50 transition-colors"
             >
-              {saving ? "…" : "Save"}
+              {saving ? "…" : t("dashboard.profile.save")}
             </button>
             <button
               onClick={() => {
@@ -162,7 +164,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 setNicknameInput(profile.nickname);
               }}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/[0.04] hover:bg-black/10 transition-colors flex-shrink-0"
-              aria-label="Cancel"
+              aria-label={t("dashboard.profile.cancel")}
             >
               <IoClose size={16} className="text-black/60" />
             </button>
@@ -171,7 +173,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
           <button
             onClick={() => setEditingNickname(true)}
             className="group flex items-center gap-1.5 text-left"
-            title="Edit nickname"
+            title={t("dashboard.profile.editNickname")}
           >
             <span className="text-lg sm:text-xl font-bold text-black break-words">
               {profile.nickname}

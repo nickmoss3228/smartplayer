@@ -259,7 +259,9 @@
     "loading": "Загрузка...",
     "welcome": "С возвращением, {{username}}!",
     "subtitle": "Здесь есть вся информация про ваше обучение.",
+    "defaultSubtitle": "Обзор вашего прогресса в обучении.",
     "signOut": "Выйти",
+    "partsCount": "{{completed}} / {{total}} частей",
     "stats": {
       "overallProgress": "Общий прогресс",
       "completedLevels": "Завершенные уровни",
@@ -283,7 +285,73 @@
     "status": {
       "completed": "Завершен",
       "current": "Текущий",
+      "available": "Доступен",
       "locked": "Заблокирован"
+    },
+    "story": {
+      "finished": "Завершено",
+      "partsProgress": "{{completed}}/{{total}} частей",
+      "notStarted": "Не начато"
+    },
+    "modal": {
+      "partsCompleted": "частей завершено",
+      "progress": "Прогресс",
+      "storyParts": "Части истории",
+      "part": "Часть",
+      "noStories": "Пока нет доступных историй.",
+      "close": "Закрыть"
+    },
+    "wallet": {
+      "title": "Кошелёк"
+    },
+    "achievements": {
+      "title": "Достижения",
+      "maxAchieved": "Максимум достигнут!",
+      "next": "Далее: {{label}}",
+      "categories": {
+        "listeningTime": { "title": "Время прослушивания", "unit": "прослушивания" },
+        "questionsAnswered": { "title": "Вопросы", "unit": "отвечено" },
+        "studyStreak": { "title": "Серия дней", "unit": "подряд" },
+        "storiesListened": { "title": "Истории", "unit": "прослушано" },
+        "wordsLearned": { "title": "Слова", "unit": "выучено" }
+      },
+      "units": {
+        "hours_one": "{{count}} час",
+        "hours_few": "{{count}} часа",
+        "hours_many": "{{count}} часов",
+        "hours_other": "{{count}} часа",
+        "questions_one": "{{count}} вопрос",
+        "questions_few": "{{count}} вопроса",
+        "questions_many": "{{count}} вопросов",
+        "questions_other": "{{count}} вопроса",
+        "days_one": "{{count}} день",
+        "days_few": "{{count}} дня",
+        "days_many": "{{count}} дней",
+        "days_other": "{{count}} дня",
+        "stories_one": "{{count}} история",
+        "stories_few": "{{count}} истории",
+        "stories_many": "{{count}} историй",
+        "stories_other": "{{count}} истории",
+        "words_one": "{{count}} слово",
+        "words_few": "{{count}} слова",
+        "words_many": "{{count}} слов",
+        "words_other": "{{count}} слова"
+      },
+      "compactHours": "{{count}}ч",
+      "compactMinutes": "{{count}}м",
+      "compactHoursMinutes": "{{hours}}ч {{minutes}}м"
+    },
+    "profile": {
+      "changeAvatar": "Сменить аватар",
+      "chooseAvatar": "Выбор аватара",
+      "editNickname": "Изменить никнейм",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "avatarSaveError": "Не удалось сохранить аватар.",
+      "nicknameSaveError": "Не удалось сохранить никнейм."
+    },
+    "difficultyModal": {
+      "close": "Закрыть"
     }
   },
   "howToUse": {

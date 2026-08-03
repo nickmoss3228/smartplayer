@@ -1,10 +1,12 @@
 // components/Dashboard/WalletRow.tsx
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchWallet } from "../../services/walletServices";
 import { Wallet } from "../../types/Wallet";
 import { CURRENCIES } from "../../config/currencies";
 
 const WalletRow: React.FC = () => {
+  const { t } = useTranslation();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +46,7 @@ const WalletRow: React.FC = () => {
   return (
     <div className="mb-6">
       <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
-        Wallet
+        {t("dashboard.wallet.title")}
       </h2>
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {CURRENCIES.map(({ key, label, icon: Icon, chipClasses }) => (

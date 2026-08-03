@@ -1,6 +1,7 @@
 // components/Dashboard/Dashboard.tsx
 import React, { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { IoLogOutOutline, IoChevronForward } from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
 import { fetchAllDashboardData } from "../../services/dashboardServices";
@@ -19,6 +20,7 @@ import WalletRow from "./WalletRow";
 import { useProfile } from "../../context/ProfileContext";
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const { user, signOut, loading } = useAuth();
 
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
@@ -80,7 +82,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-black text-xl">Loading...</div>
+        <div className="text-black text-xl">{t("dashboard.loading")}</div>
       </div>
     );
   }
@@ -119,7 +121,7 @@ const Dashboard: React.FC = () => {
                   <div className="min-w-0">
                     <p className="font-bold text-black truncate">{user.email}</p>
                     <p className="text-xs text-black/40">
-                      Here's an overview of your learning progress.
+                      {t("dashboard.defaultSubtitle")}
                     </p>
                   </div>
                 </div>
@@ -135,10 +137,10 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="flex-1 sm:text-center min-w-0">
                 <p className="text-[10px] uppercase tracking-widest text-white/75 font-semibold">
-                  Current Rank
+                  {t("dashboard.stats.currentRank")}
                 </p>
                 <p className="text-base sm:text-lg font-bold capitalize text-white truncate">
-                  {rank.title}
+                  {t(`dashboard.ranks.${rank.title}`)}
                 </p>
               </div>
               <p className="text-xs text-white/75 font-medium flex-shrink-0">
@@ -153,7 +155,7 @@ const Dashboard: React.FC = () => {
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
             >
               <IoLogOutOutline size={16} />
-              Sign Out
+              {t("dashboard.signOut")}
             </button>
           </div>
         </div>
@@ -199,10 +201,10 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <span className="font-bold capitalize text-black/85 text-sm sm:text-base block">
-                            {difficulty}
+                            {t(`dashboard.difficulty.${difficulty}`)}
                           </span>
                           <span className="text-[11px] text-black/40">
-                            {info.completed} / {info.total} parts
+                            {t("dashboard.partsCount", { completed: info.completed, total: info.total })}
                           </span>
                         </div>
                         <span className="text-xl sm:text-2xl font-extrabold text-black/85 flex-shrink-0">

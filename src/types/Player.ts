@@ -4,6 +4,7 @@ export type Difficulty = "easy" | "medium" | "hard";
 export interface QuizResults {
   correctAnswers: number;
   totalQuestions: number;
+  answers: number[];
   [key: string]: any;
 }
 

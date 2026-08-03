@@ -200,12 +200,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               e.g. iPhone 14+) between the comics block and the vocab+progress-bar
               group below — keeping vocab chips tight against the progress bar
               (easy thumb reach) instead of spreading evenly and pushing them apart.
-              Has no effect once content overflows (shorter viewports keep
-              scrolling as before). */}
+              Comics still keeps an explicit min-h (overriding the flex-item default
+              min-height:auto, which otherwise pins it to its content size) so it can
+              shrink first under pressure on short viewports — that's what stops it
+              from squeezing the vocab rows/progress bar off-screen — but no longer
+              flex-1, so it doesn't force itself to consume the leftover space that
+              justify-between needs to push the group down. */}
           <div className="flex-1 min-h-0 flex flex-col justify-between gap-3 px-4 overflow-y-auto">
             <div
               data-tour="tour-comics"
-              className="max-h-[32vh] flex items-center justify-center py-1"
+              className="min-h-[56px] max-h-[32vh] flex items-center justify-center py-1"
             >
               <ComicsDisplay
                 storyIndex={Number(trackId)}
@@ -288,26 +292,32 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               onOpenFeedback={feedback.open}
             />
 
-            {hasListenedFully && (
-              <div className="flex justify-center gap-2 mt-6">
-                <button
-                  onClick={onOpenQuiz}
-                  className="px-5 py-2 rounded-lg text-sm font-semibold
-                   bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                   hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-                >
-                  {t("player.quiz-incomp")}
-                </button>
-                <button
-                  onClick={onOpenVocabQuiz}
-                  className="px-5 py-2 rounded-lg text-sm font-semibold
-                   bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                   hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-                >
-                  {t("player.vocab-quiz")}
-                </button>
-              </div>
-            )}
+            {/* min-h reserved even when hidden — appearing shouldn't grow this
+                zone and shrink everything above it a second time on top of
+                the comics-flex change above; total bottom-zone height now
+                stays constant whether or not hasListenedFully is true. */}
+            <div className="flex justify-center gap-2 mt-6 min-h-[44px]">
+              {hasListenedFully && (
+                <>
+                  <button
+                    onClick={onOpenQuiz}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold
+                     bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                     hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
+                  >
+                    {t("player.quiz-incomp")}
+                  </button>
+                  <button
+                    onClick={onOpenVocabQuiz}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold
+                     bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
+                     hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
+                  >
+                    {t("player.vocab-quiz")}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
