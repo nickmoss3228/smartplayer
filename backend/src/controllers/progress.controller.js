@@ -4,6 +4,8 @@ import { StoryProgress } from "../models/StoryProgress.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
 import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
+import { scoreQuizSubmission } from "../helpers/scoreQuiz.js";
+import { getQuizAnswerKey, getPublicQuiz } from "../config/quizData.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
@@ -224,34 +226,85 @@ async function countUniqueCompletedStories(userId) {
   return uniqueStories.size;
 }
 
+// ── GET /progress/quiz/:difficulty/:storyId/:partNumber ────────────────────
+// Public (no auth) — serves quiz questions with `correctAnswer` stripped out,
+// so the answer key never reaches the client. Guests need this too (they take
+// quizzes before ever signing up), which is why this isn't behind auth.
+export async function getQuiz(req, res) {
+  try {
+    const { difficulty, storyId, partNumber } = req.params;
+
+    if (!difficulties.includes(difficulty))
+      return res.status(400).json({ message: "Invalid difficulty level" });
+
+    const storyMeta = (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId);
+    if (!storyMeta)
+      return res.status(400).json({ message: "Unknown storyId for this difficulty" });
+
+    const questions = getPublicQuiz(difficulty, storyId, partNumber);
+    if (!questions)
+      return res.status(404).json({ message: "No quiz available for this part" });
+
+    res.json({ questions });
+  } catch (error) {
+    console.error("Get quiz error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── POST /progress/quiz/:difficulty/:storyId/:partNumber/check-answer ──────
+// Public (no auth), same reasoning as getQuiz above. This only ever answers
+// "was that one option right or wrong" — it never reveals the full answer
+// key, and it doesn't touch progress/rewards on its own. The authoritative,
+// reward-granting grading still happens in completeLevel below, which
+// re-scores the whole submission server-side regardless of what this
+// endpoint said during the quiz.
+export async function checkQuizAnswer(req, res) {
+  try {
+    const { difficulty, storyId, partNumber } = req.params;
+    const { questionIndex, selectedOption } = req.body;
+
+    if (!difficulties.includes(difficulty))
+      return res.status(400).json({ message: "Invalid difficulty level" });
+
+    if (typeof questionIndex !== "number" || typeof selectedOption !== "number")
+      return res.status(400).json({ message: "Missing required fields" });
+
+    const answerKey = getQuizAnswerKey(difficulty, storyId, partNumber);
+    if (!answerKey || questionIndex < 0 || questionIndex >= answerKey.length)
+      return res.status(400).json({ message: "Invalid question for this part" });
+
+    res.json({ correct: selectedOption === answerKey[questionIndex] });
+  } catch (error) {
+    console.error("Check quiz answer error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 // ── POST /progress/complete ────────────────────────────────────────────────
 
 export async function completeLevel(req, res) {
   try {
-    const { difficulty, storyId, partNumber, correctAnswers, totalQuestions } =
-      req.body;
+    const { difficulty, storyId, partNumber, answers } = req.body;
     const userId = req.user._id;
 
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
 
-    if (
-      !storyId ||
-      partNumber === undefined ||
-      correctAnswers === undefined ||
-      !totalQuestions
-    )
+    if (!storyId || partNumber === undefined || !Array.isArray(answers))
       return res.status(400).json({ message: "Missing required fields" });
-
-    if (correctAnswers > totalQuestions)
-      return res.status(400).json({
-        message: "Invalid quiz results: correct answers cannot exceed total questions",
-      });
 
     const stories = storyRegistry[difficulty] ?? [];
     const storyMeta = stories.find((s) => s.storyId === storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
+
+    // Grade against the server-held answer key — never trust a client-reported
+    // score, since a direct API call could otherwise forge a passing result.
+    const scored = scoreQuizSubmission(difficulty, storyId, partNumber, answers);
+    if (!scored)
+      return res.status(400).json({ message: "Invalid quiz submission for this part" });
+    const { correctAnswers, totalQuestions } = scored;
 
     const { isCompleted, storyProgress } = await applyLevelCompletion({
       userId,
