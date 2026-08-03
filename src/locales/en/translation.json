@@ -512,7 +512,9 @@
   "quiz-incomp": "Take the Quiz!",
   "quiz": "Quiz",
   "quiz-bottom": "Listen until the end to open the quiz.",
-  "vocab-quiz": "Vocab Quiz"
+  "vocab-quiz": "Vocab Quiz",
+  "quiz-loading": "Loading quiz...",
+  "quiz-load-error": "Failed to load the quiz. Please try again."
 },
 "stories": {
   "easy": {

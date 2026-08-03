@@ -24,124 +24,24 @@ const TheMountainFestival1 = getStorageUrl('maya/9. The Mountain Festival - Part
 const TheMountainFestival2 = getStorageUrl('maya/10. The Mountain Festival - Part 2.mp3')
 
 // Quiz Audio — Track 1: Meet Maya!
-const q1_1fast = getStorageUrl("maya/quiz/1. meet me/q1-fast.mp3");
-const q1_1slow = getStorageUrl("maya/quiz/1. meet me/q1-slow.mp3");
-const q1_2fast = getStorageUrl("maya/quiz/1. meet me/q2-fast.mp3");
-const q1_2slow = getStorageUrl("maya/quiz/1. meet me/q2-slow.mp3");
-const q1_3fast = getStorageUrl("maya/quiz/1. meet me/q3-fast.mp3"); 
-const q1_3slow = getStorageUrl("maya/quiz/1. meet me/q3-slow.mp3");
-const q1_4fast = getStorageUrl("maya/quiz/1. meet me/q4-fast.mp3");
-const q1_4slow = getStorageUrl("maya/quiz/1. meet me/q4-slow.mp3");
-const q1_5fast = getStorageUrl("maya/quiz/1. meet me/q5-fast.mp3");
-const q1_5slow = getStorageUrl("maya/quiz/1. meet me/q5-slow.mp3");
 
 // Quiz Audio — Track 2: A Trip to Kyoto
-const q2_1fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q1-fast.mp3");
-const q2_1slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q1-slow.mp3");
-const q2_2fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q2-fast.mp3");
-const q2_2slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q2-slow.mp3");
-const q2_3fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q3-fast.mp3");
-const q2_3slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q3-slow.mp3");
-const q2_4fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q4-fast.mp3");
-const q2_4slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q4-slow.mp3");
-const q2_5fast = getStorageUrl("maya/quiz/2. a trip to kyoto/q5-fast.mp3");
-const q2_5slow = getStorageUrl("maya/quiz/2. a trip to kyoto/q5-slow.mp3");
 
 // Quiz Audio — Track 3: Trying Street Food in Bangkok
-const q3_1fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q1-fast.mp3");
-const q3_1slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q1-slow.mp3");
-const q3_2fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q2-fast.mp3");
-const q3_2slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q2-slow.mp3");
-const q3_3fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q3-fast.mp3");
-const q3_3slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q3-slow.mp3");
-const q3_4fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q4-fast.mp3");
-const q3_4slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q4-slow.mp3");
-const q3_5fast = getStorageUrl("maya/quiz/3. trying street food in bangkok/q5-fast.mp3");
-const q3_5slow = getStorageUrl("maya/quiz/3. trying street food in bangkok/q5-slow.mp3");
 
 // Quiz Audio — Track 4: A Missed Connection
-const q4_1fast = getStorageUrl("maya/quiz/4. a missed connection/q1-fast.mp3");
-const q4_1slow = getStorageUrl("maya/quiz/4. a missed connection/q1-slow.mp3");
-const q4_2fast = getStorageUrl("maya/quiz/4. a missed connection/q2-fast.mp3");
-const q4_2slow = getStorageUrl("maya/quiz/4. a missed connection/q2-slow.mp3");
-const q4_3fast = getStorageUrl("maya/quiz/4. a missed connection/q3-fast.mp3");
-const q4_3slow = getStorageUrl("maya/quiz/4. a missed connection/q3-slow.mp3");
-const q4_4fast = getStorageUrl("maya/quiz/4. a missed connection/q4-fast.mp3");
-const q4_4slow = getStorageUrl("maya/quiz/4. a missed connection/q4-slow.mp3");
-const q4_5fast = getStorageUrl("maya/quiz/4. a missed connection/q5-fast.mp3");
-const q4_5slow = getStorageUrl("maya/quiz/4. a missed connection/q5-slow.mp3");
 
 // Quiz Audio — Track 5: Budgetidventure
-const q5_1fast = getStorageUrl("maya/quiz/5. family across borders/q1-fast.mp3");
-const q5_1slow = getStorageUrl("maya/quiz/5. family across borders/q1-slow.mp3");
-const q5_2fast = getStorageUrl("maya/quiz/5. family across borders/q2-fast.mp3");
-const q5_2slow = getStorageUrl("maya/quiz/5. family across borders/q2-slow.mp3");
-const q5_3fast = getStorageUrl("maya/quiz/5. family across borders/q3-fast.mp3");
-const q5_3slow = getStorageUrl("maya/quiz/5. family across borders/q3-slow.mp3");
-const q5_4fast = getStorageUrl("maya/quiz/5. family across borders/q4-fast.mp3");
-const q5_4slow = getStorageUrl("maya/quiz/5. family across borders/q4-slow.mp3");
-const q5_5fast = getStorageUrl("maya/quiz/5. family across borders/q5-fast.mp3");
-const q5_5slow = getStorageUrl("maya/quiz/5. family across borders/q5-slow.mp3");
 
 // Quiz Audio — Track 6: Discussing Environmental Concerns
-const q6_1fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q1-fast.mp3");
-const q6_1slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q1-slow.mp3");
-const q6_2fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q2-fast.mp3");
-const q6_2slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q2-slow.mp3");
-const q6_3fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q3-fast.mp3");
-const q6_3slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q3-slow.mp3");
-const q6_4fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q4-fast.mp3");
-const q6_4slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q4-slow.mp3");
-const q6_5fast = getStorageUrl("maya/quiz/6. budgeting for adventure/q5-fast.mp3");
-const q6_5slow = getStorageUrl("maya/quiz/6. budgeting for adventure/q5-slow.mp3");
 
 // Quiz Audio — Track 7: An Unexpected Interview
-const q7_1fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q1-fast.mp3");
-const q7_1slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q1-slow.mp3");
-const q7_2fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q2-fast.mp3");
-const q7_2slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q2-slow.mp3");
-const q7_3fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q3-fast.mp3");
-const q7_3slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q3-slow.mp3");
-const q7_4fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q4-fast.mp3");
-const q7_4slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q4-slow.mp3");
-const q7_5fast = getStorageUrl("maya/quiz/7. discussing environmental concerns/q5-fast.mp3");
-const q7_5slow = getStorageUrl("maya/quiz/7. discussing environmental concerns/q5-slow.mp3");
 
 // Quiz Audio — Track 8: Family Across Borders
-const q8_1fast = getStorageUrl("maya/quiz/8. an unexpected interview/q1-fast.mp3");
-const q8_1slow = getStorageUrl("maya/quiz/8. an unexpected interview/q1-slow.mp3");
-const q8_2fast = getStorageUrl("maya/quiz/8. an unexpected interview/q2-fast.mp3");
-const q8_2slow = getStorageUrl("maya/quiz/8. an unexpected interview/q2-slow.mp3");
-const q8_3fast = getStorageUrl("maya/quiz/8. an unexpected interview/q3-fast.mp3");
-const q8_3slow = getStorageUrl("maya/quiz/8. an unexpected interview/q3-slow.mp3");
-const q8_4fast = getStorageUrl("maya/quiz/8. an unexpected interview/q4-fast.mp3");
-const q8_4slow = getStorageUrl("maya/quiz/8. an unexpected interview/q4-slow.mp3");
-const q8_5fast = getStorageUrl("maya/quiz/8. an unexpected interview/q5-fast.mp3");
-const q8_5slow = getStorageUrl("maya/quiz/8. an unexpected interview/q5-slow.mp3");
 
 // Quiz Audio — Track 9: The Mountain Festival Part 1
-const q9_1fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q1-fast.mp3");
-const q9_1slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q1-slow.mp3");
-const q9_2fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q2-fast.mp3");
-const q9_2slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q2-slow.mp3");
-const q9_3fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q3-fast.mp3");
-const q9_3slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q3-slow.mp3");
-const q9_4fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q4-fast.mp3");
-const q9_4slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q4-slow.mp3");
-const q9_5fast = getStorageUrl("maya/quiz/9. the mountain festival part 1/q5-fast.mp3");
-const q9_5slow = getStorageUrl("maya/quiz/9. the mountain festival part 1/q5-slow.mp3");
 
 // Quiz Audio — Track 10: The Mountain Festival Part 2
-const q10_1fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q1-fast.mp3");
-const q10_1slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q1-slow.mp3");
-const q10_2fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q2-fast.mp3");
-const q10_2slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q2-slow.mp3");
-const q10_3fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q3-fast.mp3");
-const q10_3slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q3-slow.mp3");
-const q10_4fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q4-fast.mp3");
-const q10_4slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q4-slow.mp3");
-const q10_5fast = getStorageUrl("maya/quiz/10. the mountain festival part 2/q5-fast.mp3");
-const q10_5slow = getStorageUrl("maya/quiz/10. the mountain festival part 2/q5-slow.mp3");
 
 import { AudioTrack } from "../../types";
 
@@ -229,63 +129,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 29.6, label: "7", color: "red" },
       { time: 35.6, label: "8", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What is Maya's profession?",
-        options: [
-          "A travel agent",
-          "A journalist",
-          "A photographer",
-          "An online magazine editor",
-        ],
-        correctAnswer: 1,
-        referenceTime: 3.1,
-        audio: { fast: q1_1fast, slow: q1_1slow },
-      },
-      {
-        question: "What allows Maya the flexibility to travel?",
-        options: [
-          "Her personal savings",
-          "Her job at an online magazine",
-          "Her family's support",
-          "Freelance work",
-        ],
-        correctAnswer: 1,
-        referenceTime: 9.2,
-        audio: { fast: q1_2fast, slow: q1_2slow },
-      },
-      {
-        question: "What does Maya enjoy doing in her quiet moments?",
-        options: [
-          "Watching movies",
-          "Reflecting on experiences and writing them down",
-          "Socializing with friends",
-          "Planning new trips",
-        ],
-        correctAnswer: 1,
-        referenceTime: 26.5,
-        audio: { fast: q1_3fast, slow: q1_3slow },
-      },
-      {
-        question: "What city does Maya currently live in?",
-        options: ["Kyoto", "Bangkok", "New York City", "London"],
-        correctAnswer: 2,
-        referenceTime: 29.8,
-        audio: { fast: q1_4fast, slow: q1_4slow },
-      },
-      {
-        question: "What two things is Maya passionate about?",
-        options: [
-          "Eating street food and sunbathing",
-          "Discovering different cultures and understanding diverse perspectives",
-          "Interviewing celebrities and taking photos",
-          "Learning new languages and reading books",
-        ],
-        correctAnswer: 1,
-        referenceTime: 13.4,
-        audio: { fast: q1_5fast, slow: q1_5slow },
-      },
-    ],
+
   },
   {
     id: "2",
@@ -392,64 +236,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 61, label: "12", color: "red" },
       { time: 63, label: "13", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Where did Maya's assignment take her last spring?",
-        options: [
-          "Bangkok, Thailand",
-          "Kyoto, Japan",
-          "New York City, USA",
-          "London, UK",
-        ],
-        correctAnswer: 1,
-        referenceTime: 4,
-        audio: { fast: q2_1fast, slow: q2_1slow },
-      },
-      {
-        question: "What district was Maya particularly captivated by in Kyoto?",
-        options: ["Shibuya", "Gion", "Harajuku", "Akihabara"],
-        correctAnswer: 1,
-        referenceTime: 11.8,
-        audio: { fast: q2_2fast, slow: q2_2slow },
-      },
-      {
-        question: "What did Maya discover about the cost of living in Kyoto?",
-        options: [
-          "It has decreased significantly",
-          "It has remained stable",
-          "It has risen up drastically in the past 10 years",
-          "Locals were not concerned about it",
-        ],
-        correctAnswer: 2,
-        referenceTime: 51.4,
-        audio: { fast: q2_3fast, slow: q2_3slow },
-      },
-      {
-        question:
-          "What helped Maya connect with local shopkeepers and artisans?",
-        options: [
-          "Hiring a translator",
-          "Using a translation app",
-          "Learning a few basic Japanese phrases",
-          "Speaking English loudly",
-        ],
-        correctAnswer: 2,
-        referenceTime: 24.9,
-        audio: { fast: q2_4fast, slow: q2_4slow },
-      },
-      {
-        question: "What was the result of Maya's articles about Japan?",
-        options: [
-          "She was fired from her job",
-          "She decided to quit her job",
-          "She got promoted at her job",
-          "She started her own magazine",
-        ],
-        correctAnswer: 2,
-        referenceTime: 65.8,
-        audio: { fast: q2_5fast, slow: q2_5slow },
-      },
-    ],
+
   },
   {
     id: "3",
@@ -583,65 +370,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 65, label: "12", color: "red" },
       { time: 73, label: "13", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Where did Maya's company send her after her visit to Japan?",
-        options: [
-          "Kyoto",
-          "Bangkok, Thailand",
-          "New York City",
-          "Hanoi, Vietnam",
-        ],
-        correctAnswer: 1,
-        referenceTime: 3.1,
-        audio: { fast: q3_1fast, slow: q3_1slow },
-      },
-      {
-        question: "What was Maya's primary research objective in Bangkok?",
-        options: [
-          "To study ancient temples",
-          "To explore the nightlife scene",
-          "To research local street food culture",
-          "To learn the Thai language",
-        ],
-        correctAnswer: 2,
-        referenceTime: 20.4,
-        audio: { fast: q3_2fast, slow: q3_2slow },
-      },
-      {
-        question: "Which of these foods did Maya try in Bangkok?",
-        options: ["Sushi", "Fried insect", "Pizza", "Tacos"],
-        correctAnswer: 1,
-        referenceTime: 36.2,
-        audio: { fast: q3_3fast, slow: q3_3slow },
-      },
-      {
-        question:
-          "What was Maya's main takeaway regarding the atmosphere of Bangkok's street food scene?",
-        options: [
-          "It was boring and uneventful",
-          "It was quiet and peaceful",
-          "It was vibrant and full of stories",
-          "It was too crowded and chaotic",
-        ],
-        correctAnswer: 2,
-        referenceTime: 50,
-        audio: { fast: q3_4fast, slow: q3_4slow },
-      },
-      {
-        question:
-          "What health issue did Maya experience after her trip to Bangkok?",
-        options: [
-          "A bad cold",
-          "A nasty stomach bug",
-          "Jet lag",
-          "A minor allergic reaction",
-        ],
-        correctAnswer: 1,
-        referenceTime: 64.8,
-        audio: { fast: q3_5fast, slow: q3_5slow },
-      },
-    ],
+
   },
   {
     id: "4",
@@ -771,60 +500,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 63.5, label: "10", color: "red" },
       { time: 71.5, label: "11", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What was Maya's role at the company a year ago?",
-        options: [
-          "Senior journalist",
-          "Intern journalist",
-          "Editor-in-chief",
-          "Freelance writer",
-        ],
-        correctAnswer: 1,
-        referenceTime: 8.1,
-        audio: { fast: q4_1fast, slow: q4_1slow },
-      },
-      {
-        question: "Where was Maya supposed to travel for her first job abroad?",
-        options: ["France", "Germany", "Italy", "Spain"],
-        correctAnswer: 1,
-        referenceTime: 14.2,
-        audio: { fast: q4_2fast, slow: q4_2slow },
-      },
-      {
-        question:
-          "What was the initial problem Maya encountered during her travel?",
-        options: [
-          "She lost her passport",
-          "Her train was delayed, causing her to miss a connection",
-          "She missed her flight",
-          "She got lost in Prague",
-        ],
-        correctAnswer: 1,
-        referenceTime: 26.7,
-        audio: { fast: q4_3fast, slow: q4_3slow },
-      },
-      {
-        question: "In which city did Maya miss her connecting train?",
-        options: ["Prague", "Berlin", "Dresden", "Frankfurt"],
-        correctAnswer: 2,
-        referenceTime: 29.2,
-        audio: { fast: q4_4fast, slow: q4_4slow },
-      },
-      {
-        question:
-          "What did Maya visit in Dresden that she wouldn't have otherwise?",
-        options: [
-          "The Brandenburg Gate",
-          "The Eiffel Tower",
-          "The Semper Opera",
-          "The Colosseum",
-        ],
-        correctAnswer: 2,
-        referenceTime: 68.2,
-        audio: { fast: q4_5fast, slow: q4_5slow },
-      },
-    ],
+
   },
   {
     id: "5",
@@ -954,69 +630,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 68.6, label: "10", color: "red" },
       { time: 72, label: "11", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "What kind of accommodation does Maya often use to save money?",
-        options: [
-          "Luxury hotels",
-          "Hostels or guesthouses",
-          "Airbnbs exclusively",
-          "Resorts",
-        ],
-        correctAnswer: 1,
-        referenceTime: 10.8,
-        audio: { fast: q5_1fast, slow: q5_1slow },
-      },
-      {
-        question: "Where does Maya often eat to save money?",
-        options: [
-          "High-end restaurants",
-          "Fast food chains",
-          "Local markets",
-          "Hotel room service",
-        ],
-        correctAnswer: 2,
-        referenceTime: 14,
-        audio: { fast: q5_2fast, slow: q5_2slow },
-      },
-      {
-        question: "What is Maya's opinion on food in cheaper places?",
-        options: [
-          "It's usually bland and uninteresting",
-          "It's much tastier than in expensive ones",
-          "It's often unhealthy",
-          "She avoids it completely",
-        ],
-        correctAnswer: 1,
-        referenceTime: 21.7,
-        audio: { fast: q5_3fast, slow: q5_3slow },
-      },
-      {
-        question: "What does Maya create before each trip?",
-        options: [
-          "A detailed itinerary for sightseeing",
-          "A list of emergency contacts",
-          "A detailed budget",
-          "A packing list",
-        ],
-        correctAnswer: 2,
-        referenceTime: 37.4,
-        audio: { fast: q5_4fast, slow: q5_4slow },
-      },
-      {
-        question: "What does Maya use to track her spending?",
-        options: [
-          "A notebook and pen",
-          "Travel apps",
-          "Her bank statements",
-          "She doesn't track it",
-        ],
-        correctAnswer: 1,
-        referenceTime: 69.2,
-        audio: { fast: q5_5fast, slow: q5_5slow },
-      },
-    ],
+
   },
   {
     id: "6",
@@ -1145,67 +759,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 56.2, label: "11", color: "red" },
       { time: 64.2, label: "12", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "Where did Maya visit last week to write an article about environmental pollution?",
-        options: [
-          "A large city in China",
-          "A small coastal village in Vietnam",
-          "A desert community in Africa",
-          "An island nation in the Pacific",
-        ],
-        correctAnswer: 1,
-        referenceTime: 3.3,
-        audio: { fast: q6_1fast, slow: q6_1slow },
-      },
-      {
-        question:
-          "Who did Maya have a long conversation with about the impact of pollution?",
-        options: [
-          "A local farmer",
-          "A government official",
-          "A local fisherman",
-          "A tour guide",
-        ],
-        correctAnswer: 2,
-        referenceTime: 18,
-        audio: { fast: q6_2fast, slow: q6_2slow },
-      },
-      {
-        question: "What issues did the fisherman mention regarding pollution?",
-        options: [
-          "Rising sea levels and coral bleaching",
-          "Declining fish stocks and plastic waste in nets",
-          "Oil spills and overfishing",
-          "Noise pollution and air pollution",
-        ],
-        correctAnswer: 1,
-        referenceTime: 23.9,
-        audio: { fast: q6_3fast, slow: q6_3slow },
-      },
-      {
-        question:
-          "What percentage of the local water supply in the village is clean enough?",
-        options: ["50%", "75%", "20%", "100%"],
-        correctAnswer: 2,
-        referenceTime: 38.7,
-        audio: { fast: q6_4fast, slow: q6_4slow },
-      },
-      {
-        question:
-          "How did Maya's newspaper react to her work on environmental concerns?",
-        options: [
-          "They were indifferent",
-          "They were delighted",
-          "They were critical",
-          "They asked her to rewrite it",
-        ],
-        correctAnswer: 1,
-        referenceTime: 64.3,
-        audio: { fast: q6_5fast, slow: q6_5slow },
-      },
-    ],
+
   },
   {
     id: "7",
@@ -1363,68 +917,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 72.8, label: "19", color: "red" },
       { time: 79.3, label: "20", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "Where was the journalist sent to write a story about local crafts?",
-        options: ["Italy", "Morocco", "Germany", "Vietnam"],
-        correctAnswer: 1,
-        referenceTime: 3.2,
-        audio: { fast: q7_1fast, slow: q7_1slow },
-      },
-      {
-        question:
-          "How did the journalist primarily communicate with the old craftsman who didn't speak English?",
-        options: [
-          "Through an interpreter",
-          "Using a phone's translation app and gestures",
-          "By learning some Arabic quickly",
-          "She didn't communicate with him",
-        ],
-        correctAnswer: 1,
-        referenceTime: 35.6,
-        audio: { fast: q7_2fast, slow: q7_2slow },
-      },
-      {
-        question:
-          "What did the craftsman's father teach him about making leather bags?",
-        options: [
-          "How to dye the leather",
-          "How to cut the leather so the bag would stay strong",
-          "How to stitch patterns",
-          "How to sell them at the market",
-        ],
-        correctAnswer: 1,
-        referenceTime: 44.3,
-        audio: { fast: q7_3fast, slow: q7_3slow },
-      },
-      {
-        question:
-          "What challenge did the craftsman mention regarding his craft?",
-        options: [
-          "Lack of customers",
-          "Special leather was harder to find and younger people were leaving the craft",
-          "Too much competition",
-          "High cost of tools",
-        ],
-        correctAnswer: 1,
-        referenceTime: 56,
-        audio: { fast: q7_4fast, slow: q7_4slow },
-      },
-      {
-        question:
-          "What was the journalist's reaction to missing her next meeting because of the interview?",
-        options: [
-          "She was very upset",
-          "She didn't care",
-          "She rushed to her next meeting",
-          "She called her editor to apologize",
-        ],
-        correctAnswer: 1,
-        referenceTime: 72.9,
-        audio: { fast: q7_5fast, slow: q7_5slow },
-      },
-    ],
+
   },
   {
     id: "8",
@@ -1570,61 +1063,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 69.2, label: "14", color: "red" },
       { time: 75.2, label: "15", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Where do the journalist's parents live?",
-        options: ["Italy", "Canada", "Germany", "United States"],
-        correctAnswer: 1,
-        referenceTime: 8.1,
-        audio: { fast: q8_1fast, slow: q8_1slow },
-      },
-      {
-        question: "What is the profession of the journalist's older brother?",
-        options: ["Artist", "Engineer", "Journalist", "Teacher"],
-        correctAnswer: 1,
-        referenceTime: 10.4,
-        audio: { fast: q8_2fast, slow: q8_2slow },
-      },
-      {
-        question:
-          "How does the family primarily stay connected despite being spread across the world?",
-        options: [
-          "Sending postcards",
-          "Regular video calls, group chat, and voice notes",
-          "Meeting in person every month",
-          "Emails only",
-        ],
-        correctAnswer: 1,
-        referenceTime: 19,
-        audio: { fast: q8_3fast, slow: q8_3slow },
-      },
-      {
-        question:
-          "What did the journalist do when she visited her sister in Italy?",
-        options: [
-          "Went sightseeing",
-          "Visited her sister's art studio and watched her paint",
-          "Attended a concert",
-          "Helped her sister move",
-        ],
-        correctAnswer: 1,
-        referenceTime: 41.6,
-        audio: { fast: q8_4fast, slow: q8_4slow },
-      },
-      {
-        question:
-          "What does family provide for the journalist, especially with her work keeping her on the move?",
-        options: [
-          "Financial support",
-          "Steady support and a sense of belonging",
-          "New job opportunities",
-          "Travel advice",
-        ],
-        correctAnswer: 1,
-        referenceTime: 75.5,
-        audio: { fast: q8_5fast, slow: q8_5slow },
-      },
-    ],
+
   },
   {
     id: "9",
@@ -1759,69 +1198,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 70.4, label: "14", color: "red" },
       { time: 75.5, label: "15", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Where was the journalist sent to cover a mountain festival?",
-        options: [
-          "Andes Mountains",
-          "Peruvian highlands",
-          "Himalayan mountains",
-          "Rocky Mountains",
-        ],
-        correctAnswer: 1,
-        referenceTime: 6.2,
-        audio: { fast: q9_1fast, slow: q9_1slow },
-      },
-      {
-        question: "What type of festival was the journalist sent to cover?",
-        options: [
-          "A modern music festival",
-          "An ancient mountain festival tied to weather, harvests, and ancestral memory",
-          "A food festival",
-          "A craft fair",
-        ],
-        correctAnswer: 1,
-        referenceTime: 8.0,
-        audio: { fast: q9_2fast, slow: q9_2slow },
-      },
-      {
-        question: "How did the villagers initially react to the journalist?",
-        options: [
-          "They were very welcoming",
-          "They were cautious, looking at the outsider with polite reserve",
-          "They ignored her",
-          "They asked her to leave",
-        ],
-        correctAnswer: 1,
-        referenceTime: 51.6,
-        audio: { fast: q9_3fast, slow: q9_3slow },
-      },
-      {
-        question:
-          "What did the journalist do that seemed to gain the villagers' trust?",
-        options: [
-          "She bought many souvenirs",
-          "She helped a family set up an altar of corn and coca leaves",
-          "She offered them money",
-          "She performed a song",
-        ],
-        correctAnswer: 1,
-        referenceTime: 56.7,
-        audio: { fast: q9_4fast, slow: q9_4slow },
-      },
-      {
-        question: "What did the elders invite the journalist to do by sunset?",
-        options: [
-          "To join the dancers",
-          "To sit on the plaza's edge while a line of dancers went toward the mountain",
-          "To have dinner with them",
-          "To interview them immediately",
-        ],
-        correctAnswer: 1,
-        referenceTime: 63.9,
-        audio: { fast: q9_5fast, slow: q9_5slow },
-      },
-    ],
+
   },
   {
     id: "10",
@@ -1973,73 +1350,7 @@ export const mediumAudioData: AudioTrack[] = [
       { time: 82, label: "13", color: "red" },
       { time: 89.5, label: "14", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "What happened under the clear night sky during the festival?",
-        options: [
-          "A fireworks display",
-          "The festival deepened, with torches lighting paths and drums pounding",
-          "A silent meditation",
-          "Everyone went to sleep",
-        ],
-        correctAnswer: 1,
-        referenceTime: 9.5,
-        audio: { fast: q10_1fast, slow: q10_1slow },
-      },
-      {
-        question:
-          "What did the journalist observe about young people during the festival?",
-        options: [
-          "They were bored and left early",
-          "They were in traditional dress, using smartphones to record moments their grandparents learned by heart",
-          "They were singing modern songs",
-          "They were performing a dance solo",
-        ],
-        correctAnswer: 1,
-        referenceTime: 33.5,
-        audio: { fast: q10_2fast, slow: q10_2slow },
-      },
-      {
-        question:
-          "What kind of food was shared communally during the festival?",
-        options: [
-          "Pizza and soda",
-          "Stews thick with local tubers, roasted corn, and a warm brew",
-          "Fast food from the city",
-          "Only fruit",
-        ],
-        correctAnswer: 1,
-        referenceTime: 43.3,
-        audio: { fast: q10_3fast, slow: q10_3slow },
-      },
-      {
-        question:
-          "What happened when a dancer performed a solo meant to call rain?",
-        options: [
-          "The village erupted in cheers",
-          "The village fell into a hush so complete the journalist could hear her own breathing",
-          "Everyone started dancing",
-          "It immediately started raining",
-        ],
-        correctAnswer: 1,
-        referenceTime: 61.3,
-        audio: { fast: q10_4fast, slow: q10_4slow },
-      },
-      {
-        question:
-          "What did the journalist realize this story was about, beyond documenting rituals?",
-        options: [
-          "The beauty of nature",
-          "Witnessing continuity, vulnerability, and resilience",
-          "The economic impact of tourism",
-          "The challenges of remote travel",
-        ],
-        correctAnswer: 1,
-        referenceTime: 76.8,
-        audio: { fast: q10_5fast, slow: q10_5slow },
-      },
-    ],
+
   },
 ];
 // export interface VocabEntry {

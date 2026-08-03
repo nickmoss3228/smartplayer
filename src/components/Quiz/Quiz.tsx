@@ -9,6 +9,7 @@ import { playFanfare } from "../../utils/soundEffects";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { CURRENCIES, QUIZ_PASS_BITAWARD } from "../../config/currencies";
+import { checkQuizAnswer } from "../../services/quizServices";
 
 const BitAwardIcon = CURRENCIES[0].icon;
 
@@ -16,6 +17,9 @@ type FeedbackState = "idle" | "correct" | "incorrect";
 
 const Quiz: React.FC<QuizProps> = ({
   questions,
+  difficulty,
+  storyId,
+  partNumber,
   onQuizComplete,
   onAnswerResult,
   isSubmitting = false,
@@ -26,6 +30,7 @@ const Quiz: React.FC<QuizProps> = ({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>("idle");
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const [correctFlags, setCorrectFlags] = useState<boolean[]>([]);
   const [celebrate, setCelebrate] = useState(false);
   const [hasListened, setHasListened] = useState(false);
   const { t } = useTranslation()
@@ -74,7 +79,7 @@ const Quiz: React.FC<QuizProps> = ({
     }
   }, [showResults]);
 
-  const handleAnswer = (selectedOption: number) => {
+  const handleAnswer = async (selectedOption: number) => {
     if (selectedAnswer !== null || feedback !== "idle") return;
     if (requiresListen && !hasListened) return;
     stop();
@@ -82,13 +87,29 @@ const Quiz: React.FC<QuizProps> = ({
     const newAnswers = [...userAnswers];
     newAnswers[currentQuestion] = selectedOption;
     setUserAnswers(newAnswers);
-    const isCorrect = selectedOption === questions[currentQuestion].correctAnswer;
+
+    let isCorrect = false;
+    try {
+      isCorrect = await checkQuizAnswer(
+        difficulty,
+        storyId,
+        partNumber,
+        currentQuestion,
+        selectedOption,
+      );
+    } catch (error) {
+      console.error("Failed to check quiz answer:", error);
+    }
+
+    const newFlags = [...correctFlags];
+    newFlags[currentQuestion] = isCorrect;
+    setCorrectFlags(newFlags);
     setFeedback(isCorrect ? "correct" : "incorrect");
     onAnswerResult?.(isCorrect, currentQuestion);
   };
 
   const handleNext = () => {
-    const isCorrect = selectedAnswer === questions[currentQuestion].correctAnswer;
+    const isCorrect = correctFlags[currentQuestion] ?? false;
     let newScore = score;
     if (isCorrect) {
       newScore = score + 1;
@@ -116,6 +137,7 @@ const Quiz: React.FC<QuizProps> = ({
     setShowResults(false);
     setSelectedAnswer(null);
     setUserAnswers([]);
+    setCorrectFlags([]);
     setFeedback("idle");
     setCelebrate(false);
     setHasListened(false);

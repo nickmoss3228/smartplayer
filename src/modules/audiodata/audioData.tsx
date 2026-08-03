@@ -23,115 +23,15 @@ const TheLostKitten    = getStorageUrl("leo/10. The Lost Kitten.mp3");
 
 import { getStorageUrl } from "../../services/yandexStorage";
 
-const q1_1fast = getStorageUrl("leo/quiz/1.leo's life/q1-fast.mp3");
-const q1_1slow = getStorageUrl("leo/quiz/1.leo's life/q1-slow.mp3");
-const q1_2fast = getStorageUrl("leo/quiz/1.leo's life/q2-fast.mp3");
-const q1_2slow = getStorageUrl("leo/quiz/1.leo's life/q2-slow.mp3");
-const q1_3fast = getStorageUrl("leo/quiz/1.leo's life/q3-fast.mp3");
-const q1_3slow = getStorageUrl("leo/quiz/1.leo's life/q3-slow.mp3");
-const q1_4fast = getStorageUrl("leo/quiz/1.leo's life/q4-fast.mp3");
-const q1_4slow = getStorageUrl("leo/quiz/1.leo's life/q4-slow.mp3");
-const q1_5fast = getStorageUrl("leo/quiz/1.leo's life/q5-fast.mp3");
-const q1_5slow = getStorageUrl("leo/quiz/1.leo's life/q5-slow.mp3");
 
-const q2_1fast = getStorageUrl("leo/quiz/2. leo's mornings/q1fast.mp3");
-const q2_1slow = getStorageUrl("leo/quiz/2. leo's mornings/q1slow.mp3");
-const q2_2fast = getStorageUrl("leo/quiz/2. leo's mornings/q2fast.mp3");
-const q2_2slow = getStorageUrl("leo/quiz/2. leo's mornings/q2slow.mp3");
-const q2_3fast = getStorageUrl("leo/quiz/2. leo's mornings/q3fast.mp3");
-const q2_3slow = getStorageUrl("leo/quiz/2. leo's mornings/q3slow.mp3");
-const q2_4fast = getStorageUrl("leo/quiz/2. leo's mornings/q4fast.mp3");
-const q2_4slow = getStorageUrl("leo/quiz/2. leo's mornings/q4slow.mp3");
-const q2_5fast = getStorageUrl("leo/quiz/2. leo's mornings/q5fast.mp3");
-const q2_5slow = getStorageUrl("leo/quiz/2. leo's mornings/q5slow.mp3");
 
-const q3_1fast = getStorageUrl("leo/quiz/3. leo's favorite food/q1fast.mp3");
-const q3_1slow = getStorageUrl("leo/quiz/3. leo's favorite food/q1slow.mp3");
-const q3_2fast = getStorageUrl("leo/quiz/3. leo's favorite food/q2fast.mp3");
-const q3_2slow = getStorageUrl("leo/quiz/3. leo's favorite food/q2slow.mp3");
-const q3_3fast = getStorageUrl("leo/quiz/3. leo's favorite food/q3fast.mp3");
-const q3_3slow = getStorageUrl("leo/quiz/3. leo's favorite food/q3slow.mp3");
-const q3_4fast = getStorageUrl("leo/quiz/3. leo's favorite food/q4fast.mp3");
-const q3_4slow = getStorageUrl("leo/quiz/3. leo's favorite food/q4slow.mp3");
-const q3_5fast = getStorageUrl("leo/quiz/3. leo's favorite food/q5fast.mp3");
-const q3_5slow = getStorageUrl("leo/quiz/3. leo's favorite food/q5slow.mp3");
 
-const q4_1fast = getStorageUrl("leo/quiz/4. leo's family/q1fast.mp3");
-const q4_1slow = getStorageUrl("leo/quiz/4. leo's family/q1slow.mp3");
-const q4_2fast = getStorageUrl("leo/quiz/4. leo's family/q2fast.mp3");
-const q4_2slow = getStorageUrl("leo/quiz/4. leo's family/q2slow.mp3");
-const q4_3fast = getStorageUrl("leo/quiz/4. leo's family/q3fast.mp3");
-const q4_3slow = getStorageUrl("leo/quiz/4. leo's family/q3slow.mp3");
-const q4_4fast = getStorageUrl("leo/quiz/4. leo's family/q4fast.mp3");
-const q4_4slow = getStorageUrl("leo/quiz/4. leo's family/q4slow.mp3");
-const q4_5fast = getStorageUrl("leo/quiz/4. leo's family/q5fast.mp3");
-const q4_5slow = getStorageUrl("leo/quiz/4. leo's family/q5slow.mp3");
 
-const q5_1fast = getStorageUrl("leo/quiz/5. leo's clothes/q1fast.mp3");
-const q5_1slow = getStorageUrl("leo/quiz/5. leo's clothes/q1slow.mp3");
-const q5_2fast = getStorageUrl("leo/quiz/5. leo's clothes/q2fast.mp3");
-const q5_2slow = getStorageUrl("leo/quiz/5. leo's clothes/q2slow.mp3");
-const q5_3fast = getStorageUrl("leo/quiz/5. leo's clothes/q3fast.mp3");
-const q5_3slow = getStorageUrl("leo/quiz/5. leo's clothes/q3slow.mp3");
-const q5_4fast = getStorageUrl("leo/quiz/5. leo's clothes/q4fast.mp3");
-const q5_4slow = getStorageUrl("leo/quiz/5. leo's clothes/q4slow.mp3");
-const q5_5fast = getStorageUrl("leo/quiz/5. leo's clothes/q5fast.mp3");
-const q5_5slow = getStorageUrl("leo/quiz/5. leo's clothes/q5slow.mp3");
 
-const q6_1fast = getStorageUrl("leo/quiz/6. a day at the beach/q1fast.mp3");
-const q6_1slow = getStorageUrl("leo/quiz/6. a day at the beach/q1slow.mp3");
-const q6_2fast = getStorageUrl("leo/quiz/6. a day at the beach/q2fast.mp3");
-const q6_2slow = getStorageUrl("leo/quiz/6. a day at the beach/q2slow.mp3");
-const q6_3fast = getStorageUrl("leo/quiz/6. a day at the beach/q3fast.mp3");
-const q6_3slow = getStorageUrl("leo/quiz/6. a day at the beach/q3slow.mp3");
-const q6_4fast = getStorageUrl("leo/quiz/6. a day at the beach/q4fast.mp3");
-const q6_4slow = getStorageUrl("leo/quiz/6. a day at the beach/q4slow.mp3");
-const q6_5fast = getStorageUrl("leo/quiz/6. a day at the beach/q5fast.mp3");
-const q6_5slow = getStorageUrl("leo/quiz/6. a day at the beach/q5slow.mp3");
 
-const q7_1fast = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q1fast.mp3");
-const q7_1slow = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q1slow.mp3");
-const q7_2fast = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q2fast.mp3");
-const q7_2slow = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q2slow.mp3");
-const q7_3fast = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q3fast.mp3");
-const q7_3slow = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q3slow.mp3");
-const q7_4fast = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q4fast.mp3");
-const q7_4slow = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q4slow.mp3");
-const q7_5fast = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q5fast.mp3");
-const q7_5slow = getStorageUrl("leo/quiz/7. a country that Leo wants to visit/q5slow.mp3");
 
-const q8_1fast = getStorageUrl("leo/quiz/8. leo's hobbies/q1fast.mp3");
-const q8_1slow = getStorageUrl("leo/quiz/8. leo's hobbies/q1slow.mp3");
-const q8_2fast = getStorageUrl("leo/quiz/8. leo's hobbies/q2fast.mp3");
-const q8_2slow = getStorageUrl("leo/quiz/8. leo's hobbies/q2slow.mp3");
-const q8_3fast = getStorageUrl("leo/quiz/8. leo's hobbies/q3fast.mp3");
-const q8_3slow = getStorageUrl("leo/quiz/8. leo's hobbies/q3slow.mp3");
-const q8_4fast = getStorageUrl("leo/quiz/8. leo's hobbies/q4fast.mp3");
-const q8_4slow = getStorageUrl("leo/quiz/8. leo's hobbies/q4slow.mp3");
-const q8_5fast = getStorageUrl("leo/quiz/8. leo's hobbies/q5fast.mp3");
-const q8_5slow = getStorageUrl("leo/quiz/8. leo's hobbies/q5slow.mp3");
 
-const q9_1fast = getStorageUrl("leo/quiz/9. meeting a friend/q1fast.mp3");
-const q9_1slow = getStorageUrl("leo/quiz/9. meeting a friend/q1slow.mp3");
-const q9_2fast = getStorageUrl("leo/quiz/9. meeting a friend/q2fast.mp3");
-const q9_2slow = getStorageUrl("leo/quiz/9. meeting a friend/q2slow.mp3");
-const q9_3fast = getStorageUrl("leo/quiz/9. meeting a friend/q3fast.mp3");
-const q9_3slow = getStorageUrl("leo/quiz/9. meeting a friend/q3slow.mp3");
-const q9_4fast = getStorageUrl("leo/quiz/9. meeting a friend/q4fast.mp3");
-const q9_4slow = getStorageUrl("leo/quiz/9. meeting a friend/q4slow.mp3");
-const q9_5fast = getStorageUrl("leo/quiz/9. meeting a friend/q5fast.mp3");
-const q9_5slow = getStorageUrl("leo/quiz/9. meeting a friend/q5slow.mp3");
 
-const q10_1fast = getStorageUrl("leo/quiz/10. the lost kitten/q1fast.mp3");
-const q10_1slow = getStorageUrl("leo/quiz/10. the lost kitten/q1slow.mp3");
-const q10_2fast = getStorageUrl("leo/quiz/10. the lost kitten/q2fast.mp3");
-const q10_2slow = getStorageUrl("leo/quiz/10. the lost kitten/q2slow.mp3");
-const q10_3fast = getStorageUrl("leo/quiz/10. the lost kitten/q3fast.mp3");
-const q10_3slow = getStorageUrl("leo/quiz/10. the lost kitten/q3slow.mp3");
-const q10_4fast = getStorageUrl("leo/quiz/10. the lost kitten/q4fast.mp3");
-const q10_4slow = getStorageUrl("leo/quiz/10. the lost kitten/q4slow.mp3");
-const q10_5fast = getStorageUrl("leo/quiz/10. the lost kitten/q5fast.mp3");
-const q10_5slow = getStorageUrl("leo/quiz/10. the lost kitten/q5slow.mp3");
 
 import { AudioTrack } from "../../types";
 import { getHelpAudioUrls } from "./helpAudioUrls";
@@ -163,43 +63,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 53.4, label: "15", color: "red" },
       { time: 60.5, label: "16", color: "red" },
     ],
-    quiz: [
-  {
-    question: "How old is Leo?",
-    options: ["20", "22", "25", "18"],
-    correctAnswer: 1,
-    referenceTime: 0,
-    audio: { fast: q1_1fast, slow: q1_1slow },
-  },
-  {
-    question: "What is the name of Leo's cat?",
-    options: ["Ginger", "Tiger", "Fluffy", "Shadow"],
-    correctAnswer: 0,
-    referenceTime: 0,
-    audio: { fast: q1_2fast, slow: q1_2slow },
-  },
-  {
-    question: "Where does Leo work?",
-    options: ["At a bank", "At a school", "At a restaurant", "At a local shop"],
-    correctAnswer: 3,
-    referenceTime: 0,
-    audio: { fast: q1_3fast, slow: q1_3slow },
-  },
-  {
-    question: "What is the name of the town where Leo lives?",
-    options: ["Moscow", "London", "Saint-Petersburg", "Paris"],
-    correctAnswer: 2,
-    referenceTime: 0,
-    audio: { fast: q1_4fast, slow: q1_4slow },
-  },
-  {
-    question: "What does Leo enjoy doing in his free time?",
-    options: ["Playing videogames", "Listening to music and birds", "Walking in the forest", "Drinking coffee"],
-    correctAnswer: 1,
-    referenceTime: 0,
-    audio: { fast: q1_5fast, slow: q1_5slow },
-  },
-],
+
   },
   {
     id: "2",
@@ -227,63 +91,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 109.9, label: "15", color: "red" },
       { time: 117, label: "16", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What time does Leo usually wake up?",
-        options: ["Seven o'clock", "Eight o'clock", "Six o'clock", "Five o'clock"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q2_1fast, slow: q2_1slow },
-      },
-      {
-        question: "What does Leo usually eat for breakfast?",
-        options: [
-          "Porridge and fruit",
-          "Eggs with avocado and toast",
-          "Cereal and milk",
-          "Pancakes and juice",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q2_2fast, slow: q2_2slow },
-      },
-      {
-        question: "What happened on the bad Monday morning?",
-        options: [
-          "Leo missed the bus",
-          "Leo's cat ran away",
-          "Leo woke up late and forgot to feed Ginger",
-          "Leo forgot his keys",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q2_3fast, slow: q2_3slow },
-      },
-      {
-        question: "What did Leo's boss say about his work?",
-        options: [
-          "His sales were going up",
-          "He was doing great",
-          "His sales were going down",
-          "He needed to work faster",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q2_4fast, slow: q2_4slow },
-      },
-      {
-        question: "What did Leo do at the end of the bad day?",
-        options: [
-          "He went for a walk",
-          "He called his boss",
-          "He watched a TV show about animals",
-          "He cooked dinner for Ginger",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q2_5fast, slow: q2_5slow },
-      },
-    ],
+
   },
   {
     id: "3",
@@ -312,48 +120,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 103, label: "16", color: "red" },
 
     ],
-    quiz: [
-      {
-        question: "What is Leo's favorite food?",
-        options: ["Pasta", "Burgers", "Pizza", "Lasagna"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q3_1fast, slow: q3_1slow },
-      },
-      {
-        question: "What toppings does Leo like on his pizza?",
-        options: [
-          "Bell peppers",
-          "Mushrooms",
-          "Olives",
-          "Cheese",
-        ],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q3_2fast, slow: q3_2slow },
-      },
-      {
-        question: "Where does Leo buy fresh dough?",
-        options: ["At work", "In the market", "In the supermarket", "He makes it at home"],
-        correctAnswer: 0,
-        referenceTime: 0,
-        audio: { fast: q3_3fast, slow: q3_3slow },
-      },
-      {
-        question: "What does Leo's mother make every Sunday?",
-        options: ["Sandwiches", "Apple pie", "Lasagna", "Pizza"],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q3_4fast, slow: q3_4slow },
-      },
-      {
-        question: "What meal does Leo's cat Ginger really like?",
-        options: ["Pizza", "Pasta", "Burgers", "Lasagna"],
-        correctAnswer: 0,
-        referenceTime: 0,
-        audio: { fast: q3_5fast, slow: q3_5slow },
-      },
-    ],
+
   },
   {
     id: "4",
@@ -383,67 +150,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 97, label: "17", color: "red" },
       { time: 105, label: "18", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What is Leo's mother's job",
-        options: [
-          "At a university",
-          "At a local shop",
-          "At an art gallery",
-          "At a school",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q4_1fast, slow: q4_1slow },
-      },
-      {
-        question: "What does Leo's father do?",
-        options: [
-          "He is a teacher",
-          "He runs a business",
-          "He works at a shop",
-          "He is an engineer",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q4_2fast, slow: q4_2slow },
-      },
-      {
-        question: "What is Leo's sister's name?",
-        options: [
-          "Layla",
-          "Maya",
-          "Mia",
-          "Tina",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q4_3fast, slow: q4_3slow },
-      },
-      {
-        question: "What country does the Leo's family want to visit?",
-        options: [
-          "Vietnam",
-          "Cambodia",
-          "China",
-          "Thailand",],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q4_4fast, slow: q4_4slow },
-      },
-      {
-        question: "What did Tom do when he was young - in Leo's opinion?",
-        options: [
-          "A basketball player",
-          "A football player",
-          "A volleyball player",
-          "A baseball player",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q4_5fast, slow: q4_5slow },
-      },
-    ],
+
   },
   {
     id: "5",
@@ -472,63 +179,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 94, label: "16", color: "red" },
 
     ],
-    quiz: [
-      {
-        question: "What does Leo usually wear when he is not at work?",
-        options: [
-          "A suit and tie",
-          "Shorts and sandals",
-          "Jeans and a T-shirt",
-          "Sweaters and boots",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q5_1fast, slow: q5_1slow },
-      },
-      {
-        question: "What color is Leo's favorite T-shirt?",
-        options: ["White", "Red", "Black", "Blue"],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q5_2fast, slow: q5_2slow },
-      },
-      {
-        question: "What does Leo usually wear for work?",
-        options: [
-          "Jeans and a T-shirt",
-          "A white shirt and black trousers",
-          "A suit and tie",
-          "A uniform with a logo",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q5_3fast, slow: q5_3slow },
-      },
-      {
-        question: "What party idea does Leo suggest to Ted?",
-        options: [
-          "A costume party",
-          "A sports party",
-          "A pyjama party",
-          "A formal dinner",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q5_4fast, slow: q5_4slow },
-      },
-      {
-        question: "What were Leo and Ted wearing at the party in December?",
-        options: [
-          "Woolen sweaters",
-          "T-Shirts",
-          "Pyjamas",
-          "White shirts and black trousers",
-        ],
-        correctAnswer: 0,
-        referenceTime: 0,
-        audio: { fast: q5_5fast, slow: q5_5slow },
-      },
-    ],
+
   },
   {
     id: "6",
@@ -555,58 +206,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 63, label: "14", color: "red" },
       { time: 71, label: "15", color: "red" },
     ],
-    quiz: [
-      {
-        question: "How old were Leo and Jessica when they were at the beach?",
-        options: ["Eight", "Ten", "Nine", "Twelve"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q6_1fast, slow: q6_1slow },
-      },
-      {
-        question: "What did Leo build on the beach with his sister?",
-        options: [
-          "A sand sculpture",
-          "A big castle",
-          "A fort",
-          "A sand house",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q6_2fast, slow: q6_2slow },
-      },
-      {
-        question: "What did Leo's father want to teach him at the beach?",
-        options: [
-          "How to surf",
-          "How to fish",
-          "How to sail",
-          "How to swim in the sea",
-        ],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q6_3fast, slow: q6_3slow },
-      },
-      {
-        question: "What did they see while swimming?",
-        options: ["A shark", "A dolphin", "A whale", "A big fish"],
-        correctAnswer: 0,
-        referenceTime: 0,
-        audio: { fast: q6_4fast, slow: q6_4slow },
-      },
-      {
-        question: "How did Leo learn to swim?",
-        options: [
-          "His father taught him slowly",
-          "He took swimming lessons",
-          "He was scared by the shark and swam quickly",
-          "His sister helped him",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q6_5fast, slow: q6_5slow },
-      },
-    ],
+
   },
 
   {
@@ -634,63 +234,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 71, label: "14", color: "red" },
       { time: 77.7, label: "15", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Which country does Leo dream of visiting?",
-        options: ["France", "Spain", "Italy", "England"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q7_1fast, slow: q7_1slow },
-      },
-      {
-        question: "What does Leo want to see in Rome?",
-        options: [
-          "Modern museums",
-          "The old buildings and ruins",
-          "Shopping centers",
-          "Famous restaurants",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q7_2fast, slow: q7_2slow },
-      },
-      {
-        question: "What does Leo want to do in Venice?",
-        options: [
-          "Visit churches",
-          "Take photos",
-          "Go shopping",
-          "Ride a gondola",
-        ],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q7_3fast, slow: q7_3slow },
-      },
-      {
-        question: "How does Leo save money for his trip?",
-        options: [
-          "He works overtime",
-          "He borrows from his family",
-          "He doesn't save money",
-          "He saves a little each month",
-        ],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q7_4fast, slow: q7_4slow },
-      },
-      {
-        question: "Why does Leo say about France?",
-        options: [
-          "He loves France",
-          "His friend told him bad things about it",
-          "His French car breaks every month",
-          "He doesn't like French food",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q7_5fast, slow: q7_5slow },
-      },
-    ],
+
   },
   {
     id: "8",
@@ -719,43 +263,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 103.5, label: "16", color: "red" },
       { time: 109.8, label: "17", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What is Leo's favorite sport?",
-        options: ["Tennis", "Basketball", "Football", "Swimming"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q8_1fast, slow: q8_1slow },
-      },
-      {
-        question: "What is Leo and his father's favorite football team?",
-        options: ["Liverpool", "Chelsea", "Arsenal", "Manchester United"],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q8_2fast, slow: q8_2slow },
-      },
-      {
-        question: "Where does Leo play football after work?",
-        options: ["On the street", "On the stadium", "On the sports field", "At home"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q8_3fast, slow: q8_3slow },
-      },
-      {
-        question: "What TV series is Leo watching at the moment?",
-        options: ["Friends", "The Office", "Game of Thrones", "Breaking Bad"],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q8_4fast, slow: q8_4slow },
-      },
-      {
-        question: "How many DVDs does Leo's collection have?",
-        options: ["One hundred", "One hundred fifty", "One hundred thirty-seven", "Two hundred"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q8_5fast, slow: q8_5slow },
-      },
-    ],
+
   },
   {
     id: "9",
@@ -784,58 +292,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 125.4 , label: "16", color: "red" },
       { time: 130.3, label: "17", color: "red" },
     ],
-    quiz: [
-      {
-        question: "Who did Leo meet for coffee?",
-        options: ["His cousin", "His colleague", "His old school friend Sam", "His neighbor"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q9_1fast, slow: q9_1slow },
-      },
-      {
-        question: "Where did Leo and Sam meet?",
-        options: [
-          "At a small cafe near the park",
-          "At Leo's house",
-          "At the sports center",
-          "At work",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q9_2fast, slow: q9_2slow },
-      },
-      {
-        question: "What did Leo and Sam do when they skipped school?",
-        options: [
-          "They went to the cinema",
-          "They went to play football",
-          "They went to Dodo Pizza",
-          "They went to the park",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q9_3fast, slow: q9_3slow },
-      },
-      {
-        question: "What is Sam's job now?",
-        options: [
-          "Teacher",
-          "Engineer in an international company",
-          "Shop assistant",
-          "Doctor",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q9_4fast, slow: q9_4slow },
-      },
-      {
-        question: "Where is Sam going for a work trip?",
-        options: ["France", "Italy", "Germany", "England"],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q9_5fast, slow: q9_5slow },
-      },
-    ],
+
   },
   {
     id: "10",
@@ -870,58 +327,7 @@ export const audioTracks: AudioTrack[] = [
       { time: 157, label: "22", color: "red" },
 
     ],
-    quiz: [
-      {
-        question: "Where did Leo find the kitten?",
-        options: [
-          "In a box",
-          "Under a car",
-          "In the park",
-          "On the street",
-        ],
-        correctAnswer: 1,
-        referenceTime: 0,
-        audio: { fast: q10_1fast, slow: q10_1slow },
-      },
-      {
-        question: "What did Leo give the kitten first?",
-        options: ["Cat food", "Cookies", "Cold water", "Warm milk"],
-        correctAnswer: 3,
-        referenceTime: 0,
-        audio: { fast: q10_2fast, slow: q10_2slow },
-      },
-      {
-        question: "Who helped Leo with medicine for the kitten?",
-        options: ["His mother", "A neighbor", "His sister Mia", "A vet clinic"],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q10_3fast, slow: q10_3slow },
-      },
-      {
-        question: "How did Leo try to find the kitten's owners?",
-        options: [
-          "He called the police",
-          "He asked his neighbors",
-          "He made posters and posted online",
-          "He went to the vet",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q10_4fast, slow: q10_4slow },
-      },
-      {
-        question: "Who came to take the kitten?",
-        options: [
-          "An old man",
-          "A young couple",
-          "Another cat owner",
-          "A little girl and her mother",
-        ],
-        correctAnswer: 2,
-        referenceTime: 0,
-        audio: { fast: q10_5fast, slow: q10_5slow },
-      },
-    ],
+
   },
 ];
 

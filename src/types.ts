@@ -12,7 +12,6 @@ export interface AudioTrack {
   audio: string;
   subtitles: Subtitle[];
   timeMarkers: TimeMarker[];
-  quiz: QuizQuestion[];
   helpAudio?: string[];
 }
 export interface TimeMarker {
@@ -45,17 +44,6 @@ export interface WaveformPlayerProps {
   onOpenVocabQuiz?: () => void;
   /** Vocab word keys (lowercased audioKey ?? word) already answered correctly */
   learnedWords?: Set<string>;
-}
-
-export interface QuizQuestion {
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  referenceTime: number;
-  audio?: {
-    fast: string;
-    slow: string;
-  };
 }
 
 export interface Meaning {

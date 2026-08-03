@@ -24,6 +24,8 @@ import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabu
 import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
 import { saveGuestQuizResult } from "../services/guestProgress";
+import { fetchQuizQuestions } from "../services/quizServices";
+import { QuizQuestion } from "../types/Quiz";
 
 // Whether a track's "Take the quiz" / "Vocab quiz" buttons should stay
 // unlocked persists across visits (not just the current session) once the
@@ -77,6 +79,9 @@ const Player = React.memo(() => {
   const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
   const [showQuiz, setShowQuiz] = useState(false);
   const [_quizResults, setQuizResults] = useState<QuizResults | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizLoadError, setQuizLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -120,6 +125,8 @@ const Player = React.memo(() => {
     setSelectedTrackId(level.toString());
     setShowQuiz(false);
     setQuizResults(null);
+    setQuizQuestions(null);
+    setQuizLoadError(false);
     setHasListenedFully(hasListenedFullyStored(difficulty, storySlug, level));
   }, [level, difficulty, storySlug]);
 
@@ -146,6 +153,30 @@ const Player = React.memo(() => {
         : difficulty === "hard"
           ? "daniel"
           : "leo");
+
+  // Quiz questions come from the backend (answer-free) instead of the local
+  // audioData files — fetched lazily, only once the student actually opens
+  // the quiz for this track.
+  useEffect(() => {
+    if (!showQuiz) return;
+    let cancelled = false;
+    setQuizLoading(true);
+    setQuizLoadError(false);
+    fetchQuizQuestions(difficulty, resolvedStorySlug, level)
+      .then((questions) => {
+        if (!cancelled) setQuizQuestions(questions);
+      })
+      .catch((error) => {
+        console.error("Failed to load quiz questions:", error);
+        if (!cancelled) setQuizLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setQuizLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showQuiz, difficulty, resolvedStorySlug, level]);
 
   useEffect(() => {
     const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
@@ -327,12 +358,21 @@ const allVocabWords = useMemo(() => {
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
             <div className="flex-1 min-h-0 overflow-y-auto pb-[180px] flex flex-col justify-center">
-              <Quiz
-                onTimeJump={handleTimeJump}
-                questions={audioTrack.quiz}
-                onQuizComplete={handleQuizComplete}
-                isSubmitting={isSubmitting}
-              />
+              {quizLoading || !quizQuestions ? (
+                <p className="text-center text-black/50 text-sm py-10">
+                  {quizLoadError ? t("player.quiz-load-error") : t("player.quiz-loading")}
+                </p>
+              ) : (
+                <Quiz
+                  onTimeJump={handleTimeJump}
+                  questions={quizQuestions}
+                  difficulty={difficulty}
+                  storyId={resolvedStorySlug}
+                  partNumber={level}
+                  onQuizComplete={handleQuizComplete}
+                  isSubmitting={isSubmitting}
+                />
+              )}
             </div>
           ) : showVocabQuiz ? (
             <div className="flex-1 min-h-0">

@@ -15,202 +15,42 @@ const FamilyOnTheManifest2 = getStorageUrl('daniel/10. Family on the Manifest, P
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 1: Introducing Myself
 // ─────────────────────────────────────────────────────────────
-const q1_1fast = getStorageUrl("daniel/quiz/1. introducing myself/q1-fast.mp3");
-const q1_1slow = getStorageUrl("daniel/quiz/1. introducing myself/q1-slow.mp3");
-const q1_2fast = getStorageUrl("daniel/quiz/1. introducing myself/q2-fast.mp3");
-const q1_2slow = getStorageUrl("daniel/quiz/1. introducing myself/q2-slow.mp3");
-const q1_3fast = getStorageUrl("daniel/quiz/1. introducing myself/q3-fast.mp3");
-const q1_3slow = getStorageUrl("daniel/quiz/1. introducing myself/q3-slow.mp3");
-const q1_4fast = getStorageUrl("daniel/quiz/1. introducing myself/q4-fast.mp3");
-const q1_4slow = getStorageUrl("daniel/quiz/1. introducing myself/q4-slow.mp3");
-const q1_5fast = getStorageUrl("daniel/quiz/1. introducing myself/q5-fast.mp3");
-const q1_5slow = getStorageUrl("daniel/quiz/1. introducing myself/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 2: The Deal That Nearly Broke Me
 // ─────────────────────────────────────────────────────────────
-const q2_1fast =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q1-fast.mp3");
-const q2_1slow =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q1-slow.mp3");
-const q2_2fast =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q2-fast.mp3");
-const q2_2slow =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q2-slow.mp3");
-const q2_3fast =
- getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q3-fast.mp3");
-const q2_3slow =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q3-slow.mp3");
-const q2_4fast =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q4-fast.mp3");
-const q2_4slow =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q4-slow.mp3");
-const q2_5fast =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q5-fast.mp3");
-const q2_5slow =
-  getStorageUrl("daniel/quiz/2. the deal that nearly broke me/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 3: The Conference in Munich
 // ─────────────────────────────────────────────────────────────
-const q3_1fast =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q1-fast.mp3");
-const q3_1slow =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q1-slow.mp3");
-const q3_2fast =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q2-fast.mp3");
-const q3_2slow =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q2-slow.mp3");
-const q3_3fast =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q3-fast.mp3");
-const q3_3slow =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q3-slow.mp3");
-const q3_4fast =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q4-fast.mp3");
-const q3_4slow =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q4-slow.mp3");
-const q3_5fast =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q5-fast.mp3");
-const q3_5slow =
-  getStorageUrl("daniel/quiz/3. the conference in munich/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 4: A Failure with a Silver Lining
 // ─────────────────────────────────────────────────────────────
-const q4_1fast =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q1-fast.mp3");
-const q4_1slow =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q1-slow.mp3");
-const q4_2fast =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q2-fast.mp3");
-const q4_2slow =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q2-slow.mp3");
-const q4_3fast =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q3-fast.mp3");
-const q4_3slow =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q3-slow.mp3");
-const q4_4fast =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q4-fast.mp3");
-const q4_4slow =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q4-slow.mp3");
-const q4_5fast =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q5-fast.mp3");
-const q4_5slow =
-  getStorageUrl("daniel/quiz/4. a failure with a silver lining/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 5: The Bridge at Low Tide
 // ─────────────────────────────────────────────────────────────
-const q5_1fast = getStorageUrl("daniel/quiz/5. the bridge at low tide/q1-fast.mp3");
-const q5_1slow = getStorageUrl("daniel/quiz/5. the bridge at low tide/q1-slow.mp3");
-const q5_2fast = getStorageUrl("daniel/quiz/5. the bridge at low tide/q2-fast.mp3");
-const q5_2slow = getStorageUrl("daniel/quiz/5. the bridge at low tide/q2-slow.mp3");
-const q5_3fast = getStorageUrl("daniel/quiz/5. the bridge at low tide/q3-fast.mp3");
-const q5_3slow = getStorageUrl("daniel/quiz/5. the bridge at low tide/q3-slow.mp3");
-const q5_4fast = getStorageUrl("daniel/quiz/5. the bridge at low tide/q4-fast.mp3");
-const q5_4slow = getStorageUrl("daniel/quiz/5. the bridge at low tide/q4-slow.mp3");
-const q5_5fast = getStorageUrl("daniel/quiz/5. the bridge at low tide/q5-fast.mp3");
-const q5_5slow = getStorageUrl("daniel/quiz/5. the bridge at low tide/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 6: Night of the Phantom Pallets
 // ─────────────────────────────────────────────────────────────
-const q6_1fast =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q1-fast.mp3");
-const q6_1slow =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q1-slow.mp3");
-const q6_2fast =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q2-fast.mp3");
-const q6_2slow =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q2-slow.mp3");
-const q6_3fast =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q3-fast.mp3");
-const q6_3slow =
- getStorageUrl( "daniel/quiz/6. night of the phantom pallets/q3-slow.mp3");
-const q6_4fast =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q4-fast.mp3");
-const q6_4slow =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q4-slow.mp3");
-const q6_5fast =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q5-fast.mp3");
-const q6_5slow =
-  getStorageUrl("daniel/quiz/6. night of the phantom pallets/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 7: Family Weather Report
 // ─────────────────────────────────────────────────────────────
-const q7_1fast = getStorageUrl("daniel/quiz/7. family weather report/q1-fast.mp3");
-const q7_1slow = getStorageUrl("daniel/quiz/7. family weather report/q1-slow.mp3");
-const q7_2fast = getStorageUrl("daniel/quiz/7. family weather report/q2-fast.mp3");
-const q7_2slow = getStorageUrl("daniel/quiz/7. family weather report/q2-slow.mp3");
-const q7_3fast = getStorageUrl("daniel/quiz/7. family weather report/q3-fast.mp3");
-const q7_3slow = getStorageUrl("daniel/quiz/7. family weather report/q3-slow.mp3");
-const q7_4fast = getStorageUrl("daniel/quiz/7. family weather report/q4-fast.mp3");
-const q7_4slow = getStorageUrl("daniel/quiz/7. family weather report/q4-slow.mp3");
-const q7_5fast = getStorageUrl("daniel/quiz/7. family weather report/q5-fast.mp3");
-const q7_5slow = getStorageUrl("daniel/quiz/7. family weather report/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 8: The Price of Enough
 // ─────────────────────────────────────────────────────────────
-const q8_1fast = getStorageUrl("daniel/quiz/8. the price of enough/q1-fast.mp3");
-const q8_1slow = getStorageUrl("daniel/quiz/8. the price of enough/q1-slow.mp3");
-const q8_2fast = getStorageUrl("daniel/quiz/8. the price of enough/q2-fast.mp3");
-const q8_2slow = getStorageUrl("daniel/quiz/8. the price of enough/q2-slow.mp3");
-const q8_3fast = getStorageUrl("daniel/quiz/8. the price of enough/q3-fast.mp3");
-const q8_3slow = getStorageUrl("daniel/quiz/8. the price of enough/q3-slow.mp3");
-const q8_4fast = getStorageUrl("daniel/quiz/8. the price of enough/q4-fast.mp3");
-const q8_4slow = getStorageUrl("daniel/quiz/8. the price of enough/q4-slow.mp3");
-const q8_5fast = getStorageUrl("daniel/quiz/8. the price of enough/q5-fast.mp3");
-const q8_5slow = getStorageUrl("daniel/quiz/8. the price of enough/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 9: Family on the Manifest, Part I
 // ─────────────────────────────────────────────────────────────
-const q9_1fast =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q1-fast.mp3");
-const q9_1slow =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q1-slow.mp3");
-const q9_2fast =
- getStorageUrl( "daniel/quiz/9. family on the manifest part i/q2-fast.mp3");
-const q9_2slow =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q2-slow.mp3");
-const q9_3fast =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q3-fast.mp3");
-const q9_3slow =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q3-slow.mp3");
-const q9_4fast =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q4-fast.mp3");
-const q9_4slow =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q4-slow.mp3");
-const q9_5fast =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q5-fast.mp3");
-const q9_5slow =
-  getStorageUrl("daniel/quiz/9. family on the manifest part i/q5-slow.mp3");
 
 // ─────────────────────────────────────────────────────────────
 // Quiz Audio — Track 10: Family on the Manifest, Part II
 // ─────────────────────────────────────────────────────────────
-const q10_1fast =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q1-fast.mp3");
-const q10_1slow =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q1-slow.mp3");
-const q10_2fast =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q2-fast.mp3");
-const q10_2slow =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q2-slow.mp3");
-const q10_3fast =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q3-fast.mp3");
-const q10_3slow =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q3-slow.mp3");
-const q10_4fast =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q4-fast.mp3");
-const q10_4slow =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q4-slow.mp3");
-const q10_5fast =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q5-fast.mp3");
-const q10_5slow =
-  getStorageUrl("daniel/quiz/10. family on the manifest part ii/q5-slow.mp3");
 
 export const hardAudioData: AudioTrack[] = [
   {
@@ -340,71 +180,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 81, label: "12", color: "red" },
       { time: 91.9, label: "13", color: "red" },
     ],
-    quiz: [
-      {
-        question: "How old is Daniel Mercer, and what is his profession?",
-        options: [
-          "A travel writer in his early forties",
-          "A 52-year-old English businessman",
-          "A 48-year-old logistics consultant",
-          "A retired entrepreneur in his sixties",
-        ],
-        correctAnswer: 1,
-        referenceTime: 4.4,
-        audio: { fast: q1_1fast, slow: q1_1slow },
-      },
-      {
-        question:
-          "What three things did Daniel use to start his logistics company fifteen years ago?",
-        options: [
-          "A bank loan, an office, and a small team",
-          "Two laptops, one borrowed van, and a patient spouse",
-          "One truck, a warehouse, and three employees",
-          "A government grant and an inherited business",
-        ],
-        correctAnswer: 1,
-        referenceTime: 10.3,
-        audio: { fast: q1_2fast, slow: q1_2slow },
-      },
-      {
-        question:
-          "What lesson did the rhythm of Daniel's coastal hometown teach him?",
-        options: [
-          "That the sea is unpredictable and must always be respected",
-          "That community matters more than personal ambition",
-          "That timing matters — miss the tide and you wait",
-          "That hard physical work builds lasting character",
-        ],
-        correctAnswer: 2,
-        referenceTime: 27,
-        audio: { fast: q1_3fast, slow: q1_3slow },
-      },
-      {
-        question: "How does Daniel describe his calm demeanor?",
-        options: [
-          "A natural gift he was born with",
-          "Inherited from his father's disciplined example",
-          "Trained through navigating difficult situations, not gifted",
-          "The result of daily meditation and journaling",
-        ],
-        correctAnswer: 2,
-        referenceTime: 68.4,
-        audio: { fast: q1_4fast, slow: q1_4slow },
-      },
-      {
-        question:
-          "What is Daniel's three-step habit for dealing with problems?",
-        options: [
-          "Research solutions, delegate tasks, and review outcomes",
-          "Ignore the issue, wait for clarity, then act decisively",
-          "Write the problem down, name the worst-case scenario, and design three exits",
-          "Call a trusted advisor, make a financial plan, and execute quickly",
-        ],
-        correctAnswer: 2,
-        referenceTime: 81.5,
-        audio: { fast: q1_5fast, slow: q1_5slow },
-      },
-    ],
+
   },
   {
     id: "2",
@@ -547,72 +323,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 84.8, label: "16", color: "red" },
     ],
     // ── Track 2 ──────────────────────────────────────────────────
-    quiz: [
-      {
-        question: "What was Daniel's first meaningful contract?",
-        options: [
-          "Transporting furniture across the country",
-          "Delivering medical equipment to a chain of clinics",
-          "Shipping refrigerated goods to supermarkets",
-          "Moving office supplies for a government agency",
-        ],
-        correctAnswer: 1,
-        referenceTime: 5,
-        audio: { fast: q2_1fast, slow: q2_1slow },
-      },
-      {
-        question:
-          "What three problems hit Daniel at the very start of the contract?",
-        options: [
-          "A flood, a broken truck, and a lost invoice",
-          "A staff strike, a missing shipment, and a client complaint",
-          "Diesel prices spiked, a driver quit midweek, and the warehouse roof leaked",
-          "A road closure, bad weather, and equipment failure",
-        ],
-        correctAnswer: 2,
-        referenceTime: 18,
-        audio: { fast: q2_2fast, slow: q2_2slow },
-      },
-      {
-        question:
-          "When Daniel called his client to declare the problems, what did he ask for?",
-        options: [
-          "A higher fee to cover unexpected losses",
-          "An early termination of the contract",
-          "Schedule flexibility, not a higher fee",
-          "A short-term loan to bridge the cash gap",
-        ],
-        correctAnswer: 2,
-        referenceTime: 38,
-        audio: { fast: q2_3fast, slow: q2_3slow },
-      },
-      {
-        question:
-          "What did Daniel learn about transparency from this experience?",
-        options: [
-          "Transparency should only be used as a last resort",
-          "Transparency is always enough on its own to solve problems",
-          "Transparency is an asset, but only if paired with a plan",
-          "Transparency makes clients lose confidence in you",
-        ],
-        correctAnswer: 2,
-        referenceTime: 55,
-        audio: { fast: q2_4fast, slow: q2_4slow },
-      },
-      {
-        question:
-          "What rule did Daniel write in his notebook after this contract ended?",
-        options: [
-          '"Always negotiate the highest possible fee upfront."',
-          '"Never trust a client who asks for schedule flexibility."',
-          '"Price for volatility. If luck goes bad, can you survive?"',
-          '"Complaining is cheap; solutions are currency."',
-        ],
-        correctAnswer: 2,
-        referenceTime: 75,
-        audio: { fast: q2_5fast, slow: q2_5slow },
-      },
-    ],
+
   },
   {
     id: "3",
@@ -839,72 +550,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 150, label: "25", color: "red" },
     ],
     // ── Track 3 ──────────────────────────────────────────────────
-    quiz: [
-      {
-        question:
-          "Why did Daniel really fly to Munich for the logistics conference?",
-        options: [
-          "He had been invited as a guest speaker",
-          "He organised the conference himself",
-          "He needed ideas to keep his business from struggling",
-          "He was sent by his investors to scout new partners",
-        ],
-        correctAnswer: 2,
-        referenceTime: 12,
-        audio: { fast: q3_1fast, slow: q3_1slow },
-      },
-      {
-        question:
-          "What surprising claim did the keynote speaker make about optimization?",
-        options: [
-          "That optimization is mostly about advanced mathematics",
-          "That optimization is a human coordination problem disguised by numbers",
-          "That optimization requires expensive enterprise software",
-          "That optimization is impossible without a large, stable team",
-        ],
-        correctAnswer: 1,
-        referenceTime: 30,
-        audio: { fast: q3_2fast, slow: q3_2slow },
-      },
-      {
-        question:
-          "What metaphor did the speaker use after Daniel admitted his staff turnover was high?",
-        options: [
-          '"You\'re building a house on sand."',
-          '"You\'re running a race with no finish line."',
-          '"You\'re pouring fine wine into paper cups."',
-          '"You\'re planting seeds in frozen ground."',
-        ],
-        correctAnswer: 2,
-        referenceTime: 45,
-        audio: { fast: q3_3fast, slow: q3_3slow },
-      },
-      {
-        question:
-          "What six-month plan did Daniel sketch out in the beer hall after the conference?",
-        options: [
-          "Cut costs, automate processes, and reduce staff headcount",
-          "Raise baseline wages, rotate weekends, fund driver upskilling, build a loader-to-dispatcher path, add mentor ride-alongs, and tie bonuses to team error rates",
-          "Hire new senior managers, upgrade software, and expand the fleet",
-          "Outsource logistics, reduce routes, and renegotiate client contracts",
-        ],
-        correctAnswer: 1,
-        referenceTime: 65,
-        audio: { fast: q3_4fast, slow: q3_4slow },
-      },
-      {
-        question: "What compass did Munich ultimately give Daniel?",
-        options: [
-          "Invest in the latest technology to stay ahead of competitors",
-          "Always prioritise revenue growth over people management",
-          "Systems succeed at the speed of trust",
-          "Math is the only reliable foundation for logistics planning",
-        ],
-        correctAnswer: 2,
-        referenceTime: 98,
-        audio: { fast: q3_5fast, slow: q3_5slow },
-      },
-    ],
+
   },
   {
     id: "4",
@@ -1087,71 +733,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 104.5, label: "16", color: "red" },
       { time: 114, label: "17", color: "red" },
     ],
-    quiz: [
-      {
-        question: "What new area did Daniel's company try to expand into?",
-        options: [
-          "International shipping by sea",
-          "Drone delivery services",
-          "Refrigerated transport",
-          "Pharmaceutical courier services",
-        ],
-        correctAnswer: 2,
-        referenceTime: 8,
-        audio: { fast: q4_1fast, slow: q4_1slow },
-      },
-      {
-        question: "What caused the shipment of artisan cheeses to be spoiled?",
-        options: [
-          "The driver took the wrong route and added hours to the journey",
-          "The cheeses were packed incorrectly by the supplier",
-          "Temperature fluctuations from reefers that weren't working properly",
-          "A 24-hour delay at customs held the delivery back",
-        ],
-        correctAnswer: 2,
-        referenceTime: 25,
-        audio: { fast: q4_2fast, slow: q4_2slow },
-      },
-      {
-        question:
-          "How did Eliza, the vendor's owner, respond when Daniel called after the spoiled shipment?",
-        options: [
-          "She told him to be honest and offered to teach him the craft",
-          "She demanded immediate full compensation and threatened legal action",
-          "She refused to speak to him and cancelled all future contracts",
-          "She was sympathetic and chose to waive the invoice",
-        ],
-        correctAnswer: 0,
-        referenceTime: 50,
-        audio: { fast: q4_3fast, slow: q4_3slow },
-      },
-      {
-        question:
-          "What did Daniel do to learn the reefer trade properly after the failure?",
-        options: [
-          "He hired an expensive industry consultant",
-          "He took an online course in refrigerated logistics",
-          "He spent three weekends shadowing a veteran reefer operator",
-          "He sent his operations manager to an external training programme",
-        ],
-        correctAnswer: 2,
-        referenceTime: 65,
-        audio: { fast: q4_4fast, slow: q4_4slow },
-      },
-      {
-        question:
-          "What policy did Daniel introduce for any new business line after this experience?",
-        options: [
-          "A full financial audit before committing any capital",
-          "A legal review and insurance assessment",
-          "A pilot phase, a mentor, and a humility budget",
-          "A six-month trial period with no active client commitments",
-        ],
-        correctAnswer: 2,
-        referenceTime: 90,
-        audio: { fast: q4_5fast, slow: q4_5slow },
-      },
-    ],
+
   },
   {
     id: "5",
@@ -1295,73 +877,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 93.5, label: "12", color: "red" },
     ],
     // ── Track 5 ──────────────────────────────────────────────────
-    quiz: [
-      {
-        question:
-          "Where is the single-lane stone bridge Daniel describes located?",
-        options: [
-          "On the outskirts of London near his main depot",
-          "On the north road out of his hometown, Southampton",
-          "Near his first warehouse in the Midlands",
-          "On a country road he used while driving through Munich",
-        ],
-        correctAnswer: 1,
-        referenceTime: 10,
-        audio: { fast: q5_1fast, slow: q5_1slow },
-      },
-      {
-        question:
-          "What situation did Daniel find when he arrived at the bridge at dawn?",
-        options: [
-          "A flooded road blocking all oncoming traffic",
-          "Two cars at a standoff over right of way",
-          "A removal lorry wedged like a cork with its reverse gear gone",
-          "A broken-down tractor spilling its load across the lane",
-        ],
-        correctAnswer: 2,
-        referenceTime: 20,
-        audio: { fast: q5_2fast, slow: q5_2slow },
-      },
-      {
-        question:
-          "How did Daniel choose to resolve the deadlock at the bridge?",
-        options: [
-          "He called the police and waited for official help to arrive",
-          "He honked his horn and forced his way through the gap",
-          "He walked the line, named the rules, and coordinated a staggered retreat using hand signals",
-          "He turned around, took a detour, and left the others to sort it out",
-        ],
-        correctAnswer: 2,
-        referenceTime: 42,
-        audio: { fast: q5_3fast, slow: q5_3slow },
-      },
-      {
-        question:
-          "What lesson did Daniel write in his notebook after the bridge incident?",
-        options: [
-          "In deadlocks, hierarchy is less useful than choreography",
-          "Always plan an alternative route before setting off on a delivery",
-          "Never drive on unfamiliar roads without a navigator",
-          "The early morning is the most dangerous time to be on the road",
-        ],
-        correctAnswer: 0,
-        referenceTime: 65,
-        audio: { fast: q5_4fast, slow: q5_4slow },
-      },
-      {
-        question:
-          "What broader insight about logistics does Daniel draw from the bridge story?",
-        options: [
-          "Logistics is mainly about having the right vehicles for the job",
-          "Speed is always the most important factor in logistics",
-          "Logistics is seldom about trucks — it's about teaching strangers to share a narrow bridge",
-          "The best logistics companies always rely on the newest technology",
-        ],
-        correctAnswer: 2,
-        referenceTime: 72,
-        audio: { fast: q5_5fast, slow: q5_5slow },
-      },
-    ],
+
   },
   {
     id: "6",
@@ -1518,61 +1034,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 107, label: "15", color: "red" },
       { time: 120, label: "16", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "What originally caused the phantom pallets to appear in the system?",
-        options: [
-          "A hacker broke into the Warehouse Management System overnight",
-          "A customs broker's typo created duplicate entries, and a scanner glitch made them appear real",
-          "A new employee accidentally deleted and then restored shipping records",
-          "A client ordered extra pallets and then cancelled without informing the team",
-        ],
-        correctAnswer: 1,
-        referenceTime: 18,
-        audio: { fast: q6_1fast, slow: q6_1slow },
-      },
-      {
-        question: "At what time did Daniel's team discover the stock mismatch?",
-        options: ["9:30 p.m.", "11:45 p.m.", "1:12 a.m.", "3:00 a.m."],
-        correctAnswer: 2,
-        referenceTime: 38,
-        audio: { fast: q6_2fast, slow: q6_2slow },
-      },
-      {
-        question: "How did Daniel split his team to tackle the crisis?",
-        options: [
-          "One group to reconcile physical counts, one to reconstruct the data trail, one to call the client with a plain report and options",
-          "One group to call clients, one to fix the software, one to contact the press",
-          "One group to find replacement stock, one to delay the shipment, one to renegotiate the contract",
-          "One group to file an insurance claim, one to contact customs, one to pause all operations",
-        ],
-        correctAnswer: 0,
-        referenceTime: 50,
-        audio: { fast: q6_3fast, slow: q6_3slow },
-      },
-      {
-        question:
-          "By what time did Daniel's team turn the phantom pallets from fiction into reality?",
-        options: ["4:00 a.m.", "5:30 a.m.", "6:40 a.m.", "8:15 a.m."],
-        correctAnswer: 2,
-        referenceTime: 62,
-        audio: { fast: q6_4fast, slow: q6_4slow },
-      },
-      {
-        question:
-          "What was the key lesson Daniel drew from the phantom pallets incident?",
-        options: [
-          "Systems are always reliable as long as they are maintained properly",
-          "One strong leader can solve any logistical crisis alone",
-          "Systems fail in plural — recovery requires a choir, not a solo",
-          "The best prevention is avoiding clients with complex supply chains",
-        ],
-        correctAnswer: 2,
-        referenceTime: 80,
-        audio: { fast: q6_5fast, slow: q6_5slow },
-      },
-    ],
+
   },
   {
     id: "7",
@@ -1716,72 +1178,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 85.3, label: "11", color: "red" },
       { time: 92.3, label: "12", color: "red" },
     ],
-    quiz: [
-      {
-        question: "How does Daniel describe his family at home?",
-        options: [
-          "A wife, two sons, and a labrador named Max",
-          "A wife, a daughter, a 3-year-old son, and a toy-terrier named Terry",
-          "A wife, twin daughters, and a cat",
-          "Just a wife and a daughter away at college",
-        ],
-        correctAnswer: 1,
-        referenceTime: 4,
-        audio: { fast: q7_1fast, slow: q7_1slow },
-      },
-      {
-        question:
-          "What does Daniel call the regular family meeting he and his wife hold?",
-        options: [
-          "A Monday morning briefing",
-          "A family debrief session",
-          "A Sunday council at the kitchen table",
-          "A weekly household check-in",
-        ],
-        correctAnswer: 2,
-        referenceTime: 28,
-        audio: { fast: q7_2fast, slow: q7_2slow },
-      },
-      {
-        question:
-          "How does Daniel describe his wife Sandra's relationship with his professional risks?",
-        options: [
-          "She strongly disapproves of all financial risk-taking",
-          "She is largely indifferent to his business decisions",
-          "She once tolerated his risks like a scientist observing a volatile compound, but now co-authors them",
-          "She manages the financial side of the company herself",
-        ],
-        correctAnswer: 2,
-        referenceTime: 32,
-        audio: { fast: q7_3fast, slow: q7_3slow },
-      },
-      {
-        question:
-          'What does Daniel do on a "red day" when work makes him scarce at home?',
-        options: [
-          "He says nothing and trusts his family will understand",
-          "He tells them where he'll be scarce and when he'll be back, then keeps the promise",
-          "He gives his family extra money to compensate for his absence",
-          "He cancels his work commitments to prioritise family time",
-        ],
-        correctAnswer: 1,
-        referenceTime: 58,
-        audio: { fast: q7_4fast, slow: q7_4slow },
-      },
-      {
-        question:
-          "How does Daniel describe the connection between calm and trust in family life?",
-        options: [
-          "Calm is a natural state that requires no conscious effort",
-          "Trust is built through generous gifts and family holidays",
-          "Calm, like trust, is compound interest",
-          "Family calm depends entirely on financial stability",
-        ],
-        correctAnswer: 2,
-        referenceTime: 68,
-        audio: { fast: q7_5fast, slow: q7_5slow },
-      },
-    ],
+
   },
   {
     id: "8",
@@ -1939,72 +1336,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 77, label: "11", color: "red" },
       { time: 92, label: "12", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          'How does Daniel now answer the question "How much can a logistics business make?',
-        options: [
-          "With the number that matters: enough to sleep well and say no when yes would cost his integrity or his family's patience",
-          "With detailed spreadsheets covering utilisation, fuel hedges, and peak season yield",
-          "By listing the revenue figures from his best trading year",
-          "By explaining quarterly margins and year-on-year growth percentages",
-        ],
-        correctAnswer: 0,
-        referenceTime: 8,
-        audio: { fast: q8_1fast, slow: q8_1slow },
-      },
-      {
-        question:
-          "What does Daniel say happens with every extra percentage point of business growth?",
-        options: [
-          "The business becomes more stable and its cash flow more predictable",
-          "It creates valuable new job opportunities across the team",
-          "It invites another layer of fragility — more night calls, brittle clients, and systems that behave until they don't",
-          "It directly improves the quality of long-term client relationships",
-        ],
-        correctAnswer: 2,
-        referenceTime: 33,
-        audio: { fast: q8_2fast, slow: q8_2slow },
-      },
-      {
-        question: "What line does Daniel keep in his notebook about wealth?",
-        options: [
-          '"Wealth is unused options."',
-          '"Wealth is consistent monthly revenue."',
-          '"Wealth is the freedom to retire early."',
-          '"Wealth is a spreadsheet that never lies."',
-        ],
-        correctAnswer: 0,
-        referenceTime: 48,
-        audio: { fast: q8_3fast, slow: q8_3slow },
-      },
-      {
-        question:
-          "How does Daniel measure his company's financial health these days?",
-        options: [
-          "By quarterly profit margins and year-on-year revenue growth",
-          "By the total number of active client contracts",
-          "By sturdiness: months of payroll in the bank, freedom to comp a client before they ask, and certainty that one bad day won't ruin everything",
-          "By comparing his performance against industry benchmarks",
-        ],
-        correctAnswer: 2,
-        referenceTime: 60,
-        audio: { fast: q8_4fast, slow: q8_4slow },
-      },
-      {
-        question:
-          "What is Daniel's closing metaphor about money in this story?",
-        options: [
-          '"Money is the destination. Drive as fast as you can."',
-          '"Money is a scoreboard. Always aim for the highest number."',
-          '"Money\'s the fuel. The journey is choosing where not to drive."',
-          '"Money is a tool. Use it wisely or lose it quickly."',
-        ],
-        correctAnswer: 2,
-        referenceTime: 88,
-        audio: { fast: q8_5fast, slow: q8_5slow },
-      },
-    ],
+
   },
   {
     id: "9",
@@ -2170,73 +1502,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 99.6, label: "10", color: "red" },
       { time: 113, label: "11", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "How does Daniel describe mixing business travel with family at the start of this story?",
-        options: [
-          "As a well-organised adventure that always works out smoothly",
-          "As flying three cargoes with one airway bill: the meeting, the marriage, and the memories",
-          "As a necessary sacrifice families must make to support entrepreneurs",
-          "As a test of whether work and family life can ever truly be separated",
-        ],
-        correctAnswer: 1,
-        referenceTime: 5,
-        audio: { fast: q9_1fast, slow: q9_1slow },
-      },
-      {
-        question:
-          "Where did the family trip to Spain take them, and what was the business purpose?",
-        options: [
-          "Madrid, to attend a major European trade conference",
-          "Bilbao to San Sebastián, with a detour to a cold-chain facility outside Vitoria-Gasteiz",
-          "Barcelona, to visit the headquarters of a key client",
-          "Seville, to inspect a prospective new distribution partner",
-        ],
-        correctAnswer: 1,
-        referenceTime: 15,
-        audio: { fast: q9_2fast, slow: q9_2slow },
-      },
-      {
-        question:
-          "What problem arose at Heathrow, and how did Daniel handle it?",
-        options: [
-          "A pallet missed a handover; he gave himself thirty minutes to resolve it, then put the phone away",
-          "His passport was out of date; he had to rebook on a later flight",
-          "A client called to cancel the Spain tour; he renegotiated from the departure lounge",
-          "His carry-on was overweight; he repacked everything at the check-in desk",
-        ],
-        correctAnswer: 0,
-        referenceTime: 35,
-        audio: { fast: q9_3fast, slow: q9_3slow },
-      },
-      {
-        question:
-          "What rule did Daniel announce aloud to his family at the airport?",
-        options: [
-          '"Family trips always come first — the business can wait a full week."',
-          '"We don\'t let the business colonise the trip. Thirty minutes to resolve, then it waits."',
-          '"Everyone is allowed one business call per day during the holiday."',
-          '"If the business calls more than twice, the trip ends — no exceptions."',
-        ],
-        correctAnswer: 1,
-        referenceTime: 40,
-        audio: { fast: q9_4fast, slow: q9_4slow },
-      },
-      {
-        question:
-          "What did Daniel's daughter do at the client dinner in Bilbao that surprised him?",
-        options: [
-          "She gave an impromptu speech about her father's company",
-          "She asked the head of operations about employee retention schemes",
-          "She refused to attend and stayed at the hotel instead",
-          "She acted as an informal translator for the Spanish clients",
-        ],
-        correctAnswer: 1,
-        referenceTime: 70,
-        audio: { fast: q9_5fast, slow: q9_5slow },
-      },
-    ],
+
   },
   {
     id: "10",
@@ -2458,73 +1724,7 @@ export const hardAudioData: AudioTrack[] = [
       { time: 175, label: "15", color: "red" },
       { time: 186, label: "16", color: "red" },
     ],
-    quiz: [
-      {
-        question:
-          "What was San Sebastián meant to represent for Daniel and his family?",
-        options: [
-          "The final client meeting before heading back to London",
-          "A shopping day Sandra had planned months in advance",
-          "The rest day — the dessert after the vegetables, earned after completing all the work",
-          "A city Daniel had always wanted to visit purely for personal reasons",
-        ],
-        correctAnswer: 2,
-        referenceTime: 5,
-        audio: { fast: q10_1fast, slow: q10_1slow },
-      },
-      {
-        question:
-          "What business crisis interrupted the family's rest day in San Sebastián?",
-        options: [
-          "A key client cancelled a major contract without any warning",
-          "A refrigerated shipment threw a temperature alarm, leaving two hours before the point of no return",
-          "One of Daniel's drivers was involved in an accident on a Spanish motorway",
-          "The cold-chain facility they had just visited failed its safety inspection",
-        ],
-        correctAnswer: 1,
-        referenceTime: 32,
-        audio: { fast: q10_2fast, slow: q10_2slow },
-      },
-      {
-        question:
-          "What steps did Daniel take from the café vestibule to resolve the crisis?",
-        options: [
-          "He rerouted to a closer dock, swapped trailers, approved overtime with hazard pay, and added a video seal check",
-          "He delegated everything to his operations manager and rejoined his family immediately",
-          "He called the client to request a 24-hour delivery extension and offered a discount",
-          "He instructed the driver to reduce speed to protect the temperature-sensitive cargo",
-        ],
-        correctAnswer: 0,
-        referenceTime: 52,
-        audio: { fast: q10_3fast, slow: q10_3slow },
-      },
-      {
-        question:
-          "What did Daniel do before the client had even noticed the problem?",
-        options: [
-          "He waited to see if the shipment would recover on its own",
-          "He informed his insurance company and started a liability claim",
-          "He texted the client, owned the variance, and sent the fix and timestamps as proof",
-          "He asked his operations manager to draft a formal written apology",
-        ],
-        correctAnswer: 2,
-        referenceTime: 65,
-        audio: { fast: q10_4fast, slow: q10_4slow },
-      },
-      {
-        question:
-          "What line did Daniel write while walking the wet promenade that evening?",
-        options: [
-          '"Balance is the key to a successful business and family life."',
-          '"Never mix business travel with family holidays again."',
-          "\"Boundaries aren't walls; they're promises with timestamps.\"",
-          '"The business must always come first, or neither side survives."',
-        ],
-        correctAnswer: 2,
-        referenceTime: 92,
-        audio: { fast: q10_5fast, slow: q10_5slow },
-      },
-    ],
+
   },
 ];
 
