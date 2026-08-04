@@ -3,13 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { RoomScene } from "../modules/room/RoomScene";
 import { usePlayerRoom } from "../modules/players/usePlayerRoom";
-import { getAvatarById } from "../config/avatars";
+import { useCharacterPortrait } from "../modules/room/useCharacterPortrait";
 
 const PlayerRoom = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { data, loading, error } = usePlayerRoom(userId);
+  const portrait = useCharacterPortrait(data?.character);
 
   if (loading) {
     return (
@@ -27,8 +28,6 @@ const PlayerRoom = () => {
     );
   }
 
-  const avatar = getAvatarById(data.avatar);
-
   return (
     <div className="flex flex-col h-dvh pt-13 overflow-hidden bg-gradient-to-br from-sky-50 to-amber-50">
       <div className="flex items-center gap-3 px-3 py-2 shrink-0">
@@ -42,8 +41,8 @@ const PlayerRoom = () => {
         </button>
         <div className="flex items-center gap-2">
           <img
-            src={avatar.url}
-            alt={avatar.label}
+            src={portrait}
+            alt={data.nickname}
             className="w-7 h-7 rounded-full object-cover bg-white"
           />
           <span className="text-sm font-bold text-black/80">
@@ -52,7 +51,10 @@ const PlayerRoom = () => {
         </div>
       </div>
       <div className="flex-1 min-h-0">
-        <RoomScene placedItems={data.room.placedItems} />
+        <RoomScene
+          placedItems={data.room.placedItems}
+          character={{ skinTone: data.character.skinTone, equipped: data.character.equipped }}
+        />
       </div>
     </div>
   );

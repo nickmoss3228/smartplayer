@@ -5,6 +5,7 @@ import {
   equipItem as equipItemRequest,
 } from "../../services/roomServices";
 import { RoomState } from "../../types/Room";
+import { useWallet } from "../../context/WalletContext";
 
 interface PurchaseResult {
   ok: boolean;
@@ -21,6 +22,7 @@ interface UseRoomStateResult {
 }
 
 export function useRoomState(): UseRoomStateResult {
+  const { wallet, setWalletDirect } = useWallet();
   const [room, setRoom] = useState<RoomState | null>(null);
   const [bitAward, setBitAward] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,7 @@ export function useRoomState(): UseRoomStateResult {
       const data = await purchaseItemRequest(token, itemId);
       setRoom(data.room);
       setBitAward(data.bitAward);
+      setWalletDirect({ bitWord: 0, bitPhrase: 0, ...wallet, bitAward: data.bitAward });
       return { ok: true };
     } catch (err) {
       const message =
@@ -62,7 +65,7 @@ export function useRoomState(): UseRoomStateResult {
         "Purchase failed";
       return { ok: false, message };
     }
-  }, []);
+  }, [wallet, setWalletDirect]);
 
   const equip = useCallback(async (itemId: string): Promise<PurchaseResult> => {
     const token = localStorage.getItem("token");

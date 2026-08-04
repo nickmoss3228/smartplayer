@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProgressProvider } from "./context/ProgressContext";
 import { ProfileProvider } from './context/ProfileContext';
 import { WalletProvider } from './context/WalletContext';
+import { CharacterProvider } from './context/CharacterContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
 import { Layout } from "./Layout"
 
@@ -68,6 +69,7 @@ function App() {
     <AuthProvider>
       <ProfileProvider>
         <WalletProvider>
+        <CharacterProvider>
         <ProgressProvider>
           <Provider store={store}>
             <Router>
@@ -130,6 +132,7 @@ function App() {
             </Router>
           </Provider>
         </ProgressProvider>
+        </CharacterProvider>
         </WalletProvider>
       </ProfileProvider>
     </AuthProvider>

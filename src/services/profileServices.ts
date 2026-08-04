@@ -1,6 +1,7 @@
 // services/profileService.ts
 import axios from "axios";
 import { UserProfile } from "../types/Dashboard";
+import { CharacterState } from "../types/Character";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -17,7 +18,7 @@ export const fetchProfile = async (token: string): Promise<UserProfile> => {
 
 export const updateProfile = async (
   token: string,
-  updates: { nickname?: string; avatar?: string }
+  updates: { nickname?: string }
 ): Promise<UserProfile> => {
   const res = await axios.patch(`${API_BASE}/api/user/profile`, updates, {
     headers: authHeaders(token),
@@ -35,7 +36,7 @@ export interface PlayerListItem {
   id: string;
   username: string;
   nickname: string;
-  avatar: string;
+  character: CharacterState;
   online: boolean;
 }
 

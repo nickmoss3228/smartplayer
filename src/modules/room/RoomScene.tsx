@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { getShopItem, ShopSlot, Swatch } from "../../config/shopCatalog";
 import { drawWallpaperTexture, drawFlooringTexture } from "./textures";
 import { buildVoxelModel, VoxelBox } from "./voxelModels";
+import { CharacterRig, CharacterAppearance } from "./CharacterRig";
 
 // ─── Room shell dimensions (world units) ───────────────────────────────────
 // The room is real 3D geometry — a floor plus two walls forming an open
@@ -62,6 +63,7 @@ const ROOM_PROJECTED = getProjectedRoomExtent();
 
 interface RoomSceneProps {
   placedItems: Record<ShopSlot, string | null>;
+  character: CharacterAppearance;
 }
 
 // ─── Room shell: floor / back wall / side wall ─────────────────────────────
@@ -180,94 +182,7 @@ function WallSlot({
   );
 }
 
-// ─── Ambient walking character — not controlled, just paces the floor ────
-// A jointed box rig (torso/head/2 arms/2 legs), not a sprite — real geometry
-// turns to face its direction of travel instead of needing a sprite-flip.
-const WALK_MIN_X = -140;
-const WALK_MAX_X = 140;
-const WALK_Z = 120;
-const WALK_SPEED = 45; // world units / second
-const LEG_LENGTH = 26;
-const TORSO_HEIGHT = 28;
-const HEAD_SIZE = 16;
-const SWING_FREQUENCY = 6;
-const SWING_AMPLITUDE = 0.6;
-
-function Character() {
-  const groupRef = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Group>(null);
-  const rightLegRef = useRef<THREE.Group>(null);
-  const leftArmRef = useRef<THREE.Group>(null);
-  const rightArmRef = useRef<THREE.Group>(null);
-  const state = useRef({ x: WALK_MIN_X, dir: 1, walkClock: 0 });
-
-  useFrame((_, delta) => {
-    const s = state.current;
-    s.x += s.dir * WALK_SPEED * delta;
-    if (s.x > WALK_MAX_X) {
-      s.x = WALK_MAX_X;
-      s.dir = -1;
-    } else if (s.x < WALK_MIN_X) {
-      s.x = WALK_MIN_X;
-      s.dir = 1;
-    }
-    s.walkClock += delta;
-
-    if (groupRef.current) {
-      groupRef.current.position.x = s.x;
-      // Modeled facing local +Z; turn to face the direction of travel along world X.
-      groupRef.current.rotation.y = s.dir >= 0 ? Math.PI / 2 : -Math.PI / 2;
-    }
-
-    const swing = Math.sin(s.walkClock * SWING_FREQUENCY) * SWING_AMPLITUDE;
-    if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
-    if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
-    if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.7;
-    if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.7;
-  });
-
-  return (
-    <group ref={groupRef} position={[WALK_MIN_X, 0, WALK_Z]}>
-      <group ref={leftLegRef} position={[-6, LEG_LENGTH, 0]}>
-        <mesh position={[0, -LEG_LENGTH / 2, 0]}>
-          <boxGeometry args={[8, LEG_LENGTH, 10]} />
-          <meshLambertMaterial color="#2b2d42" />
-        </mesh>
-      </group>
-      <group ref={rightLegRef} position={[6, LEG_LENGTH, 0]}>
-        <mesh position={[0, -LEG_LENGTH / 2, 0]}>
-          <boxGeometry args={[8, LEG_LENGTH, 10]} />
-          <meshLambertMaterial color="#2b2d42" />
-        </mesh>
-      </group>
-
-      <mesh position={[0, LEG_LENGTH + TORSO_HEIGHT / 2, 0]}>
-        <boxGeometry args={[24, TORSO_HEIGHT, 14]} />
-        <meshLambertMaterial color="#4a7fd6" />
-      </mesh>
-
-      <group ref={leftArmRef} position={[-15, LEG_LENGTH + TORSO_HEIGHT - 4, 0]}>
-        <mesh position={[0, -10, 0]}>
-          <boxGeometry args={[6, 20, 8]} />
-          <meshLambertMaterial color="#4a7fd6" />
-        </mesh>
-      </group>
-      <group ref={rightArmRef} position={[15, LEG_LENGTH + TORSO_HEIGHT - 4, 0]}>
-        <mesh position={[0, -10, 0]}>
-          <boxGeometry args={[6, 20, 8]} />
-          <meshLambertMaterial color="#4a7fd6" />
-        </mesh>
-      </group>
-
-      <mesh position={[0, LEG_LENGTH + TORSO_HEIGHT + HEAD_SIZE / 2, 0]}>
-        <boxGeometry args={[HEAD_SIZE, HEAD_SIZE, HEAD_SIZE]} />
-        <meshLambertMaterial color="#f2c48d" />
-      </mesh>
-    </group>
-  );
-}
-
-function FitRoom({ placedItems }: RoomSceneProps) {
+function FitRoom({ placedItems, character }: RoomSceneProps) {
   const { viewport } = useThree();
   const scale =
     Math.min(viewport.width / ROOM_PROJECTED.width, viewport.height / ROOM_PROJECTED.height) * 0.92;
@@ -325,12 +240,12 @@ function FitRoom({ placedItems }: RoomSceneProps) {
       <FurnitureSlot itemId={placedItems.furniture2} x={100} z={60} placeholderSize={[50, 40, 50]} sway />
       <FurnitureSlot itemId={placedItems.wardrobe} x={150} z={-140} placeholderSize={[70, 140, 40]} />
 
-      <Character />
+      <CharacterRig skinTone={character.skinTone} equipped={character.equipped} />
     </group>
   );
 }
 
-export function RoomScene({ placedItems }: RoomSceneProps) {
+export function RoomScene({ placedItems, character }: RoomSceneProps) {
   return (
     <Canvas className="!touch-none" style={{ background: "linear-gradient(to bottom, #dff1ff, #f7ecd9)" }}>
       <OrthographicCamera
@@ -340,7 +255,7 @@ export function RoomScene({ placedItems }: RoomSceneProps) {
       />
       <ambientLight intensity={0.6} />
       <directionalLight position={[300, 500, 200]} intensity={0.9} />
-      <FitRoom placedItems={placedItems} />
+      <FitRoom placedItems={placedItems} character={character} />
     </Canvas>
   );
 }

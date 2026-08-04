@@ -30,7 +30,10 @@
       "poster": "Poster",
       "wardrobe": "Wardrobe",
       "table": "Table",
-      "shelf": "Shelf"
+      "shelf": "Shelf",
+      "hairstyle": "Hair",
+      "outfit": "Outfit",
+      "hat": "Hat"
     },
     "upgradeBanner": "Bigger apartment — coming soon",
     "upgradeComingSoon": "Apartment upgrades are coming in a future update!",
@@ -41,7 +44,11 @@
     "insufficientFunds": "Not enough BitAward for this item.",
     "purchaseFailed": "Purchase failed. Please try again.",
     "equipFailed": "Couldn't switch to this item. Please try again.",
-    "loadFailed": "Couldn't load your room. Please try again later."
+    "loadFailed": "Couldn't load your room. Please try again later.",
+    "modeRoom": "Room",
+    "modeCharacter": "Character",
+    "skinTone": "Skin Tone",
+    "skinToneFailed": "Couldn't update skin tone. Please try again."
   },
   "feedback": {
     "title": "Leave feedback",

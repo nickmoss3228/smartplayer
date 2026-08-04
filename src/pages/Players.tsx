@@ -2,7 +2,46 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { usePlayerSearch, SEARCH_MIN_LENGTH } from "../modules/players/usePlayerSearch";
-import { getAvatarById } from "../config/avatars";
+import { PlayerListItem } from "../services/profileServices";
+import { useCharacterPortrait } from "../modules/room/useCharacterPortrait";
+
+function PlayerCard({
+  player,
+  onClick,
+}: {
+  player: PlayerListItem;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  const portrait = useCharacterPortrait(player.character);
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center gap-2 bg-white/70 hover:bg-white rounded-2xl p-4 shadow-sm transition-colors"
+    >
+      <div className="relative">
+        <img
+          src={portrait}
+          alt={player.nickname}
+          className="w-16 h-16 rounded-full object-cover bg-white"
+        />
+        <span
+          title={t(player.online ? "players.online" : "players.offline")}
+          className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+            player.online ? "bg-green-500" : "bg-gray-300"
+          }`}
+        />
+      </div>
+      <span className="text-sm font-semibold text-black/80 truncate max-w-full">
+        {player.nickname}
+      </span>
+      <span className="text-xs font-medium text-amber-600">
+        {t("players.visit")}
+      </span>
+    </button>
+  );
+}
 
 const Players = () => {
   const { t } = useTranslation();
@@ -57,36 +96,13 @@ const Players = () => {
 
         {!showHint && !loading && !error && players.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {players.map((player) => {
-              const avatar = getAvatarById(player.avatar);
-              return (
-                <button
-                  key={player.id}
-                  onClick={() => navigate(`/players/${player.id}`)}
-                  className="flex flex-col items-center gap-2 bg-white/70 hover:bg-white rounded-2xl p-4 shadow-sm transition-colors"
-                >
-                  <div className="relative">
-                    <img
-                      src={avatar.url}
-                      alt={avatar.label}
-                      className="w-16 h-16 rounded-full object-cover bg-white"
-                    />
-                    <span
-                      title={t(player.online ? "players.online" : "players.offline")}
-                      className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                        player.online ? "bg-green-500" : "bg-gray-300"
-                      }`}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-black/80 truncate max-w-full">
-                    {player.nickname}
-                  </span>
-                  <span className="text-xs font-medium text-amber-600">
-                    {t("players.visit")}
-                  </span>
-                </button>
-              );
-            })}
+            {players.map((player) => (
+              <PlayerCard
+                key={player.id}
+                player={player}
+                onClick={() => navigate(`/players/${player.id}`)}
+              />
+            ))}
           </div>
         )}
       </div>

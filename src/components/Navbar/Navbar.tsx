@@ -12,8 +12,8 @@ import Infinity from "../../assets/infinity.svg";
 import { useTranslation } from "react-i18next";
 import { ImBook } from "react-icons/im";
 import { useAuth } from "../../context/AuthContext";
-import { useProfile } from "../../context/ProfileContext";
-import { getAvatarById } from "../../config/avatars";
+import { useCharacter } from "../../context/CharacterContext";
+import { useCharacterPortrait } from "../../modules/room/useCharacterPortrait";
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
 
@@ -39,10 +39,10 @@ const Navbar = () => {
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { character } = useCharacter();
   const navigate = useNavigate();
 
-  const avatar = profile?.avatar ? getAvatarById(profile.avatar) : null;
+  const portrait = useCharacterPortrait(character);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -123,10 +123,10 @@ const Navbar = () => {
                 title={t("navbar.dashboard")}
                 className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
               >
-                {avatar ? (
+                {portrait ? (
                   <img
-                    src={avatar.url}
-                    alt={avatar.label}
+                    src={portrait}
+                    alt={t("navbar.dashboard")}
                     className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200"
                   />
                 ) : (

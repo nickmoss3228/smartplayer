@@ -1,5 +1,6 @@
 import axios from "axios";
 import { RoomState } from "../types/Room";
+import { CharacterState } from "../types/Character";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -18,8 +19,8 @@ export const fetchRoom = async (token: string): Promise<RoomResponse> => {
 export interface PlayerRoomResponse {
   username: string;
   nickname: string;
-  avatar: string;
   room: RoomState;
+  character: CharacterState;
 }
 
 // Read-only snapshot of another player's room for the "visit" view.

@@ -46,5 +46,4 @@ export interface UserProfile {
   username: string;
   email: string;
   nickname: string;
-  avatar: string;
 }
