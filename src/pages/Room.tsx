@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { RoomScene } from "../modules/room/RoomScene";
+import { RoomScene, RoomAchievementTrophy } from "../modules/room/RoomScene";
 import { ShopPanel } from "../modules/room/ShopPanel";
 import { useRoomState } from "../modules/room/useRoomState";
 import { useCharacter } from "../context/CharacterContext";
@@ -16,6 +16,10 @@ import {
   getCharacterItemsBySlot,
 } from "../config/characterCatalog";
 import { SKIN_TONE_PRESETS } from "../modules/room/skinTonePresets";
+import { FloorSlotKey, WallSlotKey } from "../config/roomLayout";
+import { ACHIEVEMENT_CATEGORIES, getEarnedTiers } from "../config/achievementsConfig";
+import { fetchAchievements } from "../services/achievementServices";
+import { getTotalListeningSeconds } from "../hooks/useListeningTimer";
 
 const BitAwardIcon = CURRENCIES[0].icon;
 
@@ -23,11 +27,13 @@ const ROOM_SLOT_LABEL_KEYS: Record<ShopSlot, string> = {
   wallpaper: "room.slots.wallpaper",
   flooring: "room.slots.flooring",
   furniture1: "room.slots.furniture1",
+  chair: "room.slots.chair",
   furniture2: "room.slots.furniture2",
   poster: "room.slots.poster",
   wardrobe: "room.slots.wardrobe",
   table: "room.slots.table",
   shelf: "room.slots.shelf",
+  window: "room.slots.window",
 };
 
 const CHARACTER_SLOT_LABEL_KEYS: Record<CharacterSlot, string> = {
@@ -39,10 +45,12 @@ const CHARACTER_SLOT_LABEL_KEYS: Record<CharacterSlot, string> = {
 const ROOM_SHAPE_EMOJI: Record<SwatchShape, string> = {
   stripe: "🧱", dot: "🎀", solid: "🎨", plaid: "🏳️",
   wood: "🪵", tile: "◻️", carpet: "🟪", stone: "🪨",
-  bed: "🛏️", bunkbed: "🛌", canopybed: "👑",
+  "desk-basic": "🖥️", "desk-office": "💻", "desk-executive": "🖥️",
+  "chair-basic": "🪑", "chair-office": "🪑", "chair-ergonomic": "🪑",
   plant: "🌿", rug: "🧺", cactus: "🌵", bookshelf: "📚", lamp: "💡",
-  "poster-stars": "✨", "poster-map": "🗺️", "poster-music": "🎵", "poster-abstract": "🖼️",
-  wardrobe: "🚪", table: "🍽️", shelf: "🗄️",
+  "poster-stars": "✨", "poster-map": "🗺️", "poster-music": "🏆", "poster-abstract": "🖼️",
+  wardrobe: "🗄️", table: "🍽️", shelf: "🗄️",
+  "window-small": "🪟", "window-large": "🪟",
 };
 
 const CHARACTER_SHAPE_EMOJI: Record<CharacterSwatchShape, string> = {
@@ -81,7 +89,8 @@ const Room = () => {
   const [mode, setMode] = useState<"room" | "character">(
     searchParams.get("tab") === "character" ? "character" : "room",
   );
-  const { room, loading, error, buy, equip } = useRoomState();
+  const { room, loading, error, buy, equip, toggleLights, moveFloorItem, moveWallItem } = useRoomState();
+  const [arrangeMode, setArrangeMode] = useState(false);
   const {
     character,
     characterLoading,
@@ -89,6 +98,42 @@ const Room = () => {
     equip: equipCharacterItem,
     setSkinTone,
   } = useCharacter();
+  // Items the player is previewing but hasn't bought yet — reported up by
+  // ShopPanel's onPreviewChange, merged over the real (owned/equipped) state
+  // below so the 3D scene shows the "what if I bought this" look live. Both
+  // room decor and character outfits render in the same scene regardless of
+  // which shop tab is active, so previewing a hat while browsing wallpaper
+  // (or vice versa) still shows up.
+  const [roomPreview, setRoomPreview] = useState<Partial<Record<ShopSlot, string>>>({});
+  const [characterPreview, setCharacterPreview] = useState<Partial<Record<CharacterSlot, string>>>({});
+
+  // Earned Dashboard achievements, shown as trophies in the scene — reuses
+  // the exact same "highest earned tier per category" logic AchievementCard
+  // already applies to the same fetched data, just rendered as 3D props
+  // instead of medal dots.
+  const [trophies, setTrophies] = useState<RoomAchievementTrophy[]>([]);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    fetchAchievements(token)
+      .then((data) => {
+        const valueMap: Record<string, number> = {
+          listeningTime: getTotalListeningSeconds(),
+          questionsAnswered: data.stats.questionsAnswered,
+          studyStreak: data.stats.currentStreak,
+          storiesListened: data.stats.uniqueStoriesCount,
+          wordsLearned: data.stats.wordsLearned,
+        };
+        const earned = ACHIEVEMENT_CATEGORIES.flatMap((category) => {
+          const value = valueMap[category.key] ?? 0;
+          const earnedTiers = getEarnedTiers(category.tiers, value);
+          const highest = earnedTiers[earnedTiers.length - 1];
+          return highest ? [{ key: category.key, tier: highest.tier }] : [];
+        });
+        setTrophies(earned);
+      })
+      .catch((err) => console.error("Failed to load achievements for room trophies:", err));
+  }, []);
 
   if (loading || characterLoading) {
     return (
@@ -120,15 +165,46 @@ const Room = () => {
           >
             🏠 {t("room.upgradeBanner")}
           </button>
-          <div className="flex items-center gap-1 text-sm font-bold text-amber-600 bg-white/70 rounded-full px-3 py-1.5">
-            <BitAwardIcon size={14} />
-            {bitAward}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setArrangeMode((v) => !v)}
+              title={t(arrangeMode ? "room.arrangeModeExit" : "room.arrangeModeEnter")}
+              className={`text-xs font-semibold rounded-full px-3 py-1.5 cursor-pointer ${
+                arrangeMode ? "bg-amber-500 text-white" : "bg-white/70 hover:bg-white"
+              }`}
+            >
+              🔧 {t(arrangeMode ? "room.arrangeModeDone" : "room.arrangeModeStart")}
+            </button>
+            <button
+              onClick={toggleLights}
+              title={t(room.lightsOn ? "room.lightsOn" : "room.lightsOff")}
+              className="text-sm bg-white/70 rounded-full px-3 py-1.5 cursor-pointer hover:bg-white"
+            >
+              {room.lightsOn ? "💡" : "🌙"}
+            </button>
+            <div className="flex items-center gap-1 text-sm font-bold text-amber-600 bg-white/70 rounded-full px-3 py-1.5">
+              <BitAwardIcon size={14} />
+              {bitAward}
+            </div>
           </div>
         </div>
+        {arrangeMode && (
+          <p className="text-center text-xs text-black/50 px-3 pb-1">{t("room.arrangeModeHint")}</p>
+        )}
         <div className="flex-1 min-h-0">
           <RoomScene
-            placedItems={room.placedItems}
-            character={{ skinTone: character.skinTone, equipped: character.equipped }}
+            placedItems={{ ...room.placedItems, ...roomPreview }}
+            placement={room.placement}
+            lightsOn={room.lightsOn}
+            achievements={trophies}
+            arrangeMode={arrangeMode}
+            onMoveFloorItem={(slot: FloorSlotKey, x, z, rotation) => moveFloorItem(slot, x, z, rotation)}
+            onMoveWallItem={(slot: WallSlotKey, along, height) => moveWallItem(slot, along, height)}
+            rotateLabel={t("room.rotate")}
+            character={{
+              skinTone: character.skinTone,
+              equipped: { ...character.equipped, ...characterPreview },
+            }}
           />
         </div>
       </div>
@@ -149,7 +225,11 @@ const Room = () => {
           ))}
         </div>
 
-        {mode === "room" ? (
+        {/* Both panels stay mounted (just hidden) rather than being torn down
+            on tab switch, so an in-progress preview basket in one tab isn't
+            wiped out by browsing the other — you can preview a hat and a
+            wallpaper together and see the combined look in the scene. */}
+        <div className={mode === "room" ? "flex-1 min-h-0 flex flex-col" : "hidden"}>
           <ShopPanel
             slots={SHOP_SLOTS}
             slotLabelKeys={ROOM_SLOT_LABEL_KEYS}
@@ -160,36 +240,37 @@ const Room = () => {
             onBuy={buy}
             onEquip={equip}
             renderSwatch={(item) => <RoomSwatchPreview item={item} />}
+            onPreviewChange={setRoomPreview}
           />
-        ) : (
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-black/5 shrink-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <span className="text-[11px] font-semibold text-black/40 shrink-0">{t("room.skinTone")}</span>
-              {SKIN_TONE_PRESETS.map((tone) => (
-                <button
-                  key={tone}
-                  onClick={() => setSkinTone(tone)}
-                  className={`w-6 h-6 rounded-full border-2 shrink-0 cursor-pointer ${
-                    character.skinTone === tone ? "border-black" : "border-black/10"
-                  }`}
-                  style={{ backgroundColor: tone }}
-                  aria-label={tone}
-                />
-              ))}
-            </div>
-            <ShopPanel
-              slots={CHARACTER_SLOTS}
-              slotLabelKeys={CHARACTER_SLOT_LABEL_KEYS}
-              getItemsBySlot={getCharacterItemsBySlot}
-              ownedItemIds={character.ownedItemIds}
-              equippedBySlot={character.equipped}
-              bitAward={bitAward}
-              onBuy={buyCharacterItem}
-              onEquip={equipCharacterItem}
-              renderSwatch={(item) => <CharacterSwatchPreview item={item} />}
-            />
+        </div>
+        <div className={mode === "character" ? "flex-1 min-h-0 flex flex-col" : "hidden"}>
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-black/5 shrink-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-semibold text-black/40 shrink-0">{t("room.skinTone")}</span>
+            {SKIN_TONE_PRESETS.map((tone) => (
+              <button
+                key={tone}
+                onClick={() => setSkinTone(tone)}
+                className={`w-6 h-6 rounded-full border-2 shrink-0 cursor-pointer ${
+                  character.skinTone === tone ? "border-black" : "border-black/10"
+                }`}
+                style={{ backgroundColor: tone }}
+                aria-label={tone}
+              />
+            ))}
           </div>
-        )}
+          <ShopPanel
+            slots={CHARACTER_SLOTS}
+            slotLabelKeys={CHARACTER_SLOT_LABEL_KEYS}
+            getItemsBySlot={getCharacterItemsBySlot}
+            ownedItemIds={character.ownedItemIds}
+            equippedBySlot={character.equipped}
+            bitAward={bitAward}
+            onBuy={buyCharacterItem}
+            onEquip={equipCharacterItem}
+            renderSwatch={(item) => <CharacterSwatchPreview item={item} />}
+            onPreviewChange={setCharacterPreview}
+          />
+        </div>
       </div>
     </div>
   );

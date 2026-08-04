@@ -1,19 +1,21 @@
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { CharacterSlot, getCharacterItem } from "../../config/characterCatalog";
 import { buildHairModel, buildHatModel, buildFaceModel } from "./characterVoxelModels";
 import { VoxelBox } from "./voxelModels";
 
-// Extracted from RoomScene.tsx's original ambient `Character()` — same
-// jointed-box-rig geometry and walk/swing animation, now parameterized by
-// the owning user's customization instead of hardcoded colors, so the same
-// component renders correctly for "my room" and (via getPlayerRoom) anyone
-// else's room — it's just props in, geometry out.
-const WALK_MIN_X = -140;
-const WALK_MAX_X = 140;
-const WALK_Z = 120;
-const WALK_SPEED = 45; // world units / second
+// Player-controlled rig — click the floor to walk somewhere, click the desk
+// chair to sit facing the desk, click the character while seated to stand
+// back up. Replaces the old fully-autonomous bounce-between-walls animation;
+// same jointed-box-rig geometry/swing idiom, now driven by an external
+// target instead of an internal clock.
+const DEFAULT_X = 0;
+const DEFAULT_Z = 140;
+const WALK_SPEED = 90; // world units / second
+const SIT_LERP_SPEED = 8; // per-second convergence factor while sitting down
+const DEFAULT_SIT_FACING = Math.PI; // rig faces local +Z; Math.PI turns it to face -Z
+const ARRIVE_EPSILON = 1;
 const LEG_LENGTH = 26;
 const TORSO_HEIGHT = 28;
 const HEAD_SIZE = 16;
@@ -29,6 +31,21 @@ export interface CharacterAppearance {
   equipped: Record<CharacterSlot, string | null>;
 }
 
+export interface CharacterTarget {
+  x: number;
+  z: number;
+  sitting: boolean;
+  // Facing angle (radians) to snap to once seated — lets the caller aim the
+  // character at wherever the desk currently is, even after it's been
+  // dragged elsewhere in arrange mode. Falls back to a fixed angle if omitted.
+  facing?: number;
+}
+
+interface CharacterRigProps extends CharacterAppearance {
+  target: CharacterTarget | null;
+  onCharacterClick?: () => void;
+}
+
 function AttachmentBoxes({ model }: { model: VoxelBox[] }) {
   return (
     <>
@@ -42,7 +59,7 @@ function AttachmentBoxes({ model }: { model: VoxelBox[] }) {
   );
 }
 
-export function CharacterRig({ skinTone: rawSkinTone, equipped }: CharacterAppearance) {
+export function CharacterRig({ skinTone: rawSkinTone, equipped, target, onCharacterClick }: CharacterRigProps) {
   // Guards against a missing/malformed skin tone (e.g. an older document
   // predating this field) reaching THREE.Color as undefined, which throws
   // inside the render loop and can take the whole canvas down with it.
@@ -53,7 +70,7 @@ export function CharacterRig({ skinTone: rawSkinTone, equipped }: CharacterAppea
   const rightLegRef = useRef<THREE.Group>(null);
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
-  const state = useRef({ x: WALK_MIN_X, dir: 1, walkClock: 0 });
+  const state = useRef({ x: DEFAULT_X, z: DEFAULT_Z, facingAngle: 0, walkClock: 0, walking: false });
 
   const outfitItem = equipped.outfit ? getCharacterItem(equipped.outfit) : null;
   const shirtColor = outfitItem?.swatch.color ?? DEFAULT_SHIRT_COLOR;
@@ -67,31 +84,58 @@ export function CharacterRig({ skinTone: rawSkinTone, equipped }: CharacterAppea
 
   useFrame((_, delta) => {
     const s = state.current;
-    s.x += s.dir * WALK_SPEED * delta;
-    if (s.x > WALK_MAX_X) {
-      s.x = WALK_MAX_X;
-      s.dir = -1;
-    } else if (s.x < WALK_MIN_X) {
-      s.x = WALK_MIN_X;
-      s.dir = 1;
+    const sitting = !!target?.sitting;
+    const goalX = target ? target.x : s.x;
+    const goalZ = target ? target.z : s.z;
+    const dx = goalX - s.x;
+    const dz = goalZ - s.z;
+    const dist = Math.hypot(dx, dz);
+
+    if (sitting) {
+      const t = Math.min(1, delta * SIT_LERP_SPEED);
+      s.x += dx * t;
+      s.z += dz * t;
+      s.facingAngle = target?.facing ?? DEFAULT_SIT_FACING;
+      s.walking = false;
+    } else if (dist > ARRIVE_EPSILON) {
+      const step = Math.min(dist, WALK_SPEED * delta);
+      s.x += (dx / dist) * step;
+      s.z += (dz / dist) * step;
+      // Modeled facing local +Z; face the direction of travel in the XZ plane.
+      s.facingAngle = Math.atan2(dx, dz);
+      s.walking = true;
+    } else {
+      s.walking = false;
     }
-    s.walkClock += delta;
 
     if (groupRef.current) {
       groupRef.current.position.x = s.x;
-      // Modeled facing local +Z; turn to face the direction of travel along world X.
-      groupRef.current.rotation.y = s.dir >= 0 ? Math.PI / 2 : -Math.PI / 2;
+      groupRef.current.position.z = s.z;
+      groupRef.current.rotation.y = s.facingAngle;
     }
 
-    const swing = Math.sin(s.walkClock * SWING_FREQUENCY) * SWING_AMPLITUDE;
-    if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
-    if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
-    if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.7;
-    if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.7;
+    if (s.walking) {
+      s.walkClock += delta;
+      const swing = Math.sin(s.walkClock * SWING_FREQUENCY) * SWING_AMPLITUDE;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = swing;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = -swing;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.7;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.7;
+    } else {
+      if (leftLegRef.current) leftLegRef.current.rotation.x = 0;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = 0;
+      if (leftArmRef.current) leftArmRef.current.rotation.x = 0;
+      if (rightArmRef.current) rightArmRef.current.rotation.x = 0;
+    }
   });
 
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    onCharacterClick?.();
+  };
+
   return (
-    <group ref={groupRef} position={[WALK_MIN_X, 0, WALK_Z]}>
+    <group ref={groupRef} position={[DEFAULT_X, 0, DEFAULT_Z]} onClick={handleClick}>
       <group ref={leftLegRef} position={[-6, LEG_LENGTH, 0]}>
         <mesh position={[0, -LEG_LENGTH / 2, 0]}>
           <boxGeometry args={[8, LEG_LENGTH, 10]} />

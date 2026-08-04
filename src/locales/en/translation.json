@@ -25,18 +25,20 @@
     "slots": {
       "wallpaper": "Wallpaper",
       "flooring": "Flooring",
-      "furniture1": "Bed",
+      "furniture1": "Desk",
+      "chair": "Chair",
       "furniture2": "Decor",
-      "poster": "Poster",
-      "wardrobe": "Wardrobe",
-      "table": "Table",
+      "poster": "Wall Art",
+      "wardrobe": "Filing Cabinet",
+      "table": "Side Table",
       "shelf": "Shelf",
+      "window": "Window",
       "hairstyle": "Hair",
       "outfit": "Outfit",
       "hat": "Hat"
     },
-    "upgradeBanner": "Bigger apartment — coming soon",
-    "upgradeComingSoon": "Apartment upgrades are coming in a future update!",
+    "upgradeBanner": "Bigger office — coming soon",
+    "upgradeComingSoon": "Office upgrades are coming in a future update!",
     "confirmBuyTitle": "Buy this item?",
     "confirmBuy": "Buy",
     "cancel": "Cancel",
@@ -48,7 +50,18 @@
     "modeRoom": "Room",
     "modeCharacter": "Character",
     "skinTone": "Skin Tone",
-    "skinToneFailed": "Couldn't update skin tone. Please try again."
+    "skinToneFailed": "Couldn't update skin tone. Please try again.",
+    "basketTitle": "Previewing ({{count}})",
+    "buyAllPreview": "Buy & Equip All",
+    "clearPreviewItem": "Remove from preview",
+    "lightsOn": "Turn lights off",
+    "lightsOff": "Turn lights on",
+    "arrangeModeStart": "Arrange",
+    "arrangeModeDone": "Done",
+    "arrangeModeEnter": "Move and rotate your furniture",
+    "arrangeModeExit": "Finish arranging",
+    "arrangeModeHint": "Drag furniture to move it. Tap an item to rotate it.",
+    "rotate": "Rotate"
   },
   "feedback": {
     "title": "Leave feedback",
@@ -115,12 +128,19 @@
         "rightLabel": "Understand it",
         "takeaway": "Real fluency starts in the ear, not on the page."
       },
-      "visualThinking": {
-        "cloud": "Why visual thinking?",
-        "title": "Skip the translation",
-        "viaTranslation": "chair → 'стул' → chair",
-        "direct": "chair → chair",
-        "takeaway": "Translating doubles the work. See it — don't say it twice."
+      "vocabLanguage": {
+        "cloud": "Why is the vocabulary not written in English?",
+        "title": "Reading it isn't hearing it",
+        "viaTranslation": "🔊 chair → 👁 стул → 🪑",
+        "direct": "🔊 chair → 🪑",
+        "takeaway": "Our own vocab chips show the Russian word, but tap one and the audio still says it in English — they don't even sound alike. Reading the translation trains your eyes, not your ears. Only listening trains your ears."
+      },
+      "visualMemory": {
+        "cloud": "Why train your visual memory?",
+        "title": "Hear it. Find it. Remember it.",
+        "searchPrompt": "Find it in the comic",
+        "foundLabel": "Found it!",
+        "takeaway": "Pictures stick where words slip away. Every story comes with its own comic, so when a new word plays, go hunt for it in the panels. Spot it once with your eyes and your imagination locks it in for good — that's what real visual memory is for."
       }
     }
   },

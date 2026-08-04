@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-const VisualThinkingViz = () => {
+const VocabLanguageViz = () => {
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
   // framer-motion's transition.delay is in seconds — convert from the ms
@@ -15,7 +15,12 @@ const VisualThinkingViz = () => {
       </span>
 
       <div className="flex flex-col gap-5 w-full max-w-xs">
-        {/* Track A — via translation: two hops, arrives late */}
+        {/* Track A — via translation: this is literally what our own vocab
+            chips do (see VocabChip.tsx) — the on-screen word is the Russian
+            translation, but tapping it plays the ENGLISH pronunciation. The
+            two don't sound remotely alike, so reading the chip can't train
+            your ear for the audio you just heard — you have to consciously
+            translate before arriving at the meaning. Two extra hops. */}
         <div className="flex items-center justify-center gap-2 text-sm sm:text-base">
           <motion.span
             initial={{ opacity: 0, x: -8 }}
@@ -23,7 +28,7 @@ const VisualThinkingViz = () => {
             transition={{ delay: delay(0), duration: 0.4 }}
             className="font-semibold text-gray-400"
           >
-            🪑
+            🔊 chair
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -39,7 +44,7 @@ const VisualThinkingViz = () => {
             transition={{ delay: delay(900), duration: 0.4 }}
             className="font-semibold text-orange-500"
           >
-            стол
+            👁 стул
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -55,7 +60,7 @@ const VisualThinkingViz = () => {
             transition={{ delay: delay(1800), duration: 0.4 }}
             className="font-semibold text-gray-600"
           >
-            chair
+            🪑
           </motion.span>
         </div>
         <motion.p
@@ -64,10 +69,10 @@ const VisualThinkingViz = () => {
           transition={{ delay: delay(2200) }}
           className="text-center text-[11px] uppercase tracking-widest text-orange-500 font-bold"
         >
-          {t('homepage.why.visualThinking.viaTranslation')} · 2×
+          {t('homepage.why.vocabLanguage.viaTranslation')} · 2×
         </motion.p>
 
-        {/* Track B — direct: one hop, arrives early */}
+        {/* Track B — direct: hear it, know it, no detour through text at all */}
         <div className="flex items-center justify-center gap-2 text-sm sm:text-base mt-2">
           <motion.span
             initial={{ opacity: 0, x: -8 }}
@@ -75,7 +80,7 @@ const VisualThinkingViz = () => {
             transition={{ delay: delay(200), duration: 0.4 }}
             className="font-semibold text-gray-400"
           >
-            🪑
+            🔊 chair
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -91,7 +96,7 @@ const VisualThinkingViz = () => {
             transition={{ delay: delay(800), duration: 0.4 }}
             className="font-semibold text-emerald-600"
           >
-            chair
+            🪑
           </motion.span>
         </div>
         <motion.p
@@ -100,7 +105,7 @@ const VisualThinkingViz = () => {
           transition={{ delay: delay(1100) }}
           className="text-center text-[11px] uppercase tracking-widest text-emerald-600 font-bold"
         >
-          {t('homepage.why.visualThinking.direct')}
+          {t('homepage.why.vocabLanguage.direct')}
         </motion.p>
       </div>
 
@@ -110,10 +115,10 @@ const VisualThinkingViz = () => {
         transition={{ delay: delay(2600) }}
         className="text-sm text-gray-500 max-w-xs text-center"
       >
-        {t('homepage.why.visualThinking.takeaway')}
+        {t('homepage.why.vocabLanguage.takeaway')}
       </motion.p>
     </div>
   );
 };
 
-export default VisualThinkingViz;
+export default VocabLanguageViz;

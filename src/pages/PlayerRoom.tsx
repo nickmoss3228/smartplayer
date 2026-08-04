@@ -53,6 +53,18 @@ const PlayerRoom = () => {
       <div className="flex-1 min-h-0">
         <RoomScene
           placedItems={data.room.placedItems}
+          placement={data.room.placement}
+          lightsOn={data.room.lightsOn}
+          // getPlayerRoom doesn't expose another user's achievement stats
+          // (privacy — same reasoning as the rest of this read-only view),
+          // so a visited room never shows trophies, only the owner's own does.
+          achievements={[]}
+          // Read-only view — arrange mode (and its rotate/drag affordances)
+          // is only for your own room.
+          arrangeMode={false}
+          onMoveFloorItem={() => {}}
+          onMoveWallItem={() => {}}
+          rotateLabel=""
           character={{ skinTone: data.character.skinTone, equipped: data.character.equipped }}
         />
       </div>

@@ -124,24 +124,46 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           />
 
           <div className="flex flex-wrap gap-3 text-xs text-black">
-            <label className="flex items-center gap-1">
-              Fast audio (plays first)
+            {/* Native file inputs always render their own "No file chosen"
+                text next to whatever label you give them, even when a URL is
+                already uploaded (a file input can never be pre-filled) — so
+                the input is hidden and the whole label drives the picker,
+                letting us show our own text instead ("Choose file"/"Replace"
+                + the ✓) rather than a stale-looking "No file chosen". */}
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <span>Fast audio (plays first)</span>
               <input
                 type="file"
                 accept="audio/*"
+                className="hidden"
                 onChange={(e) => handleAudioUpload(qIndex, "fast", e.target.files?.[0] ?? null)}
                 disabled={uploadingKey === `${qIndex}-fast`}
               />
+              <span className="text-blue-600 underline">
+                {uploadingKey === `${qIndex}-fast`
+                  ? "Uploading..."
+                  : q.audio.fast
+                  ? "Replace"
+                  : "Choose file"}
+              </span>
               {q.audio.fast && <span className="text-green-600">✓</span>}
             </label>
-            <label className="flex items-center gap-1">
-              Slow audio (plays second)
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <span>Slow audio (plays second)</span>
               <input
                 type="file"
                 accept="audio/*"
+                className="hidden"
                 onChange={(e) => handleAudioUpload(qIndex, "slow", e.target.files?.[0] ?? null)}
                 disabled={uploadingKey === `${qIndex}-slow`}
               />
+              <span className="text-blue-600 underline">
+                {uploadingKey === `${qIndex}-slow`
+                  ? "Uploading..."
+                  : q.audio.slow
+                  ? "Replace"
+                  : "Choose file"}
+              </span>
               {q.audio.slow && <span className="text-green-600">✓</span>}
             </label>
           </div>

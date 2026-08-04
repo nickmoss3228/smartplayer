@@ -20,6 +20,7 @@ const BLOB_COLORS: [string, string][] = [
   ['#a7f3d0', '#a5f3fc'], // emerald -> cyan
   ['#ddd6fe', '#bfdbfe'], // violet -> blue
   ['#fde68a', '#fbcfe8'], // amber -> pink
+  ['#bbf7d0', '#fef08a'], // green -> yellow
 ];
 
 const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {

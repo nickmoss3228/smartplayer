@@ -3,11 +3,22 @@ import {
   fetchPlayerRoom,
   PlayerRoomResponse,
 } from "../../services/roomServices";
+import { DEFAULT_PLACEMENT } from "../../config/roomLayout";
 
 interface UsePlayerRoomResult {
   data: PlayerRoomResponse | null;
   loading: boolean;
   error: string | null;
+}
+
+// Back-fills any missing placement slots with the shared defaults — guards
+// against a backend that hasn't picked up the room.placement schema field
+// yet, same as useRoomState's normalizeRoom.
+function normalizeRoom(result: PlayerRoomResponse): PlayerRoomResponse {
+  return {
+    ...result,
+    room: { ...result.room, placement: { ...DEFAULT_PLACEMENT, ...(result.room.placement ?? {}) } },
+  };
 }
 
 export function usePlayerRoom(userId: string | undefined): UsePlayerRoomResult {
@@ -25,7 +36,7 @@ export function usePlayerRoom(userId: string | undefined): UsePlayerRoomResult {
     setError(null);
     try {
       const result = await fetchPlayerRoom(token, userId);
-      setData(result);
+      setData(normalizeRoom(result));
     } catch (err) {
       console.error("Failed to load player room:", err);
       setError("Failed to load player room");

@@ -66,7 +66,6 @@ const Players = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("players.searchPlaceholder")}
             className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/80 shadow-sm border border-black/5 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm"
-            autoFocus
           />
         </div>
 

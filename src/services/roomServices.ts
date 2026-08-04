@@ -1,6 +1,7 @@
 import axios from "axios";
 import { RoomState } from "../types/Room";
 import { CharacterState } from "../types/Character";
+import { FloorSlotKey, WallSlotKey } from "../config/roomLayout";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -55,6 +56,50 @@ export const equipItem = async (
   const res = await axios.post(
     `${API_BASE}/api/progress/room/equip`,
     { itemId },
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.data;
+};
+
+// Flips the room's lights on/off — a free preference, not a purchase.
+export const toggleLights = async (
+  token: string,
+): Promise<{ room: RoomState }> => {
+  const res = await axios.patch(
+    `${API_BASE}/api/progress/room/lights`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.data;
+};
+
+// "Arrange mode" placement — floor items move freely (x/z + 90°-step
+// rotation), wall items stay flush against their wall and only slide along
+// it (along the wall's run + height). See config/roomLayout.ts.
+export const updateFloorPlacement = async (
+  token: string,
+  slot: FloorSlotKey,
+  x: number,
+  z: number,
+  rotation: number,
+): Promise<{ room: RoomState }> => {
+  const res = await axios.patch(
+    `${API_BASE}/api/progress/room/placement`,
+    { slot, x, z, rotation },
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return res.data;
+};
+
+export const updateWallPlacement = async (
+  token: string,
+  slot: WallSlotKey,
+  along: number,
+  height: number,
+): Promise<{ room: RoomState }> => {
+  const res = await axios.patch(
+    `${API_BASE}/api/progress/room/placement`,
+    { slot, along, height },
     { headers: { Authorization: `Bearer ${token}` } },
   );
   return res.data;

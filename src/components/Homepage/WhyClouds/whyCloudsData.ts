@@ -3,14 +3,16 @@ import RepetitionViz from './visualizations/RepetitionViz';
 import SpeedsViz from './visualizations/SpeedsViz';
 import NoSubtitlesViz from './visualizations/NoSubtitlesViz';
 import EarsOnlyViz from './visualizations/EarsOnlyViz';
-import VisualThinkingViz from './visualizations/VisualThinkingViz';
+import VocabLanguageViz from './visualizations/VocabLanguageViz';
+import VisualMemoryViz from './visualizations/VisualMemoryViz';
 
 export type WhyQuestionId =
   | 'repetition'
   | 'speeds'
   | 'noSubtitles'
   | 'earsOnly'
-  | 'visualThinking';
+  | 'vocabLanguage'
+  | 'visualMemory';
 
 export interface WhyQuestion {
   id: WhyQuestionId;
@@ -24,5 +26,6 @@ export const whyQuestions: WhyQuestion[] = [
   { id: 'speeds', Viz: SpeedsViz },
   { id: 'noSubtitles', Viz: NoSubtitlesViz },
   { id: 'earsOnly', Viz: EarsOnlyViz },
-  { id: 'visualThinking', Viz: VisualThinkingViz },
+  { id: 'vocabLanguage', Viz: VocabLanguageViz },
+  { id: 'visualMemory', Viz: VisualMemoryViz },
 ];
