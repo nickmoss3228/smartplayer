@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { CharacterSlot, getCharacterItem } from "../../config/characterCatalog";
-import { buildHairModel, buildHatModel } from "./characterVoxelModels";
+import { buildHairModel, buildHatModel, buildFaceModel } from "./characterVoxelModels";
 import { VoxelBox } from "./voxelModels";
 
 // Extracted from RoomScene.tsx's original ambient `Character()` — same
@@ -22,6 +22,7 @@ const SWING_AMPLITUDE = 0.6;
 
 const DEFAULT_SHIRT_COLOR = "#4a7fd6";
 const DEFAULT_PANTS_COLOR = "#2b2d42";
+const DEFAULT_SKIN_TONE = "#f2c48d";
 
 export interface CharacterAppearance {
   skinTone: string;
@@ -41,7 +42,12 @@ function AttachmentBoxes({ model }: { model: VoxelBox[] }) {
   );
 }
 
-export function CharacterRig({ skinTone, equipped }: CharacterAppearance) {
+export function CharacterRig({ skinTone: rawSkinTone, equipped }: CharacterAppearance) {
+  // Guards against a missing/malformed skin tone (e.g. an older document
+  // predating this field) reaching THREE.Color as undefined, which throws
+  // inside the render loop and can take the whole canvas down with it.
+  const skinTone = /^#[0-9a-fA-F]{6}$/.test(rawSkinTone ?? "") ? rawSkinTone : DEFAULT_SKIN_TONE;
+
   const groupRef = useRef<THREE.Group>(null);
   const leftLegRef = useRef<THREE.Group>(null);
   const rightLegRef = useRef<THREE.Group>(null);
@@ -122,6 +128,7 @@ export function CharacterRig({ skinTone, equipped }: CharacterAppearance) {
           <boxGeometry args={[HEAD_SIZE, HEAD_SIZE, HEAD_SIZE]} />
           <meshLambertMaterial color={skinTone} />
         </mesh>
+        <AttachmentBoxes model={buildFaceModel(skinTone)} />
         <AttachmentBoxes model={hairModel} />
         <AttachmentBoxes model={hatModel} />
       </group>

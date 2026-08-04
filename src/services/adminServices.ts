@@ -1,13 +1,13 @@
 // services/adminServices.ts
 // Centralizes the admin panel's fetch calls. Uses the separate admin_token
 // (sessionStorage, code-word JWT) rather than the regular user JWT services.
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-const authHeaders = (token: string) => ({
+export const authHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
 
-async function parseOrThrow(res: Response) {
+export async function parseOrThrow(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? data.message ?? "Request failed");
   return data;

@@ -5,6 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import { useWallet } from "./WalletContext";
@@ -50,6 +51,12 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
   const { wallet, setWalletDirect } = useWallet();
   const [character, setCharacter] = useState<CharacterState | null>(null);
   const [characterLoading, setCharacterLoading] = useState(true);
+  // Guards against out-of-order responses when a user fires several
+  // mutations in quick succession (e.g. clicking through skin-tone swatches
+  // fast) — without this, an earlier request that happens to resolve last
+  // can clobber the result of a later one, making the picked color
+  // intermittently "not stick" or flicker back.
+  const requestSeq = useRef(0);
 
   const loadCharacter = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -58,9 +65,10 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
       setCharacterLoading(false);
       return;
     }
+    const seq = ++requestSeq.current;
     try {
       const data = await fetchCharacter(token);
-      setCharacter(data.character);
+      if (seq === requestSeq.current) setCharacter(data.character);
     } catch (err) {
       console.error("[CharacterContext] Failed to load character:", err);
     } finally {
@@ -77,10 +85,13 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
     async (itemId: string): Promise<ActionResult> => {
       const token = localStorage.getItem("token");
       if (!token) return { ok: false, message: "Not logged in" };
+      const seq = ++requestSeq.current;
       try {
         const data = await purchaseCharacterItem(token, itemId);
-        setCharacter(data.character);
-        setWalletDirect({ bitWord: 0, bitPhrase: 0, ...wallet, bitAward: data.bitAward });
+        if (seq === requestSeq.current) {
+          setCharacter(data.character);
+          setWalletDirect({ bitWord: 0, bitPhrase: 0, ...wallet, bitAward: data.bitAward });
+        }
         return { ok: true };
       } catch (err) {
         const message =
@@ -95,9 +106,10 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
   const equip = useCallback(async (itemId: string): Promise<ActionResult> => {
     const token = localStorage.getItem("token");
     if (!token) return { ok: false, message: "Not logged in" };
+    const seq = ++requestSeq.current;
     try {
       const data = await equipCharacterItem(token, itemId);
-      setCharacter(data.character);
+      if (seq === requestSeq.current) setCharacter(data.character);
       return { ok: true };
     } catch (err) {
       const message =
@@ -110,9 +122,13 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
   const setSkinTone = useCallback(async (skinTone: string): Promise<ActionResult> => {
     const token = localStorage.getItem("token");
     if (!token) return { ok: false, message: "Not logged in" };
+    const seq = ++requestSeq.current;
     try {
       const data = await setSkinToneRequest(token, skinTone);
-      setCharacter(data.character);
+      // Only apply the response if no newer mutation has started since —
+      // otherwise a slow response for an earlier click could stomp a
+      // faster-resolving later click's result.
+      if (seq === requestSeq.current) setCharacter(data.character);
       return { ok: true };
     } catch (err) {
       const message =

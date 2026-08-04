@@ -22,6 +22,12 @@ import { getAudioTracksByStory } from "../modules/audiodata/audioDataByDifficult
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
 import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabulary"
+import {
+  fetchPublishedStory,
+  adaptPublishedStoryToTracks,
+  PublishedStory,
+} from "../services/storyServices";
+import { AudioTrack } from "../types";
 import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
 import { saveGuestQuizResult } from "../services/guestProgress";
@@ -41,6 +47,12 @@ const hasListenedFullyStored = (difficulty: string, storySlug: string, level: nu
 const markListenedFullyStored = (difficulty: string, storySlug: string, level: number): void => {
   localStorage.setItem(getListenedKey(difficulty, storySlug, level), "true");
 };
+
+// Used only while a DB-backed story's tracks are still being fetched (static
+// stories always have audioTracks populated synchronously, so this never
+// applies to them) — keeps audioTrack.id/.title/.audio safely accessible
+// instead of undefined during that brief window.
+const PLACEHOLDER_TRACK: AudioTrack = { id: "", title: "", audio: "", subtitles: [], timeMarkers: [] };
 
 const Player = React.memo(() => {
   const { user } = useAuth();
@@ -142,10 +154,44 @@ const Player = React.memo(() => {
     if (isInitialLoad) return;
   }, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
 
-  const audioTracks = useMemo(
+  const staticAudioTracks = useMemo(
     () => getAudioTracksByStory(difficulty, storySlug),
-    [difficulty],
+    [difficulty, storySlug],
   );
+
+  // Story isn't in the static config — it may be a DB-backed story authored
+  // via the admin Story Builder. Fetched once; static stories skip this
+  // entirely (staticAudioTracks.length > 0 short-circuits below).
+  const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
+  const [dbStoryLoading, setDbStoryLoading] = useState(staticAudioTracks.length === 0);
+
+  useEffect(() => {
+    if (staticAudioTracks.length > 0) {
+      setDbStory(null);
+      setDbStoryLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDbStoryLoading(true);
+    fetchPublishedStory(difficulty, storySlug)
+      .then((story) => {
+        if (!cancelled) setDbStory(story);
+      })
+      .finally(() => {
+        if (!cancelled) setDbStoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [difficulty, storySlug, staticAudioTracks.length]);
+
+  const dbAudioTracks = useMemo(
+    () => (dbStory ? adaptPublishedStoryToTracks(dbStory) : []),
+    [dbStory],
+  );
+
+  const audioTracks = staticAudioTracks.length > 0 ? staticAudioTracks : dbAudioTracks;
+
   const resolvedStorySlug =
     storySlug ??
     (difficulty === "easy"
@@ -193,7 +239,8 @@ const Player = React.memo(() => {
   const audioTrack = useMemo(
     () =>
       audioTracks.find((track) => track.id === selectedTrackId) ||
-      audioTracks[0],
+      audioTracks[0] ||
+      PLACEHOLDER_TRACK,
     [selectedTrackId, audioTracks],
   );
 
@@ -303,19 +350,56 @@ const Player = React.memo(() => {
     storySlug,
   );
 
-const allVocabWords = useMemo(() => {
-  const vocab = (trackVocabulary[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
-    .map((w) => ({ ...w, type: "vocab" as const }));
-  const phrasal = (trackPhrasalVerbs[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
-    .map((w) => ({ ...w, type: "phrasal" as const }));
-  return [...vocab, ...phrasal];
-}, [difficulty, storySlug, selectedTrackId]);
+  // DB-backed story's vocab/phrasal words for the selected part, if any —
+  // only consulted when the static Vocabulary.ts lists have nothing (legacy
+  // stories keep using their existing folder-path-derived audio untouched).
+  const dbPart = useMemo(
+    () => dbStory?.parts.find((p) => String(p.partNumber) === selectedTrackId),
+    [dbStory, selectedTrackId],
+  );
+
+  const allVocabWords = useMemo(() => {
+    const vocab = (trackVocabulary[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
+      .map((w) => ({ ...w, type: "vocab" as const }));
+    const phrasal = (trackPhrasalVerbs[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
+      .map((w) => ({ ...w, type: "phrasal" as const }));
+    if (vocab.length > 0 || phrasal.length > 0) return [...vocab, ...phrasal];
+
+    const dbVocab = (dbPart?.vocabulary ?? []).map((w) => ({ ...w, type: "vocab" as const }));
+    const dbPhrasal = (dbPart?.phrasalVerbs ?? []).map((w) => ({ ...w, type: "phrasal" as const }));
+    return [...dbVocab, ...dbPhrasal];
+  }, [difficulty, storySlug, selectedTrackId, dbPart]);
+
+  // DB vocab entries already carry their full audioUrl (no folder-path
+  // construction needed) — play those directly, falling back to the
+  // legacy folder-map-based lookup for static stories.
+  const dbVocabAudioUrls = useMemo(() => {
+    const entries = [...(dbPart?.vocabulary ?? []), ...(dbPart?.phrasalVerbs ?? [])];
+    return new Map(entries.map((w) => [w.audioKey.toLowerCase(), w.audioUrl]));
+  }, [dbPart]);
+
+  const playVocabWordUnified = useCallback(
+    (fileName: string, type: "vocab" | "phrasal" = "vocab"): HTMLAudioElement | null => {
+      const dbUrl = dbVocabAudioUrls.get(fileName.toLowerCase());
+      if (dbUrl) {
+        const audio = new Audio(dbUrl);
+        audio.play().catch(() => {});
+        return audio;
+      }
+      return playVocabWord(fileName, type);
+    },
+    [dbVocabAudioUrls, playVocabWord],
+  );
   
   // useEffect(() => {
   // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
   // }, [audioTrack]);
 
-  return (
+  return dbStoryLoading ? (
+    <div className="flex justify-center items-center h-dvh">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white/70" />
+    </div>
+  ) : (
     <div
       className={`h-dvh overflow-hidden bg-gradient-to-br ${theme.background} pt-1`}
     >
@@ -386,7 +470,7 @@ const allVocabWords = useMemo(() => {
             <div className="flex-1 min-h-0">
               <VocabQuiz
                 words={allVocabWords}
-                onPlay={playVocabWord}
+                onPlay={playVocabWordUnified}
                 onClose={() => setShowVocabQuiz(false)}
                 onComplete={markLearned}
                 learnedWords={learnedWords}

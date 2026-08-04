@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -89,6 +89,17 @@ function ShellPlane({
     const item = getShopItem(itemId);
     return item ? draw(item.swatch) : null;
   }, [itemId, draw]);
+
+  // CanvasTexture holds GPU-side memory that isn't freed by JS garbage
+  // collection alone — without an explicit dispose(), every wallpaper/
+  // flooring swap on the owner's live session leaks a texture, eventually
+  // exhausting the browser's WebGL contexts/memory and turning the canvas
+  // black. A first-load visitor never swaps anything, so they never hit it.
+  useEffect(() => {
+    return () => {
+      texture?.dispose();
+    };
+  }, [texture]);
 
   return (
     <mesh position={position} rotation={rotation}>

@@ -47,6 +47,7 @@ const ROOM_SHAPE_EMOJI: Record<SwatchShape, string> = {
 
 const CHARACTER_SHAPE_EMOJI: Record<CharacterSwatchShape, string> = {
   "hair-short": "💇", "hair-long": "💁", "hair-spiky": "🦔",
+  "hair-ponytail": "🎀", "hair-buzz": "👨‍🦲",
   "outfit-tee": "👕", "outfit-hoodie": "🧥", "outfit-overalls": "🥻",
   "hat-cap": "🧢", "hat-beanie": "🎩", "hat-wizard": "🪄",
 };

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { getGuestStoryProgress } from '../../services/guestProgress';
 import LevelProgress from '../../components/LevelProgress';
-import { getStoryGroup } from '../../types/storyGroups';
+import { useStoryGroup } from '../../types/storyGroups';
 import { DifficultySlug } from '../../types/storyGroups';
 
 const VALID_DIFFICULTIES: DifficultySlug[] = ['easy', 'medium', 'hard'];
@@ -32,17 +32,24 @@ const DifficultyDetail = () => {
   // ← use new context shape
   const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
 
+  // Falls back to 'easy' when the URL difficulty is invalid — the hook below
+  // must run unconditionally on every render (rules of hooks), so the actual
+  // "invalid difficulty" redirect happens after it, once we have a safe diff.
+  const diff = (
+    difficulty && VALID_DIFFICULTIES.includes(difficulty as DifficultySlug) ? difficulty : 'easy'
+  ) as DifficultySlug;
+  const resolvedSlug = storySlug || DEFAULT_SLUGS[diff];
+  const { storyGroup, loading: storyGroupLoading } = useStoryGroup(diff, resolvedSlug, t);
+
   // Validate difficulty
   if (!difficulty || !VALID_DIFFICULTIES.includes(difficulty as DifficultySlug)) {
     return <Navigate to="/levels" replace />;
   }
 
-  const diff = difficulty as DifficultySlug;
-  const resolvedSlug = storySlug || DEFAULT_SLUGS[diff];
-  const storyGroup = storySlug ? getStoryGroup(diff, storySlug, t) : undefined;
-
-  // Validate story slug if one was provided in the URL
-  if (storySlug && !storyGroup) {
+  // Validate story slug if one was provided in the URL — wait for the DB
+  // fallback lookup to resolve before concluding it doesn't exist (static
+  // stories resolve this synchronously, so they're never affected).
+  if (storySlug && !storyGroupLoading && !storyGroup) {
     return <Navigate to={`/levels/${diff}`} replace />;
   }
 
@@ -52,7 +59,7 @@ const DifficultyDetail = () => {
   const storyData = getStoryData(diff, resolvedSlug);
   const guestStoryData = !user ? getGuestStoryProgress(diff, resolvedSlug) : null;
 
-  if (isInitialLoad) {
+  if (isInitialLoad || (!!storySlug && storyGroupLoading)) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div

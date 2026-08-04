@@ -1,7 +1,7 @@
 import { useState } from "react";
 import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
-import StoryBuilderTab from "./StoryBuilderTab";
+import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
 
 const TOKEN_KEY = "admin_token";
 
@@ -119,7 +119,7 @@ const AdminPanel = () => {
 
         {activeTab === "feedback" && <FeedbackTab token={token} />}
         {activeTab === "players" && <PlayersTab token={token} />}
-        {activeTab === "story-builder" && <StoryBuilderTab />}
+        {activeTab === "story-builder" && <StoryBuilderTab token={token} />}
       </div>
     </div>
   );

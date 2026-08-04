@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { getStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
+import { useStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
 import { useState, useMemo } from 'react';
 import {
@@ -68,7 +68,7 @@ const List = () => {
   const { t } = useTranslation();
 
   const diff = (difficulty || 'easy') as DifficultySlug;
-  const stories = getStoryGroups(diff, t);
+  const stories = useStoryGroups(diff, t);
   const theme = difficultyThemes[diff] || difficultyThemes.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
