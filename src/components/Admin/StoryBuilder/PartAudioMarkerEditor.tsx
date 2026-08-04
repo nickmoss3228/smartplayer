@@ -177,7 +177,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             <button
               type="button"
               onClick={() => wsRef.current?.playPause()}
-              className="text-xs bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5"
+              className="text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded px-3 py-1.5"
             >
               Play / Pause
             </button>

@@ -4,6 +4,7 @@ import {
   StoryPart,
   deleteStory,
   setStoryPublished,
+  addPart,
 } from "../../../services/adminStoryServices";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
@@ -19,6 +20,8 @@ interface StoryEditorProps {
 
 type Step = "audio" | "vocabulary" | "phrasal" | "quiz";
 
+const MAX_PARTS = 20;
+
 const STEPS: { id: Step; label: string }[] = [
   { id: "audio", label: "Audio & Markers" },
   { id: "vocabulary", label: "Vocabulary" },
@@ -33,6 +36,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
   const [step, setStep] = useState<Step>("audio");
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addingPart, setAddingPart] = useState(false);
   const [error, setError] = useState("");
 
   const part = story.parts.find((p) => p.partNumber === partNumber) as StoryPart;
@@ -56,6 +60,21 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       setError(err instanceof Error ? err.message : "Failed to update publish status.");
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleAddPart = async () => {
+    setAddingPart(true);
+    setError("");
+    try {
+      const updated = await addPart(token, story._id);
+      onStoryUpdated(updated);
+      // Jump straight to the new part so it's obvious it was added.
+      setPartNumber(updated.parts[updated.parts.length - 1].partNumber);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add a part.");
+    } finally {
+      setAddingPart(false);
     }
   };
 
@@ -127,6 +146,18 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
             Part {p.partNumber}
           </button>
         ))}
+        <button
+          onClick={handleAddPart}
+          disabled={addingPart || story.parts.length >= MAX_PARTS}
+          title={
+            story.parts.length >= MAX_PARTS
+              ? `A story can have at most ${MAX_PARTS} parts.`
+              : "Add another part to this story"
+          }
+          className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-full px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {addingPart ? "Adding..." : "+ Add part"}
+        </button>
       </div>
 
       <div className="flex gap-1 mb-4 border-b border-gray-200">

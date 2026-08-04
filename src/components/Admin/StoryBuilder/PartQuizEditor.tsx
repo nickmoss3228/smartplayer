@@ -123,7 +123,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
             className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
           />
 
-          <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex flex-wrap gap-3 text-xs text-black">
             <label className="flex items-center gap-1">
               Fast audio (plays first)
               <input
@@ -173,7 +173,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           type="button"
           onClick={addQuestion}
           disabled={questions.length >= MAX_QUESTIONS}
-          className="text-sm bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 disabled:opacity-50"
+          className="text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 disabled:opacity-50"
         >
           Add question ({questions.length}/{MAX_QUESTIONS})
         </button>

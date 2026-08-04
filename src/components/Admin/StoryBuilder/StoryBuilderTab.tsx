@@ -132,7 +132,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
                 key={`${difficulty}:${group.slug}`}
                 onClick={() => handleImport(difficulty, group)}
                 disabled={importingSlug === group.slug}
-                className="flex items-center gap-2 text-sm bg-white border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
+                className="flex items-center gap-2 text-sm text-black bg-white border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
               >
                 <span>{group.coverEmoji}</span>
                 {group.title}

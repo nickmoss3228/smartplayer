@@ -140,6 +140,17 @@ export const getStory = async (token: string, id: string): Promise<AdminStory> =
   return data.story;
 };
 
+// Appends one empty part to an existing story (e.g. adding a "part 3"
+// alongside an already-built "part 1"/"part 2") and bumps totalParts to match.
+export const addPart = async (token: string, id: string): Promise<AdminStory> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
+};
+
 export const deleteStory = async (token: string, id: string): Promise<void> => {
   const res = await fetch(`${API_URL}/api/admin/stories/${id}`, {
     method: "DELETE",
