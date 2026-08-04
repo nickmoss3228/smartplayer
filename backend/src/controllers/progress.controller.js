@@ -1,11 +1,15 @@
 // controllers/progress.controller.js
 import { Progress } from "../models/Progress.js";
 import { StoryProgress } from "../models/StoryProgress.js";
-import { storyRegistry } from "../config/storyRegistry.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
 import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
-import { scoreQuizSubmission } from "../helpers/scoreQuiz.js";
-import { getQuizAnswerKey, getPublicQuiz } from "../config/quizData.js";
+import {
+  getStoryMeta,
+  getAllStoryMeta,
+  getPublicQuizAsync,
+  getQuizAnswerKeyAsync,
+  scoreQuizSubmissionAsync,
+} from "../helpers/storyLookup.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
@@ -155,8 +159,7 @@ export async function getStoryProgress(req, res) {
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty" });
 
-    const stories = storyRegistry[difficulty] ?? [];
-    const storyMeta = stories.find((s) => s.storyId === storyId);
+    const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId" });
 
@@ -238,11 +241,11 @@ export async function getQuiz(req, res) {
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
 
-    const storyMeta = (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId);
+    const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
 
-    const questions = getPublicQuiz(difficulty, storyId, partNumber);
+    const questions = await getPublicQuizAsync(difficulty, storyId, partNumber);
     if (!questions)
       return res.status(404).json({ message: "No quiz available for this part" });
 
@@ -271,7 +274,7 @@ export async function checkQuizAnswer(req, res) {
     if (typeof questionIndex !== "number" || typeof selectedOption !== "number")
       return res.status(400).json({ message: "Missing required fields" });
 
-    const answerKey = getQuizAnswerKey(difficulty, storyId, partNumber);
+    const answerKey = await getQuizAnswerKeyAsync(difficulty, storyId, partNumber);
     if (!answerKey || questionIndex < 0 || questionIndex >= answerKey.length)
       return res.status(400).json({ message: "Invalid question for this part" });
 
@@ -295,14 +298,13 @@ export async function completeLevel(req, res) {
     if (!storyId || partNumber === undefined || !Array.isArray(answers))
       return res.status(400).json({ message: "Missing required fields" });
 
-    const stories = storyRegistry[difficulty] ?? [];
-    const storyMeta = stories.find((s) => s.storyId === storyId);
+    const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
 
     // Grade against the server-held answer key — never trust a client-reported
     // score, since a direct API call could otherwise forge a passing result.
-    const scored = scoreQuizSubmission(difficulty, storyId, partNumber, answers);
+    const scored = await scoreQuizSubmissionAsync(difficulty, storyId, partNumber, answers);
     if (!scored)
       return res.status(400).json({ message: "Invalid quiz submission for this part" });
     const { correctAnswers, totalQuestions } = scored;
@@ -410,7 +412,7 @@ export async function migrateGuestProgress(req, res) {
       const { difficulty, storyId, results } = entry ?? {};
       if (!difficulties.includes(difficulty)) continue;
 
-      const storyMeta = (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId);
+      const storyMeta = await getStoryMeta(difficulty, storyId);
       if (!storyMeta) continue;
       if (!Array.isArray(results)) continue;
 
@@ -871,7 +873,7 @@ export async function getOverview(req, res) {
     const overview = {};
 
     for (const difficulty of difficulties) {
-      const stories = storyRegistry[difficulty] ?? [];
+      const stories = await getAllStoryMeta(difficulty);
 
       // Fetch all story progress docs for this user + difficulty at once
       const allStoryDocs = await StoryProgress.find({ userId, difficulty });

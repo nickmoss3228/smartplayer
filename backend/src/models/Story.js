@@ -1,51 +1,80 @@
-// // models/Story.js
-// import mongoose from "mongoose";
+// models/Story.js
+// DB-backed stories authored via the admin Story Builder. Existing hardcoded
+// stories (leo, leo-additional, maya, daniel) stay in the static config files
+// (storyRegistry.js, audioDataByDifficulty.ts, Vocabulary.ts, quizData.js) —
+// this model is only for new stories going forward. See helpers/storyLookup.js
+// for how the two sources are merged at read time.
 
-// const storySchema = new mongoose.Schema(
-//   {
-//     storyId: {
-//       type: String,
-//       required: true,
-//       unique: true,
-//       trim: true,
-//       // e.g. "leo-easy", "mia-medium"
-//     },
-//     storyName: {
-//       type: String,
-//       required: true,
-//       trim: true,
-//       // e.g. "Leo's Adventure"
-//     },
-//     characterIcon: {
-//       type: String,
-//       required: true,
-//       // e.g. "🦁"
-//     },
-//     difficulty: {
-//       type: String,
-//       required: true,
-//       enum: ["easy", "medium", "hard"],
-//     },
-//     totalParts: {
-//       type: Number,
-//       required: true,
-//       min: 1,
-//       // e.g. 10
-//     },
-//     order: {
-//       type: Number,
-//       required: true,
-//       default: 0,
-//       // controls display order within a difficulty
-//     },
-//     isPublished: {
-//       type: Boolean,
-//       default: true,
-//     },
-//   },
-//   { timestamps: true }
-// );
+import mongoose from "mongoose";
 
-// storySchema.index({ difficulty: 1, order: 1 });
+const vocabEntrySchema = new mongoose.Schema(
+  {
+    word: { type: String, required: true, trim: true }, // Russian text shown to the student
+    definition: { type: String, default: "" },
+    audioKey: { type: String, required: true, trim: true }, // English filename stem, also the progress key
+    audioUrl: { type: String, default: null },
+  },
+  { _id: false }
+);
 
-// export const Story = mongoose.model("Story", storySchema);
+const quizQuestionSchema = new mongoose.Schema(
+  {
+    question: { type: String, required: true },
+    options: {
+      type: [String],
+      validate: (arr) => arr.length === 4,
+    },
+    correctAnswer: { type: Number, required: true, min: 0, max: 3 },
+    referenceTime: { type: Number, default: 0 },
+    audio: {
+      fast: { type: String, default: null },
+      slow: { type: String, default: null },
+    },
+  },
+  { _id: false }
+);
+
+const partSchema = new mongoose.Schema(
+  {
+    partNumber: { type: Number, required: true },
+    audioUrl: { type: String, default: null },
+    timeMarkers: {
+      type: [
+        {
+          time: { type: Number, required: true },
+          label: { type: String, default: "" },
+          color: { type: String, default: "red" },
+        },
+      ],
+      default: [],
+      _id: false,
+    },
+    vocabulary: { type: [vocabEntrySchema], default: [] },
+    phrasalVerbs: { type: [vocabEntrySchema], default: [] },
+    quiz: {
+      type: [quizQuestionSchema],
+      default: [],
+      validate: (arr) => arr.length <= 10,
+    },
+  },
+  { _id: false }
+);
+
+const storySchema = new mongoose.Schema(
+  {
+    difficulty: { type: String, required: true, enum: ["easy", "medium", "hard"] },
+    storyId: { type: String, required: true, trim: true }, // slug, unique per difficulty
+    storyName: { type: String, required: true, trim: true },
+    description: { type: String, default: "" },
+    characterIcon: { type: String, default: "📖" },
+    totalParts: { type: Number, required: true, min: 1, max: 20 },
+    // Hidden from players until the admin explicitly publishes it.
+    published: { type: Boolean, default: false },
+    parts: { type: [partSchema], default: [] },
+  },
+  { timestamps: true }
+);
+
+storySchema.index({ difficulty: 1, storyId: 1 }, { unique: true });
+
+export const Story = mongoose.model("Story", storySchema);

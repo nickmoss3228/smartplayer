@@ -12,6 +12,8 @@ export const CHARACTER_CATALOG = [
   { id: "hair-short-brown",  slot: "hairstyle", name: "Short Brown Hair", priceBitAward: 10 },
   { id: "hair-long-black",   slot: "hairstyle", name: "Long Black Hair",  priceBitAward: 12 },
   { id: "hair-spiky-blonde", slot: "hairstyle", name: "Spiky Blonde Hair",priceBitAward: 14 },
+  { id: "hair-ponytail-red", slot: "hairstyle", name: "Red Ponytail",    priceBitAward: 13 },
+  { id: "hair-buzz-gray",    slot: "hairstyle", name: "Buzz Cut",        priceBitAward: 8 },
 
   { id: "outfit-blue-tee",     slot: "outfit", name: "Blue Tee",       priceBitAward: 10 },
   { id: "outfit-red-hoodie",   slot: "outfit", name: "Red Hoodie",     priceBitAward: 16 },
