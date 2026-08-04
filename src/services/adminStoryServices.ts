@@ -140,6 +140,22 @@ export const getStory = async (token: string, id: string): Promise<AdminStory> =
   return data.story;
 };
 
+// Edits a story's name/description/icon. Deliberately can't change
+// difficulty/storyId/totalParts — those are identity/structural fields.
+export const updateStoryMeta = async (
+  token: string,
+  id: string,
+  updates: { storyName?: string; description?: string; characterIcon?: string }
+): Promise<AdminStory> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(updates),
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
+};
+
 // Appends one empty part to an existing story (e.g. adding a "part 3"
 // alongside an already-built "part 1"/"part 2") and bumps totalParts to match.
 export const addPart = async (token: string, id: string): Promise<AdminStory> => {

@@ -5,6 +5,7 @@ import {
   deleteStory,
   setStoryPublished,
   addPart,
+  updateStoryMeta,
 } from "../../../services/adminStoryServices";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
@@ -38,6 +39,12 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
   const [deleting, setDeleting] = useState(false);
   const [addingPart, setAddingPart] = useState(false);
   const [error, setError] = useState("");
+
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [editName, setEditName] = useState(story.storyName);
+  const [editDescription, setEditDescription] = useState(story.description);
+  const [editIcon, setEditIcon] = useState(story.characterIcon);
+  const [savingMeta, setSavingMeta] = useState(false);
 
   const part = story.parts.find((p) => p.partNumber === partNumber) as StoryPart;
 
@@ -75,6 +82,36 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       setError(err instanceof Error ? err.message : "Failed to add a part.");
     } finally {
       setAddingPart(false);
+    }
+  };
+
+  const handleStartEditMeta = () => {
+    setEditName(story.storyName);
+    setEditDescription(story.description);
+    setEditIcon(story.characterIcon);
+    setError("");
+    setEditingMeta(true);
+  };
+
+  const handleSaveMeta = async () => {
+    if (!editName.trim()) {
+      setError("Name can't be empty.");
+      return;
+    }
+    setSavingMeta(true);
+    setError("");
+    try {
+      const updated = await updateStoryMeta(token, story._id, {
+        storyName: editName.trim(),
+        description: editDescription.trim(),
+        characterIcon: editIcon.trim() || "📖",
+      });
+      onStoryUpdated(updated);
+      setEditingMeta(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save changes.");
+    } finally {
+      setSavingMeta(false);
     }
   };
 
@@ -119,9 +156,61 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       </div>
 
       <div className="mb-4">
-        <h2 className="text-lg font-bold text-black">
-          {story.characterIcon} {story.storyName}
-        </h2>
+        {editingMeta ? (
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-2 max-w-md">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={editIcon}
+                onChange={(e) => setEditIcon(e.target.value)}
+                className="w-16 text-black text-center px-2 py-1.5 border border-gray-300 rounded-lg"
+              />
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Story name"
+                className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Description"
+              rows={2}
+              className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveMeta}
+                disabled={savingMeta}
+                className="text-sm bg-black text-white rounded-lg px-4 py-1.5 disabled:opacity-50"
+              >
+                {savingMeta ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setEditingMeta(false)}
+                disabled={savingMeta}
+                className="text-sm text-gray-500 hover:text-black px-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-black">
+              {story.characterIcon} {story.storyName}
+            </h2>
+            <button
+              onClick={handleStartEditMeta}
+              className="text-xs text-gray-400 hover:text-black"
+              title="Rename or edit this story"
+            >
+              Edit
+            </button>
+          </div>
+        )}
         <p className="text-sm text-gray-500">
           {story.difficulty} · {partsReady}/{story.totalParts} parts have audio + markers ·{" "}
           {story.published ? "Published" : "Draft"}
