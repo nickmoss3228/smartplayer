@@ -38,6 +38,15 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Mirrors `markers` so the post-upload auto-save (below) always persists
+  // whatever markers exist by then, even ones added while the upload was
+  // still in flight — reading `markers` directly from the async closure
+  // would capture a stale snapshot from before the upload started.
+  const markersRef = useRef(markers);
+  useEffect(() => {
+    markersRef.current = markers;
+  }, [markers]);
+
   useEffect(() => {
     setAudioUrl(part.audioUrl);
     setMarkers(part.timeMarkers);
@@ -88,12 +97,20 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
     setError("");
+
+    // Preview instantly from a local blob URL — no need to wait for the
+    // network upload to Yandex before you can listen and start placing
+    // markers; the real upload happens in the background underneath.
+    const localUrl = URL.createObjectURL(file);
+    setAudioUrl(localUrl);
+
+    setUploading(true);
     try {
       const url = await uploadPartAsset(token, story._id, part.partNumber, file, "audio");
+      URL.revokeObjectURL(localUrl);
       setAudioUrl(url);
-      const updated = await saveMarkers(token, story._id, part.partNumber, markers, url);
+      const updated = await saveMarkers(token, story._id, part.partNumber, markersRef.current, url);
       onPartUpdated(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
