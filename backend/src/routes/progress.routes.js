@@ -19,6 +19,10 @@ import {
   equipItem,
   getQuiz,
   checkQuizAnswer,
+  getCharacter,
+  purchaseCharacterItem,
+  equipCharacterItem,
+  setSkinTone,
 } from "../controllers/progress.controller.js";
 
 const router = Router();
@@ -42,6 +46,10 @@ router.get("/progress/room",                       authenticateToken, getRoom);
 router.get("/progress/room/:userId",               authenticateToken, getPlayerRoom);
 router.post("/progress/room/purchase",             authenticateToken, purchaseItem);
 router.post("/progress/room/equip",                authenticateToken, equipItem);
+router.get("/progress/character",                  authenticateToken, getCharacter);
+router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);
+router.post("/progress/character/equip",           authenticateToken, equipCharacterItem);
+router.patch("/progress/character/skin-tone",      authenticateToken, setSkinTone);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
 
 export default router;

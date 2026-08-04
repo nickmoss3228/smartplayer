@@ -12,11 +12,6 @@
 import { User } from "../models/User.js";
 import { escapeRegex } from "../helpers/regex.js";
 
-const VALID_AVATARS = [
-  "cat", "fox", "bear", "rabbit", "owl",
-  "wolf", "deer", "panda", "tiger", "frog",
-];
-
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_RESULTS_LIMIT = 20;
@@ -24,7 +19,7 @@ const SEARCH_RESULTS_LIMIT = 20;
 export async function getProfile(req, res) {
   try {
     const user = await User.findById(req.user._id).select(
-      "username email nickname avatar"
+      "username email nickname"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -32,7 +27,6 @@ export async function getProfile(req, res) {
       username: user.username,
       email: user.email,
       nickname: user.nickname ?? user.username,
-      avatar: user.avatar ?? "cat",
     });
   } catch (error) {
     console.error("Get profile error:", error);
@@ -42,7 +36,7 @@ export async function getProfile(req, res) {
 
 export async function updateProfile(req, res) {
   try {
-    const { nickname, avatar } = req.body;
+    const { nickname } = req.body;
     const updates = {};
 
     if (nickname !== undefined) {
@@ -54,23 +48,16 @@ export async function updateProfile(req, res) {
       updates.nickname = trimmed;
     }
 
-    if (avatar !== undefined) {
-      if (!VALID_AVATARS.includes(avatar))
-        return res.status(400).json({ message: "Invalid avatar selection" });
-      updates.avatar = avatar;
-    }
-
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $set: updates },
-      { new: true, select: "username email nickname avatar" }
+      { new: true, select: "username email nickname" }
     );
 
     res.json({
       username: user.username,
       email: user.email,
       nickname: user.nickname ?? user.username,
-      avatar: user.avatar ?? "cat",
     });
   } catch (error) {
     console.error("Update profile error:", error);
@@ -115,7 +102,7 @@ export async function searchPlayers(req, res) {
         };
 
     const users = await User.find({ $and: [filter, { _id: { $ne: req.user._id } }] })
-      .select("username nickname avatar lastActiveAt")
+      .select("username nickname character lastActiveAt")
       .limit(SEARCH_RESULTS_LIMIT);
 
     const now = Date.now();
@@ -124,7 +111,7 @@ export async function searchPlayers(req, res) {
         id: user._id,
         username: user.username,
         nickname: user.nickname ?? user.username,
-        avatar: user.avatar ?? "cat",
+        character: user.character,
         online: now - new Date(user.lastActiveAt).getTime() < ONLINE_THRESHOLD_MS,
       })),
     });

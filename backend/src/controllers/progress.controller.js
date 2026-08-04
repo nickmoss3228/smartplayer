@@ -10,6 +10,7 @@ import { awardCurrency } from "../helpers/awardCurrency.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { getShopItem } from "../config/shopCatalog.js";
+import { getCharacterItem } from "../config/characterCatalog.js";
 import { FREE_TRIAL_STORIES } from "../config/trial.js";
 import { User } from "../models/User.js";
 
@@ -670,18 +671,19 @@ export async function getRoom(req, res) {
 
 // GET /progress/room/:userId — read-only snapshot of another player's room
 // for the multiplayer "visit" view. No bitAward/ownedItemIds exposure since
-// only placedItems is needed to render RoomScene, plus identity for the header.
+// only placedItems/character.equipped is needed to render RoomScene, plus
+// identity for the header (portrait is derived client-side from `character`).
 export async function getPlayerRoom(req, res) {
   try {
     const user = await User.findById(req.params.userId).select(
-      "username nickname avatar room"
+      "username nickname room character"
     );
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({
       username: user.username,
       nickname: user.nickname ?? user.username,
-      avatar: user.avatar ?? "cat",
       room: user.room,
+      character: user.character,
     });
   } catch (error) {
     console.error("Get player room error:", error);
@@ -752,6 +754,111 @@ export async function equipItem(req, res) {
     res.json({ room: user.room });
   } catch (error) {
     console.error("Equip item error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── Character customization — sibling to the room shop above, same pattern,
+// separate catalog/doc path (see config/characterCatalog.js, User.character). ──
+
+// GET /progress/character
+export async function getCharacter(req, res) {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("character wallet.bitAward");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ character: user.character, bitAward: user.wallet.bitAward });
+  } catch (error) {
+    console.error("Get character error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /progress/character/purchase  { itemId }
+export async function purchaseCharacterItem(req, res) {
+  try {
+    const userId = req.user._id;
+    const { itemId } = req.body;
+
+    const item = getCharacterItem(itemId);
+    if (!item) return res.status(400).json({ message: "Unknown item" });
+
+    const existing = await User.findById(userId).select("character");
+    if (!existing) return res.status(404).json({ message: "User not found" });
+    if (existing.character.ownedItemIds.includes(itemId)) {
+      return res.status(400).json({ message: "Item already owned" });
+    }
+
+    const wallet = await spendCurrency(userId, item.priceBitAward);
+    if (!wallet) {
+      return res.status(400).json({ message: "Insufficient BitAward balance" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $addToSet: { "character.ownedItemIds": itemId },
+        $set: { [`character.equipped.${item.slot}`]: itemId },
+      },
+      { new: true, select: "character" },
+    );
+
+    res.json({ character: user.character, bitAward: wallet.bitAward });
+  } catch (error) {
+    console.error("Purchase character item error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /progress/character/equip  { itemId }
+export async function equipCharacterItem(req, res) {
+  try {
+    const userId = req.user._id;
+    const { itemId } = req.body;
+
+    const item = getCharacterItem(itemId);
+    if (!item) return res.status(400).json({ message: "Unknown item" });
+
+    const existing = await User.findById(userId).select("character");
+    if (!existing) return res.status(404).json({ message: "User not found" });
+    if (!existing.character.ownedItemIds.includes(itemId)) {
+      return res.status(400).json({ message: "Item not owned" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { [`character.equipped.${item.slot}`]: itemId } },
+      { new: true, select: "character" },
+    );
+
+    res.json({ character: user.character });
+  } catch (error) {
+    console.error("Equip character item error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// PATCH /progress/character/skin-tone  { skinTone }
+// Free personalization (identity, not a purchasable cosmetic) — no currency involved.
+export async function setSkinTone(req, res) {
+  try {
+    const userId = req.user._id;
+    const { skinTone } = req.body;
+
+    if (typeof skinTone !== "string" || !/^#[0-9a-fA-F]{6}$/.test(skinTone)) {
+      return res.status(400).json({ message: "skinTone must be a hex color string" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "character.skinTone": skinTone } },
+      { new: true, select: "character" },
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ character: user.character });
+  } catch (error) {
+    console.error("Set skin tone error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

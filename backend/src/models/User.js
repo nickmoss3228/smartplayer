@@ -84,6 +84,22 @@ const userSchema = new mongoose.Schema({
       shelf:      { type: String, default: null },
     },
   },
+
+  // Character customization — sibling to `room` (same owned/equipped shape),
+  // items bought with bitAward, see config/characterCatalog.js. This is now
+  // the player's one identity avatar (replaces the old flat `avatar` field
+  // above), rendered inside the Room scene and as a generated 2D portrait
+  // icon elsewhere (Navbar, Dashboard). skinTone is free personalization
+  // (identity, not a purchasable cosmetic), set the same way nickname is.
+  character: {
+    skinTone: { type: String, default: "#f2c48d" },
+    ownedItemIds: { type: [String], default: [] },
+    equipped: {
+      hairstyle: { type: String, default: null },
+      outfit:    { type: String, default: null },
+      hat:       { type: String, default: null },
+    },
+  },
 });
 
 export const User = mongoose.model("User", userSchema);
