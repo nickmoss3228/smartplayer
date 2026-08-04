@@ -760,6 +760,27 @@ export async function equipItem(req, res) {
   }
 }
 
+// PATCH /progress/room/lights — flips the room's lights on/off. Free
+// preference toggle, not a purchase, so no currency/ownership check.
+export async function toggleRoomLights(req, res) {
+  try {
+    const userId = req.user._id;
+    const existing = await User.findById(userId).select("room.lightsOn");
+    if (!existing) return res.status(404).json({ message: "User not found" });
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { "room.lightsOn": !existing.room.lightsOn } },
+      { new: true, select: "room" },
+    );
+
+    res.json({ room: user.room });
+  } catch (error) {
+    console.error("Toggle room lights error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 // ── Character customization — sibling to the room shop above, same pattern,
 // separate catalog/doc path (see config/characterCatalog.js, User.character). ──
 

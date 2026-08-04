@@ -73,15 +73,19 @@ const userSchema = new mongoose.Schema({
   room: {
     apartmentTier: { type: String, default: "studio" },
     ownedItemIds: { type: [String], default: [] },
+    // Free preference toggle, not a purchase — dims the scene's lighting.
+    lightsOn: { type: Boolean, default: true },
     placedItems: {
       wallpaper:  { type: String, default: null },
       flooring:   { type: String, default: null },
-      furniture1: { type: String, default: null }, // bed slot
-      furniture2: { type: String, default: null }, // plant/rug slot
+      furniture1: { type: String, default: null }, // desk slot
+      chair:      { type: String, default: null },
+      furniture2: { type: String, default: null }, // plant/rug/decor slot
       poster:     { type: String, default: null },
-      wardrobe:   { type: String, default: null },
+      wardrobe:   { type: String, default: null }, // filing cabinet slot
       table:      { type: String, default: null },
       shelf:      { type: String, default: null },
+      window:     { type: String, default: null },
     },
   },
 
