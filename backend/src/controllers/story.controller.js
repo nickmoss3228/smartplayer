@@ -5,6 +5,8 @@
 // static-file stories at read time.
 import { Story } from "../models/Story.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
+import { storyRegistry } from "../config/storyRegistry.js";
+import { quizData } from "../config/quizData.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
@@ -36,6 +38,13 @@ export async function createStory(req, res) {
       return res.status(409).json({ error: "A story with that id already exists for this difficulty." });
     }
 
+    const staticMeta = (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId.trim());
+    if (staticMeta) {
+      return res.status(409).json({
+        error: "This id belongs to a built-in story — use Import instead of creating a new one.",
+      });
+    }
+
     const story = await Story.create({
       difficulty,
       storyId: storyId.trim(),
@@ -50,6 +59,75 @@ export async function createStory(req, res) {
   } catch (error) {
     console.error("createStory error:", error);
     res.status(500).json({ error: "Failed to create story." });
+  }
+}
+
+// GET /api/admin/stories/quiz-source/:difficulty/:storyId
+// Admin-only — returns the raw static quizData.js slice for a built-in story,
+// INCLUDING correctAnswer (unlike the public quiz endpoints). Used solely by
+// the frontend's "Import built-in stories" flow to assemble a full import
+// payload, since the frontend never otherwise sees the answer key.
+export async function getStaticQuizSource(req, res) {
+  const { difficulty, storyId } = req.params;
+  res.json({ parts: quizData[difficulty]?.[storyId] ?? {} });
+}
+
+// POST /api/admin/stories/import
+// Imports a built-in story's full content (assembled by the frontend from
+// audioDataByDifficulty.ts/Vocabulary.ts/quizData.js — see storyBuilder plan)
+// into a new Story doc. Always created as a draft (published: false) so it
+// can't affect players until the admin reviews it and explicitly publishes —
+// unlike createStory, matching a static storyId is expected here, not rejected.
+export async function importStory(req, res) {
+  try {
+    const { difficulty, storyId, storyName, description, characterIcon, totalParts, parts } = req.body;
+
+    if (!["easy", "medium", "hard"].includes(difficulty)) {
+      return res.status(400).json({ error: "Invalid difficulty." });
+    }
+    if (!storyId?.trim() || !storyName?.trim()) {
+      return res.status(400).json({ error: "storyId and storyName are required." });
+    }
+    const partsCount = Number(totalParts);
+    if (!Number.isInteger(partsCount) || partsCount < 1 || partsCount > MAX_PARTS) {
+      return res.status(400).json({ error: `totalParts must be between 1 and ${MAX_PARTS}.` });
+    }
+    if (!Array.isArray(parts) || parts.length !== partsCount) {
+      return res.status(400).json({ error: "parts must be an array matching totalParts." });
+    }
+
+    const existing = await Story.findOne({ difficulty, storyId: storyId.trim() });
+    if (existing) {
+      return res.status(409).json({ error: "This story has already been imported." });
+    }
+
+    for (const part of parts) {
+      if (!Number.isInteger(part.partNumber)) {
+        return res.status(400).json({ error: "Every part needs a partNumber." });
+      }
+      const vocabError = validateVocabList(part.vocabulary ?? []);
+      if (vocabError) return res.status(400).json({ error: `Part ${part.partNumber} vocabulary: ${vocabError}.` });
+      const phrasalError = validateVocabList(part.phrasalVerbs ?? []);
+      if (phrasalError) return res.status(400).json({ error: `Part ${part.partNumber} phrasal verbs: ${phrasalError}.` });
+      const quizError = validateQuizList(part.quiz ?? []);
+      if (quizError) return res.status(400).json({ error: `Part ${part.partNumber} quiz: ${quizError}.` });
+    }
+
+    const story = await Story.create({
+      difficulty,
+      storyId: storyId.trim(),
+      storyName: storyName.trim(),
+      description: description?.trim() ?? "",
+      characterIcon: characterIcon?.trim() || "📖",
+      totalParts: partsCount,
+      published: false,
+      parts,
+    });
+
+    res.status(201).json({ story });
+  } catch (error) {
+    console.error("importStory error:", error);
+    res.status(500).json({ error: "Failed to import story." });
   }
 }
 
@@ -230,6 +308,19 @@ export async function savePhrasalVerbs(req, res) {
   }
 }
 
+function validateQuizList(quiz) {
+  if (!Array.isArray(quiz)) return "must be an array";
+  if (quiz.length > MAX_QUIZ_QUESTIONS) return `at most ${MAX_QUIZ_QUESTIONS} questions`;
+  for (const q of quiz) {
+    if (!q.question?.trim()) return "every question needs text";
+    if (!Array.isArray(q.options) || q.options.length !== 4) return "every question needs exactly 4 options";
+    if (!Number.isInteger(q.correctAnswer) || q.correctAnswer < 0 || q.correctAnswer > 3) {
+      return "correctAnswer must be an index 0-3";
+    }
+  }
+  return null;
+}
+
 // PUT /api/admin/stories/:id/parts/:partNumber/quiz  { quiz }
 export async function saveQuiz(req, res) {
   try {
@@ -237,21 +328,10 @@ export async function saveQuiz(req, res) {
     if (!found) return;
     const { story, part } = found;
 
-    const { quiz } = req.body;
-    if (!Array.isArray(quiz) || quiz.length > MAX_QUIZ_QUESTIONS) {
-      return res.status(400).json({ error: `quiz must be an array of at most ${MAX_QUIZ_QUESTIONS} questions.` });
-    }
-    for (const q of quiz) {
-      if (!q.question?.trim()) return res.status(400).json({ error: "Every question needs text." });
-      if (!Array.isArray(q.options) || q.options.length !== 4) {
-        return res.status(400).json({ error: "Every question needs exactly 4 options." });
-      }
-      if (!Number.isInteger(q.correctAnswer) || q.correctAnswer < 0 || q.correctAnswer > 3) {
-        return res.status(400).json({ error: "correctAnswer must be an index 0-3." });
-      }
-    }
+    const error = validateQuizList(req.body.quiz);
+    if (error) return res.status(400).json({ error: `Invalid quiz: ${error}.` });
 
-    part.quiz = quiz;
+    part.quiz = req.body.quiz;
     await story.save();
     res.json({ part });
   } catch (error) {

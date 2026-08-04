@@ -4,6 +4,8 @@ import { adminAuth } from "../middleware/adminAuth.js";
 import { adminUpload } from "../middleware/adminUpload.js";
 import {
   createStory,
+  importStory,
+  getStaticQuizSource,
   listStories,
   getStory,
   deleteStory,
@@ -19,6 +21,8 @@ import {
 
 const adminRouter = Router();
 adminRouter.post("/", adminAuth, createStory);
+adminRouter.post("/import", adminAuth, importStory);
+adminRouter.get("/quiz-source/:difficulty/:storyId", adminAuth, getStaticQuizSource);
 adminRouter.get("/", adminAuth, listStories);
 adminRouter.get("/:id", adminAuth, getStory);
 adminRouter.delete("/:id", adminAuth, deleteStory);
