@@ -158,6 +158,56 @@ export async function getStory(req, res) {
   }
 }
 
+// PATCH /api/admin/stories/:id  { storyName?, description?, characterIcon? }
+// Deliberately doesn't allow changing difficulty/storyId/totalParts here —
+// those are identity/structural fields tied to lookups (storyLookup.js),
+// public URLs, and the static-registry collision check; changing them after
+// creation would orphan progress/quiz data keyed by the old values.
+export async function updateStoryMeta(req, res) {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+
+    const { storyName, description, characterIcon } = req.body;
+
+    if (storyName !== undefined) {
+      if (!storyName.trim()) return res.status(400).json({ error: "storyName can't be empty." });
+      story.storyName = storyName.trim();
+    }
+    if (description !== undefined) story.description = description.trim();
+    if (characterIcon !== undefined) story.characterIcon = characterIcon.trim() || "📖";
+
+    await story.save();
+    res.json({ story });
+  } catch (error) {
+    console.error("updateStoryMeta error:", error);
+    res.status(500).json({ error: "Failed to update story." });
+  }
+}
+
+// POST /api/admin/stories/:id/parts — appends one empty part (e.g. a "part
+// 3" alongside an existing "part 1"/"part 2") and bumps totalParts to match.
+export async function addPart(req, res) {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+
+    if (story.parts.length >= MAX_PARTS) {
+      return res.status(400).json({ error: `A story can have at most ${MAX_PARTS} parts.` });
+    }
+
+    const nextPartNumber = story.parts.reduce((max, p) => Math.max(max, p.partNumber), 0) + 1;
+    story.parts.push({ partNumber: nextPartNumber });
+    story.totalParts = story.parts.length;
+    await story.save();
+
+    res.status(201).json({ story });
+  } catch (error) {
+    console.error("addPart error:", error);
+    res.status(500).json({ error: "Failed to add part." });
+  }
+}
+
 // DELETE /api/admin/stories/:id
 export async function deleteStory(req, res) {
   try {

@@ -8,7 +8,9 @@ import {
   getStaticQuizSource,
   listStories,
   getStory,
+  updateStoryMeta,
   deleteStory,
+  addPart,
   uploadPartAsset,
   saveMarkers,
   saveVocabulary,
@@ -25,7 +27,9 @@ adminRouter.post("/import", adminAuth, importStory);
 adminRouter.get("/quiz-source/:difficulty/:storyId", adminAuth, getStaticQuizSource);
 adminRouter.get("/", adminAuth, listStories);
 adminRouter.get("/:id", adminAuth, getStory);
+adminRouter.patch("/:id", adminAuth, updateStoryMeta);
 adminRouter.delete("/:id", adminAuth, deleteStory);
+adminRouter.post("/:id/parts", adminAuth, addPart);
 adminRouter.post("/:id/parts/:partNumber/upload", adminAuth, adminUpload, uploadPartAsset);
 adminRouter.patch("/:id/parts/:partNumber/markers", adminAuth, saveMarkers);
 adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
