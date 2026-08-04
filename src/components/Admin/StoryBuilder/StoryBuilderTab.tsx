@@ -1,19 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   AdminStoryListItem,
   getStory,
   listStories,
+  importStory,
 } from "../../../services/adminStoryServices";
+import { getStoryGroups, DifficultySlug, StoryGroup } from "../../../types/storyGroups";
+import { assembleImportPayload } from "./assembleImportPayload";
 import NewStoryForm from "./NewStoryForm";
 import StoryEditor from "./StoryEditor";
 
+const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
+
 const StoryBuilderTab = ({ token }: { token: string }) => {
+  const { t } = useTranslation();
   const [stories, setStories] = useState<AdminStoryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
   const [activeStory, setActiveStory] = useState<AdminStory | null>(null);
+  const [importingSlug, setImportingSlug] = useState<string | null>(null);
+  const [importError, setImportError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,6 +39,17 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Built-in (static-file) stories not yet imported into the builder — the
+  // only ones worth offering an "Import" button for.
+  const importable = useMemo(() => {
+    const existingIds = new Set(stories.map((s) => `${s.difficulty}:${s.storyId}`));
+    return DIFFICULTIES.flatMap((difficulty) =>
+      getStoryGroups(difficulty, t)
+        .filter((group) => !existingIds.has(`${difficulty}:${group.slug}`))
+        .map((group) => ({ difficulty, group }))
+    );
+  }, [stories, t]);
 
   const openStory = async (id: string) => {
     try {
@@ -48,6 +68,21 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const handleBack = () => {
     setActiveStory(null);
     load();
+  };
+
+  const handleImport = async (difficulty: DifficultySlug, group: StoryGroup) => {
+    setImportingSlug(group.slug);
+    setImportError("");
+    try {
+      const payload = await assembleImportPayload(token, difficulty, group);
+      const story = await importStory(token, payload);
+      setActiveStory(story); // open the new draft for review before publishing
+      load();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Import failed.");
+    } finally {
+      setImportingSlug(null);
+    }
   };
 
   if (activeStory) {
@@ -82,10 +117,37 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
         </div>
       )}
 
+      {importable.length > 0 && (
+        <div className="mb-6 bg-gray-50 rounded-lg border border-gray-200 p-3">
+          <h3 className="text-sm font-semibold text-black mb-1">Import built-in stories</h3>
+          <p className="text-xs text-gray-500 mb-3">
+            Brings a story's audio, markers, vocabulary, and quiz into the builder as a{" "}
+            <strong>draft</strong> — nothing changes for players until you review it and hit
+            Publish. Deleting an imported draft/story reverts to the built-in version.
+          </p>
+          {importError && <p className="text-red-600 text-sm mb-2">{importError}</p>}
+          <div className="flex flex-wrap gap-2">
+            {importable.map(({ difficulty, group }) => (
+              <button
+                key={`${difficulty}:${group.slug}`}
+                onClick={() => handleImport(difficulty, group)}
+                disabled={importingSlug === group.slug}
+                className="flex items-center gap-2 text-sm bg-white border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <span>{group.coverEmoji}</span>
+                {group.title}
+                <span className="text-xs text-gray-400">({difficulty})</span>
+                {importingSlug === group.slug && <span className="text-xs">Importing...</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">{error}</p>}
       {!loading && stories.length === 0 && !error && (
-        <p className="text-gray-500">No stories yet — create one above.</p>
+        <p className="text-gray-500">No stories yet — create or import one above.</p>
       )}
 
       <div className="space-y-2">

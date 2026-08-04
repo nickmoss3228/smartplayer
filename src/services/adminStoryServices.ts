@@ -71,6 +71,55 @@ export const createStory = async (
   return data.story;
 };
 
+export interface ImportStoryPayload {
+  difficulty: Difficulty;
+  storyId: string;
+  storyName: string;
+  description: string;
+  characterIcon: string;
+  totalParts: number;
+  parts: StoryPart[];
+}
+
+// Imports a built-in (static-file) story's full content, assembled by the
+// caller from audioDataByDifficulty.ts/Vocabulary.ts/quizData.js, into a new
+// draft Story doc — see fetchStaticQuizSource for the one piece (answer
+// keys) the frontend can't already see itself.
+export const importStory = async (
+  token: string,
+  payload: ImportStoryPayload
+): Promise<AdminStory> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/import`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
+};
+
+export interface StaticQuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  referenceTime: number;
+  audio: { fast: string; slow: string };
+}
+
+// Raw static quizData.js slice for a built-in story, WITH correctAnswer —
+// admin-only, used solely to assemble an import payload.
+export const fetchStaticQuizSource = async (
+  token: string,
+  difficulty: Difficulty,
+  storyId: string
+): Promise<Record<string, StaticQuizQuestion[]>> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/quiz-source/${difficulty}/${storyId}`, {
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.parts;
+};
+
 export const listStories = async (
   token: string,
   difficulty?: Difficulty

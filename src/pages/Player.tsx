@@ -159,38 +159,36 @@ const Player = React.memo(() => {
     [difficulty, storySlug],
   );
 
-  // Story isn't in the static config — it may be a DB-backed story authored
-  // via the admin Story Builder. Fetched once; static stories skip this
-  // entirely (staticAudioTracks.length > 0 short-circuits below).
+  // Whole-story, DB-wins-once-published precedence (matches the backend's
+  // helpers/storyLookup.js): always check for a published Story Builder
+  // override — including for static stories like leo/maya/daniel, since an
+  // imported+published copy must actually take effect — but never block
+  // rendering on it. Static content (if any) renders immediately; if a
+  // published override is found, everything for this story (tracks, vocab,
+  // phrasal) swaps to the DB copy. Only a story with nothing static at all
+  // shows a loading spinner until the DB check resolves (see dbChecked below).
   const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
-  const [dbStoryLoading, setDbStoryLoading] = useState(staticAudioTracks.length === 0);
+  const [dbChecked, setDbChecked] = useState(false);
 
   useEffect(() => {
-    if (staticAudioTracks.length > 0) {
-      setDbStory(null);
-      setDbStoryLoading(false);
-      return;
-    }
     let cancelled = false;
-    setDbStoryLoading(true);
+    setDbChecked(false);
     fetchPublishedStory(difficulty, storySlug)
       .then((story) => {
-        if (!cancelled) setDbStory(story);
+        if (cancelled) return;
+        setDbStory(story);
+        setDbChecked(true);
       })
-      .finally(() => {
-        if (!cancelled) setDbStoryLoading(false);
+      .catch(() => {
+        if (!cancelled) setDbChecked(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [difficulty, storySlug, staticAudioTracks.length]);
+  }, [difficulty, storySlug]);
 
-  const dbAudioTracks = useMemo(
-    () => (dbStory ? adaptPublishedStoryToTracks(dbStory) : []),
-    [dbStory],
-  );
-
-  const audioTracks = staticAudioTracks.length > 0 ? staticAudioTracks : dbAudioTracks;
+  const audioTracks = dbStory ? adaptPublishedStoryToTracks(dbStory) : staticAudioTracks;
+  const dbStoryLoading = audioTracks.length === 0 && !dbChecked;
 
   const resolvedStorySlug =
     storySlug ??
@@ -359,16 +357,20 @@ const Player = React.memo(() => {
   );
 
   const allVocabWords = useMemo(() => {
+    // A published DB story is authoritative for everything once it exists —
+    // no mixing with the static vocab list, same whole-story rule as tracks.
+    if (dbStory) {
+      const dbVocab = (dbPart?.vocabulary ?? []).map((w) => ({ ...w, type: "vocab" as const }));
+      const dbPhrasal = (dbPart?.phrasalVerbs ?? []).map((w) => ({ ...w, type: "phrasal" as const }));
+      return [...dbVocab, ...dbPhrasal];
+    }
+
     const vocab = (trackVocabulary[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
       .map((w) => ({ ...w, type: "vocab" as const }));
     const phrasal = (trackPhrasalVerbs[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
       .map((w) => ({ ...w, type: "phrasal" as const }));
-    if (vocab.length > 0 || phrasal.length > 0) return [...vocab, ...phrasal];
-
-    const dbVocab = (dbPart?.vocabulary ?? []).map((w) => ({ ...w, type: "vocab" as const }));
-    const dbPhrasal = (dbPart?.phrasalVerbs ?? []).map((w) => ({ ...w, type: "phrasal" as const }));
-    return [...dbVocab, ...dbPhrasal];
-  }, [difficulty, storySlug, selectedTrackId, dbPart]);
+    return [...vocab, ...phrasal];
+  }, [dbStory, dbPart, difficulty, storySlug, selectedTrackId]);
 
   // DB vocab entries already carry their full audioUrl (no folder-path
   // construction needed) — play those directly, falling back to the

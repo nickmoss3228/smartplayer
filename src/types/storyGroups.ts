@@ -60,9 +60,13 @@ export const getStoryGroup = (
 
 // ── DB-backed story fallback ────────────────────────────────────────────────
 // Static stories (leo, leo-additional, maya, daniel, the news placeholders)
-// are always available synchronously from the functions above — these hooks
-// return that same list immediately and additively merge in any published
-// DB-backed stories (authored via the admin Story Builder) once fetched.
+// are always available synchronously from the functions above, so these
+// hooks return that same data immediately (no loading flash for existing
+// content) and swap in a published DB-backed story once fetched — a DB
+// story *overrides* its static counterpart by slug (imported+published
+// stories replace the built-in entry instead of appearing twice), matching
+// the whole-story "DB wins once published" precedence in the backend's
+// helpers/storyLookup.js.
 
 function dbStoryToGroup(story: {
   storyId: string;
@@ -96,13 +100,16 @@ export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryG
     };
   }, [difficulty]);
 
-  return [...staticGroups, ...dbGroups];
+  const dbSlugs = new Set(dbGroups.map((g) => g.slug));
+  return [...staticGroups.filter((g) => !dbSlugs.has(g.slug)), ...dbGroups];
 }
 
-// Single-story lookup with DB fallback. `loading` is true only while a DB
-// lookup is in flight for a slug that isn't a static story — callers should
-// wait for loading to clear before treating a missing storyGroup as "not
-// found" (avoids a false redirect while the fetch is still pending).
+// Single-story lookup with DB fallback. `loading` is true only while nothing
+// is available to show yet (a slug that isn't a static story, still waiting
+// on the DB check) — callers should wait for loading to clear before
+// treating a missing storyGroup as "not found" (avoids a false redirect).
+// A published DB story overrides its static counterpart once the fetch
+// resolves, without blocking the initial render for existing content.
 export function useStoryGroup(
   difficulty: DifficultySlug,
   slug: string,
@@ -110,27 +117,27 @@ export function useStoryGroup(
 ): { storyGroup: StoryGroup | undefined; loading: boolean } {
   const staticGroup = getStoryGroup(difficulty, slug, t);
   const [dbGroup, setDbGroup] = useState<StoryGroup | undefined>(undefined);
-  const [loading, setLoading] = useState(!staticGroup);
+  const [dbChecked, setDbChecked] = useState(false);
 
   useEffect(() => {
-    if (staticGroup) {
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
-    setLoading(true);
+    setDbChecked(false);
     fetchPublishedStory(difficulty, slug)
       .then((story) => {
-        if (!cancelled) setDbGroup(story ? dbStoryToGroup(story) : undefined);
+        if (cancelled) return;
+        setDbGroup(story ? dbStoryToGroup(story) : undefined);
+        setDbChecked(true);
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch(() => {
+        if (!cancelled) setDbChecked(true);
       });
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficulty, slug, !!staticGroup]);
+  }, [difficulty, slug]);
 
-  return { storyGroup: staticGroup ?? dbGroup, loading };
+  return {
+    storyGroup: dbGroup ?? staticGroup,
+    loading: !staticGroup && !dbChecked,
+  };
 }
