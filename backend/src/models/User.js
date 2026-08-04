@@ -1,5 +1,6 @@
 // models/User.js
 import mongoose from "mongoose";
+import { DEFAULT_PLACEMENT } from "../config/roomLayout.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -86,6 +87,52 @@ const userSchema = new mongoose.Schema({
       table:      { type: String, default: null },
       shelf:      { type: String, default: null },
       window:     { type: String, default: null },
+    },
+    // Free-placement "arrange mode" — where each item sits/faces, on top of
+    // *which* item occupies the slot (placedItems, above). Floor items get
+    // x/z + a 90°-step rotation; wall items stay flush against their wall
+    // and only slide along it (along the wall's run + height). Defaults
+    // match config/roomLayout.js's DEFAULT_PLACEMENT (the fixed layout the
+    // office reskin shipped with) so nothing visually moves for existing
+    // users until they actually drag something.
+    placement: {
+      furniture1: {
+        x: { type: Number, default: DEFAULT_PLACEMENT.furniture1.x },
+        z: { type: Number, default: DEFAULT_PLACEMENT.furniture1.z },
+        rotation: { type: Number, default: DEFAULT_PLACEMENT.furniture1.rotation },
+      },
+      chair: {
+        x: { type: Number, default: DEFAULT_PLACEMENT.chair.x },
+        z: { type: Number, default: DEFAULT_PLACEMENT.chair.z },
+        rotation: { type: Number, default: DEFAULT_PLACEMENT.chair.rotation },
+      },
+      table: {
+        x: { type: Number, default: DEFAULT_PLACEMENT.table.x },
+        z: { type: Number, default: DEFAULT_PLACEMENT.table.z },
+        rotation: { type: Number, default: DEFAULT_PLACEMENT.table.rotation },
+      },
+      furniture2: {
+        x: { type: Number, default: DEFAULT_PLACEMENT.furniture2.x },
+        z: { type: Number, default: DEFAULT_PLACEMENT.furniture2.z },
+        rotation: { type: Number, default: DEFAULT_PLACEMENT.furniture2.rotation },
+      },
+      wardrobe: {
+        x: { type: Number, default: DEFAULT_PLACEMENT.wardrobe.x },
+        z: { type: Number, default: DEFAULT_PLACEMENT.wardrobe.z },
+        rotation: { type: Number, default: DEFAULT_PLACEMENT.wardrobe.rotation },
+      },
+      poster: {
+        along: { type: Number, default: DEFAULT_PLACEMENT.poster.along },
+        height: { type: Number, default: DEFAULT_PLACEMENT.poster.height },
+      },
+      window: {
+        along: { type: Number, default: DEFAULT_PLACEMENT.window.along },
+        height: { type: Number, default: DEFAULT_PLACEMENT.window.height },
+      },
+      shelf: {
+        along: { type: Number, default: DEFAULT_PLACEMENT.shelf.along },
+        height: { type: Number, default: DEFAULT_PLACEMENT.shelf.height },
+      },
     },
   },
 

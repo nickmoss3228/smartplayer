@@ -15,6 +15,16 @@ import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { getShopItem } from "../config/shopCatalog.js";
 import { getCharacterItem } from "../config/characterCatalog.js";
+import {
+  FLOOR_SLOTS,
+  WALL_SLOTS,
+  BACK_WALL_SLOTS,
+  SIDE_WALL_SLOTS,
+  clampFloorPlacement,
+  clampWallPlacement,
+  floorOverlaps,
+  wallOverlaps,
+} from "../config/roomLayout.js";
 import { FREE_TRIAL_STORIES } from "../config/trial.js";
 import { User } from "../models/User.js";
 
@@ -777,6 +787,71 @@ export async function toggleRoomLights(req, res) {
     res.json({ room: user.room });
   } catch (error) {
     console.error("Toggle room lights error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// PATCH /progress/room/placement — "arrange mode". Floor items send
+// { slot, x, z, rotation }; wall items (fixed to their wall, only slide
+// along it) send { slot, along, height }. Re-validates bounds/overlap
+// server-side (see config/roomLayout.js) even though the client already
+// checks the same rules live while dragging — defense in depth, not a
+// trust boundary that matters much for cosmetic data, but cheap to keep.
+export async function updateRoomPlacement(req, res) {
+  try {
+    const userId = req.user._id;
+    const { slot } = req.body;
+
+    const isFloor = FLOOR_SLOTS.includes(slot);
+    const isWall = WALL_SLOTS.includes(slot);
+    if (!isFloor && !isWall) {
+      return res.status(400).json({ message: "This item can't be repositioned." });
+    }
+
+    const user = await User.findById(userId).select("room");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user.room.placedItems[slot]) {
+      return res.status(400).json({ message: "Nothing is placed in this slot." });
+    }
+
+    let placement;
+
+    if (isFloor) {
+      const { x, z, rotation } = req.body;
+      if (typeof x !== "number" || typeof z !== "number") {
+        return res.status(400).json({ message: "Invalid placement." });
+      }
+      placement = clampFloorPlacement(slot, x, z, rotation);
+      const occupied = FLOOR_SLOTS
+        .filter((s) => s !== slot && user.room.placedItems[s])
+        .map((s) => ({ slot: s, placement: user.room.placement[s] }));
+      if (floorOverlaps(slot, placement, occupied)) {
+        return res.status(409).json({ message: "That spot overlaps another item." });
+      }
+    } else {
+      const { along, height } = req.body;
+      if (typeof along !== "number" || typeof height !== "number") {
+        return res.status(400).json({ message: "Invalid placement." });
+      }
+      placement = clampWallPlacement(slot, along, height);
+      const wallGroup = BACK_WALL_SLOTS.includes(slot) ? BACK_WALL_SLOTS : SIDE_WALL_SLOTS;
+      const occupied = wallGroup
+        .filter((s) => s !== slot && user.room.placedItems[s])
+        .map((s) => ({ slot: s, placement: user.room.placement[s] }));
+      if (wallOverlaps(slot, placement, occupied)) {
+        return res.status(409).json({ message: "That spot overlaps another item." });
+      }
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { $set: { [`room.placement.${slot}`]: placement } },
+      { new: true, select: "room" },
+    );
+
+    res.json({ room: updated.room });
+  } catch (error) {
+    console.error("Update room placement error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

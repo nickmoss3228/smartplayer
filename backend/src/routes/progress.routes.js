@@ -18,6 +18,7 @@ import {
   purchaseItem,
   equipItem,
   toggleRoomLights,
+  updateRoomPlacement,
   getQuiz,
   checkQuizAnswer,
   getCharacter,
@@ -48,6 +49,7 @@ router.get("/progress/room/:userId",               authenticateToken, getPlayerR
 router.post("/progress/room/purchase",             authenticateToken, purchaseItem);
 router.post("/progress/room/equip",                authenticateToken, equipItem);
 router.patch("/progress/room/lights",               authenticateToken, toggleRoomLights);
+router.patch("/progress/room/placement",             authenticateToken, updateRoomPlacement);
 router.get("/progress/character",                  authenticateToken, getCharacter);
 router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);
 router.post("/progress/character/equip",           authenticateToken, equipCharacterItem);
