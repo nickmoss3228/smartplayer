@@ -129,93 +129,86 @@ export const trackPhrasalVerbs: Record<string, Record<string, Record<string, Voc
   medium: {
   maya: {
     "1": [
-      { word: "искать", definition: "1", audioKey: "search for" },
+      { word: "записывать", definition: "1", audioKey: "write down" },
     ],
     "2": [
-      { word: "общаться с", definition: "1", audioKey: "connect with" },
-      { word: "говорить с", definition: "1", audioKey: "talk to" },
-      { word: "подниматься, расти", definition: "1", audioKey: "rise up" },
+      { word: "расти", definition: "1", audioKey: "rise up" },
     ],
-    "3": [
-      { word: "слышать о", definition: "1", audioKey: "hear about" },
-    ],
+    "3": [],
     "4": [
-      { word: "столкнуться с, наткнуться на", definition: "1", audioKey: "run into" },
-      { word: "приводить к", definition: "1", audioKey: "lead to" },
+      { word: "наткнуться на", definition: "1", audioKey: "run into" },
+      { word: "превращаться в", definition: "1", audioKey: "turn into" },
     ],
     "5": [
-      { word: "раскинуться по, быть разбросанным по", definition: "1", audioKey: "spread across" },
-      { word: "наверстывать, делиться новостями", definition: "1", audioKey: "catch up on" },
+      { word: "взрослеть", definition: "1", audioKey: "grow up" },
+      { word: "наверстывать", definition: "1", audioKey: "catch up on" },
     ],
     "6": [
       { word: "есть вне дома", definition: "1", audioKey: "eat out" },
-      { word: "искать", definition: "1", audioKey: "look for" },
     ],
     "7": [
-      { word: "заканчиваться, оказываться в итоге", definition: "1", audioKey: "end up" },
-      { word: "приводить к", definition: "1", audioKey: "lead to" },
-      { word: "попадать в", definition: "1", audioKey: "get into" },
+      { word: "узнавать о", definition: "1", audioKey: "find out" },
+      { word: "в итоге оказаться", definition: "1", audioKey: "end up" },
     ],
     "8": [
-      { word: "склоняться над", definition: "1", audioKey: "bend over" },
-      { word: "передавать по наследству", definition: "1", audioKey: "pass down" },
+      { word: "входить", definition: "1", audioKey: "go in" },
+      { word: "наклоняться над", definition: "1", audioKey: "bend over" },
+      { word: "превращаться в", definition: "1", audioKey: "turn into" },
+      { word: "передавать из поколения в поколение", definition: "1", audioKey: "pass down" },
       { word: "быстро пролетать (о времени)", definition: "1", audioKey: "fly by" },
-      { word: "смотреть на", definition: "1", audioKey: "look at" },
     ],
     "9": [
-      { word: "быть переполненным чем-то", definition: "1", audioKey: "burst with" },
-      { word: "смотреть на", definition: "1", audioKey: "look at" },
-      { word: "устанавливать, организовывать", definition: "1", audioKey: "set up" },
-      { word: "направляться к", definition: "1", audioKey: "go toward" },
+      { word: "устанавливать", definition: "1", audioKey: "set up" },
+      { word: "записывать", definition: "1", audioKey: "write down" },
     ],
     "10": [
       { word: "впадать в", definition: "1", audioKey: "fall into" },
     ],
+    },
   },
-},hard: {
+  hard: {
   daniel: {
     "1": [
       { word: "вырастать", definition: "1", audioKey: "grow up" },
+      { word: "записывать", definition: "1", audioKey: "write down" },
     ],
     "2": [
-      { word: "вернуть, восстановить упущенное", definition: "1", audioKey: "claw back" },
+      { word: "вернуть упущенное", definition: "1", audioKey: "claw back" },
     ],
     "3": [
-      { word: "полагаться на, делать ставку на", definition: "1", audioKey: "bet on" },
+      { word: "поддерживать работу", definition: "1", audioKey: "keep from" },
+      { word: "делать ставку на", definition: "1", audioKey: "bet on" },
     ],
     "4": [
       { word: "расширяться в новую сферу", definition: "1", audioKey: "expand into" },
+      { word: "оказываться", definition: "1", audioKey: "turn out" },
+      { word: "выдумывать", definition: "1", audioKey: "make up" },
+      { word: "ломаться", definition: "1", audioKey: "go down" },
       { word: "готовиться к неприятностям", definition: "1", audioKey: "brace for" },
-      { word: "возвращаться к", definition: "1", audioKey: "return to" },
     ],
     "5": [
-      { word: "вступать в, входить в", definition: "1", audioKey: "step into" },
-      { word: "записывать в", definition: "1", audioKey: "write in" },
+      { word: "входить в", definition: "1", audioKey: "step into" },
     ],
     "6": [
-      { word: "начинаться с", definition: "1", audioKey: "start with" },
       { word: "платить за", definition: "1", audioKey: "pay for" },
-      { word: "превращаться в", definition: "1", audioKey: "turn into" },
+      { word: "превращать в", definition: "1", audioKey: "turn into" },
     ],
-    "7": [],
+    "7": [
+      { word: "записывать", definition: "1", audioKey: "write down" },
+    ],
     "8": [
-      { word: "просить, запрашивать", definition: "1", audioKey: "ask for" },
-      { word: "отказываться от, передавать", definition: "1", audioKey: "pass on" },
+      { word: "платить за", definition: "1", audioKey: "pay for" },
+      { word: "отказываться от", definition: "1", audioKey: "pass on" },
     ],
     "9": [
       { word: "включать в, объединять с", definition: "1", audioKey: "fold into" },
-      { word: "стоять в очереди за", definition: "1", audioKey: "queue for" },
-      { word: "смотреть на", definition: "1", audioKey: "look at" },
       { word: "убирать, откладывать", definition: "1", audioKey: "put away" },
     ],
     "10": [
       { word: "накатывать, наступать", definition: "1", audioKey: "roll in" },
-      { word: "превращаться в", definition: "1", audioKey: "turn into" },
-      { word: "забежать в, укрыться в", definition: "1", audioKey: "duck into" },
-      { word: "просить, запрашивать", definition: "1", audioKey: "ask for" },
-      { word: "вступать в, входить в", definition: "1", audioKey: "step into" },
-      { word: "смотреть на", definition: "1", audioKey: "look at" },
-      { word: "легко пройти через", definition: "1", audioKey: "sail through" },
+      { word: "укрыться в, быстро зайти в", definition: "1", audioKey: "duck into" },
+      { word: "проплыть", definition: "1", audioKey: "sail through"},
+      { word: "заканчивать выступление / сообщение", definition: "1", audioKey: "sign off" },
     ],
   },
 }

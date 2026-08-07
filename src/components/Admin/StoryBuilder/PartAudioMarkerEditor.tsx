@@ -38,6 +38,31 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // -1 = the segment before the first marker. i (>=0) = the segment that
+  // starts at markers[i] and runs to markers[i+1] (or the end of the track).
+  // Playback auto-stops at the end of whichever segment is "current" so an
+  // arrow-click always previews exactly one marker-to-marker span.
+  const [currentSegment, setCurrentSegment] = useState(-1);
+  const currentSegmentRef = useRef(currentSegment);
+  useEffect(() => {
+    currentSegmentRef.current = currentSegment;
+  }, [currentSegment]);
+
+  const segmentIndexForTime = (time: number, markerList: TimeMarker[]): number => {
+    let idx = -1;
+    for (let i = 0; i < markerList.length; i++) {
+      if (markerList[i].time <= time) idx = i;
+      else break;
+    }
+    return idx;
+  };
+
+  const getSegmentBounds = (idx: number, markerList: TimeMarker[], dur: number) => {
+    const start = idx < 0 ? 0 : markerList[idx]?.time ?? 0;
+    const end = idx + 1 < markerList.length ? markerList[idx + 1].time : dur || Infinity;
+    return { start, end };
+  };
+
   // Mirrors `markers` so the post-upload auto-save (below) always persists
   // whatever markers exist by then, even ones added while the upload was
   // still in flight — reading `markers` directly from the async closure
@@ -46,6 +71,11 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   useEffect(() => {
     markersRef.current = markers;
   }, [markers]);
+
+  // Keeps currentSegment pointing at a real marker after one is removed.
+  useEffect(() => {
+    setCurrentSegment((prev) => Math.max(-1, Math.min(prev, markers.length - 1)));
+  }, [markers.length]);
 
   useEffect(() => {
     setAudioUrl(part.audioUrl);
@@ -60,19 +90,33 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
       waveColor: "#c7c7c7",
       progressColor: "#f59e0b",
       cursorColor: "#111827",
-      height: 80,
+      height: 130,
       normalize: true,
       fillParent: true,
     });
     wsRef.current = instance;
 
     const poll = () => {
-      setCurrentTime(instance.getCurrentTime());
-      rafRef.current = requestAnimationFrame(poll);
+      const now = instance.getCurrentTime();
+      setCurrentTime(now);
+
+      // Auto-stop at the current segment's end so Prev/Next + Play always
+      // previews exactly the span between two markers, not the whole track.
+      const { end } = getSegmentBounds(currentSegmentRef.current, markersRef.current, instance.getDuration());
+      if (now >= end - 0.03) {
+        instance.pause();
+        instance.setTime(end === Infinity ? now : end);
+      } else {
+        rafRef.current = requestAnimationFrame(poll);
+      }
     };
 
     instance.on("ready", () => setDuration(instance.getDuration()));
-    instance.on("interaction", () => setCurrentTime(instance.getCurrentTime()));
+    instance.on("interaction", () => {
+      const now = instance.getCurrentTime();
+      setCurrentTime(now);
+      setCurrentSegment(segmentIndexForTime(now, markersRef.current));
+    });
     instance.on("play", () => {
       rafRef.current = requestAnimationFrame(poll);
     });
@@ -132,6 +176,23 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
     setMarkers(markers.filter((_, i) => i !== index));
   };
 
+  // Seeks to the start of segment `idx` and plays it, auto-stopping at the
+  // segment's end (enforced by the poll loop above) — the core "audition
+  // this marker-to-marker span" action behind the arrows and marker list.
+  const goToSegment = (idx: number, autoplay = true) => {
+    const instance = wsRef.current;
+    if (!instance) return;
+    const clamped = Math.max(-1, Math.min(idx, markers.length - 1));
+    const { start } = getSegmentBounds(clamped, markers, duration);
+    setCurrentSegment(clamped);
+    instance.setTime(start);
+    setCurrentTime(start);
+    if (autoplay) instance.play();
+  };
+
+  const canGoPrevSegment = currentSegment > -1;
+  const canGoNextSegment = currentSegment < markers.length - 1;
+
   const handleSaveMarkers = async () => {
     setSaving(true);
     setError("");
@@ -161,19 +222,42 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         <div>
           <div
             ref={containerRef}
-            className="bg-gray-50 rounded-lg border border-gray-200"
+            className="bg-gray-50 rounded-lg border border-gray-200 p-2"
           />
-          <div className="relative h-2 mt-1">
+          <div className="relative h-3 mt-1">
+            {duration > 0 && (
+              <div
+                className="absolute top-0 h-3 bg-amber-200/60 rounded-sm"
+                style={{
+                  left: `${(getSegmentBounds(currentSegment, markers, duration).start / duration) * 100}%`,
+                  width: `${
+                    ((Math.min(getSegmentBounds(currentSegment, markers, duration).end, duration) -
+                      getSegmentBounds(currentSegment, markers, duration).start) /
+                      duration) *
+                    100
+                  }%`,
+                }}
+              />
+            )}
             {duration > 0 &&
               markers.map((m, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 w-0.5 h-2 bg-red-500"
+                  className="absolute top-0 w-0.5 h-3 bg-red-500"
                   style={{ left: `${(m.time / duration) * 100}%` }}
                 />
               ))}
           </div>
           <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => goToSegment(currentSegment - 1)}
+              disabled={!canGoPrevSegment}
+              title="Previous marker"
+              className="text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded px-2.5 py-1.5 disabled:opacity-40"
+            >
+              ◀ Prev
+            </button>
             <button
               type="button"
               onClick={() => wsRef.current?.playPause()}
@@ -183,12 +267,24 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             </button>
             <button
               type="button"
+              onClick={() => goToSegment(currentSegment + 1)}
+              disabled={!canGoNextSegment}
+              title="Next marker"
+              className="text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 rounded px-2.5 py-1.5 disabled:opacity-40"
+            >
+              Next ▶
+            </button>
+            <button
+              type="button"
               onClick={addMarkerAtCurrentTime}
               className="text-xs bg-amber-500 hover:bg-amber-600 text-white rounded px-3 py-1.5"
             >
               Add marker at {formatTime(currentTime)}
             </button>
           </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Prev/Next jump to a marker and play just that segment, stopping at the next one — use it to check each sentence sounds complete.
+          </p>
         </div>
       )}
 
@@ -196,10 +292,16 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         <div className="space-y-1">
           <div className="text-sm font-semibold text-black">Markers ({markers.length})</div>
           {markers.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm bg-gray-50 rounded px-2 py-1">
+            <div
+              key={i}
+              className={`flex items-center gap-2 text-sm rounded px-2 py-1 ${
+                currentSegment === i ? "bg-amber-100" : "bg-gray-50"
+              }`}
+            >
               <button
                 type="button"
-                onClick={() => wsRef.current?.setTime(m.time)}
+                onClick={() => goToSegment(i)}
+                title="Play this segment"
                 className="text-amber-600 hover:underline"
               >
                 {formatTime(m.time)}

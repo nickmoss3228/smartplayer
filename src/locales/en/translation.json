@@ -61,7 +61,13 @@
     "arrangeModeEnter": "Move and rotate your furniture",
     "arrangeModeExit": "Finish arranging",
     "arrangeModeHint": "Drag furniture to move it. Tap an item to rotate it.",
-    "rotate": "Rotate"
+    "rotate": "Rotate",
+    "viewModeStart": "View",
+    "viewModeDone": "Done",
+    "viewModeEnter": "Pan and zoom the camera",
+    "viewModeExit": "Finish adjusting view",
+    "viewModeHint": "Drag to look around. Scroll or pinch to zoom.",
+    "resetView": "Reset view"
   },
   "feedback": {
     "title": "Leave feedback",

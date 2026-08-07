@@ -133,7 +133,7 @@ export function ShopPanel<TSlot extends string, TItem extends CosmeticItem & { s
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 gap-3 content-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 grid grid-cols-3 sm:grid-cols-4 gap-3 content-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) => {
           const owned = ownedItemIds.includes(item.id);
           const equipped = equippedBySlot[item.slot] === item.id;

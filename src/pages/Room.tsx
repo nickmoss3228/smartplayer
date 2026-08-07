@@ -91,6 +91,9 @@ const Room = () => {
   );
   const { room, loading, error, buy, equip, toggleLights, moveFloorItem, moveWallItem } = useRoomState();
   const [arrangeMode, setArrangeMode] = useState(false);
+  // Free-look camera mode — mutually exclusive with arrange mode so a drag
+  // gesture always means exactly one thing (move furniture vs. pan camera).
+  const [viewMode, setViewMode] = useState(false);
   const {
     character,
     characterLoading,
@@ -156,24 +159,61 @@ const Room = () => {
   return (
     <div className="flex flex-col landscape:flex-row h-dvh pt-13 overflow-hidden bg-gradient-to-br from-sky-50 to-amber-50">
       {/* Room view */}
-      <div className="flex-1 landscape:w-3/5 landscape:flex-none min-h-0 relative flex flex-col">
-        <div className="flex items-center justify-between gap-2 px-3 py-2 shrink-0">
+      <div className="flex-1 landscape:w-3/5 landscape:flex-none min-h-0 relative">
+        <RoomScene
+          placedItems={{ ...room.placedItems, ...roomPreview }}
+          placement={room.placement}
+          lightsOn={room.lightsOn}
+          achievements={trophies}
+          arrangeMode={arrangeMode}
+          viewMode={viewMode}
+          onMoveFloorItem={(slot: FloorSlotKey, x, z, rotation) => moveFloorItem(slot, x, z, rotation)}
+          onMoveWallItem={(slot: WallSlotKey, along, height) => moveWallItem(slot, along, height)}
+          rotateLabel={t("room.rotate")}
+          resetViewLabel={t("room.resetView")}
+          character={{
+            skinTone: character.skinTone,
+            equipped: { ...character.equipped, ...characterPreview },
+          }}
+        />
+
+        {/* Floating button bar — overlaid on the canvas instead of taking its
+            own layout row, so the room gets full height on short viewports.
+            pointer-events-none on the row + pointer-events-auto on each
+            button cluster lets taps in the gap between them (e.g. to walk
+            the character) still reach the canvas underneath. */}
+        <div className="absolute top-0 inset-x-0 flex items-center justify-between gap-2 px-3 py-2 pointer-events-none">
           <button
             disabled
             title={t("room.upgradeComingSoon")}
-            className="flex items-center gap-1.5 text-xs font-semibold text-black/40 bg-white/70 rounded-full px-3 py-1.5 cursor-not-allowed"
+            className="pointer-events-auto flex items-center gap-1.5 text-xs font-semibold text-black/40 bg-white/70 rounded-full px-3 py-1.5 cursor-not-allowed"
           >
             🏠 {t("room.upgradeBanner")}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex text-black items-center gap-2 pointer-events-auto">
             <button
-              onClick={() => setArrangeMode((v) => !v)}
+              onClick={() => {
+                setArrangeMode((v) => !v);
+                setViewMode(false);
+              }}
               title={t(arrangeMode ? "room.arrangeModeExit" : "room.arrangeModeEnter")}
               className={`text-xs font-semibold rounded-full px-3 py-1.5 cursor-pointer ${
                 arrangeMode ? "bg-amber-500 text-white" : "bg-white/70 hover:bg-white"
               }`}
             >
               🔧 {t(arrangeMode ? "room.arrangeModeDone" : "room.arrangeModeStart")}
+            </button>
+            <button
+              onClick={() => {
+                setViewMode((v) => !v);
+                setArrangeMode(false);
+              }}
+              title={t(viewMode ? "room.viewModeExit" : "room.viewModeEnter")}
+              className={`text-xs font-semibold rounded-full px-3 py-1.5 cursor-pointer ${
+                viewMode ? "bg-sky-500 text-white" : "bg-white/70 hover:bg-white"
+              }`}
+            >
+              🎥 {t(viewMode ? "room.viewModeDone" : "room.viewModeStart")}
             </button>
             <button
               onClick={toggleLights}
@@ -188,25 +228,11 @@ const Room = () => {
             </div>
           </div>
         </div>
-        {arrangeMode && (
-          <p className="text-center text-xs text-black/50 px-3 pb-1">{t("room.arrangeModeHint")}</p>
+        {(arrangeMode || viewMode) && (
+          <p className="absolute top-12 inset-x-0 pointer-events-none text-center text-xs text-black/50 px-3">
+            {t(arrangeMode ? "room.arrangeModeHint" : "room.viewModeHint")}
+          </p>
         )}
-        <div className="flex-1 min-h-0">
-          <RoomScene
-            placedItems={{ ...room.placedItems, ...roomPreview }}
-            placement={room.placement}
-            lightsOn={room.lightsOn}
-            achievements={trophies}
-            arrangeMode={arrangeMode}
-            onMoveFloorItem={(slot: FloorSlotKey, x, z, rotation) => moveFloorItem(slot, x, z, rotation)}
-            onMoveWallItem={(slot: WallSlotKey, along, height) => moveWallItem(slot, along, height)}
-            rotateLabel={t("room.rotate")}
-            character={{
-              skinTone: character.skinTone,
-              equipped: { ...character.equipped, ...characterPreview },
-            }}
-          />
-        </div>
       </div>
 
       {/* Shop */}

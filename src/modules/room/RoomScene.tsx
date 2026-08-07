@@ -1,4 +1,13 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Dispatch,
+  PointerEvent as ReactPointerEvent,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -68,6 +77,23 @@ function computeCameraBasis(eye: THREE.Vector3, target: THREE.Vector3) {
   return { right, up };
 }
 
+// Fixed screen-space right/up basis for the camera's default orientation —
+// used to pan the camera (and its look target, so orientation never
+// changes) sideways/vertically in "view mode" without recomputing per frame.
+const CAMERA_BASIS = computeCameraBasis(CAMERA_POSITION, LOOK_TARGET);
+
+// Free-look zoom bounds (multiplied on top of the normal contain-fit scale).
+const ZOOM_MIN = 0.6;
+const ZOOM_MAX = 2.2;
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+// Baseline downward framing nudge, as a fraction of the canvas's own visible
+// height — shifts the room content (not the DOM/canvas box) so it stays
+// full-bleed behind the floating button bar instead of leaving a gap of
+// plain page background up top. Tune this fraction to move the room
+// further up/down.
+const VIEWPORT_SHIFT_DOWN = 0.1;
+
 function getProjectedRoomExtent() {
   const { right, up } = computeCameraBasis(CAMERA_POSITION, LOOK_TARGET);
   const corners: THREE.Vector3[] = [];
@@ -128,9 +154,14 @@ interface RoomSceneProps {
   lightsOn: boolean;
   achievements: RoomAchievementTrophy[];
   arrangeMode: boolean;
+  // "View mode" — free-look camera: drag to pan, wheel/pinch to zoom.
+  // Mutually exclusive with arrangeMode (enforced by the caller) so drag
+  // gestures never mean two different things at once.
+  viewMode: boolean;
   onMoveFloorItem: (slot: FloorSlotKey, x: number, z: number, rotation: number) => void;
   onMoveWallItem: (slot: WallSlotKey, along: number, height: number) => void;
   rotateLabel: string;
+  resetViewLabel: string;
 }
 
 // ─── Room shell: floor / back wall / side wall ─────────────────────────────
@@ -315,7 +346,7 @@ function TrophyLedge({ achievements }: { achievements: RoomAchievementTrophy[] }
   );
 }
 
-interface FitRoomProps extends Omit<RoomSceneProps, "rotateLabel"> {
+interface FitRoomProps extends Omit<RoomSceneProps, "rotateLabel" | "resetViewLabel"> {
   characterTarget: CharacterTarget | null;
   onFloorClick: (x: number, z: number) => void;
   onChairClick: () => void;
@@ -323,6 +354,7 @@ interface FitRoomProps extends Omit<RoomSceneProps, "rotateLabel"> {
   selectedSlot: FloorSlotKey | null;
   dragState: DragState | null;
   setDragState: Dispatch<SetStateAction<DragState | null>>;
+  zoomFactor: number;
 }
 
 function occupiedFloorSiblings(
@@ -353,6 +385,7 @@ function FitRoom({
   lightsOn,
   achievements,
   arrangeMode,
+  viewMode,
   characterTarget,
   onFloorClick,
   onChairClick,
@@ -360,10 +393,18 @@ function FitRoom({
   selectedSlot,
   dragState,
   setDragState,
+  zoomFactor,
 }: FitRoomProps) {
   const { viewport } = useThree();
   const scale =
-    Math.min(viewport.width / ROOM_PROJECTED.width, viewport.height / ROOM_PROJECTED.height) * 0.92;
+    Math.min(viewport.width / ROOM_PROJECTED.width, viewport.height / ROOM_PROJECTED.height) * 1.1 * zoomFactor;
+  // Baseline downward nudge (in screen-pixel-equivalent world units, so it
+  // stays a consistent fraction of the canvas regardless of zoom) — moves
+  // the room content itself rather than the camera, so it composes simply
+  // with the scale group below. Floor math only reads x/z (untouched by a
+  // pure-Y shift); wall math reads y too, so its two pointer-move handlers
+  // below add shiftY back in to undo it before converting to local space.
+  const shiftY = viewport.height * VIEWPORT_SHIFT_DOWN;
 
   // ── Character movement (normal mode only — arrange mode repurposes the
   // floor/chair for furniture placement instead). ──────────────────────
@@ -408,7 +449,7 @@ function FitRoom({
   const handleBackWallPointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!dragState || dragState.kind !== "wall" || !(BACK_WALL_SLOTS as readonly string[]).includes(dragState.slot)) return;
     const along = e.point.x / scale;
-    const height = e.point.y / scale;
+    const height = (e.point.y + shiftY) / scale;
     setDragState((prev) => {
       if (!prev || prev.kind !== "wall") return prev;
       const moved = prev.moved || Math.hypot(along - prev.startAlong, height - prev.startHeight) > DRAG_THRESHOLD;
@@ -423,7 +464,7 @@ function FitRoom({
   const handleSideWallPointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!dragState || dragState.kind !== "wall" || !(SIDE_WALL_SLOTS as readonly string[]).includes(dragState.slot)) return;
     const along = e.point.z / scale;
-    const height = e.point.y / scale;
+    const height = (e.point.y + shiftY) / scale;
     setDragState((prev) => {
       if (!prev || prev.kind !== "wall") return prev;
       const moved = prev.moved || Math.hypot(along - prev.startAlong, height - prev.startHeight) > DRAG_THRESHOLD;
@@ -450,7 +491,7 @@ function FitRoom({
   const shelfP = wallPlacementFor("shelf");
 
   return (
-    <group scale={[scale, scale, scale]}>
+    <group scale={[scale, scale, scale]} position={[0, -shiftY, 0]}>
       {/* Floor — click to walk (normal mode) or drag furniture (arrange mode) */}
       <ShellPlane
         itemId={placedItems.flooring}
@@ -460,7 +501,7 @@ function FitRoom({
         height={ROOM_DEPTH}
         position={[0, 0, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
-        onClick={!arrangeMode ? handleFloorClick : undefined}
+        onClick={!arrangeMode && !viewMode ? handleFloorClick : undefined}
         onPointerMove={arrangeMode ? handleFloorPointerMove : undefined}
       />
       {/* Back wall */}
@@ -524,7 +565,7 @@ function FitRoom({
         x={chair.x} z={chair.z} rotationDeg={chair.rotation}
         placeholderSize={[36, 50, 36]}
         selected={selectedSlot === "chair"}
-        onClick={!arrangeMode ? handleChairSitClick : undefined}
+        onClick={!arrangeMode && !viewMode ? handleChairSitClick : undefined}
         onPointerDown={arrangeMode ? startFloorDrag("chair") : undefined}
       />
       <FurnitureSlot
@@ -571,9 +612,11 @@ export function RoomScene({
   lightsOn,
   achievements,
   arrangeMode,
+  viewMode,
   onMoveFloorItem,
   onMoveWallItem,
   rotateLabel,
+  resetViewLabel,
 }: RoomSceneProps) {
   const [characterTarget, setCharacterTarget] = useState<CharacterTarget | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<FloorSlotKey | null>(null);
@@ -587,6 +630,99 @@ export function RoomScene({
       setDragState(null);
     }
   }, [arrangeMode]);
+
+  // ── Free-look camera (view mode) ────────────────────────────────────────
+  // panOffset is a screen-pixel-equivalent offset applied to both the
+  // camera and its look target (so orientation never changes) — the
+  // default orthographic camera has no custom frustum, so 1 world unit ==
+  // 1 CSS pixel, letting pointer deltas map straight onto it. zoomFactor
+  // multiplies on top of FitRoom's normal contain-fit scale. Both persist
+  // across viewMode toggles so the chosen framing sticks until reset.
+  const [panOffset, setPanOffset] = useState({ right: 0, up: 0 });
+  const [zoomFactor, setZoomFactor] = useState(1);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const panDragRef = useRef<{ x: number; y: number; right: number; up: number } | null>(null);
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const viewChanged = panOffset.right !== 0 || panOffset.up !== 0 || zoomFactor !== 1;
+  const resetView = () => {
+    setPanOffset({ right: 0, up: 0 });
+    setZoomFactor(1);
+  };
+
+  const pinchDistance = (pts: { x: number; y: number }[]) =>
+    Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+
+  const handleViewPointerDown = (e: ReactPointerEvent) => {
+    if (!viewMode) return;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size === 1) {
+      panDragRef.current = { x: e.clientX, y: e.clientY, right: panOffset.right, up: panOffset.up };
+      pinchRef.current = null;
+    } else if (pointersRef.current.size === 2) {
+      panDragRef.current = null;
+      pinchRef.current = { dist: pinchDistance(Array.from(pointersRef.current.values())), zoom: zoomFactor };
+    }
+  };
+
+  const handleViewPointerMove = (e: ReactPointerEvent) => {
+    if (!viewMode || !pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size === 2 && pinchRef.current) {
+      const dist = pinchDistance(Array.from(pointersRef.current.values()));
+      setZoomFactor(clamp(pinchRef.current.zoom * (dist / pinchRef.current.dist), ZOOM_MIN, ZOOM_MAX));
+      return;
+    }
+    if (pointersRef.current.size === 1 && panDragRef.current) {
+      const dx = e.clientX - panDragRef.current.x;
+      const dy = e.clientY - panDragRef.current.y;
+      setPanOffset({ right: panDragRef.current.right - dx, up: panDragRef.current.up + dy });
+    }
+  };
+
+  const handleViewPointerEnd = (e: ReactPointerEvent) => {
+    pointersRef.current.delete(e.pointerId);
+    pinchRef.current = null;
+    if (pointersRef.current.size === 1) {
+      // Dropping from a pinch back to a single finger — rebase the pan
+      // drag from here so the view doesn't jump.
+      const [p] = Array.from(pointersRef.current.values());
+      panDragRef.current = { x: p.x, y: p.y, right: panOffset.right, up: panOffset.up };
+    } else {
+      panDragRef.current = null;
+    }
+  };
+
+  // Wheel-to-zoom needs a non-passive listener to preventDefault (stop page
+  // scroll) — React's onWheel prop can't reliably do that.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (!viewMode) return;
+      e.preventDefault();
+      setZoomFactor((z) => clamp(z - e.deltaY * 0.0015, ZOOM_MIN, ZOOM_MAX));
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [viewMode]);
+
+  const pannedEye = useMemo(
+    () =>
+      CAMERA_POSITION.clone()
+        .addScaledVector(CAMERA_BASIS.right, panOffset.right)
+        .addScaledVector(CAMERA_BASIS.up, panOffset.up),
+    [panOffset],
+  );
+  const pannedTarget = useMemo(
+    () =>
+      LOOK_TARGET.clone()
+        .addScaledVector(CAMERA_BASIS.right, panOffset.right)
+        .addScaledVector(CAMERA_BASIS.up, panOffset.up),
+    [panOffset],
+  );
 
   const finalizeDrag = useCallback(() => {
     setDragState((prev) => {
@@ -629,6 +765,7 @@ export function RoomScene({
     setCharacterTarget({ x: chairP.x, z: chairP.z, sitting: true, facing });
   };
   const handleCharacterClick = () => {
+    if (viewMode) return;
     setCharacterTarget((prev) => (prev?.sitting ? { x: prev.x, z: prev.z + 24, sitting: false } : prev));
   };
 
@@ -643,12 +780,19 @@ export function RoomScene({
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div
+      ref={containerRef}
+      className={`relative w-full h-full ${viewMode ? "cursor-grab active:cursor-grabbing" : ""}`}
+      onPointerDown={handleViewPointerDown}
+      onPointerMove={handleViewPointerMove}
+      onPointerUp={handleViewPointerEnd}
+      onPointerCancel={handleViewPointerEnd}
+    >
       <Canvas className="!touch-none" style={{ background: "linear-gradient(to bottom, #dff1ff, #f7ecd9)" }}>
         <OrthographicCamera
           makeDefault
-          position={CAMERA_POSITION.toArray()}
-          onUpdate={(self) => self.lookAt(LOOK_TARGET)}
+          position={pannedEye.toArray()}
+          onUpdate={(self) => self.lookAt(pannedTarget)}
         />
         <ambientLight intensity={lightsOn ? 0.6 : 0.15} />
         <directionalLight position={[300, 500, 200]} intensity={lightsOn ? 0.9 : 0.15} />
@@ -659,6 +803,7 @@ export function RoomScene({
           lightsOn={lightsOn}
           achievements={achievements}
           arrangeMode={arrangeMode}
+          viewMode={viewMode}
           onMoveFloorItem={onMoveFloorItem}
           onMoveWallItem={onMoveWallItem}
           characterTarget={characterTarget}
@@ -668,6 +813,7 @@ export function RoomScene({
           selectedSlot={selectedSlot}
           dragState={dragState}
           setDragState={setDragState}
+          zoomFactor={zoomFactor}
         />
       </Canvas>
 
@@ -686,6 +832,15 @@ export function RoomScene({
             ✕
           </button>
         </div>
+      )}
+
+      {viewChanged && (
+        <button
+          onClick={resetView}
+          className="absolute bottom-3 right-3 pointer-events-auto bg-black/70 text-white text-xs font-semibold rounded-full px-3 py-1.5 shadow-lg cursor-pointer hover:bg-black/80"
+        >
+          ↺ {resetViewLabel}
+        </button>
       )}
     </div>
   );

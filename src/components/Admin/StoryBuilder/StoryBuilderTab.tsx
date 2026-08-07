@@ -23,6 +23,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const [activeStory, setActiveStory] = useState<AdminStory | null>(null);
   const [importingSlug, setImportingSlug] = useState<string | null>(null);
   const [importError, setImportError] = useState("");
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultySlug | "all">("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +51,14 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
         .map((group) => ({ difficulty, group }))
     );
   }, [stories, t]);
+
+  const visibleStories = useMemo(
+    () =>
+      difficultyFilter === "all"
+        ? stories
+        : stories.filter((s) => s.difficulty === difficultyFilter),
+    [stories, difficultyFilter]
+  );
 
   const openStory = async (id: string) => {
     try {
@@ -150,32 +159,66 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
         <p className="text-gray-500">No stories yet — create or import one above.</p>
       )}
 
-      <div className="space-y-2">
-        {stories.map((story) => (
-          <button
-            key={story._id}
-            onClick={() => openStory(story._id)}
-            className="w-full flex items-center gap-3 bg-white rounded-lg shadow p-3 border border-gray-200 hover:bg-gray-50 text-left"
-          >
-            <span className="text-xl">{story.characterIcon}</span>
-            <div className="flex-1">
-              <div className="font-semibold text-black">{story.storyName}</div>
-              <div className="text-xs text-gray-500">
-                {story.difficulty} · {story.totalParts} parts
-              </div>
-            </div>
-            <span
-              className={`text-xs rounded-full px-2 py-0.5 ${
-                story.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+      {!loading && stories.length > 0 && (
+        <div className="flex gap-2 mb-3">
+          {(["all", ...DIFFICULTIES] as const).map((option) => (
+            <button
+              key={option}
+              onClick={() => setDifficultyFilter(option)}
+              className={`text-xs font-semibold rounded-full px-3 py-1 capitalize transition-colors ${
+                difficultyFilter === option
+                  ? "bg-black text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              {story.published ? "Published" : "Draft"}
-            </span>
-          </button>
-        ))}
-      </div>
+              {option === "all"
+                ? `All (${stories.length})`
+                : `${option} (${stories.filter((s) => s.difficulty === option).length})`}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!loading && visibleStories.length === 0 && stories.length > 0 && (
+        <p className="text-gray-500">No stories at this difficulty.</p>
+      )}
+
+      <StoryList stories={visibleStories} onOpen={openStory} />
     </div>
   );
 };
+
+const StoryList = ({
+  stories,
+  onOpen,
+}: {
+  stories: AdminStoryListItem[];
+  onOpen: (id: string) => void;
+}) => (
+  <div className="space-y-2">
+    {stories.map((story) => (
+      <button
+        key={story._id}
+        onClick={() => onOpen(story._id)}
+        className="w-full flex items-center gap-3 bg-white rounded-lg shadow p-3 border border-gray-200 hover:bg-gray-50 text-left"
+      >
+        <span className="text-xl">{story.characterIcon}</span>
+        <div className="flex-1">
+          <div className="font-semibold text-black">{story.storyName}</div>
+          <div className="text-xs text-gray-500">
+            {story.difficulty} · {story.totalParts} parts
+          </div>
+        </div>
+        <span
+          className={`text-xs rounded-full px-2 py-0.5 ${
+            story.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+          }`}
+        >
+          {story.published ? "Published" : "Draft"}
+        </span>
+      </button>
+    ))}
+  </div>
+);
 
 export default StoryBuilderTab;

@@ -51,8 +51,8 @@ export function buildVoxelModel(swatch: Swatch): VoxelBox[] {
         { size: [6, 50, 6], position: [-46, 25, -20], color: swatch.accent },
         { size: [6, 50, 6], position: [-46, 25, 20], color: swatch.accent },
         // dual monitors
-        { size: [30, 20, 3], position: [-26, 68, -18], color: "#1a1a1a" },
-        { size: [8, 6, 4], position: [-26, 55, -18], color: "#333333" },
+        { size: [30, 20, 3], position: [-26, 68, -18], color: "#7d3232" },
+        { size: [8, 6, 4], position: [-26, 55, -18], color: "#eae4e4" },
         { size: [30, 20, 3], position: [8, 68, -18], color: "#1a1a1a" },
         { size: [8, 6, 4], position: [8, 55, -18], color: "#333333" },
         // keyboard + mouse
