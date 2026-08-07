@@ -21,3 +21,4 @@ An app that helps people study English - especially the Listening aspect. We let
 ## Notes
 - Do not modify files in /legacy
 - Keep API responses in camelCase
+- Do not use the emojis - instead, where possible, use icons.

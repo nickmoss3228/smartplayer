@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
@@ -11,6 +12,7 @@ const PlayerRoom = () => {
   const { userId } = useParams<{ userId: string }>();
   const { data, loading, error } = usePlayerRoom(userId);
   const portrait = useCharacterPortrait(data?.character);
+  const [viewMode, setViewMode] = useState(false);
 
   if (loading) {
     return (
@@ -49,6 +51,15 @@ const PlayerRoom = () => {
             {data.nickname}
           </span>
         </div>
+        <button
+          onClick={() => setViewMode((v) => !v)}
+          title={t(viewMode ? "room.viewModeExit" : "room.viewModeEnter")}
+          className={`ml-auto text-xs font-semibold rounded-full px-3 py-1.5 cursor-pointer transition-colors ${
+            viewMode ? "bg-sky-500 text-white" : "bg-white/70 hover:bg-white"
+          }`}
+        >
+          🎥 {t(viewMode ? "room.viewModeDone" : "room.viewModeStart")}
+        </button>
       </div>
       <div className="flex-1 min-h-0">
         <RoomScene
@@ -60,11 +71,14 @@ const PlayerRoom = () => {
           // so a visited room never shows trophies, only the owner's own does.
           achievements={[]}
           // Read-only view — arrange mode (and its rotate/drag affordances)
-          // is only for your own room.
+          // is only for your own room. Free-look view mode is harmless here
+          // (camera-only), so it stays available.
           arrangeMode={false}
+          viewMode={viewMode}
           onMoveFloorItem={() => {}}
           onMoveWallItem={() => {}}
           rotateLabel=""
+          resetViewLabel={t("room.resetView")}
           character={{ skinTone: data.character.skinTone, equipped: data.character.equipped }}
         />
       </div>
