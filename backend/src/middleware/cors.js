@@ -8,6 +8,7 @@ export const corsMiddleware = (req, res, next) => {
     'http://localhost:5173',
     'http://localhost:8081',
     'http://127.0.0.1:5173',
+    'http://89.169.159.92/',
   ];
   
   const origin = req.headers.origin;

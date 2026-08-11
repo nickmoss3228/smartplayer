@@ -789,12 +789,12 @@ export const quizData = {
     "leo-additional": {
       "1": [
         {
-          "question": "Where did Leo find the kitten?",
+          "question": "How old does Leo say he is?",
           "options": [
-            "In a box",
-            "Under a car",
-            "In the park",
-            "On the street"
+            "20",
+            "22",
+            "23",
+            "25"
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
@@ -804,14 +804,14 @@ export const quizData = {
           }
         },
         {
-          "question": "What did Leo give the kitten first?",
+          "question": "What is the name of Leo's cat?",
           "options": [
-            "Cat food",
-            "Cookies",
-            "Cold water",
-            "Warm milk"
+            "Ginger",
+            "Tiger",
+            "Shadow",
+            "Fluffy"
           ],
-          "correctAnswer": 3,
+          "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
             "fast": "1",
@@ -819,12 +819,27 @@ export const quizData = {
           }
         },
         {
-          "question": "Who helped Leo with medicine for the kitten?",
+          "question": "What does Leo do at the store where he works?",
           "options": [
-            "His mother",
-            "A neighbor",
-            "His sister Mia",
-            "A vet clinic"
+            "He is the owner",
+            "He does all the design work",
+            "He sells clothes",
+            "He bakes bread only"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        },
+        {
+          "question": "Why did Kate go to Leo's place?",
+          "options": [
+            "To buy pastries",
+            "To meet his cat",
+            "To ask him to help with her term paper",
+            "To interview him for a story"
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
@@ -834,27 +849,12 @@ export const quizData = {
           }
         },
         {
-          "question": "How did Leo try to find the kitten's owners?",
+          "question": "When do Ava and Kate agree to meet up?",
           "options": [
-            "He called the police",
-            "He asked his neighbors",
-            "He made posters and posted online",
-            "He went to the vet"
-          ],
-          "correctAnswer": 2,
-          "referenceTime": 0,
-          "audio": {
-            "fast": "1",
-            "slow": "1"
-          }
-        },
-        {
-          "question": "Who came to take the kitten?",
-          "options": [
-            "An old man",
-            "A young couple",
-            "Another cat owner",
-            "A little girl and her mother"
+            "Tomorrow morning",
+            "Tomorrow evening",
+            "The day after tomorrow, in the evening",
+            "Next weekend"
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
@@ -864,7 +864,83 @@ export const quizData = {
           }
         }
       ],
-      "2": []
+      "2": [
+        {
+          "question": "Who is Leo, according to Ava?",
+          "options": [
+            "Sofia's cousin",
+            "Mia's brother",
+            "Kate's neighbor",
+            "Ava's coworker"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        },
+        {
+          "question": "What time does Leo say he wakes up?",
+          "options": [
+            "5 a.m.",
+            "6 a.m.",
+            "7 a.m.",
+            "8 a.m."
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        },
+        {
+          "question": "How old is Ava's brother?",
+          "options": [
+            "22",
+            "23",
+            "24",
+            "25"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        },
+        {
+          "question": "Who is Leo dating, according to Sofia?",
+          "options": [
+            "Mia",
+            "Ava",
+            "Catherine",
+            "Sofia herself"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        },
+        {
+          "question": "How long have Leo and Catherine reportedly been together?",
+          "options": [
+            "Three months",
+            "Six months",
+            "One year",
+            "Two years"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": {
+            "fast": "1",
+            "slow": "1"
+          }
+        }
+      ]
     }
   },
   "medium": {
