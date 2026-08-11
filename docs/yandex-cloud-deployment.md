@@ -299,68 +299,67 @@ There's also a **serial console** in the Yandex Cloud web console — useful if 
 
 ---
 
-## 7. Does pushing to the repo auto-deploy? — **Not yet**
+## 7. Auto-deploy on push — **ACTIVE** (as of 2026-08-11)
 
-**No.** Right now nothing is automatic. Pushing to GitHub changes nothing on the VM; deploys are the
-manual `build → push → compose pull` sequence above.
+Pushing to `master` now deploys automatically. Verified end-to-end: commit `db9db24` triggered a run
+that built the image, pushed it, and restarted the container on the VM — the running image digest
+(`sha256:9d86e66a…`) matches the registry's `:latest`, tagged with that commit's SHA.
 
-The workflow file exists but is **inert**, for these reasons:
-
-1. **The files were never committed.** `Dockerfile`, `docker-compose.yml`, `.github/`, etc. are all
-   still untracked — GitHub has never seen them.
-2. **Secrets aren't configured** (below).
-3. Three bugs I found and fixed while answering this question, all of which would have caused silent
-   no-ops:
-   - The workflow assumed the repo root was `ed-tech`, using `paths: player/smartplayer/**` and
-     `working-directory: player/smartplayer`. **Your repo root is `player/smartplayer` itself**, so
-     those paths matched nothing and the working directory didn't exist.
-   - It triggered on branch `main`; **your branch is `master`.** It would never have fired.
-   - The VM's `.env` pinned `TAG=v1` while CI pushes `:latest`, so a deploy would have re-pulled the
-     old image. (Fixed on the VM — now `TAG=latest`.)
-
-### To turn it on
-
-**Step 1 — commit and push the files.**
-```bash
-cd d:/Programming/ed-tech/player/smartplayer
-git add Dockerfile nginx.conf .dockerignore docker-compose.yml Caddyfile cloud-init.yaml .env.example .github/ docs/
-git commit -m "Add Docker + Yandex Cloud deployment config"
+```
 git push origin master
+      |
+      v
+GitHub Actions: docker build --> push to cr.yandex --> ssh to VM --> compose pull + up -d
+      |
+      v
+live in ~90 seconds
 ```
-> Check `git status` before committing — make sure the real `.env` (with secrets) is **not** included.
-> It's gitignored, but verify.
 
-**Step 2 — create a service account key for GitHub.** CI can't use your personal login, so it needs
-its own identity with *push* rights:
+**What triggers it:** any push to `master`, *except* changes confined to `backend/`, `docs/`, or
+`README.md` (see `paths-ignore` in the workflow).
+
+**Watching a deploy:**
 ```bash
-yc iam service-account create --name github-actions-sa
-yc resource-manager folder add-access-binding b1grn5nt77oj1659pgv2 \
-  --role container-registry.images.pusher --subject serviceAccount:<NEW_SA_ID>
-yc iam key create --service-account-name github-actions-sa --output sa-key.json
+gh run list --limit 5          # recent runs
+gh run watch                   # follow the current run live
+gh run view --log-failed       # logs of whatever failed
 ```
-`sa-key.json` is a **credential — never commit it.** Delete it once pasted into GitHub.
+Or the repo's **Actions** tab in a browser.
 
-**Step 3 — add to GitHub** (repo → Settings → Secrets and variables → Actions):
+### What's configured
 
-*Secrets:*
-| Name | Value |
-|---|---|
-| `YC_SA_JSON_CREDENTIALS` | full contents of `sa-key.json` |
-| `VM_SSH_HOST` | `89.169.159.92` |
-| `VM_SSH_PRIVATE_KEY` | contents of `~/.ssh/smartplayer_vm` (the private one, no `.pub`) |
+*Secrets* (write-only; values can't be read back):
+`YC_SA_JSON_CREDENTIALS` · `VM_SSH_HOST` · `VM_SSH_PRIVATE_KEY`
 
 *Variables:*
-| Name | Value |
-|---|---|
-| `YC_REGISTRY_ID` | `crpjfs7cp0kc3qg46i5p` |
-| `VITE_API_URL` | `https://smartplayer-production.up.railway.app` |
-| `VITE_YOS_BASE_URL` | `https://storage.yandexcloud.net/audioplayer-data` |
+`YC_REGISTRY_ID` · `VITE_API_URL` · `VITE_YOS_BASE_URL`
 
-**Step 4 — test.** Push a trivial change, then watch the **Actions** tab. On success, `docker ps` on
-the VM shows a fresh `CREATED` time.
+> `VITE_API_URL` is a **variable, not a secret**, because it's compiled into the public JS bundle
+> anyway. To repoint the frontend at a new backend, change this variable and push — the rebuild picks
+> it up. Changing it on the VM would do nothing.
 
-Once active, the loop becomes: **`git push` → GitHub builds the image → pushes to the registry →
-SSHes into the VM → pulls and restarts the container.** Roughly 3-5 minutes.
+CI authenticates to the registry as a dedicated service account (`github-actions-sa`,
+`container-registry.images.pusher`), separate from the VM's pull-only identity — so neither can do
+the other's job if compromised.
+
+### Three bugs that had to be fixed first
+
+Worth knowing, since all three fail *silently* — a workflow that never triggers looks identical to
+one that doesn't exist:
+
+- The workflow assumed the repo root was `ed-tech` (`paths: player/smartplayer/**`,
+  `working-directory: player/smartplayer`). **The repo root is `player/smartplayer` itself**, so
+  those paths matched nothing.
+- It triggered on branch `main`; **this repo's branch is `master`.**
+- The VM's `.env` pinned `TAG=v1` while CI pushes `:latest` — deploys would have silently re-pulled
+  the *old* image. Now `TAG=latest`.
+
+### Differences from Vercel
+
+- **Only `master` deploys.** No per-branch preview URLs.
+- **No automatic rollback.** To roll back, retag a previous image or push a revert commit.
+- **~90s vs Vercel's ~40s**, because the image is rebuilt from scratch rather than using a warm
+  build cache.
 
 ---
 
