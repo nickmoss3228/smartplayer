@@ -1,0 +1,32 @@
+#cloud-config
+# Passed to `yc compute instance create --metadata-from-file user-data=cloud-init.yaml`.
+# Creates the `deploy` user (used by both manual SSH and the GitHub Actions
+# deploy step) and installs Docker Engine + the Compose plugin.
+# The key below is a PUBLIC key — safe to commit.
+users:
+  - name: deploy
+    groups: [sudo, docker]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBlipG8fUQVN/4/tyYR6BI8ef0L3k+Njzo4rO1xSBZix smartplayer-vm-deploy
+
+package_update: true
+packages: [ca-certificates, curl, gnupg]
+
+runcmd:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  # Run under bash explicitly. Under cloud-init's default shell the
+  # `$(. /etc/os-release && echo $VERSION_CODENAME)` form expanded to an empty
+  # string, producing "…/ubuntu  stable" and an apt "Malformed entry
+  # (Component)" error that silently skipped the whole Docker install.
+  - bash -c '. /etc/os-release && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" > /etc/apt/sources.list.d/docker.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  # `docker` group is created by the docker-ce package, after cloud-init made
+  # the user — re-add so `deploy` can run docker without sudo.
+  - usermod -aG docker deploy

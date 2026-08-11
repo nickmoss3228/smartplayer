@@ -1,0 +1,59 @@
+name: Deploy frontend
+
+# NOTE: the git repo root IS player/smartplayer (not the ed-tech workspace),
+# and the default branch is `master`. Paths below are therefore repo-relative
+# with no "player/smartplayer/" prefix.
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "backend/**"
+      - "docs/**"
+      - "README.md"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Yandex Container Registry
+        uses: yc-actions/yc-cr-login@v3
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build and push
+        run: |
+          # --provenance/--sbom false: buildx otherwise emits an OCI image index
+          # with attestation manifests, which cr.yandex rejects with
+          # "Cannot read manifest data ... manifest-v2-2" AFTER the layers
+          # upload, leaving the image in the registry but untagged.
+          docker build --provenance=false --sbom=false \
+            --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
+            --build-arg VITE_YOS_BASE_URL="${{ vars.VITE_YOS_BASE_URL }}" \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:${{ github.sha }} \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:latest \
+            .
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:${{ github.sha }}
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:latest
+
+      - name: Deploy on VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_SSH_HOST }}
+          username: deploy
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd ~/smartplayer
+            # Authenticate to the registry using the VM's own attached service
+            # account, so no registry credentials are ever stored on the box.
+            TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+              "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
+              | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+            echo "$TOKEN" | sudo docker login --username iam --password-stdin cr.yandex
+            # TAG=latest lives in ~/smartplayer/.env on the VM
+            sudo docker compose pull frontend
+            sudo docker compose up -d frontend
+            sudo docker image prune -f

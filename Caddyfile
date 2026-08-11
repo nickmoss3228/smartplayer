@@ -1,0 +1,3 @@
+infinityplayer.xyz, www.infinityplayer.xyz {
+    reverse_proxy frontend:80
+}

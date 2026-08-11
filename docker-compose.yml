@@ -1,0 +1,55 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_YOS_BASE_URL: ${VITE_YOS_BASE_URL}
+    # Unset locally -> plain "smartplayer-frontend:latest", so this file works
+    # before the registry exists. On the VM/CI set FRONTEND_IMAGE to the full
+    # registry path (cr.yandex/<registry-id>/smartplayer-frontend) so that
+    # `docker compose pull` resolves against Yandex Container Registry.
+    image: ${FRONTEND_IMAGE:-smartplayer-frontend}:${TAG:-latest}
+    container_name: smartplayer-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks: [smartplayer-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: smartplayer-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [smartplayer-net]
+    depends_on: [frontend]
+
+  # --- added in the backend phase (see plan) ---
+  # backend:
+  #   build: { context: ./backend }
+  #   image: ${BACKEND_IMAGE:-smartplayer-backend}:${TAG:-latest}
+  #   container_name: smartplayer-backend
+  #   restart: unless-stopped
+  #   env_file: ./backend/.env.production
+  #   expose: ["3000"]
+  #   networks: [smartplayer-net]
+
+networks:
+  smartplayer-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
