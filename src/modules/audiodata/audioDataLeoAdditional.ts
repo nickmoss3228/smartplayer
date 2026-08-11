@@ -2,7 +2,6 @@
 import { getStorageUrl } from "../../services/yandexStorage";
 import { AudioTrack } from "../../types";
 import { getHelpAudioUrls } from "./helpAudioUrls";
-// import your 3 new mp3 files, quiz audio, etc.
 
 const Girls1         = getStorageUrl("leo/additional/1. Girls-part1.mp3");
 const Girls2     = getStorageUrl("leo/additional/2. Girls-part2.mp3");
@@ -16,8 +15,23 @@ export const leoAdditionalAudioData: AudioTrack[] = [
     audio: Girls1 ,
     helpAudio: getHelpAudioUrls("easy", "leo-additional-1"), // check this signature/path convention
     subtitles: [ /* ... */ ],
-    timeMarkers: [ /* ... */ ],
-
+    timeMarkers: [
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+      { time: 0.1, label: "1", color: "red" },
+    ],
   },
   {
     id: "2",

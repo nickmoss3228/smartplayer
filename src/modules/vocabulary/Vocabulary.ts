@@ -5,7 +5,10 @@ export interface VocabEntry {
   // English filename without extension, used when word is non-Latin
 }
 
-export const trackFolderMap: Record<string, Record<string, Record<string, string>>> = {
+export const trackFolderMap: Record<
+  string,
+  Record<string, Record<string, string>>
+> = {
   easy: {
     leo: {
       "1": "1.leo's life",
@@ -71,13 +74,20 @@ export const storyFolderMap: Record<string, Record<string, string>> = {
   },
 };
 
-export const trackPhrasalVerbs: Record<string, Record<string, Record<string, VocabEntry[]>>> = {
+export const trackPhrasalVerbs: Record<
+  string,
+  Record<string, Record<string, VocabEntry[]>>
+> = {
   easy: {
     leo: {
       "2": [
         { word: "просыпаться", definition: "1", audioKey: "wake up" },
         { word: "вставать", definition: "1", audioKey: "get up" },
-        { word: "вставать с кровати", definition: "1", audioKey: "get out of bed" },
+        {
+          word: "вставать с кровати",
+          definition: "1",
+          audioKey: "get out of bed",
+        },
         { word: "остывать", definition: "1", audioKey: "cool down" },
         { word: "запускаться", definition: "1", audioKey: "start up" },
         { word: "возвращаться", definition: "1", audioKey: "come back" },
@@ -85,9 +95,7 @@ export const trackPhrasalVerbs: Record<string, Record<string, Record<string, Voc
         { word: "лечь", definition: "1", audioKey: "lie down" },
         { word: "думать о", definition: "1", audioKey: "think about" },
       ],
-      "3": [
-        { word: "звонить", definition: "1", audioKey: "call up" },
-      ],
+      "3": [{ word: "звонить", definition: "1", audioKey: "call up" }],
       "4": [
         { word: "продолжаться", definition: "1", audioKey: "go on" },
         { word: "быть не дома", definition: "1", audioKey: "be out" },
@@ -125,96 +133,130 @@ export const trackPhrasalVerbs: Record<string, Record<string, Record<string, Voc
         { word: "возвращаться", definition: "1", audioKey: "go back" },
       ],
     },
+    "leo-additional": {
+  "1": [
+    { word: "проверить, посмотреть", definition: "1", audioKey: "check out" },
+    { word: "уйти, отстать (грубо)", definition: "1", audioKey: "get lost" },
+    { word: "встретиться", definition: "1", audioKey: "meet up" },
+    { word: "подходить, быть удобным", definition: "1", audioKey: "work for" },
+  ],
+  "2": [
+    { word: "получать весточку от", definition: "1", audioKey: "hear from" },
+    { word: "уйти, отстать (грубо)", definition: "1", audioKey: "get lost" },
+    { word: "влюбиться в", definition: "1", audioKey: "fall for" },
+    { word: "пытаться подкатить к", definition: "1", audioKey: "make a move on" },
+  ],
+  "3": [],
+},
   },
   medium: {
-  maya: {
-    "1": [
-      { word: "записывать", definition: "1", audioKey: "write down" },
-    ],
-    "2": [
-      { word: "расти", definition: "1", audioKey: "rise up" },
-    ],
-    "3": [],
-    "4": [
-      { word: "наткнуться на", definition: "1", audioKey: "run into" },
-      { word: "превращаться в", definition: "1", audioKey: "turn into" },
-    ],
-    "5": [
-      { word: "взрослеть", definition: "1", audioKey: "grow up" },
-      { word: "наверстывать", definition: "1", audioKey: "catch up on" },
-    ],
-    "6": [
-      { word: "есть вне дома", definition: "1", audioKey: "eat out" },
-    ],
-    "7": [
-      { word: "узнавать о", definition: "1", audioKey: "find out" },
-      { word: "в итоге оказаться", definition: "1", audioKey: "end up" },
-    ],
-    "8": [
-      { word: "входить", definition: "1", audioKey: "go in" },
-      { word: "наклоняться над", definition: "1", audioKey: "bend over" },
-      { word: "превращаться в", definition: "1", audioKey: "turn into" },
-      { word: "передавать из поколения в поколение", definition: "1", audioKey: "pass down" },
-      { word: "быстро пролетать (о времени)", definition: "1", audioKey: "fly by" },
-    ],
-    "9": [
-      { word: "устанавливать", definition: "1", audioKey: "set up" },
-      { word: "записывать", definition: "1", audioKey: "write down" },
-    ],
-    "10": [
-      { word: "впадать в", definition: "1", audioKey: "fall into" },
-    ],
+    maya: {
+      "1": [{ word: "записывать", definition: "1", audioKey: "write down" }],
+      "2": [{ word: "расти", definition: "1", audioKey: "rise up" }],
+      "3": [],
+      "4": [
+        { word: "наткнуться на", definition: "1", audioKey: "run into" },
+        { word: "превращаться в", definition: "1", audioKey: "turn into" },
+      ],
+      "5": [
+        { word: "взрослеть", definition: "1", audioKey: "grow up" },
+        { word: "наверстывать", definition: "1", audioKey: "catch up on" },
+      ],
+      "6": [{ word: "есть вне дома", definition: "1", audioKey: "eat out" }],
+      "7": [
+        { word: "узнавать о", definition: "1", audioKey: "find out" },
+        { word: "в итоге оказаться", definition: "1", audioKey: "end up" },
+      ],
+      "8": [
+        { word: "входить", definition: "1", audioKey: "go in" },
+        { word: "наклоняться над", definition: "1", audioKey: "bend over" },
+        { word: "превращаться в", definition: "1", audioKey: "turn into" },
+        {
+          word: "передавать из поколения в поколение",
+          definition: "1",
+          audioKey: "pass down",
+        },
+        {
+          word: "быстро пролетать (о времени)",
+          definition: "1",
+          audioKey: "fly by",
+        },
+      ],
+      "9": [
+        { word: "устанавливать", definition: "1", audioKey: "set up" },
+        { word: "записывать", definition: "1", audioKey: "write down" },
+      ],
+      "10": [{ word: "впадать в", definition: "1", audioKey: "fall into" }],
     },
   },
   hard: {
-  daniel: {
-    "1": [
-      { word: "вырастать", definition: "1", audioKey: "grow up" },
-      { word: "записывать", definition: "1", audioKey: "write down" },
-    ],
-    "2": [
-      { word: "вернуть упущенное", definition: "1", audioKey: "claw back" },
-    ],
-    "3": [
-      { word: "поддерживать работу", definition: "1", audioKey: "keep from" },
-      { word: "делать ставку на", definition: "1", audioKey: "bet on" },
-    ],
-    "4": [
-      { word: "расширяться в новую сферу", definition: "1", audioKey: "expand into" },
-      { word: "оказываться", definition: "1", audioKey: "turn out" },
-      { word: "выдумывать", definition: "1", audioKey: "make up" },
-      { word: "ломаться", definition: "1", audioKey: "go down" },
-      { word: "готовиться к неприятностям", definition: "1", audioKey: "brace for" },
-    ],
-    "5": [
-      { word: "входить в", definition: "1", audioKey: "step into" },
-    ],
-    "6": [
-      { word: "платить за", definition: "1", audioKey: "pay for" },
-      { word: "превращать в", definition: "1", audioKey: "turn into" },
-    ],
-    "7": [
-      { word: "записывать", definition: "1", audioKey: "write down" },
-    ],
-    "8": [
-      { word: "платить за", definition: "1", audioKey: "pay for" },
-      { word: "отказываться от", definition: "1", audioKey: "pass on" },
-    ],
-    "9": [
-      { word: "включать в, объединять с", definition: "1", audioKey: "fold into" },
-      { word: "убирать, откладывать", definition: "1", audioKey: "put away" },
-    ],
-    "10": [
-      { word: "накатывать, наступать", definition: "1", audioKey: "roll in" },
-      { word: "укрыться в, быстро зайти в", definition: "1", audioKey: "duck into" },
-      { word: "проплыть", definition: "1", audioKey: "sail through"},
-      { word: "заканчивать выступление / сообщение", definition: "1", audioKey: "sign off" },
-    ],
+    daniel: {
+      "1": [
+        { word: "вырастать", definition: "1", audioKey: "grow up" },
+        { word: "записывать", definition: "1", audioKey: "write down" },
+      ],
+      "2": [
+        { word: "вернуть упущенное", definition: "1", audioKey: "claw back" },
+      ],
+      "3": [
+        { word: "поддерживать работу", definition: "1", audioKey: "keep from" },
+        { word: "делать ставку на", definition: "1", audioKey: "bet on" },
+      ],
+      "4": [
+        {
+          word: "расширяться в новую сферу",
+          definition: "1",
+          audioKey: "expand into",
+        },
+        { word: "оказываться", definition: "1", audioKey: "turn out" },
+        { word: "выдумывать", definition: "1", audioKey: "make up" },
+        { word: "ломаться", definition: "1", audioKey: "go down" },
+        {
+          word: "готовиться к неприятностям",
+          definition: "1",
+          audioKey: "brace for",
+        },
+      ],
+      "5": [{ word: "входить в", definition: "1", audioKey: "step into" }],
+      "6": [
+        { word: "платить за", definition: "1", audioKey: "pay for" },
+        { word: "превращать в", definition: "1", audioKey: "turn into" },
+      ],
+      "7": [{ word: "записывать", definition: "1", audioKey: "write down" }],
+      "8": [
+        { word: "платить за", definition: "1", audioKey: "pay for" },
+        { word: "отказываться от", definition: "1", audioKey: "pass on" },
+      ],
+      "9": [
+        {
+          word: "включать в, объединять с",
+          definition: "1",
+          audioKey: "fold into",
+        },
+        { word: "убирать, откладывать", definition: "1", audioKey: "put away" },
+      ],
+      "10": [
+        { word: "накатывать, наступать", definition: "1", audioKey: "roll in" },
+        {
+          word: "укрыться в, быстро зайти в",
+          definition: "1",
+          audioKey: "duck into",
+        },
+        { word: "проплыть", definition: "1", audioKey: "sail through" },
+        {
+          word: "заканчивать выступление / сообщение",
+          definition: "1",
+          audioKey: "sign off",
+        },
+      ],
+    },
   },
-}
 };
 
-export const trackVocabulary: Record<string, Record<string, Record<string, VocabEntry[]>>> = {
+export const trackVocabulary: Record<
+  string,
+  Record<string, Record<string, VocabEntry[]>>
+> = {
   easy: {
     leo: {
       "1": [
@@ -257,7 +299,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "скидка", definition: "1", audioKey: "discount" },
         { word: "процент", definition: "1", audioKey: "percent" },
         { word: "ручной работы", definition: "1", audioKey: "handmade" },
-        { word: "вредный для здоровья", definition: "1", audioKey: "unhealthy" },
+        {
+          word: "вредный для здоровья",
+          definition: "1",
+          audioKey: "unhealthy",
+        },
       ],
       "4": [
         { word: "двоюродная сестра", definition: "1", audioKey: "cousin" },
@@ -281,7 +327,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "тренды", definition: "1", audioKey: "trends" },
         { word: "модный", definition: "1", audioKey: "fashionable" },
         { word: "удобный", definition: "1", audioKey: "comfortable" },
-        { word: "шерстяной свитер", definition: "1", audioKey: "woolen sweater" },
+        {
+          word: "шерстяной свитер",
+          definition: "1",
+          audioKey: "woolen sweater",
+        },
         { word: "форма", definition: "1", audioKey: "uniform" },
         { word: "костюм", definition: "1", audioKey: "suit" },
         { word: "кепка", definition: "1", audioKey: "cap" },
@@ -303,7 +353,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "берег", definition: "1", audioKey: "a shore" },
         { word: "напуганный", definition: "1", audioKey: "scared" },
         { word: "акула", definition: "1", audioKey: "a shark" },
-        { word: "научил себя сам", definition: "1", audioKey: "taught himself" },
+        {
+          word: "научил себя сам",
+          definition: "1",
+          audioKey: "taught himself",
+        },
         { word: "купальник", definition: "1", audioKey: "swimming suit" },
         { word: "напоминать", definition: "1", audioKey: "remind" },
       ],
@@ -312,7 +366,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "настоящий", definition: "1", audioKey: "authentic" },
         { word: "джелато", definition: "1", audioKey: "gelato" },
         { word: "копить деньги", definition: "1", audioKey: "saving money" },
-        { word: "мечта сбывается", definition: "1", audioKey: "dream come true" },
+        {
+          word: "мечта сбывается",
+          definition: "1",
+          audioKey: "dream come true",
+        },
         { word: "путешествовать", definition: "1", audioKey: "travel" },
         { word: "опасный", definition: "1", audioKey: "dangerous" },
       ],
@@ -375,11 +433,29 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
     },
     "leo-additional": {
       "1": [
-        // vocab entries for the new story's track 1
+        { word: "публиковать", definition: "1", audioKey: "post" },
+        { word: "фотографии", definition: "1", audioKey: "pictures" },
+        { word: "лгать", definition: "1", audioKey: "lie" },
+        { word: "смущаться", definition: "1", audioKey: "blush" },
+        { word: "курсовая работа", definition: "1", audioKey: "term paper" },
+        { word: "уважать", definition: "1", audioKey: "respect" },
+        { word: "владелец", definition: "1", audioKey: "owner" },
+        { word: "встречаться (с кем-то)", definition: "1", audioKey: "dating" },
+        { word: "признаваться", definition: "1", audioKey: "confess" },
+        { word: "выпечка", definition: "1", audioKey: "pastries" },
+        { word: "печь (готовить)", definition: "1", audioKey: "bake" },
       ],
       "2": [
-        // vocab entries for track 2
-      ],
+    { word: "подписываться", definition: "1", audioKey: "follow" },
+    { word: "жаворонок (ранняя пташка)", definition: "1", audioKey: "early bird" },
+    { word: "сова (полуночник)", definition: "1", audioKey: "night owl" },
+    { word: "играть в видеоигры", definition: "1", audioKey: "play games" },
+    { word: "влюблён", definition: "1", audioKey: "in love" },
+    { word: "серьёзные отношения", definition: "1", audioKey: "serious relationship" },
+    { word: "пропустить", definition: "1", audioKey: "miss" },
+    { word: "заметить", definition: "1", audioKey: "notice" },
+    { word: "постыдный", definition: "1", audioKey: "cringe" },
+  ],
       "3": [
         // vocab entries for track 3
       ],
@@ -388,13 +464,13 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
   medium: {
     maya: {
       "1": [
-        { word: "журналист", definition: "1", audioKey: "journalist"},
-        { word: "онлайн-журнал", definition: "1", audioKey: "online magazine"},
-        { word: "гибкость", definition: "1", audioKey: "flexibility"},
-        { word: "увлечённый", definition: "1", audioKey: "passionate"},
-        { word: "любопытный", definition: "1", audioKey: "curious"},
-        { word: "острые ощущения", definition: "1", audioKey: "thrill"},
-        { word: "размышлять", definition: "1", audioKey: "reflect"},
+        { word: "журналист", definition: "1", audioKey: "journalist" },
+        { word: "онлайн-журнал", definition: "1", audioKey: "online magazine" },
+        { word: "гибкость", definition: "1", audioKey: "flexibility" },
+        { word: "увлечённый", definition: "1", audioKey: "passionate" },
+        { word: "любопытный", definition: "1", audioKey: "curious" },
+        { word: "острые ощущения", definition: "1", audioKey: "thrill" },
+        { word: "размышлять", definition: "1", audioKey: "reflect" },
         {
           word: "разные точки зрения",
           definition: "1",
@@ -419,15 +495,27 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         },
         { word: "ремесленник", definition: "1", audioKey: "artisan" },
         { word: "вдохновляющий", definition: "1", audioKey: "inspiring" },
-        { word: "стоимость жизни", definition: "1", audioKey: "cost of living" },
+        {
+          word: "стоимость жизни",
+          definition: "1",
+          audioKey: "cost of living",
+        },
         { word: "резко", definition: "1", audioKey: "drastically" },
-        { word: "получить повышение", definition: "1", audioKey: "got promoted" },
+        {
+          word: "получить повышение",
+          definition: "1",
+          audioKey: "got promoted",
+        },
       ],
       "3": [
         { word: "легендарный", definition: "1", audioKey: "legendary" },
         { word: "нерешительно", definition: "1", audioKey: "hesitantly" },
         { word: "энтузиазм", definition: "1", audioKey: "enthusiasm" },
-        { word: "жареное насекомое", definition: "1", audioKey: "fried insect" },
+        {
+          word: "жареное насекомое",
+          definition: "1",
+          audioKey: "fried insect",
+        },
         {
           word: "взрыв вкусов",
           definition: "1",
@@ -483,7 +571,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           definition: "1",
           audioKey: "staying connected",
         },
-        { word: "голосовое сообщение", definition: "1", audioKey: "voice note" },
+        {
+          word: "голосовое сообщение",
+          definition: "1",
+          audioKey: "voice note",
+        },
         { word: "бродить", definition: "1", audioKey: "wander" },
         { word: "наверстать упущённое", definition: "1", audioKey: "catch up" },
         {
@@ -579,7 +671,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           audioKey: "pass down",
         },
         { word: "узоры", definition: "1", audioKey: "patterns" },
-        { word: "время сбора урожая", definition: "1", audioKey: "harvest time" },
+        {
+          word: "время сбора урожая",
+          definition: "1",
+          audioKey: "harvest time",
+        },
         { word: "мятный чай", definition: "1", audioKey: "mint tea" },
         {
           word: "удостоверение репортёра",
@@ -595,7 +691,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           audioKey: "ancient festival",
         },
         { word: "ритуал", definition: "1", audioKey: "ritual" },
-        { word: "память предков", definition: "1", audioKey: "ancestral memory" },
+        {
+          word: "память предков",
+          definition: "1",
+          audioKey: "ancestral memory",
+        },
         { word: "церемония", definition: "1", audioKey: "ceremony" },
         { word: "восхождение", definition: "1", audioKey: "trek" },
         { word: "плетёные ткани", definition: "1", audioKey: "woven textiles" },
@@ -609,7 +709,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         { word: "процессия", definition: "1", audioKey: "procession" },
         { word: "подношения", definition: "1", audioKey: "offerings" },
         { word: "святилище", definition: "1", audioKey: "shrine" },
-        { word: "хоровое пение", definition: "1", audioKey: "harmonized chant" },
+        {
+          word: "хоровое пение",
+          definition: "1",
+          audioKey: "harmonized chant",
+        },
         { word: "совместно", definition: "1", audioKey: "communally" },
         { word: "стойкость", definition: "1", audioKey: "resilience" },
         { word: "уязвимость", definition: "1", audioKey: "vulnerability" },
@@ -675,9 +779,17 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
       ],
       "3": [
         { word: "основной доклад", definition: "1", audioKey: "keynote" },
-        { word: "текучесть кадров", definition: "1", audioKey: "staff turnover" },
+        {
+          word: "текучесть кадров",
+          definition: "1",
+          audioKey: "staff turnover",
+        },
         { word: "оптимизация", definition: "1", audioKey: "optimization" },
-        { word: "базовая зарплата", definition: "1", audioKey: "baseline wages" },
+        {
+          word: "базовая зарплата",
+          definition: "1",
+          audioKey: "baseline wages",
+        },
         {
           word: "повышение квалификации",
           definition: "1",
@@ -689,7 +801,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           audioKey: "interchangeable",
         },
         { word: "наставник", definition: "1", audioKey: "mentor" },
-        { word: "коэффициент ошибок", definition: "1", audioKey: "error rates" },
+        {
+          word: "коэффициент ошибок",
+          definition: "1",
+          audioKey: "error rates",
+        },
         { word: "координация", definition: "1", audioKey: "coordination" },
         { word: "доверие", definition: "1", audioKey: "trust" },
       ],
@@ -804,7 +920,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
           definition: "1",
           audioKey: "compound interest",
         },
-        { word: "брошенная кружка", definition: "1", audioKey: "abandoned mug" },
+        {
+          word: "брошенная кружка",
+          definition: "1",
+          audioKey: "abandoned mug",
+        },
         { word: "быть редким", definition: "1", audioKey: "be scarce" },
       ],
       "8": [
@@ -842,7 +962,11 @@ export const trackVocabulary: Record<string, Record<string, Record<string, Vocab
         },
         { word: "объезд", definition: "1", audioKey: "detour" },
         { word: "колонизировать", definition: "1", audioKey: "colonise" },
-        { word: "переместил товар между складами", definition: "1", audioKey: "lateral swap" },
+        {
+          word: "переместил товар между складами",
+          definition: "1",
+          audioKey: "lateral swap",
+        },
         {
           word: "схема удержания сотрудников",
           definition: "1",
