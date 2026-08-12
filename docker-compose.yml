@@ -21,6 +21,14 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
+    # nginx logs one line per request and Docker's json-file driver is
+    # unbounded by default, so without this the log grows until it fills the
+    # disk. Caps at 30MB total (3 files x 10MB), oldest rotated out.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   caddy:
     image: caddy:2-alpine
@@ -35,6 +43,11 @@ services:
       - caddy_config:/config
     networks: [smartplayer-net]
     depends_on: [frontend]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # --- added in the backend phase (see plan) ---
   # backend:
