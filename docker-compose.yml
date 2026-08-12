@@ -49,15 +49,32 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # --- added in the backend phase (see plan) ---
-  # backend:
-  #   build: { context: ./backend }
-  #   image: ${BACKEND_IMAGE:-smartplayer-backend}:${TAG:-latest}
-  #   container_name: smartplayer-backend
-  #   restart: unless-stopped
-  #   env_file: ./backend/.env.production
-  #   expose: ["3000"]
-  #   networks: [smartplayer-net]
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ${BACKEND_IMAGE:-smartplayer-backend}:${TAG:-latest}
+    container_name: smartplayer-backend
+    restart: unless-stopped
+    # Secrets live only in this file on the VM — never in the image, never in git.
+    env_file: ./backend/.env.production
+    # `expose`, not `ports`: reachable from other containers on smartplayer-net
+    # (and via Caddy) but NOT published to the public internet. The API is only
+    # ever reached through the reverse proxy over HTTPS.
+    expose:
+      - "3000"
+    networks: [smartplayer-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   smartplayer-net:
