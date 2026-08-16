@@ -11,7 +11,7 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
       to: email,
-      subject: "🔒 Reset Your Password - Infinity Player",
+      subject: "🔒 Reset Your Password - malako",
       html: `
         <!DOCTYPE html>
         <html>
@@ -50,7 +50,7 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
                       </p>
                       
                       <p style="margin: 0 0 20px; color: #cbd5e1; font-size: 15px; line-height: 1.6;">
-                        We received a request to reset your password for your <strong>Infinity Player</strong> account. No worries, it happens to the best of us!
+                        We received a request to reset your password for your <strong>malako</strong> account. No worries, it happens to the best of us!
                       </p>
                       
                       <p style="margin: 0 0 30px; color: #cbd5e1; font-size: 15px; line-height: 1.6;">
@@ -100,10 +100,10 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
                   <tr>
                     <td style="padding: 30px 40px; background-color: #0f172a; border-radius: 0 0 16px 16px; border-top: 1px solid #334155;">
                       <p style="margin: 0 0 10px; color: #64748b; font-size: 13px; text-align: center; line-height: 1.5;">
-                        This email was sent by <strong style="color: #94a3b8;">Infinity Player</strong>
+                        This email was sent by <strong style="color: #94a3b8;">malako</strong>
                       </p>
                       <p style="margin: 0; color: #475569; font-size: 12px; text-align: center;">
-                        © ${new Date().getFullYear()} Infinity Player. All rights reserved.
+                        © ${new Date().getFullYear()} malako. All rights reserved.
                       </p>
                     </td>
                   </tr>

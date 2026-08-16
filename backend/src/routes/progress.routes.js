@@ -1,6 +1,7 @@
 // routes/progress.routes.js
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
+import { publicQuizLimiter } from "../middleware/rateLimit.js";
 import {
   getProgress,
   completeLevel,
@@ -31,8 +32,8 @@ const router = Router();
 
 // Public — no auth. Guests take quizzes before ever signing up, and these
 // never expose the answer key (see controller comments).
-router.get("/progress/quiz/:difficulty/:storyId/:partNumber",              getQuiz);
-router.post("/progress/quiz/:difficulty/:storyId/:partNumber/check-answer", checkQuizAnswer);
+router.get("/progress/quiz/:difficulty/:storyId/:partNumber",              publicQuizLimiter, getQuiz);
+router.post("/progress/quiz/:difficulty/:storyId/:partNumber/check-answer", publicQuizLimiter, checkQuizAnswer);
 
 router.get("/progress/overview",                   authenticateToken, getOverview);
 router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);

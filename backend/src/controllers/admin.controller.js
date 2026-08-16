@@ -1,12 +1,24 @@
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { config } from "../config/env.js";
 import { User } from "../models/User.js";
 import { Progress } from "../models/Progress.js";
 import { StoryProgress } from "../models/StoryProgress.js";
+import { AdminAuditLog } from "../models/AdminAuditLog.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
 import { escapeRegex } from "../helpers/regex.js";
+import { safeEqual } from "../helpers/safeEqual.js";
 
 const PLAYERS_PAGE_LIMIT = 25;
+const AUDIT_PAGE_LIMIT = 50;
+
+// Admin and user tokens are signed with the SAME jwtSecret and today are kept
+// apart only by `payload.role !== "admin"` — one stray claim away from a
+// privilege escalation. An audience claim makes the separation explicit and
+// cheap to verify. Deliberately NOT added to user tokens in the same change:
+// that would invalidate every live 7-day session and force a mass re-login.
+export const ADMIN_AUDIENCE = "smartplayer-admin";
+export const ADMIN_ISSUER = "smartplayer";
 
 export const adminLogin = (req, res) => {
   const { code } = req.body;
@@ -15,15 +27,27 @@ export const adminLogin = (req, res) => {
     return res.status(400).json({ error: "Code word is required." });
   }
 
-  if (code !== config.adminCode) {
+  // Walk EVERY configured code without an early return, so neither the number
+  // of configured admins nor which one matched is inferable from response
+  // timing. safeEqual is constant-time per comparison.
+  let name = null;
+  for (const [candidate, adminName] of config.adminCodes) {
+    if (safeEqual(code, candidate)) name = adminName;
+  }
+
+  if (!name) {
     return res.status(401).json({ error: "Invalid code word." });
   }
 
-  const token = jwt.sign({ role: "admin" }, config.jwtSecret, {
-    expiresIn: "12h",
-  });
+  const token = jwt.sign(
+    // `admin` is the display name from ADMIN_CODES; `sid` correlates every
+    // action taken during one login session in the audit log.
+    { role: "admin", admin: name, sid: crypto.randomUUID() },
+    config.jwtSecret,
+    { expiresIn: "12h", audience: ADMIN_AUDIENCE, issuer: ADMIN_ISSUER }
+  );
 
-  res.json({ success: true, token });
+  res.json({ success: true, token, admin: name });
 };
 
 // POST /api/admin/grant-currency  { userId? | email?, bitAward?, bitWord?, bitPhrase? }
@@ -156,5 +180,36 @@ export const getPlayerProgress = async (req, res) => {
       completedParts: p.completedParts,
       currentPart: p.currentPart,
     })),
+  });
+};
+
+// GET /api/admin/audit?page=&actor=&action=&targetId=
+// A GET on purpose: the audit middleware only records mutating methods, so
+// reading the log never pollutes it.
+export const listAuditLog = async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = AUDIT_PAGE_LIMIT;
+
+  const filter = {};
+  if (req.query.actor) filter["actor.name"] = req.query.actor;
+  if (req.query.action) filter.action = req.query.action;
+  if (req.query.targetId) filter.targetId = req.query.targetId;
+
+  const [entries, total] = await Promise.all([
+    AdminAuditLog.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    AdminAuditLog.countDocuments(filter),
+  ]);
+
+  res.json({
+    entries,
+    page,
+    hasMore: page * limit < total,
+    // Powers the filter dropdown without a second round trip. distinct() over
+    // an indexed field on a TTL-bounded collection is cheap enough here.
+    actions: await AdminAuditLog.distinct("action"),
   });
 };

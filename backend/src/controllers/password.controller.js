@@ -9,14 +9,7 @@ export async function requestPasswordReset(req, res) {
   try {
     const { email } = req.body;
 
-    const allUsers = await User.find({});
-    console.log(
-      "All users in DB:",
-      allUsers.map((u) => u.email)
-    );
-
     console.log("=== PASSWORD RESET REQUEST ===");
-    console.log("Email received:", email);
 
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -43,11 +36,6 @@ export async function requestPasswordReset(req, res) {
       .update(resetToken)
       .digest("hex");
 
-    console.log(
-      "Token generated (first 10 chars):",
-      resetToken.substring(0, 10)
-    );
-
     // Save hashed token and expiry to user
     user.passwordResetToken = resetTokenHash;
     user.passwordResetExpires = Date.now() + 3600000; // 1 hour
@@ -56,8 +44,9 @@ export async function requestPasswordReset(req, res) {
     console.log("User updated with reset token");
 
     // Send email with plain token
+    // Deliberately NOT logged: the URL carries a live, unhashed reset token.
+    // Anyone with container log access could use it to take over the account.
     const resetUrl = `${BASE_URL}/forgot-password?token=${resetToken}`;
-    console.log(resetUrl)
 
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);

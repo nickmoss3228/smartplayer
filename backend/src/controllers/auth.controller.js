@@ -89,7 +89,9 @@ export async function login(req, res) {
     }
 
     if (user.banned) {
-      return res.status(403).json({ message: "This account has been banned." });
+      return res
+        .status(403)
+        .json({ message: "This account has been banned.", code: "ACCOUNT_BANNED" });
     }
 
     const token = jwt.sign({ userId: user._id }, config.jwtSecret, {

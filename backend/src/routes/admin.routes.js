@@ -5,15 +5,22 @@ import {
   listPlayers,
   setPlayerBanned,
   getPlayerProgress,
+  listAuditLog,
 } from "../controllers/admin.controller.js";
 import { adminAuth } from "../middleware/adminAuth.js";
+import { adminLoginLimiter } from "../middleware/rateLimit.js";
+import { asyncHandler } from "../helpers/asyncHandler.js";
 
 const router = Router();
 
-router.post("/login", adminLogin);
-router.post("/grant-currency", adminAuth, grantCurrency);
-router.get("/players", adminAuth, listPlayers);
-router.patch("/players/:userId/ban", adminAuth, setPlayerBanned);
-router.get("/players/:userId/progress", adminAuth, getPlayerProgress);
+// asyncHandler on every handler below: unlike the story/feedback controllers,
+// these have no internal try/catch, and Express 4 turns an async throw into a
+// hung request rather than a 500.
+router.post("/login", adminLoginLimiter, adminLogin);
+router.post("/grant-currency", adminAuth, asyncHandler(grantCurrency));
+router.get("/players", adminAuth, asyncHandler(listPlayers));
+router.patch("/players/:userId/ban", adminAuth, asyncHandler(setPlayerBanned));
+router.get("/players/:userId/progress", adminAuth, asyncHandler(getPlayerProgress));
+router.get("/audit", adminAuth, asyncHandler(listAuditLog));
 
 export default router;
