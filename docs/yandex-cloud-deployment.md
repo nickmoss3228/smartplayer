@@ -77,6 +77,13 @@ from the same origin here — `nginx.conf` proxies `/api/` to the `backend` cont
 should emit *relative* URLs and let nginx route them. An absolute origin would work but pins the
 bundle to one hostname and drags CORS back into a setup specifically designed to avoid it.
 
+> **You cannot achieve this by setting the GitHub Actions variable to `""`.** GitHub rejects an
+> empty variable value at the API — `Variable value cannot be empty` (HTTP 422) — and `gh variable
+> set --body ""` fails the same way with a slightly different message, because the CLI omits the
+> empty key entirely. The **only** way to get an empty build arg is to **delete the variable**, so
+> that `${{ vars.VITE_API_URL }}` expands to `""`. `deploy-frontend.yml` carries a comment saying
+> so; the absence of the variable is deliberate configuration, not a missing setting.
+
 This bit us: `VITE_API_URL` was left pointing at the old Railway backend
 (`https://smartplayer-production.up.railway.app`) long after the migration, so the Yandex frontend
 was compiled to call Railway and the co-located backend container was never used at all — the whole
@@ -418,10 +425,13 @@ Or the repo's **Actions** tab in a browser.
 > anyway. To repoint the frontend at a new backend, change this variable and push — the rebuild picks
 > it up. Changing it on the VM would do nothing.
 >
-> **Set it to the empty string.** See §3's note: the backend is same-origin behind nginx, so the
-> bundle should emit relative `/api/...` URLs. A GitHub Actions variable set to an empty value is
-> passed through as `--build-arg VITE_API_URL=""`, which is exactly what's wanted. If this variable
-> still holds the retired Railway URL, the deployed frontend is talking to a dead backend.
+> **`VITE_API_URL` must NOT exist as a variable.** See §3: the backend is same-origin behind nginx,
+> so the bundle should emit relative `/api/...` URLs, which requires the build arg to be empty — and
+> GitHub refuses to store an empty variable value (HTTP 422). Deleting the variable makes
+> `${{ vars.VITE_API_URL }}` expand to `""`, which is exactly what's wanted. If this variable exists
+> at all, the frontend is compiled to call an absolute origin: the retired Railway URL means a dead
+> backend, and `http://89.169.159.92` means every login is blocked as mixed content once the site is
+> served over HTTPS.
 
 CI authenticates to the registry as a dedicated service account (`github-actions-sa`,
 `container-registry.images.pusher`), separate from the VM's pull-only identity — so neither can do

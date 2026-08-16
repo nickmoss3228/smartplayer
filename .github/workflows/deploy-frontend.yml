@@ -29,6 +29,24 @@ jobs:
           # with attestation manifests, which cr.yandex rejects with
           # "Cannot read manifest data ... manifest-v2-2" AFTER the layers
           # upload, leaving the image in the registry but untagged.
+          # VITE_API_URL must resolve to the EMPTY STRING here. nginx serves the
+          # bundle and proxies /api/ to the backend container on the same origin,
+          # so the frontend should emit relative /api/... URLs. Any absolute
+          # origin pins the bundle to one hostname and drags CORS back in.
+          #
+          # It is empty because the repo variable DOES NOT EXIST — that is
+          # deliberate, not an oversight. GitHub rejects an empty Actions
+          # variable outright ("Variable value cannot be empty", HTTP 422), so
+          # "same origin" cannot be expressed by setting it to ""; it can only
+          # be expressed by leaving it undefined, which makes `vars.VITE_API_URL`
+          # expand to "". Do not "fix" this by adding the variable back.
+          #
+          # It previously held http://89.169.159.92, which worked only while the
+          # site was served over plain HTTP by IP. After the move to
+          # https://xn--80aa4acdq.xn--p1ai every login was blocked by the
+          # browser as mixed content: an https:// page may not issue http://
+          # XHR. Vite inlines this at BUILD time, so the value is frozen into
+          # the JS — changing it requires a rebuild, never just a restart.
           docker build --provenance=false --sbom=false \
             --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
             --build-arg VITE_YOS_BASE_URL="${{ vars.VITE_YOS_BASE_URL }}" \
