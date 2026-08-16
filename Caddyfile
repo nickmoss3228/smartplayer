@@ -1,3 +1,27 @@
-infinityplayer.xyz, www.infinityplayer.xyz {
-    reverse_proxy frontend:80
+# малако.рф — written in punycode (the A-label form) on purpose.
+#
+# Caddy accepts Unicode here and converts internally, but every other layer you
+# will debug against (Let's Encrypt's issued cert, the browser's Host and Origin
+# headers, nginx logs, curl output) shows the punycode form. Keeping the config
+# in the same alphabet as the logs saves a lot of confusion.
+#
+#   малако.рф      -> xn--80aa4acdq.xn--p1ai
+#   www.малако.рф  -> www.xn--80aa4acdq.xn--p1ai
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# ONLY list hostnames whose DNS already resolves to THIS VM (89.169.159.92).
+#
+# Caddy requests a certificate on startup for every name in this file. Let's
+# Encrypt validates via an HTTP-01 challenge, which means it fetches
+# http://<name>/.well-known/acme-challenge/... — if that name still points
+# somewhere else, the challenge lands on the wrong server and fails. Failed
+# validations are rate-limited to 5 per hostname per hour, and burning that
+# limit delays the real issuance once DNS is correct.
+#
+# This is why infinityplayer.xyz is NOT listed below: its DNS still points at
+# the old Vercel deployment. Add it back only after repointing it here.
+# ─────────────────────────────────────────────────────────────────────────────
+
+xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
+	reverse_proxy frontend:80
 }

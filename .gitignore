@@ -6,13 +6,24 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+# Secrets. The bare `.env` pattern only matched files named exactly ".env",
+# so backend/.env.production (the real production secrets, injected by
+# docker-compose env_file) was NOT ignored. Cover every variant, then
+# un-ignore the committed templates.
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 node_modules
 dist
 dist-ssr
 *.local
 123.tsx
+audioData.tsx
+audioDataHard.tsx
+audioDataMedium.tsx
+readme-claude.md
 
 # Editor directories and files
 .vscode/*
