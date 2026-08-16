@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IoClose, IoRefreshOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +28,23 @@ const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, c
     };
   }, [isOpen, onClose]);
 
-  return (
+  // Rendered into <body>, not in place.
+  //
+  // `z-50` on the overlay is only ever compared against *siblings inside the
+  // same stacking context*. Rendered in place, this modal's nearest ancestor
+  // with a z-index is the clouds wrapper in the hero — so the whole overlay,
+  // z-50 and all, collapses to that ancestor's z-10, and any later sibling of
+  // it at the same z-10 (the CTA buttons, the scroll cue) paints straight
+  // through the dim layer. No z-index written *here* can ever win that fight,
+  // because the comparison never reaches this element.
+  //
+  // A portal moves the DOM node to <body>, where it competes at the top level
+  // and z-50 means what it looks like it means. It also makes the modal
+  // immune to a second failure mode this hero is one property away from: an
+  // ancestor with `transform`/`filter`/`will-change` becomes the containing
+  // block for `position: fixed` descendants, which would break `inset-0` and
+  // let the section's `overflow-hidden` clip the overlay.
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -74,7 +91,8 @@ const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, c
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

@@ -1,6 +1,25 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IoChevronBack, IoChevronDown } from "react-icons/io5";
+import type { IconType } from "react-icons";
+import {
+  IoChevronBack,
+  IoChevronDown,
+  IoLocateOutline,
+  IoBanOutline,
+  IoSparklesOutline,
+  IoMusicalNotesOutline,
+  IoFlashOutline,
+  IoOptionsOutline,
+  IoBulbOutline,
+  IoLibraryOutline,
+  IoVolumeHighOutline,
+  IoTrophyOutline,
+  IoColorPaletteOutline,
+  IoHelpCircleOutline,
+  IoPersonOutline,
+  IoLayersOutline,
+  IoMicOutline,
+} from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 
 // ─── Scroll Reveal ────────────────────────────────────────────────────────────
@@ -19,36 +38,28 @@ function useScrollReveal() {
   }, []);
 }
 
-// ─── Photo Placeholder ────────────────────────────────────────────────────────
-const PhotoPlaceholder: React.FC<{
-  label: string;
-  aspect: string;
-  note: string;
-}> = ({ label, aspect, note }) => (
-  <div
-    className="w-full overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-gray-50"
-    style={{ aspectRatio: aspect }}
+// ─── Card Icon ────────────────────────────────────────────────────────────────
+// Replaces the emoji this page used to open each card with. Emoji render
+// differently on every platform (Apple, Google, Windows and Samsung all ship
+// their own art), so the page could not have a consistent look — and they are
+// read aloud by screen readers as their unicode name ("bar chart", "sparkles"),
+// which says nothing useful next to a heading that already says it. A line
+// icon inherits the page's own colour and stroke, and is hidden from the
+// accessibility tree because the heading beside it already carries the meaning.
+const CardIcon: React.FC<{ Icon: IconType; accent?: boolean }> = ({
+  Icon,
+  accent = false,
+}) => (
+  <span
+    aria-hidden="true"
+    className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border ${
+      accent
+        ? "border-green-200 bg-green-100 text-green-600"
+        : "border-gray-200 bg-gray-50 text-gray-500"
+    }`}
   >
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-6">
-      <svg
-        className="h-10 w-10 text-gray-300"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-      <p className="text-center font-['Montserrat'] text-[10px] font-bold uppercase tracking-widest text-gray-400">
-        {label}
-      </p>
-      <p className="text-center text-[11px] text-gray-400">{note}</p>
-    </div>
-  </div>
+    <Icon className="h-5 w-5" />
+  </span>
 );
 
 // ─── Section Label ────────────────────────────────────────────────────────────
@@ -89,17 +100,17 @@ const HowToUse: React.FC = () => {
 
   const timelineItems = [
     {
-      icon: "👤",
+      Icon: IoPersonOutline,
       title: t("howToUse.s05.item1.title"),
       text: t("howToUse.s05.item1.text"),
     },
     {
-      icon: "📊",
+      Icon: IoLayersOutline,
       title: t("howToUse.s05.item2.title"),
       text: t("howToUse.s05.item2.text"),
     },
     {
-      icon: "🎙️",
+      Icon: IoMicOutline,
       title: t("howToUse.s05.item3.title"),
       text: t("howToUse.s05.item3.text"),
     },
@@ -127,19 +138,38 @@ const HowToUse: React.FC = () => {
         [data-reveal][data-delay="3"] { transition-delay: 0.30s; }
         [data-reveal][data-delay="4"] { transition-delay: 0.40s; }
         [data-reveal][data-delay="5"] { transition-delay: 0.50s; }
+
+        /* The scroll cue and the reveal animation both move things around, so
+           honour the OS-level "reduce motion" setting for both. */
+        @media (prefers-reduced-motion: reduce) {
+          [data-reveal] { opacity: 1; transform: none; transition: none; }
+          .howto-bounce { animation: none; }
+        }
       `}</style>
 
       <div className="min-h-screen bg-gray-100 text-gray-900">
 
         {/* ═══════════════════════ HERO ═══════════════════════ */}
-        <section className="relative flex min-h-screen flex-col overflow-hidden bg-gray-100 px-4 sm:px-6">
+        {/* `pt-13` clears the fixed navbar from Layout.tsx (h-13, z-50), which
+            floats over this section rather than pushing it down. `min-h-svh`
+            rather than `min-h-screen`: on mobile browsers `100vh` measures the
+            viewport with the chrome retracted, so a `100vh` hero is taller than
+            what is actually on screen and the scroll cue sits below the fold.
+            `isolate` scopes the `-z-10` glow to this section — a negative
+            z-index child otherwise sinks behind its stacking context's
+            background and disappears. */}
+        <section className="relative isolate flex min-h-svh flex-col overflow-hidden bg-gray-100 px-4 pt-13 sm:px-6">
           {/* Subtle glow */}
-          <div className="pointer-events-none absolute inset-0">
+          <div className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-green-400/10 blur-[120px]" />
           </div>
 
-          {/* ── Back button — inline at top, scrolls with page ── */}
-         
+          {/* ── Back button — top-left, in normal flow ──
+                Previously this was rendered twice: once here and once again
+                inside the heading row, absolutely positioned at `left-100`
+                (400px). That offset only lined up at one viewport width and
+                overlapped the title everywhere else. One button, in flow. */}
+          <div className="pt-6">
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
@@ -147,65 +177,53 @@ const HowToUse: React.FC = () => {
               <IoChevronBack className="h-4 w-4" />
               {t("howToUse.back")}
             </button>
-          
+          </div>
 
           {/* ── Centred hero content ── */}
-          {/* ── Centred hero content ── */}
-<div className="relative z-10 flex flex-1 flex-col items-center justify-center text-center">
-  <span
-    data-reveal
-    className="mb-6 inline-block rounded-full border border-green-500/40 bg-green-50 px-4 py-1.5 font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.3em] text-green-600"
-  >
-    {t("howToUse.badge")}
-  </span>
+          <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+            <span
+              data-reveal
+              className="mb-6 inline-block rounded-full border border-green-500/40 bg-green-50 px-4 py-1.5 font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.3em] text-green-600"
+            >
+              {t("howToUse.badge")}
+            </span>
 
-  {/* ── Back button lives here now, anchored left of the heading ── */}
-  <div
-    data-reveal
-    data-delay="1"
-    className="relative mb-6 flex w-full items-center justify-center"
-  >
-    <button
-      onClick={() => navigate(-1)}
-      className="absolute left-100 flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
-    >
-      <IoChevronBack className="h-4 w-4" />
-      {t("howToUse.back")}
-    </button>
+            <h1
+              data-reveal
+              data-delay="1"
+              className="mb-6 text-6xl font-black leading-[0.9] tracking-tight text-gray-900 sm:text-8xl"
+            >
+              {t("howToUse.hero.title1")}
+              <br />
+              <span className="text-green-500">{t("howToUse.hero.title2")}</span>
+            </h1>
 
-    <h1 className="text-6xl font-black leading-[0.9] tracking-tight text-gray-900 sm:text-8xl">
-      {t("howToUse.hero.title1")}
-      <br />
-      <span className="text-green-500">{t("howToUse.hero.title2")}</span>
-    </h1>
-  </div>
+            <p
+              data-reveal
+              data-delay="2"
+              className="mb-10 max-w-xl text-lg leading-relaxed text-gray-500 sm:text-xl"
+            >
+              {t("howToUse.hero.subtitle")}
+            </p>
 
-  <p
-    data-reveal
-    data-delay="2"
-    className="mb-10 max-w-xl text-lg leading-relaxed text-gray-500 sm:text-xl"
-  >
-    {t("howToUse.hero.subtitle")}
-  </p>
-
-  <div
-    data-reveal
-    data-delay="3"
-    className="flex flex-wrap justify-center gap-3"
-  >
-    {tags.map((tag) => (
-      <span
-        key={tag}
-        className="rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm text-gray-500"
-      >
-        {tag}
-      </span>
-    ))}
-  </div>
-</div>
+            <div
+              data-reveal
+              data-delay="3"
+              className="flex flex-wrap justify-center gap-3"
+            >
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-gray-300 bg-white px-4 py-1.5 text-sm text-gray-500"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
           {/* Scroll cue */}
-          <div className="relative z-10 flex animate-bounce flex-col items-center gap-2 pb-8 text-gray-400">
+          <div className="howto-bounce flex animate-bounce flex-col items-center gap-2 pb-8 text-gray-400">
             <span className="font-['Montserrat'] text-[9px] uppercase tracking-widest">
               {t("howToUse.scroll")}
             </span>
@@ -232,7 +250,7 @@ const HowToUse: React.FC = () => {
                 data-delay="1"
                 className="rounded-2xl border border-green-200 bg-green-50 p-7"
               >
-                <p className="mb-3 text-2xl">🎯</p>
+                <CardIcon Icon={IoLocateOutline} accent />
                 <h3 className="mb-2 text-lg font-bold text-gray-900">
                   {t("howToUse.s01.card1.title")}
                 </h3>
@@ -246,7 +264,7 @@ const HowToUse: React.FC = () => {
                 data-delay="2"
                 className="rounded-2xl border border-gray-200 bg-white p-7"
               >
-                <p className="mb-3 text-2xl">🚫</p>
+                <CardIcon Icon={IoBanOutline} />
                 <h3 className="mb-2 text-lg font-bold text-gray-900">
                   {t("howToUse.s01.card2.title")}
                 </h3>
@@ -260,7 +278,7 @@ const HowToUse: React.FC = () => {
                 data-delay="3"
                 className="rounded-2xl border border-gray-200 bg-white p-7 sm:col-span-2"
               >
-                <p className="mb-3 text-2xl">✨</p>
+                <CardIcon Icon={IoSparklesOutline} />
                 <h3 className="mb-2 text-lg font-bold text-gray-900">
                   {t("howToUse.s01.card3.title")}
                 </h3>
@@ -288,8 +306,11 @@ const HowToUse: React.FC = () => {
               className="mb-5 rounded-2xl border border-gray-200 bg-white p-7"
             >
               <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xl">
-                  🎵
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500"
+                >
+                  <IoMusicalNotesOutline className="h-5 w-5" />
                 </span>
                 <div className="flex-1">
                   <h3 className="mb-1.5 text-lg font-bold text-gray-900">
@@ -312,11 +333,14 @@ const HowToUse: React.FC = () => {
             <div
               data-reveal
               data-delay="2"
-              className="mb-5 rounded-2xl border border-green-200 bg-green-50 p-7"
+              className="rounded-2xl border border-green-200 bg-green-50 p-7"
             >
               <div className="mb-6 flex items-start gap-4">
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-green-100 text-xl">
-                  ⚡
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-600"
+                >
+                  <IoFlashOutline className="h-5 w-5" />
                 </span>
                 <div>
                   <h3 className="mb-1.5 text-lg font-bold text-green-700">
@@ -384,8 +408,12 @@ const HowToUse: React.FC = () => {
               {/* Manual speed control */}
               <div className="mb-3 rounded-xl border border-gray-200 bg-white p-4">
                 <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <p className="text-xs font-semibold text-gray-800">
-                    🎚️ {t("howToUse.s02.enhanced.speedNote.label")}
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-800">
+                    <IoOptionsOutline
+                      aria-hidden="true"
+                      className="h-4 w-4 text-gray-400"
+                    />
+                    {t("howToUse.s02.enhanced.speedNote.label")}
                   </p>
                   <SpeedBadges />
                 </div>
@@ -395,23 +423,18 @@ const HowToUse: React.FC = () => {
               </div>
 
               {/* Pause note */}
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <div className="flex items-start gap-2 rounded-xl border border-gray-200 bg-white p-4">
+                <IoBulbOutline
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400"
+                />
                 <p className="text-xs leading-relaxed text-gray-600">
                   <span className="font-semibold text-gray-800">
-                    💡 {t("howToUse.s02.enhanced.pauseNote.label")}{" "}
+                    {t("howToUse.s02.enhanced.pauseNote.label")}{" "}
                   </span>
                   {t("howToUse.s02.enhanced.pauseNote.text")}
                 </p>
               </div>
-            </div>
-
-            {/* Player screenshot */}
-            <div data-reveal data-delay="3">
-              <PhotoPlaceholder
-                label={t("howToUse.photos.player.label")}
-                aspect="16/9"
-                note="1280 × 720 px · PNG or WebP"
-              />
             </div>
           </section>
 
@@ -427,58 +450,48 @@ const HowToUse: React.FC = () => {
               {t("howToUse.s03.titleLine2")}
             </h2>
 
-            {/* Two columns: text cards left, landscape screenshot right */}
-            <div className="grid items-start gap-8 lg:grid-cols-2">
-              <div className="space-y-5">
-                <div
-                  data-reveal
-                  data-delay="1"
-                  className="rounded-2xl border border-gray-200 bg-white p-7"
-                >
-                  <p className="mb-3 text-2xl">📚</p>
-                  <h3 className="mb-2 text-lg font-bold text-gray-900">
-                    {t("howToUse.s03.card1.title")}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600">
-                    {t("howToUse.s03.card1.text")}
-                  </p>
-                </div>
-
-                <div
-                  data-reveal
-                  data-delay="2"
-                  className="rounded-2xl border border-gray-200 bg-white p-7"
-                >
-                  <p className="mb-3 text-2xl">🔊</p>
-                  <h3 className="mb-2 text-lg font-bold text-gray-900">
-                    {t("howToUse.s03.card2.title")}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600">
-                    {t("howToUse.s03.card2.text")}
-                  </p>
-                </div>
-
-                <div
-                  data-reveal
-                  data-delay="3"
-                  className="rounded-2xl border border-green-200 bg-green-50 p-5"
-                >
-                  <p className="text-xs leading-relaxed text-gray-700">
-                    <span className="font-semibold text-green-700">
-                      {t("howToUse.s03.belief.label")}{" "}
-                    </span>
-                    {t("howToUse.s03.belief.text")}
-                  </p>
-                </div>
+            {/* Was a two-column split with a screenshot filling the right half.
+                With the placeholder gone the cards carry the row on their own. */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div
+                data-reveal
+                data-delay="1"
+                className="rounded-2xl border border-gray-200 bg-white p-7"
+              >
+                <CardIcon Icon={IoLibraryOutline} />
+                <h3 className="mb-2 text-lg font-bold text-gray-900">
+                  {t("howToUse.s03.card1.title")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-600">
+                  {t("howToUse.s03.card1.text")}
+                </p>
               </div>
 
-              {/* Landscape screenshot — matches card column height on desktop */}
-              <div data-reveal data-delay="4" className="lg:sticky lg:top-8">
-                <PhotoPlaceholder
-                  label={t("howToUse.photos.vocab.label")}
-                  aspect="16/9"
-                  note="1280 × 720 px · PNG or WebP"
-                />
+              <div
+                data-reveal
+                data-delay="2"
+                className="rounded-2xl border border-gray-200 bg-white p-7"
+              >
+                <CardIcon Icon={IoVolumeHighOutline} />
+                <h3 className="mb-2 text-lg font-bold text-gray-900">
+                  {t("howToUse.s03.card2.title")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-600">
+                  {t("howToUse.s03.card2.text")}
+                </p>
+              </div>
+
+              <div
+                data-reveal
+                data-delay="3"
+                className="rounded-2xl border border-green-200 bg-green-50 p-5 sm:col-span-2"
+              >
+                <p className="text-xs leading-relaxed text-gray-700">
+                  <span className="font-semibold text-green-700">
+                    {t("howToUse.s03.belief.label")}{" "}
+                  </span>
+                  {t("howToUse.s03.belief.text")}
+                </p>
               </div>
             </div>
           </section>
@@ -496,11 +509,14 @@ const HowToUse: React.FC = () => {
             <div
               data-reveal
               data-delay="1"
-              className="mb-8 rounded-2xl border border-gray-200 bg-white p-7"
+              className="mb-5 rounded-2xl border border-gray-200 bg-white p-7"
             >
               <div className="flex items-start gap-4">
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xl">
-                  🏆
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500"
+                >
+                  <IoTrophyOutline className="h-5 w-5" />
                 </span>
                 <div>
                   <h3 className="mb-1.5 text-lg font-bold text-gray-900">
@@ -513,39 +529,33 @@ const HowToUse: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div data-reveal data-delay="2" className="space-y-4">
-                <div className="rounded-2xl border border-gray-200 bg-white p-7">
-                  <p className="mb-3 text-2xl">🎨</p>
-                  <h3 className="mb-2 text-lg font-bold text-gray-900">
-                    {t("howToUse.s04.comics.title")}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600">
-                    {t("howToUse.s04.comics.text")}
-                  </p>
-                </div>
-                <PhotoPlaceholder
-                  label={t("howToUse.photos.comics.label")}
-                  aspect="16/9"
-                  note="1280 × 720 px · PNG or WebP"
-                />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div
+                data-reveal
+                data-delay="2"
+                className="rounded-2xl border border-gray-200 bg-white p-7"
+              >
+                <CardIcon Icon={IoColorPaletteOutline} />
+                <h3 className="mb-2 text-lg font-bold text-gray-900">
+                  {t("howToUse.s04.comics.title")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-600">
+                  {t("howToUse.s04.comics.text")}
+                </p>
               </div>
 
-              <div data-reveal data-delay="3" className="space-y-4">
-                <div className="rounded-2xl border border-gray-200 bg-white p-7">
-                  <p className="mb-3 text-2xl">❓</p>
-                  <h3 className="mb-2 text-lg font-bold text-gray-900">
-                    {t("howToUse.s04.quiz.title")}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600">
-                    {t("howToUse.s04.quiz.text")}
-                  </p>
-                </div>
-                <PhotoPlaceholder
-                  label={t("howToUse.photos.quiz.label")}
-                  aspect="16/9"
-                  note="1280 × 720 px · PNG or WebP"
-                />
+              <div
+                data-reveal
+                data-delay="3"
+                className="rounded-2xl border border-gray-200 bg-white p-7"
+              >
+                <CardIcon Icon={IoHelpCircleOutline} />
+                <h3 className="mb-2 text-lg font-bold text-gray-900">
+                  {t("howToUse.s04.quiz.title")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-600">
+                  {t("howToUse.s04.quiz.text")}
+                </p>
               </div>
             </div>
           </section>
@@ -561,7 +571,7 @@ const HowToUse: React.FC = () => {
             </h2>
 
             <div>
-              {timelineItems.map(({ icon, title, text }, i) => (
+              {timelineItems.map(({ Icon, title, text }, i) => (
                 <div
                   key={title}
                   data-reveal
@@ -569,18 +579,27 @@ const HowToUse: React.FC = () => {
                   className="flex gap-5"
                 >
                   <div className="flex flex-col items-center">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-green-200 bg-green-50 text-2xl">
-                      {icon}
+                    <div
+                      aria-hidden="true"
+                      className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-green-200 bg-green-50 text-green-600"
+                    >
+                      <Icon className="h-5 w-5" />
                     </div>
                     {i < timelineItems.length - 1 && (
                       <div className="my-3 w-px flex-1 bg-green-200" />
                     )}
                   </div>
-                  <div className={`flex-1 ${i < timelineItems.length - 1 ? "pb-8" : ""}`}>
+                  <div
+                    className={`flex-1 ${
+                      i < timelineItems.length - 1 ? "pb-8" : ""
+                    }`}
+                  >
                     <h3 className="mb-2 mt-2 text-lg font-bold text-gray-900">
                       {title}
                     </h3>
-                    <p className="text-sm leading-relaxed text-gray-600">{text}</p>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                      {text}
+                    </p>
                   </div>
                 </div>
               ))}

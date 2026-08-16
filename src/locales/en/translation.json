@@ -98,14 +98,13 @@
     "startFree": "Start for Free",
     "howItWorks": "How it works",
     "badge": "Subtitles disabled by design",
-    "step1Title": "Listen to a Story",
-    "step1Desc": "No subtitles. No transcript. Only the audio.",
-    "step2Title": "Use Only Your Ears",
-    "step2Desc": "Replay any sentence. Slow it down. But you cannot read along.",
-    "step3Title": "Pass the Quiz",
-    "step3Desc": "Answer comprehension questions to prove you understood.",
-    "step4Title": "Unlock the Next Story",
-    "step4Desc": "Every story earned is harder and richer than the last.",
+    "guideMore": "See the full walkthrough",
+    "step1Title": "Listen",
+    "step1Desc": "One story, sentence by sentence. Replay or slow down as often as you need.",
+    "step2Title": "Prove you understood",
+    "step2Desc": "A short comprehension quiz. Nothing to read — only what you heard.",
+    "step3Title": "Unlock the next",
+    "step3Desc": "Every story you earn is a little harder than the last.",
     "why": {
       "sectionLabel": "The Questions You're Skipping",
       "replay": "Replay",
@@ -521,20 +520,6 @@
         "title": "Emotional Coloring",
         "text": "Voiced by a neural network, every story must include breaths, clicking sounds, tone changes, and sarcastic expressions — everything found in real human speech. Emotional context is just as important as the words. Without it, the audio sounds unnatural."
       }
-    },
-    "photos": {
-      "player": {
-        "label": "Screenshot — Enhanced Mode Controls"
-      },
-      "vocab": {
-        "label": "Screenshot — Vocabulary List"
-      },
-      "comics": {
-        "label": "Example — Comic Panel"
-      },
-      "quiz": {
-        "label": "Screenshot — Quiz Interface"
-      }
     }
   },
   "congrats": {
@@ -563,6 +548,10 @@
       {
         "title": "🎨 Story Comics",
         "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
+      },
+      {
+        "title": "⚡ Playback Speed",
+        "body": "Speed sets how fast the audio plays. Every child learning their first language starts out slow, and speeds up gradually — that is normal. Begin at 0.5×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
       },
       {
         "title": "🔄 Enhanced Mode & Repeats",
