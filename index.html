@@ -1,10 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="" />
+    <!-- href was empty here, which made the browser request the page itself as
+         the icon and log a decode error on every load. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#0a0a0a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>the Infintiy Player</title>
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta
+      name="description"
+      content="малако — тренажёр английского аудирования: слушай настоящие истории без субтитров."
+    />
+    <title>малако</title>
   </head>
   <body>
     <div id="root"></div>

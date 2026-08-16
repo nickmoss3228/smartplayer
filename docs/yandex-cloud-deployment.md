@@ -4,8 +4,9 @@ A complete write-up of how the frontend got from "a React app on Vercel" to "a c
 virtual machine I own." Written to be re-usable: the *concepts* apply to any provider, and the
 *commands* apply to Yandex Cloud specifically.
 
-**Status at time of writing (2026-08-11):** frontend is live at `http://89.169.159.92`.
-`infinityplayer.xyz` still points at Vercel; DNS/TLS cutover has not happened yet.
+**Status (updated 2026-08-16):** live at **https://малако.рф** over HTTPS, frontend and backend both
+containerised on the VM behind Caddy. `infinityplayer.xyz` is the retired Vercel deployment and
+still points there — see §9. The DNS/TLS cutover is written up in §8.
 
 ---
 
@@ -70,6 +71,20 @@ Consequently `VITE_API_URL` is passed as a Docker **build argument** (`ARG`/`--b
 runtime env var. And critically: **changing it requires rebuilding and repushing the image.**
 Restarting the container does nothing. (Backend env vars like `MONGODB_URI` are the opposite — those
 *are* read at runtime and belong in `env_file`.)
+
+**`VITE_API_URL` must be the empty string in production.** The frontend and the backend are served
+from the same origin here — `nginx.conf` proxies `/api/` to the `backend` container — so the bundle
+should emit *relative* URLs and let nginx route them. An absolute origin would work but pins the
+bundle to one hostname and drags CORS back into a setup specifically designed to avoid it.
+
+This bit us: `VITE_API_URL` was left pointing at the old Railway backend
+(`https://smartplayer-production.up.railway.app`) long after the migration, so the Yandex frontend
+was compiled to call Railway and the co-located backend container was never used at all — the whole
+nginx proxy path sat idle. If the deployed site behaves like the old one, check this variable first.
+
+The code reads it as `import.meta.env.VITE_API_URL ?? "http://localhost:3000"` — deliberately `??`
+and not `||`, because `||` treats `""` as unset and would silently fall back to localhost, which is
+exactly how a same-origin production build breaks in a way that's hard to spot.
 
 ### `nginx.conf`
 Replicates what `vercel.json` was doing for us before:
@@ -170,21 +185,86 @@ for a web server that's idle most of the time, and roughly 5x cheaper than a ded
 
 ## 4. Build, push, deploy
 
+### The short version
+
+`deploy.sh` encodes every step below, including the three footguns in §4.2. Prefer it:
+
 ```bash
-# 1. Build (from player/smartplayer/)
+./deploy.sh backend             # build + verify + push + deploy backend
+./deploy.sh frontend            # same for frontend
+./deploy.sh all                 # both
+./deploy.sh frontend --build-only   # build + verify locally, stop before pushing
+```
+
+It builds, verifies the artifact (bcrypt round-trip for the backend, API-origin check for the
+frontend bundle), authenticates, pushes, then on the VM tags the outgoing image `:rollback`,
+pulls, and waits for the healthcheck to actually pass before returning.
+
+### 4.1 The manual equivalent
+
+```bash
+# 1a. Build frontend (from player/smartplayer/)
 docker build --provenance=false --sbom=false \
-  --build-arg VITE_API_URL="https://smartplayer-production.up.railway.app" \
+  --build-arg VITE_API_URL="" \
   --build-arg VITE_YOS_BASE_URL="https://storage.yandexcloud.net/audioplayer-data" \
   -t cr.yandex/crpjfs7cp0kc3qg46i5p/smartplayer-frontend:latest .
 
-# 2. Authenticate + push
+# 1b. Build backend (context is ./backend; it takes no build args —
+#     all backend config arrives at RUNTIME via backend/.env.production)
+docker build --provenance=false --sbom=false \
+  -t cr.yandex/crpjfs7cp0kc3qg46i5p/smartplayer-backend:latest ./backend
+
+# 2. Authenticate + push  (token is short-lived — re-run every deploy)
 yc iam create-token | docker login --username iam --password-stdin cr.yandex
 docker push cr.yandex/crpjfs7cp0kc3qg46i5p/smartplayer-frontend:latest
 
 # 3. Deploy on the VM
 ssh -i ~/.ssh/smartplayer_vm deploy@89.169.159.92
-cd ~/smartplayer && sudo docker compose pull frontend && sudo docker compose up -d frontend
+cd ~/smartplayer
+docker tag <IMG>:latest <IMG>:rollback     # snapshot BEFORE pulling over :latest
+docker compose pull frontend
+docker compose up -d --wait --wait-timeout 120 frontend
 ```
+
+### 4.2 Three things that will silently break a manual deploy
+
+**1. `--provenance=false --sbom=false` is mandatory.** BuildKit otherwise attaches attestations,
+producing an OCI manifest list that Yandex CR refuses — *after* every layer has uploaded, with the
+misleading error `Cannot read manifest data`. See §5.1.
+
+**2. Registry credentials expire.** Yandex CR takes only IAM tokens, which last ~12h, so a stored
+`docker login` is always stale by the next deploy. On the dev box re-run `yc iam create-token | …`.
+On the VM, mint one from the attached service account instead of storing anything:
+
+```bash
+TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+  "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
+  | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+echo "$TOKEN" | docker login --username iam --password-stdin cr.yandex
+```
+
+**3. Tag `:rollback` before pulling.** `docker compose pull` overwrites `:latest` and the previous
+image becomes untagged, so the escape hatch has to be created *first*. To revert:
+
+```bash
+docker tag <IMG>:rollback <IMG>:latest && docker compose up -d <service>
+```
+
+### 4.3 Base image policy
+
+Pin to a **supported major, not a frozen minor**. Minor-pinned tags stop being rebuilt and their OS
+packages rot, which is how an image accumulates CVEs without anyone changing a line of code:
+
+| image | scan result |
+|---|---|
+| `node:20-alpine` | EOL 2026-04-30 — 2 critical / 25 high, will only grow |
+| `node:22-alpine` | supported to Apr 2027 — 1 critical / 7 high |
+| `nginx:1.27-alpine` | frozen minor — 6 critical / 27 high |
+| `nginx:1.28-alpine` | frozen minor — 8 critical / 26 high |
+| `nginx:stable-alpine` | continuously rebuilt — **0 critical / 0 high** |
+
+Both Dockerfiles now use `node:22-alpine`; the frontend runtime uses `nginx:stable-alpine`.
+Re-pin to a digest only if reproducibility ever matters more than staying patched.
 
 ---
 
@@ -337,6 +417,11 @@ Or the repo's **Actions** tab in a browser.
 > `VITE_API_URL` is a **variable, not a secret**, because it's compiled into the public JS bundle
 > anyway. To repoint the frontend at a new backend, change this variable and push — the rebuild picks
 > it up. Changing it on the VM would do nothing.
+>
+> **Set it to the empty string.** See §3's note: the backend is same-origin behind nginx, so the
+> bundle should emit relative `/api/...` URLs. A GitHub Actions variable set to an empty value is
+> passed through as `--build-arg VITE_API_URL=""`, which is exactly what's wanted. If this variable
+> still holds the retired Railway URL, the deployed frontend is talking to a dead backend.
 
 CI authenticates to the registry as a dedicated service account (`github-actions-sa`,
 `container-registry.images.pusher`), separate from the VM's pull-only identity — so neither can do
@@ -363,26 +448,115 @@ one that doesn't exist:
 
 ---
 
-## 8. Remaining work
+## 8. The DNS + TLS cutover to малако.рф — **DONE (2026-08-16)**
 
-1. **DNS + HTTPS cutover.** Point `infinityplayer.xyz` A records at `89.169.159.92`, then on the VM
-   delete `docker-compose.override.yml` and run `docker compose up -d` to start Caddy.
-   > **Do not start Caddy before DNS points here.** It would request a certificate, fail the
-   > challenge (the domain still resolves to Vercel), and burn Let's Encrypt's failed-validation
-   > rate limit (5/hostname/hour) that you need for the real cutover.
-2. **Backend migration** — designed but not built. It needs runtime env vars (not build args),
-   keeps using MongoDB Atlas (no database container), and needs no storage volume since uploads
-   stream straight to Object Storage.
-3. **CORS** — `backend/src/middleware/cors.js` has a *hardcoded* origin allow-list and ignores the
-   `FRONTEND_URL` env var that already exists in `config/env.js`. Any new frontend origin requires a
-   **code change** there, not a config change. (This is why API calls fail when testing on the bare
-   IP — that origin isn't in the list.)
-4. **Image size** — 367MB, of which ~128MB is 966 MP3s in `public/assets/` baked into the image.
-   The same audio is also served from Object Storage, so this may be redundant weight.
+The site is live at **https://малако.рф**, on a Let's Encrypt certificate, with the backend
+co-located behind the same origin. This section is the log of what that actually took.
+
+### 8.1 The domain is an IDN, which touches more than you'd expect
+
+`малако.рф` is an internationalized domain. Its A-label (punycode) form is:
+
+```
+малако.рф      ->  xn--80aa4acdq.xn--p1ai
+www.малако.рф  ->  www.xn--80aa4acdq.xn--p1ai
+```
+
+The browser shows Cyrillic in the address bar but sends the **punycode** form in the `Host` and
+`Origin` headers, and Let's Encrypt issues the certificate against punycode. So every config that
+matches on a hostname must use the A-label — a `cors.js` entry reading `https://малако.рф` would
+match nothing, forever, with no error to tell you why. Both the `Caddyfile` and the CORS allow-list
+are therefore written in punycode, which has the side benefit that config and logs stay in one
+alphabet while debugging.
+
+### 8.2 Registrar traps (reg.ru + ispmanager)
+
+Three things cost time here, all before a single line of config mattered:
+
+1. **`.рф` registrations are held pending identity verification.** While pending, the zone is not
+   delegated at all — `NS` and `SOA` queries return empty and reg.ru answers from their own parking
+   IP (`37.140.192.133`). DNS edits saved in ispmanager have *no effect whatsoever* during this
+   window. Symptom: you add a correct A record, nothing changes, and it looks like a config bug.
+   Check `Resolve-DnsName <domain> -Type NS` first — an empty answer means "not delegated yet",
+   not "wrong record".
+2. **Adding a record does not replace the old one.** After adding `@ -> 89.169.159.92`, the zone
+   still contained `@ -> 37.140.192.133`. Two A records means resolvers round-robin, so the site
+   would work for roughly half of visitors and show the parking page for the rest — and the ACME
+   challenge would fail about half the time. The stale records must be deleted explicitly.
+3. **The default zone ships AAAA records.** reg.ru's zone included
+   `@ / www -> 2a00:f940:2:2:1:1:0:116`. **The VM has no IPv6** (`yc compute instance get` shows
+   only the v4 addresses). Browsers and Let's Encrypt both *prefer* IPv6 when a AAAA exists, so
+   leaving it in place would have sent the HTTP-01 challenge to reg.ru over v6 and failed the
+   issuance while the IPv4 record looked perfectly correct. Deleting the AAAA records is not
+   optional.
+
+The gate before touching the VM is therefore: `nslookup` returns exactly `89.169.159.92` and **no**
+IPv6 address, for both the apex and `www`.
+
+### 8.3 The cutover itself
+
+CI does **not** sync `Caddyfile`, `docker-compose.yml`, or the env files — both workflows only pull
+an image and restart a service. Those files on `~/smartplayer/` are managed by hand, so the
+Caddyfile change had to be copied up separately.
+
+```bash
+# 1. new Caddyfile (punycode), backed up first
+cat Caddyfile | ssh deploy@89.169.159.92 'cp ~/smartplayer/Caddyfile{,.bak} && cat > ~/smartplayer/Caddyfile'
+
+# 2. backend secrets: Yandex Object Storage creds + a corrected FRONTEND_URL
+#    (it was `infinityplayer.xyz` with NO scheme, so password-reset emails built
+#    a non-absolute link — broken independently of this migration)
+sed -i 's|^FRONTEND_URL=.*|FRONTEND_URL=https://xn--80aa4acdq.xn--p1ai|' ~/smartplayer/backend/.env.production
+
+# 3. hand ports 80/443 to Caddy and recreate everything
+mv docker-compose.override.yml docker-compose.override.yml.disabled
+sudo docker compose up -d --force-recreate
+```
+
+`--force-recreate` matters: compose does **not** treat an edited `env_file` as a config change, so
+without it the backend would keep running with the old environment and the new storage credentials
+would appear not to work.
+
+Certificates were obtained on the first attempt for both names via `tls-alpn-01`, with no failed
+validations. Verified from outside: HTTPS 200, HTTP→HTTPS 308, `www` 200, SPA deep-link 200,
+`/api/stories/easy` 200 through the nginx proxy, certificate `CN=xn--80aa4acdq.xn--p1ai` issued by
+Let's Encrypt.
+
+### 8.4 The variable that was quietly wrong the whole time
+
+`VITE_API_URL` had been left pointing at the retired Railway backend. Because Vite inlines it at
+build time, the *Yandex* frontend was compiled to call *Railway*, and the co-located backend
+container it was deployed alongside was never used — the entire nginx `/api/` proxy path sat idle.
+It must be the **empty string**, which makes the bundle emit relative URLs. Note the code now reads
+it with `??` rather than `||`, because `||` treats `""` as unset and silently falls back to
+`localhost:3000`.
 
 ---
 
-## 9. Quick reference
+## 9. Remaining work
+
+1. **`infinityplayer.xyz`** still points at Vercel (`64.29.17.65` / `216.198.79.65`). Decide whether
+   to retire it or redirect it to малако.рф. To redirect: repoint its A records at the VM, then add
+   a redirect block to the `Caddyfile` — Caddy will obtain a certificate for it automatically, but
+   **only after** its DNS resolves here, for the same rate-limit reason as above.
+2. **CORS** — `backend/src/middleware/cors.js` still has a *hardcoded* origin allow-list and ignores
+   the `FRONTEND_URL` env var that already exists in `config/env.js`. Any new frontend origin
+   requires a **code change** there, not a config change. Now mostly moot for the app itself, since
+   same-origin requests through nginx never trigger CORS at all — it only matters for local dev
+   against a remote backend.
+3. **Image size** — 367MB, of which ~128MB is 966 MP3s in `public/assets/` baked into the image.
+   The same audio is also served from Object Storage, so this may be redundant weight.
+4. **Object Storage cache headers** — new uploads now carry
+   `Cache-Control: public, max-age=31536000, immutable` with a `?v=<hash>` versioned URL, but the
+   ~966 pre-existing objects still have none. `backend/src/scripts/backfillCacheControl.js` fixes
+   them; run it with `--dry-run` and then `--prefix` on a slice first, since
+   `MetadataDirective: REPLACE` drops the ACL if it isn't restated.
+5. **A real CDN** in front of the bucket (Yandex Cloud CDN). The `Cache-Control` work above is its
+   prerequisite, not an alternative: an edge has no TTL to honour until the origin sends one.
+
+---
+
+## 10. Quick reference
 
 | Item | Value |
 |---|---|
