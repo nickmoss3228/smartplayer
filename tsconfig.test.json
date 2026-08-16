@@ -1,0 +1,17 @@
+{
+  /* Typechecks the test files, which tsconfig.app.json deliberately excludes
+     (see the note there). `allowJs` is what makes the cross-boundary imports
+     in catalogMirror.test.ts work: the backend configs are plain .js with no
+     declarations, so without it TypeScript reports them as implicit `any`.
+     With it, their exports are inferred from the source directly — which is
+     the point, since the whole test is about those values matching. */
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["vitest/globals"]
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": []
+}

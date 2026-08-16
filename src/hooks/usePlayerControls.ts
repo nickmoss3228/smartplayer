@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from './hooks';
 import { setIsPlaying, setCurrentMarkerIndex, setIsPlayMode } from '../store/playerslice';
 import WaveSurfer from 'wavesurfer.js';
+import { computeSegmentBounds, markerTime, findMarkerIndexAt } from '../lib/segmentBounds';
 
 export const usePlayerControls = (wavesurfer: WaveSurfer | null, isInitialized: boolean) => {
   const dispatch = useAppDispatch();
@@ -17,20 +18,10 @@ export const usePlayerControls = (wavesurfer: WaveSurfer | null, isInitialized: 
 // in real-time. So whatever the marker is, we always can replay the audio
 // within bounds. And also to traverse the markers.
     
-  const getCurrentSegmentBounds = useCallback(() => {
-    if (!timeMarkers?.length || currentMarkerIndex < 0) {
-      return { start: 0, end: durationSeconds || Infinity };
-    }
-    const currentMarker = timeMarkers[currentMarkerIndex];
-    const nextMarker = timeMarkers[currentMarkerIndex + 1];
-
-    const start = typeof currentMarker === "object" ? currentMarker.time : currentMarker;
-    const end = nextMarker
-      ? typeof nextMarker === "object" ? nextMarker.time : nextMarker
-      : durationSeconds || Infinity;
-
-    return { start, end };
-  }, [timeMarkers, currentMarkerIndex, durationSeconds]);
+  const getCurrentSegmentBounds = useCallback(
+    () => computeSegmentBounds(timeMarkers, currentMarkerIndex, durationSeconds),
+    [timeMarkers, currentMarkerIndex, durationSeconds],
+  );
 
   const handlePlayPause = useCallback(() => {
     if (!wavesurfer || !isInitialized) return;
@@ -61,11 +52,9 @@ export const usePlayerControls = (wavesurfer: WaveSurfer | null, isInitialized: 
     }
 
     const nextIndex = currentMarkerIndex + 1;
-    const nextMarker = timeMarkers[nextIndex];
-    const nextTime = typeof nextMarker === "object" ? nextMarker.time : nextMarker;
 
     dispatch(setCurrentMarkerIndex(nextIndex));
-    wavesurfer.setTime(nextTime);
+    wavesurfer.setTime(markerTime(timeMarkers[nextIndex]));
     wavesurfer.play();
   }, [isPlayMode, timeMarkers, currentMarkerIndex, wavesurfer, dispatch]);
 
@@ -73,10 +62,8 @@ export const usePlayerControls = (wavesurfer: WaveSurfer | null, isInitialized: 
     if (!timeMarkers?.length || !wavesurfer || !isPlayMode) return;
 
     const markerIndex = Math.max(0, currentMarkerIndex);
-    const currentMarker = timeMarkers[markerIndex];
-    const start = typeof currentMarker === "object" ? currentMarker.time : currentMarker;
 
-    wavesurfer.setTime(start);
+    wavesurfer.setTime(markerTime(timeMarkers[markerIndex]));
     setTimeout(() => {
       wavesurfer?.play();
     }, 10);
@@ -93,24 +80,10 @@ export const usePlayerControls = (wavesurfer: WaveSurfer | null, isInitialized: 
     dispatch(setIsPlayMode(newPlayMode));
 
     if (newPlayMode && timeMarkers?.length && wavesurfer) {
-      const currentTime = wavesurfer.getCurrentTime();
-      let markerIndex = 0;
-      
-      for (let i = 0; i < timeMarkers.length; i++) {
-        const markerTime = (typeof timeMarkers[i] === "object" 
-          ? (timeMarkers[i] as { time: number }).time 
-          : timeMarkers[i]) as number;
-        if (currentTime >= markerTime) {
-          markerIndex = i;
-        } else {
-          break;
-        }
-      }
+      const markerIndex = findMarkerIndexAt(timeMarkers, wavesurfer.getCurrentTime());
 
       dispatch(setCurrentMarkerIndex(markerIndex));
-      const marker = timeMarkers[markerIndex];
-      const markerTime = typeof marker === "object" ? marker.time : marker;
-      wavesurfer.setTime(markerTime);
+      wavesurfer.setTime(markerTime(timeMarkers[markerIndex]));
     }
   }, [isPlaying, isPlayMode, timeMarkers, wavesurfer, dispatch]);
 

@@ -22,5 +22,12 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "pages/Player.tsx"]
+  "include": ["src", "pages/Player.tsx"],
+  /* Tests are excluded from the *app* build on purpose. `npm run build` runs
+     `tsc -b` as its gate, and catalogMirror.test.ts deliberately imports from
+     ../../backend to compare client prices against the server's — typechecking
+     that here would make a frontend production build depend on the backend
+     source tree being present. Tests are typechecked by tsconfig.test.json
+     instead (`npm run typecheck:test`), and executed by Vitest either way. */
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }

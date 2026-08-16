@@ -1,4 +1,3 @@
-// audioDataByDiffculty.ts
 import { audioTracks as leoTracks } from "../audiodata/audioData";
 import { leoAdditionalAudioData as leoAdditionalTracks } from "../audiodata/audioDataLeoAdditional";
 import {
@@ -29,12 +28,7 @@ const tracksByStory: Record<string, Record<string, AudioTrack[]>> = {
 export const getAudioTracksByStory = (
   difficulty: string,
   storySlug: string,
-): AudioTrack[] => {
-  console.log('[getAudioTracksByStory] called with:', difficulty, storySlug);
-  const tracks = tracksByStory[difficulty]?.[storySlug] ?? [];
-  console.log('[getAudioTracksByStory] returning tracks:', tracks.map(t => t.id + ':' + t.title));
-  return tracks;
-};
+): AudioTrack[] => tracksByStory[difficulty]?.[storySlug] ?? [];
 
 // Keep this for backward compat if anything else still calls it by difficulty only,
 // defaulting to the "main" story of that difficulty.

@@ -24,7 +24,10 @@ type StoryGroupRaw = Omit<StoryGroup, 'title' | 'description' | 'category'> & {
 const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
   easy: [
     { slug: 'leo', character: 'Leo', totalTracks: 10, coverEmoji: '🧑' },
-    { slug: 'leo-additional',    character: 'Leo',    totalTracks: 3, coverEmoji: '🧑' },
+    // totalTracks must match the real length of the track array in
+    // audiodata/audioDataLeoAdditional.ts — a third track is drafted there but
+    // commented out, and claiming 3 here meant progress could never reach 100%.
+    { slug: 'leo-additional',    character: 'Leo',    totalTracks: 2, coverEmoji: '🧑' },
     // Placeholder "News and Interesting things" group — students listen to a news
     // source/article first, then get a story connected to it. No real audio/text yet;
     // fill in totalTracks, coverEmoji, and src/modules/audiodata placeholder tracks
