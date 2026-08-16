@@ -3,11 +3,11 @@ import axios from "axios";
 import { UserProfile } from "../types/Dashboard";
 import { CharacterState } from "../types/Character";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const authHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
+import { API_BASE } from "./apiClient";
 
 export const fetchProfile = async (token: string): Promise<UserProfile> => {
   const res = await axios.get(`${API_BASE}/api/user/profile`, {

@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios, { AxiosError } from 'axios';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { AxiosError } from 'axios';
+import {
+  api,
+  AUTH_UNAUTHORIZED_EVENT,
+  SIGNED_OUT_REASON_KEY,
+  AuthUnauthorizedDetail,
+} from '../services/apiClient';
 import { fetchAchievements, syncListeningTime } from '../services/achievementServices';
 import {
   getTotalListeningSeconds,
@@ -14,6 +20,7 @@ import {
 import { migrateGuestProgress } from '../services/guestProgressServices';
 import {
   User,
+  AuthError,
   AuthResult,
   AuthContextValue,
   AuthProviderProps,
@@ -28,7 +35,6 @@ import {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
@@ -38,6 +44,32 @@ export const useAuth = (): AuthContextValue => {
   return context;
 };
 
+/**
+ * Normalises an axios failure into an AuthError, preserving the machine-readable
+ * bits a 429 carries so the form can render a localized "too many attempts"
+ * message with a real countdown instead of the server's English string.
+ */
+const toAuthError = (error: unknown, fallback: string): AuthError => {
+  const axiosError = error as AxiosError<{
+    message?: string;
+    code?: string;
+    retryAfterSeconds?: number;
+  }>;
+  const data = axiosError.response?.data;
+
+  if (axiosError.response?.status === 429) {
+    const headerRetry = Number(axiosError.response.headers?.['retry-after']);
+    return {
+      message: data?.message ?? 'Too many requests. Please try again later.',
+      code: 'RATE_LIMITED',
+      retryAfterSeconds:
+        data?.retryAfterSeconds ?? (Number.isFinite(headerRetry) ? headerRetry : undefined),
+    };
+  }
+
+  return { message: data?.message || fallback, code: data?.code };
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -45,11 +77,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      checkTokenValidity(token);
+      checkTokenValidity();
     } else {
       setLoading(false);
     }
   }, []);
+
+  // Everything signOut does locally, minus the server round-trips. The forced
+  // path below reuses this but must NOT call /api/logout — that request would
+  // fail with the same already-rejected token.
+  const clearLocalSession = useCallback((): void => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('progressData');
+    localStorage.removeItem('progressCacheTime');
+    // signOut has always missed this one: migrateGuestProgressIfAny clears it
+    // but signOut didn't, so the next account signing in on this browser could
+    // paint the previous account's cached dashboard before its fetch landed.
+    sessionStorage.removeItem('dashboardData');
+    // Prevent this account's local total from bleeding into whichever account
+    // signs in next on this browser.
+    clearListeningTime();
+    setUser(null);
+  }, []);
+
+  // Forced logout, driven by the response interceptor in services/apiClient.ts.
+  //
+  // No navigation happens here and none is needed: setUser(null) re-renders
+  // every ProtectedRoute, which hits its own <Navigate to="/login" replace />.
+  // That matters because AuthProvider sits outside <Router> and so cannot
+  // useNavigate. Routes a guest may view simply degrade to guest mode, which is
+  // the correct outcome. The only thing that has to cross the boundary is the
+  // reason, handed to Login.tsx as a one-shot sessionStorage flag.
+  useEffect(() => {
+    const onUnauthorized = (event: Event): void => {
+      const reason =
+        (event as CustomEvent<AuthUnauthorizedDetail>).detail?.reason ?? 'expired';
+      sessionStorage.setItem(SIGNED_OUT_REASON_KEY, reason);
+      // Deliberately no listening-time flush: that call needs the very token
+      // the server just rejected, so it would fail and re-enter this handler.
+      clearLocalSession();
+    };
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [clearLocalSession]);
 
   // The local listening-time counter is a single global localStorage key,
   // shared by whichever account is currently signed in on this browser. Seed
@@ -91,11 +162,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const checkTokenValidity = async (token: string): Promise<void> => {
+  const checkTokenValidity = async (): Promise<void> => {
     try {
-      const response = await axios.get<TokenValidationResponse>(`${API_BASE_URL}/api/validate-token`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // No skipAuthRedirect: a 401 here genuinely IS a dead session, and
+      // letting the interceptor fire keeps the teardown in one place.
+      const response = await api.get<TokenValidationResponse>('/api/validate-token');
       setUser(response.data.user);
     } catch (error) {
       console.error('Token validation failed:', error);
@@ -112,8 +183,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password
       };
       
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/api/login`, requestData);
-      
+      // skipAuthRedirect: a 401 here means "wrong password", not "your session
+      // died" — without the flag a failed login attempt would sign out a user
+      // who is already logged in in another tab.
+      const response = await api.post<AuthResponse>('/api/login', requestData, {
+        skipAuthRedirect: true,
+      });
+
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
@@ -122,12 +198,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Prefetch progress data immediately after successful login
       setTimeout(async () => {
         try {
-          // We can't use useProgress here directly, but we can make the API call
-          const headers = { Authorization: `Bearer ${token}` };
+          // We can't use useProgress here directly, but we can make the API call.
+          // The token was written to localStorage above, so apiClient's request
+          // interceptor attaches it — no manual header needed.
           const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/api/progress/easy`, { headers }),
-            axios.get(`${API_BASE_URL}/api/progress/medium`, { headers }),
-            axios.get(`${API_BASE_URL}/api/progress/hard`, { headers }),
+            api.get('/api/progress/easy'),
+            api.get('/api/progress/medium'),
+            api.get('/api/progress/hard'),
           ]);
 
           const progressData = {
@@ -149,9 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return { user, error: null };
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      const errorMessage = axiosError.response?.data?.message || 'Login failed';
-      return { user: null, error: { message: errorMessage } };
+      return { user: null, error: toAuthError(error, 'Login failed') };
     }
   };
 
@@ -163,8 +238,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         password
       };
       
-      const response = await axios.post<AuthResponse>(`${API_BASE_URL}/api/signup`, requestData);
-      
+      const response = await api.post<AuthResponse>('/api/signup', requestData, {
+        skipAuthRedirect: true,
+      });
+
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
@@ -173,11 +250,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Also prefetch on signup
       setTimeout(async () => {
         try {
-          const headers = { Authorization: `Bearer ${token}` };
           const [easyResponse, mediumResponse, hardResponse] = await Promise.all([
-            axios.get(`${API_BASE_URL}/api/progress/easy`, { headers }),
-            axios.get(`${API_BASE_URL}/api/progress/medium`, { headers }),
-            axios.get(`${API_BASE_URL}/api/progress/hard`, { headers }),
+            api.get('/api/progress/easy'),
+            api.get('/api/progress/medium'),
+            api.get('/api/progress/hard'),
           ]);
 
           const progressData = {
@@ -199,9 +275,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return { user, error: null };
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      const errorMessage = axiosError.response?.data?.message || 'Registration failed';
-      return { user: null, error: { message: errorMessage } };
+      return { user: null, error: toAuthError(error, 'Registration failed') };
     }
   };
 
@@ -215,47 +289,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Failed to flush listening time on logout:', error);
       });
       try {
-        await axios.post(`${API_BASE_URL}/api/logout`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // skipAuthRedirect: if the token is already dead this 401s, and
+        // firing the forced-logout path from inside a deliberate logout would
+        // be redundant at best and re-entrant at worst.
+        await api.post('/api/logout', {}, { skipAuthRedirect: true });
       } catch (error) {
         console.error('Logout error:', error);
       }
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('progressData');
-    localStorage.removeItem('progressCacheTime');
-    // Prevent this account's local total from bleeding into whichever
-    // account signs in next on this browser.
-    clearListeningTime();
-    setUser(null);
+    clearLocalSession();
   };
 
   const requestPasswordReset = async (email: string): Promise<ResetPasswordResult> => {
     try {
       const requestData: ResetPasswordRequest = { email };
-      
-      await axios.post(`${API_BASE_URL}/api/request-reset`, requestData);
-      
+
+      // skipAuth: unauthenticated by definition — no point leaking a bearer
+      // token to an endpoint that ignores it.
+      await api.post('/api/request-reset', requestData, { skipAuth: true });
+
       return { success: true, error: null };
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to send reset email';
-      return { success: false, error: { message: errorMessage } };
+      return { success: false, error: toAuthError(error, 'Failed to send reset email') };
     }
   };
 
   const confirmPasswordReset = async (token: string, newPassword: string): Promise<ResetPasswordResult> => {
     try {
       const requestData: ResetPasswordConfirmRequest = { token, newPassword };
-      
-      await axios.post(`${API_BASE_URL}/api/reset`, requestData);
-      
+
+      await api.post('/api/reset', requestData, { skipAuth: true });
+
       return { success: true, error: null };
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
-      const errorMessage = axiosError.response?.data?.message || 'Failed to reset password';
-      return { success: false, error: { message: errorMessage } };
+      return { success: false, error: toAuthError(error, 'Failed to reset password') };
     }
   };
 

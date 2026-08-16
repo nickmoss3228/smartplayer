@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { API_BASE as API_URL } from "../../services/apiClient";
 
 interface FeedbackModalProps {
   onClose: () => void;
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
 
 const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "sending" | "sent" | "error" | "ratelimited"
+  >("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +26,12 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, message }),
       });
+      // Submissions are capped at 5/hour per IP. Distinguish that from a real
+      // failure so the user doesn't keep retrying into the same wall.
+      if (res.status === 429) {
+        setStatus("ratelimited");
+        return;
+      }
       if (!res.ok) throw new Error("Request failed");
       setStatus("sent");
       setTimeout(onClose, 1200);
@@ -80,6 +88,11 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
           {status === "error" && (
             <p className="text-sm text-red-600">
               {t("feedback.error", "Something went wrong. Try again.")}
+            </p>
+          )}
+          {status === "ratelimited" && (
+            <p className="text-amber-600 text-sm">
+              {t("feedback.rateLimited", "Too many submissions. Please try again later.")}
             </p>
           )}
           {status === "sent" && (

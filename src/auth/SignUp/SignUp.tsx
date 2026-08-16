@@ -56,7 +56,15 @@ const SignUp = () => {
 
     const result = await signUp(username, email, password)
     if (result.error) {
-      setError(result.error.message)
+      // A 429 from the signup throttle carries how long to wait — localize it
+      // rather than showing the server's English string.
+      setError(
+        result.error.code === 'RATE_LIMITED'
+          ? t('signup.errors.tooManyAttempts', {
+              minutes: Math.ceil((result.error.retryAfterSeconds ?? 3600) / 60),
+            })
+          : result.error.message
+      )
     }
 
     setIsLoading(false)

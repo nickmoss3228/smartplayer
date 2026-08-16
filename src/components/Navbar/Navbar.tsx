@@ -8,7 +8,7 @@ import {
   UsersIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import Infinity from "../../assets/infinity.svg";
+import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
 import { ImBook } from "react-icons/im";
 import { useAuth } from "../../context/AuthContext";
@@ -84,13 +84,13 @@ const Navbar = () => {
             <div className="flex items-center">
               <button
                 onClick={handleLogoClick}
-                className="text-3xl font-bold cursor-pointer text-black hover:text-red-800 transition-colors duration-200"
+                className="flex items-center gap-2 cursor-pointer text-black hover:text-gray-500 transition-colors duration-200"
+                aria-label={t("brand")}
               >
-                <img
-                  src={Infinity}
-                  alt="Haila Logo"
-                  className="w-12 h-12 inline-block mr-2 -mt--5"
-                />
+                <BrandMark className="w-8 h-8" />
+                <span className="text-2xl font-black lowercase tracking-tight">
+                  {t("brand")}
+                </span>
               </button>
             </div>
 

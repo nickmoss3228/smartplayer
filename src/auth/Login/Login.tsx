@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,8 +9,13 @@ import {
   IoEyeOffOutline,
   IoAlertCircleOutline,
   IoSyncOutline,
+  IoInformationCircleOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
+import {
+  SIGNED_OUT_REASON_KEY,
+  UnauthorizedReason,
+} from "../../services/apiClient";
 // import { prefetchProgress } from "../../context/ProgressContext";
 
 const Login = () => {
@@ -20,12 +25,27 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // Why the user landed here, when they were pushed rather than navigating.
+  const [notice, setNotice] = useState<UnauthorizedReason | null>(null);
 
   const { signIn, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const from = location.state?.from?.pathname || "/levels";
+
+  // A forced logout (expired or banned token) leaves a one-shot flag behind —
+  // see the auth:unauthorized handler in AuthContext. Read and clear it so the
+  // explanation shows exactly once.
+  useEffect(() => {
+    const reason = sessionStorage.getItem(
+      SIGNED_OUT_REASON_KEY
+    ) as UnauthorizedReason | null;
+    if (reason) {
+      sessionStorage.removeItem(SIGNED_OUT_REASON_KEY);
+      setNotice(reason);
+    }
+  }, []);
 
   if (user) {
     return <Navigate to={from} replace />;
@@ -34,12 +54,21 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setNotice(null);
     setIsLoading(true);
 
     const result = await signIn(usernameOrEmail, password);
 
     if (result.error) {
-      setError(result.error.message);
+      // A 429 from the login throttle carries a code plus how long to wait, so
+      // show a localized countdown rather than the server's English string.
+      setError(
+        result.error.code === "RATE_LIMITED"
+          ? t("login.errors.tooManyAttempts", {
+              minutes: Math.ceil((result.error.retryAfterSeconds ?? 900) / 60),
+            })
+          : result.error.message
+      );
       setIsLoading(false);
       return;
     }
@@ -69,6 +98,23 @@ const Login = () => {
           </h1>
           <p className="text-black/40 text-sm">{t("login.subtitle")}</p>
         </div>
+
+        {notice && (
+          <div
+            className={`mb-6 p-3.5 rounded-2xl text-sm flex items-start gap-2 animate-fade-in ${
+              notice === "banned"
+                ? "bg-red-50 border border-red-200 text-red-700"
+                : "bg-blue-50 border border-blue-200 text-blue-700"
+            }`}
+          >
+            <IoInformationCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
+            <span>
+              {notice === "banned"
+                ? t("login.errors.accountBanned")
+                : t("login.errors.sessionExpired")}
+            </span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm flex items-start gap-2 animate-fade-in">

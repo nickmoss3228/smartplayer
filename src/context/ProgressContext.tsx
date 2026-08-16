@@ -11,7 +11,6 @@ import axios from "axios";
 import { useAuth } from "./AuthContext";
 import { StoryProgressData, StoryProgressMap } from "../types/Progress";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // All story slugs per difficulty — add new ones here as you create them
 const STORY_SLUGS: Record<string, string[]> = {
@@ -19,6 +18,7 @@ const STORY_SLUGS: Record<string, string[]> = {
   medium: ["maya"],
   hard:   ["daniel"],
 };
+import { API_BASE } from "../services/apiClient";
 
 interface ProgressContextValue {
   // Story-level data — the single source of truth

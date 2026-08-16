@@ -2,8 +2,8 @@ import axios from "axios";
 import { RoomState } from "../types/Room";
 import { CharacterState } from "../types/Character";
 import { FloorSlotKey, WallSlotKey } from "../config/roomLayout";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 interface RoomResponse {
   room: RoomState;

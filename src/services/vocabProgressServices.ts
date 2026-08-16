@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Wallet } from "../types/Wallet";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const fetchLearnedWords = async (token: string): Promise<string[]> => {
   const res = await axios.get(`${API_BASE}/api/progress/vocab-learned`, {

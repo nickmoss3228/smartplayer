@@ -65,7 +65,15 @@ const ForgotPassword = () => {
     const result = await requestPasswordReset(email)
 
     if (result.error) {
-      setError(result.error.message)
+      // Reset requests are capped at 3/hour per IP (each one sends a real
+      // email), so a 429 here is expected and needs its own message.
+      setError(
+        result.error.code === 'RATE_LIMITED'
+          ? t('forgotPassword.errors.tooManyAttempts', {
+              minutes: Math.ceil((result.error.retryAfterSeconds ?? 3600) / 60),
+            })
+          : result.error.message
+      )
     } else {
       setEmailSent(true)
     }
@@ -97,7 +105,13 @@ const ForgotPassword = () => {
     const result = await confirmPasswordReset(token, newPassword)
 
     if (result.error) {
-      setError(result.error.message)
+      setError(
+        result.error.code === 'RATE_LIMITED'
+          ? t('forgotPassword.errors.tooManyAttempts', {
+              minutes: Math.ceil((result.error.retryAfterSeconds ?? 900) / 60),
+            })
+          : result.error.message
+      )
     } else {
       setResetSuccess(true)
       setTimeout(() => {

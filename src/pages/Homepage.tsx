@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import '../App.css';
 import { useTranslation } from 'react-i18next';
 import WhyCloudsSection from '../components/Homepage/WhyClouds/WhyCloudsSection';
+import BrandMark from '../components/Brand/BrandMark';
 
 const Homepage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -39,18 +40,16 @@ const Homepage = () => {
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
 
-      {/* ── ∞ Watermark — sits behind everything ── */}
+      {/* ── Milk-drop watermark — sits behind everything ── */}
     <div
       className="absolute inset-0 flex items-center justify-center
         pointer-events-none select-none"
       aria-hidden="true"
     >
-      <span
-        className="text-[80vw] md:text-[60vw] font-black leading-none"
+      <BrandMark
+        className="w-[80vw] md:w-[55vw] h-auto"
         style={{ color: '#f5f5f5' }}
-      >
-        ∞
-      </span>
+      />
     </div>
 
 
@@ -67,16 +66,13 @@ const Homepage = () => {
             {t('homepage.eyebrow')}
           </p>
 
-          {/* Stacks on mobile (where 3 short lines read better) but flows as
-              one line at md+ so the huge hero title doesn't dominate the
-              page height now that the clouds are meant to be the centerpiece. */}
+          {/* One word now, so it no longer needs the stack-on-mobile split the
+              three-word "The Infinity Player" title used to require. */}
           <h1
-            className="text-4xl sm:text-6xl md:text-6xl lg:text-7xl
-              font-black text-black leading-none tracking-tighter"
+            className="text-5xl sm:text-7xl md:text-7xl lg:text-8xl
+              font-black text-black leading-none tracking-tighter lowercase"
           >
-            <span className="block md:inline">The</span>{' '}
-            <span className="block md:inline">Infinity</span>{' '}
-            <span className="block md:inline">Player</span>
+            {t('brand')}
           </h1>
         </div>
 

@@ -8,6 +8,10 @@ export interface User {
 
 export interface AuthError {
   message: string;
+  /** Machine-readable code from the API, e.g. "RATE_LIMITED". */
+  code?: string;
+  /** Seconds until the caller may retry — present on a 429. */
+  retryAfterSeconds?: number;
 }
 
 export interface AuthResult {
@@ -61,5 +65,5 @@ export interface ResetPasswordConfirmRequest {
 
 export interface ResetPasswordResult {
   success: boolean;
-  error: { message: string } | null;
+  error: AuthError | null;
 }

@@ -1,8 +1,8 @@
 // services/guestProgressServices.ts
 import axios from "axios";
 import type { GuestMigrationPayload } from "./guestProgress";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const migrateGuestProgress = async (
   token: string,

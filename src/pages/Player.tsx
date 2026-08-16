@@ -32,6 +32,7 @@ import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
 import { saveGuestQuizResult } from "../services/guestProgress";
 import { fetchQuizQuestions } from "../services/quizServices";
+import { preloadAudio } from "../services/preload";
 import { QuizQuestion } from "../types/Quiz";
 
 // Whether a track's "Take the quiz" / "Vocab quiz" buttons should stay
@@ -40,6 +41,7 @@ import { QuizQuestion } from "../types/Quiz";
 // back would make them re-listen just to see the buttons again.
 const getListenedKey = (difficulty: string, storySlug: string, level: number) =>
   `listenedFully_${difficulty}_${storySlug}_${level}`;
+import { API_BASE as API_BASE_URL } from "../services/apiClient";
 
 const hasListenedFullyStored = (difficulty: string, storySlug: string, level: number): boolean =>
   localStorage.getItem(getListenedKey(difficulty, storySlug, level)) === "true";
@@ -71,7 +73,6 @@ const Player = React.memo(() => {
   }>();
   const storySlug = storySlugParam ?? "leo";
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
   const difficulty = (urlDifficulty ||
     searchParams.get("difficulty") ||
@@ -224,14 +225,26 @@ const Player = React.memo(() => {
     };
   }, [showQuiz, difficulty, resolvedStorySlug, level]);
 
+  // Warm the browser cache for the next track.
+  //
+  // This used to be an axios.head(), which did nothing useful three times over:
+  // a HEAD response has no body so it populates no cache, there is no CDN edge
+  // in front of the bucket to warm, and a cross-origin axios.head needs a CORS
+  // preflight the bucket doesn't answer — so it was failing silently into an
+  // empty catch. A real ranged GET through an <audio> element (no crossOrigin
+  // attribute, so it's a no-CORS media load) actually fills the cache.
   useEffect(() => {
     const nextTrack = audioTracks.find((t) => t.id === (level + 1).toString());
-    if (!nextTrack) return;
+    if (!nextTrack?.audio) return;
 
-    // Warm up the CDN/storage edge cache with a HEAD request
-    axios.head(nextTrack.audio).catch(() => {
-      // Non-critical: silently ignore if the next track doesn't exist yet
-    });
+    // 'metadata' fetches only the container header, 'low' keeps it out of the
+    // way of the track that's actually playing.
+    const element = preloadAudio(nextTrack.audio, "metadata", "low");
+    return () => {
+      // Abort the in-flight fetch if the student moves on before it lands.
+      element.src = "";
+      element.load();
+    };
   }, [level, audioTracks]);
 
   const audioTrack = useMemo(

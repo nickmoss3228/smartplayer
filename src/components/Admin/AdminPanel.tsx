@@ -1,16 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
 import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
+import AuditTab from "./AuditTab";
+import { ADMIN_UNAUTHORIZED_EVENT } from "../../services/adminServices";
+import { API_BASE as API_URL } from "../../services/apiClient";
 
 const TOKEN_KEY = "admin_token";
 
-type Tab = "feedback" | "players" | "story-builder";
+type Tab = "feedback" | "players" | "story-builder" | "audit";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "feedback", label: "Feedback" },
   { id: "players", label: "Players" },
   { id: "story-builder", label: "Story Builder" },
+  { id: "audit", label: "Audit Log" },
 ];
 
 const AdminPanel = () => {
@@ -21,8 +25,24 @@ const AdminPanel = () => {
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
+  // Set by adminLogin's response so the header can show which code word is in
+  // use — the same name the audit log attributes actions to.
+  const [adminName, setAdminName] = useState<string | null>(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  // The 12h admin token expiring used to leave the panel rendered but broken.
+  // parseOrThrow in adminServices fires this on any 401 so we can drop straight
+  // back to the code-word form instead.
+  useEffect(() => {
+    const onExpired = () => {
+      setToken(null);
+      setCode("");
+      setAdminName(null);
+      setLoginError("Session expired. Enter the code word again.");
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
+    return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +55,19 @@ const AdminPanel = () => {
         body: JSON.stringify({ code }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        // The login endpoint is throttled to 5 failed attempts per 15 minutes
+        // (backend middleware/rateLimit.js) — say so rather than looking broken.
+        setLoginError(data.error ?? "Too many attempts. Try again in 15 minutes.");
+        return;
+      }
       if (!res.ok) {
         setLoginError(data.error ?? "Invalid code word.");
         return;
       }
       sessionStorage.setItem(TOKEN_KEY, data.token);
       setToken(data.token);
+      setAdminName(data.admin ?? null);
     } catch (err) {
       console.error(err);
       setLoginError("Something went wrong.");
@@ -53,6 +80,7 @@ const AdminPanel = () => {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setCode("");
+    setAdminName(null);
   };
 
   if (!token) {
@@ -92,7 +120,15 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
+            {adminName && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                Acting as <span className="font-semibold">{adminName}</span> — actions
+                are recorded in the audit log
+              </p>
+            )}
+          </div>
           <button
             onClick={handleLogout}
             className="px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
@@ -120,6 +156,7 @@ const AdminPanel = () => {
         {activeTab === "feedback" && <FeedbackTab token={token} />}
         {activeTab === "players" && <PlayersTab token={token} />}
         {activeTab === "story-builder" && <StoryBuilderTab token={token} />}
+        {activeTab === "audit" && <AuditTab token={token} />}
       </div>
     </div>
   );

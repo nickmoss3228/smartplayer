@@ -1,7 +1,7 @@
 import axios from "axios";
 import { CharacterState } from "../types/Character";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 interface CharacterResponse {
   character: CharacterState;

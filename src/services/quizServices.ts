@@ -1,7 +1,7 @@
 import axios from "axios";
 import { QuizQuestion } from "../types/Quiz";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 // Public endpoints — no auth token. Guests take quizzes before ever signing
 // up, and these never expose the answer key (grading happens server-side).

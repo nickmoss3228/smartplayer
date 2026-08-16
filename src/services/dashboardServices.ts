@@ -5,8 +5,10 @@ import {
   ApiHeaders,
   Difficulty,
 } from "../types/Dashboard";
-
-export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+// Re-exported because other modules import API_BASE from here; the value
+// itself is owned by apiClient so there's only ever one definition.
+import { API_BASE } from "./apiClient";
+export { API_BASE } from "./apiClient";
 
 const difficulties: Difficulty[] = ["easy", "medium", "hard"];
 

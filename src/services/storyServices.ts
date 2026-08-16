@@ -4,8 +4,8 @@
 // these are purely additive fallbacks for stories that only exist in Mongo.
 import axios from "axios";
 import { AudioTrack } from "../types";
+import { API_BASE } from "./apiClient";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export interface PublishedVocabEntry {
   word: string; // Russian text shown to the student
