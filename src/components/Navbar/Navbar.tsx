@@ -7,7 +7,7 @@ import {
   HomeModernIcon,
   UsersIcon,
 } from "@heroicons/react/24/outline";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
 import { ImBook } from "react-icons/im";
@@ -41,6 +41,12 @@ const Navbar = () => {
   const { user } = useAuth();
   const { character } = useCharacter();
   const navigate = useNavigate();
+
+  // The homepage hero already renders the brand name at full size directly
+  // below the navbar, so repeating it here just prints it twice. The mark
+  // itself stays — it is the "go home" control, not decoration.
+  const { pathname } = useLocation();
+  const isHomepage = pathname === "/";
 
   const portrait = useCharacterPortrait(character);
 
@@ -88,9 +94,13 @@ const Navbar = () => {
                 aria-label={t("brand")}
               >
                 <BrandMark className="w-8 h-8" />
-                <span className="text-2xl font-black lowercase tracking-tight">
-                  {t("brand")}
-                </span>
+                {/* aria-label on the button already names this control, so
+                    dropping the visible text costs nothing to a screen reader. */}
+                {!isHomepage && (
+                  <span className="text-2xl font-black lowercase tracking-tight">
+                    {t("brand")}
+                  </span>
+                )}
               </button>
             </div>
 
