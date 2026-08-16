@@ -1,136 +1,158 @@
 import { Link } from 'react-router';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { motion, useReducedMotion } from 'framer-motion';
+import MilkGlass from '../components/Levels/MilkGlass';
+import { themes } from '../modules/levelprogress/themes.levelprogress';
+
+/**
+ * Level picker, told as three glasses of milk.
+ *
+ * The metaphor does real work rather than decorating: how full the glass is
+ * *is* the difficulty, so the three options are comparable at a glance without
+ * reading a word — which matters most on the phone, where all three have to
+ * share one screen width.
+ *
+ * The fat percentages are the other half of it. Russian milk is sold by
+ * жирность, printed larger than the brand on the carton, and the tints follow
+ * the real thing: skim milk is genuinely blue-tinged, cream genuinely yellow.
+ * So the colour ramp doubles as the difficulty ramp.
+ */
+
+type Level = {
+  id: keyof typeof themes;
+  title: string;
+  fat: string;
+  /** 0–1, how full the glass sits. */
+  fill: number;
+};
 
 const Levels = () => {
   const [selectedLevel, setSelectedLevel] = useState('');
-  const [isVisible, setIsVisible] = useState(false);
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  const levels = [
-{
-      id: 'hard',
-      title: t('levels.hard'),
-      subtitle: t('levels.hardSubtitle'),
-      color: 'purple',
-      accent: 'from-red-600 to-purple-600',
-      border: 'border-purple-500/30',
-      selectedBorder: 'border-purple-500',
-      selectedShadow: 'shadow-purple-200',
-      hover: 'hover:border-purple-400',
-    },
-    {
-      id: 'medium',
-      title: t('levels.medium'),
-      subtitle: t('levels.mediumSubtitle'),
-      color: 'orange',
-      accent: 'from-yellow-600 to-orange-600',
-      border: 'border-orange-500/30',
-      selectedBorder: 'border-orange-500',
-      selectedShadow: 'shadow-orange-200',
-      hover: 'hover:border-orange-400',
-    },
-    
-        {
-      id: 'easy',
-      title: t('levels.easy'),
-      subtitle: t('levels.easySubtitle'),
-      color: 'green',
-      accent: 'from-green-600 to-emerald-600',
-      border: 'border-green-500/30',
-      selectedBorder: 'border-green-500',
-      selectedShadow: 'shadow-green-200',
-      hover: 'hover:border-green-400',
-    },
+  const levels: Level[] = [
+    { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28 },
+    { id: 'medium', title: t('levels.medium'), fat: t('levels.fatMedium'), fill: 0.58 },
+    { id: 'hard', title: t('levels.hard'), fat: t('levels.fatHard'), fill: 0.92 },
   ];
 
- return (
-    // ── outer: full-height flex column, no padding-top ──────────────────────
-    <div className="min-h-dvh flex flex-col bg-gradient-to-br from-slate-50 via-gray-50 to-blue-50 pt-14 sm:pt-20">
+  const chosen = levels.find((l) => l.id === selectedLevel);
 
-      {/* ── inner: flex-1 so it fills whatever the outer gives it ───────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-14">
+  return (
+    // Plain white, same as every other page. White milk stays readable because
+    // the contrast that matters is milk against the *tinted glass interior*,
+    // not against the page behind it — so the ground doesn't have to carry it.
+    <div className="min-h-dvh flex flex-col bg-white pt-14 sm:pt-20">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-10">
 
-        {/* Header */}
-        <div className={`text-center mb-4 sm:mb-10 md:mb-14 px-4 transform transition-all duration-1000 ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-        }`}>
-          <h1 className="text-lg sm:text-4xl md:text-[44px] font-semibold text-gray-900 mb-2 sm:mb-3 tracking-tight leading-tight">
-            {t('levels.selectProficiency')}{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-              {t('levels.proficiencyLevel')}
-            </span>
+        {/* ── Header ── */}
+        <motion.div
+          className="text-center mb-5 sm:mb-10"
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        >
+          <p className="text-[9px] sm:text-[10px] tracking-[0.5em] uppercase text-gray-400 mb-2">
+            {t('levels.fatLabel')}
+          </p>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-black tracking-tighter leading-none">
+            {t('levels.selectProficiency')}
           </h1>
-        </div>
+        </motion.div>
 
-        {/* Level Circles */}
-        <div className="flex flex-col sm:flex-row-reverse items-center justify-center gap-3 sm:gap-10 md:gap-14 w-full max-w-4xl">
-          {levels.map((level, index) => (
-            <div
-              key={level.id}
-              className={`transform transition-all duration-700 flex flex-col items-center ${
-                isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
-              }`}
-              style={{ transitionDelay: `${index * 150}ms` }}
-            >
-              <button
+        {/* ── The shelf ──
+              Three columns at every width. Glasses are tall and narrow, so
+              even a 360px phone fits all three side by side — which is the
+              whole point, since comparing fill levels is the interaction. */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-6 w-full max-w-md sm:max-w-xl">
+          {levels.map((level, index) => {
+            const isSelected = selectedLevel === level.id;
+
+            return (
+              <motion.button
+                key={level.id}
+                type="button"
                 onClick={() => setSelectedLevel(level.id)}
-                className={`
-                  w-28 h-28 sm:w-44 sm:h-44 md:w-52 md:h-52
-                  rounded-full border-4 transition-all duration-300
-                  flex items-center justify-center
-                  bg-white cursor-pointer
-                  ${selectedLevel === level.id
-                    ? `${level.selectedBorder} shadow-xl ${level.selectedShadow} scale-105`
-                    : `${level.border} ${level.hover} shadow-md`}
-                `}
+                aria-pressed={isSelected}
+                className="group flex flex-col items-center cursor-pointer rounded-2xl
+                  px-1 pt-2 pb-3 sm:px-3
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-black/60
+                  focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 + index * 0.09, ease: 'easeOut' }}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
               >
-                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 text-center px-3 leading-snug">
-                  {level.title}
-                </h3>
-              </button>
-            </div>
-          ))}
+                {/* Lift is on an inner wrapper so it composites independently
+                    of the entrance animation above it. */}
+                <motion.div
+                  className="w-full flex flex-col items-center"
+                  initial={false}
+                  animate={{ y: isSelected ? -6 : 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                >
+                  {/* The glass paints itself from `currentColor`, so the
+                      level's accent is set once here and picked up by the
+                      outline and the tinted-glass wash alike. */}
+                  <MilkGlass
+                    fill={level.fill}
+                    selected={isSelected}
+                    className="w-full max-w-[112px] sm:max-w-[150px] h-auto"
+                    style={{ color: themes[level.id].accent }}
+                  />
+
+                  {/* Жирность, printed the way a carton prints it — the
+                      biggest thing on the pack. */}
+                  <span
+                    className={`mt-2 sm:mt-3 font-black tabular-nums leading-none
+                      text-xl sm:text-3xl transition-colors duration-200
+                      ${isSelected ? 'text-black' : 'text-gray-400'}`}
+                  >
+                    {level.fat}
+                  </span>
+
+                  {/* No subtitle: in RU it reads "Базовый" then "Базовый
+                      уровень", which is the same word twice. The percentage
+                      already carries the ranking the subtitle was doing. */}
+                  <span
+                    className={`mt-1 text-[11px] sm:text-sm font-bold leading-tight
+                      transition-colors duration-200
+                      ${isSelected ? 'text-black' : 'text-gray-500'}`}
+                  >
+                    {level.title}
+                  </span>
+                </motion.div>
+              </motion.button>
+            );
+          })}
         </div>
 
-        {/* Continue Button */}
-        <div className={`mt-5 sm:mt-12 md:mt-16 transform transition-all duration-700 delay-300 ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-        }`}>
-          {selectedLevel ? (
-            <Link to={`/levels/${selectedLevel}`}>
-              <button
-                className={`
-                  px-10 sm:px-14 py-2.5 sm:py-4 rounded-lg font-medium text-white text-sm sm:text-base
-                  bg-gradient-to-r ${levels.find(l => l.id === selectedLevel)?.accent}
-                  shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer
-                `}
+        {/* ── Continue ── */}
+        <div className="mt-7 sm:mt-12 w-full max-w-xs px-4 sm:px-0">
+          {chosen ? (
+            <Link to={`/levels/${chosen.id}`} className="block">
+              <motion.button
+                className="w-full py-3 bg-black text-white font-bold text-sm
+                  tracking-[0.2em] uppercase cursor-pointer
+                  hover:bg-gray-800 transition-colors"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
                 {t('levels.continue')}
-              </button>
+              </motion.button>
             </Link>
           ) : (
             <button
               disabled
-              className="px-10 sm:px-14 py-2.5 sm:py-4 rounded-lg font-medium text-gray-400 text-sm sm:text-base
-                bg-gray-100 border border-gray-200 cursor-not-allowed shadow-sm"
+              className="w-full py-3 border border-gray-200 text-gray-300 font-bold
+                text-sm tracking-[0.2em] uppercase cursor-not-allowed"
             >
               {t('levels.continue')}
             </button>
           )}
-        </div>
-
-        {/* Additional Info */}
-        <div className={`mt-3 sm:mt-8 text-center px-4 transform transition-all duration-1000 delay-500 ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-        }`}>
-          <p className="text-xs sm:text-sm text-gray-500">
-            {t('levels.notSure')}
-          </p>
         </div>
 
       </div>

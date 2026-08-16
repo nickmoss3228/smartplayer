@@ -4,6 +4,7 @@ import '../App.css';
 import { useTranslation } from 'react-i18next';
 import WhyCloudsSection from '../components/Homepage/WhyClouds/WhyCloudsSection';
 import BrandMark from '../components/Brand/BrandMark';
+import Slogan from '../components/Brand/Slogan';
 
 const Homepage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -40,15 +41,36 @@ const Homepage = () => {
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
 
-      {/* ── Milk-drop watermark — sits behind everything ── */}
+      {/* ── Milk-splash watermark — sits behind everything ──
+            White fill on a white page, so only the outline reads. The stroke
+            is non-scaling (see BrandMark), which keeps it an even line at this
+            size instead of a ~40px black band.
+
+            It is blurred on purpose: a crisp outline this large competes with
+            the hero text for attention. The blur pushes it back into the page
+            so it reads as atmosphere rather than as a second graphic. Because
+            blur eats thin lines, strokeWidth is heavier here than it would be
+            for a sharp mark — the two numbers move together. */}
     <div
       className="absolute inset-0 flex items-center justify-center
         pointer-events-none select-none"
       aria-hidden="true"
     >
+      {/* transform: translateZ(0) promotes this to its own composited layer so
+          the blur is rasterized once instead of being repainted as the page
+          scrolls. Cloud.tsx documents a real iPhone 12 report of blur-induced
+          jank; that one was per-frame and had to be dropped entirely, this one
+          is static and only needs to not repaint. */}
       <BrandMark
+        variant="splash"
+        strokeWidth={6}
         className="w-[80vw] md:w-[55vw] h-auto"
-        style={{ color: '#f5f5f5' }}
+        style={{
+          color: '#111111',
+          filter: 'blur(7px)',
+          opacity: 0.5,
+          transform: 'translateZ(0)',
+        }}
       />
     </div>
 
@@ -74,6 +96,11 @@ const Homepage = () => {
           >
             {t('brand')}
           </h1>
+
+          <Slogan
+            className="mt-3 sm:mt-4 text-base sm:text-xl md:text-2xl
+              font-medium text-gray-500 lowercase tracking-tight"
+          />
         </div>
 
         <WhyCloudsSection />

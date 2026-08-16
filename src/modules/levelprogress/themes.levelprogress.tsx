@@ -1,7 +1,13 @@
+// `accent` is the same hue as each level's `lastListenedBorder`, expressed as
+// the Tailwind v4 palette variable rather than a class, so it can be handed to
+// things Tailwind can't reach — SVG `stroke`/`fill`, inline styles. Points at
+// the same --color-* custom property Tailwind emits, so it cannot drift from
+// the utility classes below it.
 export const themes = {
   easy: {
     title: "Easy",
     subtitle: "Leo's Life",
+    accent: "var(--color-green-500)",
     gradient: "from-green-900 via-emerald-900 to-teal-800",
     background: "",
     // 2nd state: completed
@@ -25,6 +31,7 @@ export const themes = {
   medium: {
     title: "Medium",
     subtitle: "Maya's Adventures",
+    accent: "var(--color-orange-500)",
     gradient: "from-yellow-900 via-orange-900 to-red-800",
     background: "",
     // 2nd state: completed
@@ -48,6 +55,7 @@ export const themes = {
   hard: {
     title: "Hard",
     subtitle: "Daniel Mercer: a businessman's journey",
+    accent: "var(--color-purple-500)",
     gradient: "from-red-900 via-purple-900 to-pink-800",
     background: "",
     // 2nd state: completed

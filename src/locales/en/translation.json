@@ -90,6 +90,10 @@
     "button3": "How does it work?",
     "account": "Already have an account?",
     "eyebrow": "English Listening Training",
+    "slogan": {
+      "prefix": "as you hear it, so it",
+      "words": ["is right", "should be", "will stick", "will sail", "was meant"]
+    },
     "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
     "startFree": "Start for Free",
     "howItWorks": "How it works",
@@ -178,6 +182,10 @@
     "easySubtitle": "Foundational Level",
     "mediumSubtitle": "Intermediate Level",
     "hardSubtitle": "Advanced Level",
+    "fatLabel": "Milk fat",
+    "fatEasy": "1%",
+    "fatMedium": "2.5%",
+    "fatHard": "6%",
     "proceedToAssessment": "Proceed to Assessment →",
     "continue": "Continue",
     "notSure": ""
