@@ -1,12 +1,50 @@
 import { Resend } from "resend";
+import { domainToUnicode } from "node:url";
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Renders the A-label host (xn--80aa4acdq.xn--p1ai) back as its U-label
+// (малако.рф) for DISPLAY ONLY. The href must keep the punycode form: it is
+// the canonical URL, and ASCII is handled reliably by every mail client and
+// link scanner, whereas IDN support in email is patchy. But the visible text
+// should read малако.рф — a password-reset mail whose only visible link is
+// https://xn--80aa4acdq.xn--p1ai/... looks precisely like the phishing that
+// this email is meant to be the trustworthy alternative to.
+//
+// Built by string concatenation on purpose: assigning a Unicode string to
+// URL#hostname does NOT work, because the URL parser normalises hostnames
+// straight back to their ASCII form.
+//
+// `node:url`'s domainToUnicode, not `node:punycode`'s toUnicode — the latter
+// produces identical output here but is deprecated (DEP0040) and prints a
+// warning on every boot under Node 22.
+//
+// try/catch with a fallback to the untouched URL: a cosmetic nicety must never
+// be able to break password reset.
+function toDisplayUrl(url) {
+  try {
+    const u = new URL(url);
+    const unicodeHost = domainToUnicode(u.hostname);
+    // domainToUnicode returns "" for input it cannot process.
+    if (!unicodeHost || unicodeHost === u.hostname) return url; // not an IDN
+    return `${u.protocol}//${unicodeHost}${u.port ? `:${u.port}` : ""}${u.pathname}${u.search}${u.hash}`;
+  } catch {
+    return url;
+  }
+}
+
 export async function sendPasswordResetEmail(email, resetUrl, username) {
+  // The reset URL is deliberately NOT logged: it carries a live, unhashed
+  // token good for a full account takeover for the next hour, and container
+  // logs are a far softer target than the database. password.controller.js
+  // already refuses to log it for exactly this reason — this file was the
+  // remaining leak. The recipient address alone is enough to trace a delivery
+  // failure.
   console.log('=== SENDING PASSWORD RESET EMAIL ===');
   console.log('To:', email);
-  console.log('Reset URL:', resetUrl);
-  console.log('Username:', username);
-  
+
+  const displayUrl = toDisplayUrl(resetUrl);
+
   try {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
@@ -78,7 +116,7 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
                       </p>
                       <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; word-break: break-all;">
                         <a href="${resetUrl}" style="color: #60a5fa; text-decoration: none; font-size: 13px; line-height: 1.6;">
-                          ${resetUrl}
+                          ${displayUrl}
                         </a>
                       </div>
                       
