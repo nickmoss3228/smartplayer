@@ -49,16 +49,17 @@ Everything in the repo is already done. These four steps are on you, in order.
 Add an A record `test.малако.рф → 89.169.159.92`. Wait for it:
 
 ```bash
-dig +short test.xn--80aa4acdq.xn--p1ai      # must return 89.169.159.92
+bash dig +short test.xn--80aa4acdq.xn--p1ai      # must return 89.169.159.92
 ```
 
 Do not skip ahead — see the note in `Caddyfile` about burning the Let's
 Encrypt rate limit on a name that doesn't resolve yet.
 
-### 2. Staging bucket
+### 2. Staging bucket — DONE
 
-Create `audioplayer-data-staging` (Object Storage → Create bucket, public
-read), and grant the existing service account `storage.editor` on it.
+`audioplayer-data-staging` exists, is public-read, and holds a full copy of
+production's media (988 objects, 147 MiB, verified by ETag). Recorded here so
+it can be redone from scratch.
 
 **This is the boundary that can actually destroy production data.**
 `uploadBuffer()` writes deterministic keys
@@ -67,11 +68,44 @@ a staging Story Builder upload aimed at the production bucket replaces the live
 audio for that story. Object storage has no equivalent of the database split —
 only the bucket name separates them.
 
-A fresh bucket has no existing audio, so stories in staging will 404 on
-playback until you copy objects across (`yc storage s3 sync`, or the console).
-That's the right trade: 404s in staging beat silent destruction in production.
+The `yc` CLI is not on PATH on the dev machine; it lives at
+`~/yandex-cloud/bin/yc.exe` (same fallback `deploy.sh` uses).
 
-### 3. Files on the VM
+```bash
+YC="$HOME/yandex-cloud/bin/yc.exe"
+
+# Copy every object across. Note: there is NO `yc storage s3 sync` — the
+# PREVIEW s3 interface implements only cp / mv / rm / presign, so a recursive
+# cp is the whole toolbox. It is a plain copy, not a sync: it never deletes,
+# and it re-copies everything rather than skipping unchanged objects.
+"$YC" storage s3 cp s3://audioplayer-data s3://audioplayer-data-staging \
+  --recursive --only-show-errors
+
+# CORS must be set separately — a new bucket has none, and public-read alone
+# is not enough. The waveform decodes audio via XHR rather than a plain
+# <audio> src, so without Access-Control-Expose-Headers on the range headers
+# the player fails on files that load fine when opened directly in a tab.
+# Values are protobuf enum names (METHOD_GET), not bare verbs, and repeated
+# properties build a list.
+"$YC" storage bucket update --name audioplayer-data-staging \
+  --cors id=cors,allowed-methods=METHOD_GET,allowed-methods=METHOD_HEAD,\
+allowed-headers=*,allowed-origins=*,expose-headers=Content-Length,\
+expose-headers=Content-Range,expose-headers=Accept-Ranges,max-age-seconds=3600
+```
+
+Verify with a range request — expect `206`, `Access-Control-Allow-Origin`, and
+`Content-Range`:
+
+```bash
+curl -s -o /dev/null -D - -H "Origin: https://test.xn--80aa4acdq.xn--p1ai" \
+  -H "Range: bytes=0-99" \
+  "https://storage.yandexcloud.net/audioplayer-data-staging/leo/quiz/1.leo's%20life/vocab/flat.mp3"
+```
+
+Because `cp` is not a sync, re-run it whenever production gains media you want
+in staging. It overwrites by key, so it is safe to repeat.
+
+### 3. Files on the VM — DONE
 
 The VM's `~/smartplayer` holds `docker-compose.yml`, `Caddyfile` and the env
 files; they are not deployed by CI. Create the env file **first**, then copy the
@@ -84,6 +118,7 @@ scp backend/.env.staging.example smartplayer:~/smartplayer/backend/
 ssh smartplayer
 cd ~/smartplayer
 mv backend/.env.staging.example backend/.env.staging
+chmod 600 backend/.env.staging
 $EDITOR backend/.env.staging      # fill in — the four CRITICAL values
 exit
 
@@ -94,7 +129,7 @@ scp docker-compose.yml Caddyfile smartplayer:~/smartplayer/
 (The compose entry marks that env file `required: false` precisely so getting
 this order wrong can't break a *production* deploy — but do it in order anyway.)
 
-### 4. First deploy
+### 4. First deploy — DONE
 
 Push the branch, let CI build and push both `:staging` images, then bring the
 stack up and enable the Caddy route:
@@ -103,14 +138,28 @@ stack up and enable the Caddy route:
 # locally
 git push -u origin staging
 
-# on the VM, once both workflows are green
+# on the VM, once both workflows are green.
+# Name the services explicitly: a bare `up -d` also evaluates the production
+# services and would recreate them if anything in their config had drifted.
 cd ~/smartplayer
-docker compose --profile staging up -d
+docker compose --profile staging pull frontend-staging backend-staging
+docker compose --profile staging up -d frontend-staging backend-staging
 docker compose --profile staging ps          # both should reach (healthy)
-
-# only now uncomment the staging block in Caddyfile, then
-docker compose restart caddy
 ```
+
+Then uncomment the staging block in `Caddyfile` and reload. **Validate before
+reloading** — production sits behind this same Caddy, and a config error would
+take the live site down with it. `reload` is graceful; `restart` drops
+connections for both sites:
+
+```bash
+docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose exec caddy caddy reload   --config /etc/caddy/Caddyfile --adapter caddyfile
+```
+
+A `401` with `WWW-Authenticate: Basic` from
+`https://test.xn--80aa4acdq.xn--p1ai` means it worked: the certificate was
+issued (TLS completed) and basic_auth is gating it.
 
 ## Daily use
 

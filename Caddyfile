@@ -29,28 +29,21 @@ xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
 # ─────────────────────────────────────────────────────────────────────────────
 # STAGING — test.малако.рф -> test.xn--80aa4acdq.xn--p1ai
 #
-# DELIBERATELY COMMENTED OUT. Per the rule above, a hostname must not appear
-# here until its DNS already resolves to this VM. Uncommenting early makes
-# Caddy request a cert on startup, the HTTP-01 challenge lands wherever the
-# name currently points, and five failures in an hour burn the Let's Encrypt
-# rate limit for that name — delaying real issuance once DNS is correct.
+# ENABLED 2026-08-18, after the A record for test.малако.рф resolved to this VM.
+# It was kept commented until then on purpose: Caddy requests a certificate on
+# startup for every name here, and five failed HTTP-01 challenges in an hour
+# burn the Let's Encrypt rate limit for that name. Comment it back out rather
+# than pointing it at a name that has stopped resolving.
 #
-# Enable in this order:
-#   1. Add an A record: test.малако.рф -> 89.169.159.92, and wait for it to
-#      resolve (`dig +short test.xn--80aa4acdq.xn--p1ai` returns the VM IP).
-#   2. Start the staging stack, so `frontend-staging` actually exists on the
-#      network — Caddy returns 502 for a proxy target it cannot resolve:
-#        docker compose --profile staging up -d
-#   3. Uncomment the block below, then `docker compose restart caddy`.
-#
-# basic_auth keeps the staging site out of search results and away from
-# anyone who stumbles onto the subdomain. Generate the hash on the VM with
-# `docker compose exec caddy caddy hash-password` and paste it below; the
-# username is whatever you put before the hash.
-#
-# test.xn--80aa4acdq.xn--p1ai {
-# 	basic_auth {
-# 		tester <paste-bcrypt-hash-here>
-# 	}
-# 	reverse_proxy frontend-staging:80
-# }
+# basic_auth keeps staging out of search results and away from anyone who
+# stumbles onto the subdomain. The value below is a bcrypt hash, not a
+# password — regenerate with:
+#   docker compose exec caddy caddy hash-password
+# ─────────────────────────────────────────────────────────────────────────────
+
+test.xn--80aa4acdq.xn--p1ai {
+	basic_auth {
+		tester $2a$14$Hu9.EVW5Q.VXJCVY8OZ7uuUPzgEFAdJIhKwCgCG4LtmtwMzP8BBD2
+	}
+	reverse_proxy frontend-staging:80
+}
