@@ -36,9 +36,17 @@ jobs:
           # the bundle must emit relative URLs. It differs from production only
           # in WHERE that nginx proxies to, which is BACKEND_UPSTREAM below and
           # is baked into the image, not the JS bundle.
+          # VITE_YOS_BASE_URL is hardcoded to the staging bucket rather than
+          # reusing vars.VITE_YOS_BASE_URL: a GitHub Actions *variable* is
+          # repo-wide and cannot differ per branch, so sharing it silently
+          # built a staging bundle that read all media from the PRODUCTION
+          # bucket. Read-only, so nothing could be damaged — but it meant the
+          # staging bucket's copy went unused by the player, while the staging
+          # backend still wrote uploads there, leaving media split across two
+          # buckets depending on how it arrived.
           docker build --provenance=false --sbom=false \
             --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
-            --build-arg VITE_YOS_BASE_URL="${{ vars.VITE_YOS_BASE_URL }}" \
+            --build-arg VITE_YOS_BASE_URL="https://storage.yandexcloud.net/audioplayer-data-staging" \
             --build-arg BACKEND_UPSTREAM="http://backend-staging:3000" \
             -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging-${{ github.sha }} \
             -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging \
