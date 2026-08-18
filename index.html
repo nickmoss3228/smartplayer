@@ -21,8 +21,16 @@
 
     <!-- ── Installable web app ──────────────────────────────────────────
          The manifest is what makes "Add to Home Screen" produce a real app
-         window: display:standalone drops the URL bar and tabs entirely. -->
-    <link rel="manifest" href="/manifest.webmanifest" />
+         window: display:standalone drops the URL bar and tabs entirely.
+
+         crossorigin="use-credentials" is required, not decorative. A manifest
+         is fetched with credentials OMITTED by default, so on any origin behind
+         HTTP auth the fetch 401s on its own — and because the browser re-fetches
+         the manifest on navigation, that surfaces as a login prompt on every
+         page change. This bit the staging site (test.малако.рф, behind
+         basic_auth); production is unauthenticated so the attribute is a no-op
+         there. -->
+    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 
     <!-- iOS ignored the manifest until 16.4, and still will not use its icons
          for the home screen, so these stay. apple-touch-icon must be a plain
