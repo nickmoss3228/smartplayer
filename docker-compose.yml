@@ -76,6 +76,82 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ── Staging ─────────────────────────────────────────────────────────────
+  # A second copy of the stack for testing unreleased work, served from
+  # test.малако.рф on this same VM. Deployed from the `staging` git branch by
+  # .github/workflows/deploy-*-staging.yml. Full runbook: docs/staging.md.
+  #
+  # Both services sit behind `profiles`, which is what keeps them from
+  # disturbing production: a service with a profile is invisible to every
+  # command that doesn't name that profile. `docker compose up -d frontend`,
+  # `docker compose pull backend`, and both production workflows therefore
+  # behave exactly as before and will never start, stop, or recreate these.
+  # They come up only via `docker compose --profile staging up -d`.
+  #
+  # They join the production smartplayer-net so the shared Caddy can reach
+  # them by service name. That network is the ONLY thing the two environments
+  # share at runtime — the staging backend gets its own database, its own JWT
+  # secret, and its own admin codes via backend/.env.staging.
+  frontend-staging:
+    profiles: ["staging"]
+    # No `build:` — the VM only ever pulls this image, CI builds it. Note the
+    # separate STAGING_TAG: production's TAG=latest in ~/smartplayer/.env must
+    # not decide which staging image runs.
+    image: ${FRONTEND_IMAGE:-smartplayer-frontend}:${STAGING_TAG:-staging}
+    container_name: smartplayer-frontend-staging
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks: [smartplayer-net]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend-staging:
+    profiles: ["staging"]
+    image: ${BACKEND_IMAGE:-smartplayer-backend}:${STAGING_TAG:-staging}
+    container_name: smartplayer-backend-staging
+    restart: unless-stopped
+    # Separate from .env.production and likewise never in git — it carries a
+    # MONGODB_URI pointing at a different database. Copy
+    # backend/.env.staging.example to the VM as backend/.env.staging and fill
+    # it in before the first staging deploy.
+    #
+    # `required: false` is deliberate and protects PRODUCTION: with the plain
+    # `env_file: ./path` form, a missing file is a hard project-load error, and
+    # depending on the Compose version that can fire even for a service whose
+    # profile is inactive — which would make `docker compose up -d frontend`
+    # fail on a box that simply hasn't been set up for staging yet. Opting out
+    # of that check trades a confusing production outage for an obvious staging
+    # one: with no env file, backend-staging boots, finds no MONGODB_URI, and
+    # exits loudly via config/env.js's required-variable check.
+    # Needs Compose >= 2.24 for this long form (the VM installs
+    # docker-compose-plugin from Docker's apt repo, so it is well past that).
+    env_file:
+      - path: ./backend/.env.staging
+        required: false
+    expose:
+      - "3000"
+    networks: [smartplayer-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 networks:
   smartplayer-net:
     driver: bridge

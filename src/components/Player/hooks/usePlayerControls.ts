@@ -55,6 +55,7 @@ export const usePlayerControls = ({
 }: UsePlayerControlsOptions) => {
   const dispatch = useAppDispatch();
 
+  // Apply the playback speed to the player and update the state accordingly
   const applySpeed = useCallback(
     (rate: number) => {
       dispatch(setPlaybackRate(rate));
@@ -63,7 +64,8 @@ export const usePlayerControls = ({
     },
     [dispatch, playbackRateRef, wavesurfer],
   );
-
+  
+  // Apply the starting speed of the sequence when playback starts or when the repeat count changes.
   const applySequenceStartSpeed = useCallback(() => {
   if (isEnhancedModeRef.current) {
     const seq = SPEED_SEQUENCES[repeatCountRef.current] ?? [1.0];
@@ -71,16 +73,21 @@ export const usePlayerControls = ({
   } else {
     applySpeed(userPlaybackRateRef.current);
   }
-}, [applySpeed, isEnhancedModeRef, repeatCountRef, userPlaybackRateRef]);
-
+  }, [applySpeed, isEnhancedModeRef, repeatCountRef, userPlaybackRateRef]);
+  
+ // Handle play/pause functionality
   const handlePlayPause = useCallback(() => {
     if (!wavesurfer.current || !isInitialized) return;
 
     try {
+      // If currently playing, pause the playback and notify that the enhanced session has ended.
       if (isPlaying) {
         onEnhancedSessionChange?.(false);
         wavesurfer.current.pause();
       } else {
+        // If not currently playing, check if there are time markers defined. 
+        // If so, ensure that the playback starts at the beginning of the current segment.
+        //  If the current time is outside the bounds of the current segment, reset it to the start of the segment.
         if (timeMarkersRef.current?.length) {
           const current = wavesurfer.current.getCurrentTime();
           const { start, end } = getSegmentBounds(currentMarkerIndexRef.current);
@@ -122,6 +129,7 @@ export const usePlayerControls = ({
     !wavesurfer.current
   ) return;
 
+  // Calculate the index of the next sentence and its corresponding time
   const nextIdx = currentMarkerIndexRef.current + 1;
   const nextMarker = timeMarkersRef.current[nextIdx];
   const nextTime = typeof nextMarker === "object" ? nextMarker.time : nextMarker;
@@ -129,6 +137,7 @@ export const usePlayerControls = ({
   currentRepeatRef.current = 0;
   isSegmentTransitioningRef.current = false;
 
+  // Apply the starting speed of the sequence
   applySequenceStartSpeed();
   onEnhancedSessionChange?.(true);// (keyboard ArrowRight keeps session alive)
   dispatch(setCurrentMarkerIndex(nextIdx));
@@ -147,17 +156,19 @@ export const usePlayerControls = ({
   onEnhancedSessionChange,
   ]);
   
-  
+  //  Replay the current sentence from the beginning
   const replayCurrentSentence = useCallback(() => {
   if (!timeMarkersRef.current?.length || !wavesurfer.current) return;
 
+  // Get the start time of the current segment and reset the repeat count and transition state
   const { start } = getSegmentBounds(currentMarkerIndexRef.current);
   currentRepeatRef.current = 0;
   isSegmentTransitioningRef.current = false;
-
-    applySequenceStartSpeed();
-    onEnhancedSessionChange?.(true);
+  applySequenceStartSpeed();
+  onEnhancedSessionChange?.(true);
   wavesurfer.current.setTime(start);
+
+    // After a short delay, resume playback to ensure the seek operation has completed
   setTimeout(() => wavesurfer.current?.play(), 10);
 }, [
   getSegmentBounds,
@@ -167,7 +178,7 @@ export const usePlayerControls = ({
   repeatCountRef,
   currentRepeatRef,
   isSegmentTransitioningRef,
-  isEnhancedModeRef,  // ← add to deps
+  isEnhancedModeRef,
     wavesurfer,
   onEnhancedSessionChange,
 ]);
@@ -204,14 +215,19 @@ export const usePlayerControls = ({
     setIsControlledMode((prev) => !prev);
   }, [setIsControlledMode]);
 
+  // Handle clicking on a time marker to jump to that segment and start playback
   const handleMarkerClick = useCallback(
     async (time: number) => {
       if (!wavesurfer.current) return;
 
+      // Guard against the case where the component is unmounted or the player is no longer in enhanced mode while waiting for the timeout to fire.
       try {
         const markers = timeMarkersRef.current;
         const dur = wavesurfer.current.getDuration();
 
+        // Find the index of the marker that corresponds to the clicked time. 
+        // This is done by checking if the clicked time falls within the range of any marker and its subsequent marker 
+        // (or the end of the audio if it's the last marker).
         const markerIndex = markers.findIndex((marker, index) => {
           const markerTime = typeof marker === "object" ? marker.time : marker;
           const nextMarker = markers[index + 1];
@@ -223,6 +239,7 @@ export const usePlayerControls = ({
           return time >= markerTime && time < nextTime;
         });
 
+        // If a valid marker index is found, update the current marker index in the store.
         if (markerIndex >= 0) dispatch(setCurrentMarkerIndex(markerIndex));
 
         currentRepeatRef.current = 0;
@@ -230,6 +247,7 @@ export const usePlayerControls = ({
 
        applySequenceStartSpeed();
 
+        // Seek to the clicked time and start playback after a short delay to ensure the seek operation has completed.
         wavesurfer.current.seekTo(time / dur);
         await new Promise((r) => setTimeout(r, 50));
         await wavesurfer.current.play();

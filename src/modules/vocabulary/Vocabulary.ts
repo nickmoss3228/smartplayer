@@ -27,6 +27,23 @@ export const trackFolderMap: Record<
       "2": "2. leo's second story",
       "3": "3. leo's third story",
     },
+    // "News and Interesting things" group — every news story is a source
+    // article (part 1) plus a linked conversation (part 2). These folder names
+    // are also what the player prints as the track title (see
+    // useStoryTitles.ts: "1. story" → "Story"), matching the placeholder
+    // AudioTrack titles in audioDataNewsPlaceholder.ts.
+    "news-roland-garros": {
+      "1": "1. story",
+      "2": "2. discussion",
+    },
+    "news-family-visit": {
+      "1": "1. story",
+      "2": "2. discussion",
+    },
+    "news-grazing-board": {
+      "1": "1. story",
+      "2": "2. discussion",
+    },
   },
   medium: {
     maya: {
@@ -65,6 +82,14 @@ export const storyFolderMap: Record<string, Record<string, string>> = {
     "leo-additional": "leo",
     // ^ change to "leo-additional" if the new set lives in its own
     // top-level bucket in storage rather than a subfolder of "leo".
+    // Each news story gets its own top-level bucket rather than sharing
+    // "leo" — otherwise all three would collide on the same "1. story" /
+    // "2. discussion" track folders. Full vocab path, for reference:
+    //   news-grazing-board/quiz/1. story/vocab/olives.mp3
+    // Nothing is uploaded yet, so change these if the bucket layout differs.
+    "news-roland-garros": "news-roland-garros",
+    "news-family-visit": "news-family-visit",
+    "news-grazing-board": "news-grazing-board",
   },
   medium: {
     maya: "maya",
@@ -148,6 +173,67 @@ export const trackPhrasalVerbs: Record<
   ],
   "3": [],
 },
+    // ── News stories ────────────────────────────────────────────────────
+    // These follow the same loose definition of "phrasal" the lists above
+    // already use — verb + particle *and* verb + preposition ("pay for",
+    // "bet on", "be out"), not strict particle verbs only. The two news
+    // articles are adapted A2 prose with very few true particle verbs, so
+    // most of what's here is the prepositional kind.
+    "news-roland-garros": {
+      "1": [
+        { word: "верить в", definition: "1", audioKey: "believe in" },
+        { word: "благодарить за", definition: "1", audioKey: "thank for" },
+      ],
+      "2": [
+        {
+          word: "хорошо разбираться в",
+          definition: "1",
+          audioKey: "be good at",
+        },
+        { word: "сделать (с этим)", definition: "1", audioKey: "do about" },
+        {
+          word: "сразу отправиться в",
+          definition: "1",
+          audioKey: "go straight to",
+        },
+        { word: "продолжать делать", definition: "1", audioKey: "keep doing" },
+      ],
+    },
+    "news-family-visit": {
+      "1": [
+        { word: "тратить на", definition: "1", audioKey: "spend on" },
+        { word: "быть про, сводиться к", definition: "1", audioKey: "be about" },
+      ],
+      // Part 2 (discussion) text not written yet.
+      "2": [],
+    },
+    "news-grazing-board": {
+      "1": [
+        {
+          word: "возникнуть, подвернуться",
+          definition: "1",
+          audioKey: "come up",
+        },
+        { word: "позвать в гости", definition: "1", audioKey: "invite over" },
+        { word: "закинуть (в корзину)", definition: "1", audioKey: "toss in" },
+        { word: "купить, взять", definition: "1", audioKey: "pick up" },
+        { word: "пригодиться", definition: "1", audioKey: "come in handy" },
+        {
+          word: "пройти, справиться",
+          definition: "1",
+          audioKey: "make it through",
+        },
+        { word: "выложить, выставить", definition: "1", audioKey: "put out" },
+        { word: "вовлечь в", definition: "1", audioKey: "get involved in" },
+      ],
+      "2": [
+        { word: "разогреть(ся)", definition: "1", audioKey: "warm up" },
+        { word: "вынимать, доставать", definition: "1", audioKey: "take out" },
+        { word: "собрать, составить", definition: "1", audioKey: "put together" },
+        { word: "вернуться", definition: "1", audioKey: "go back" },
+        { word: "увлечься", definition: "1", audioKey: "get carried away" },
+      ],
+    },
   },
   medium: {
     maya: {
@@ -458,6 +544,168 @@ export const trackVocabulary: Record<
   ],
       "3": [
         // vocab entries for track 3
+      ],
+    },
+    // ── News stories ──────────────────────────────────────────────────────
+    // Part 1 = the source article, part 2 = the linked conversation, matching
+    // the "Story" / "Discussion" tracks in audioDataNewsPlaceholder.ts.
+    "news-roland-garros": {
+      // Article: Mirra Andreeva wins the 2026 French Open.
+      "1": [
+        { word: "турнир", definition: "1", audioKey: "a tournament" },
+        { word: "финал", definition: "1", audioKey: "the final" },
+        { word: "чемпионка", definition: "1", audioKey: "a champion" },
+        { word: "победить (соперника)", definition: "1", audioKey: "defeat" },
+        { word: "титул", definition: "1", audioKey: "a title" },
+        {
+          word: "финалистка, второе место",
+          definition: "1",
+          audioKey: "a runner-up",
+        },
+        // audioKeys stay lowercase: useVocabAudio builds the mp3 path from the
+        // raw key while usePreloadStoryAssets/assembleImportPayload lowercase
+        // it, so a capitalised key would preload one file and play another.
+        { word: "Большой шлем", definition: "1", audioKey: "a grand slam" },
+        {
+          word: "карьерный Большой шлем",
+          definition: "1",
+          audioKey: "a career grand slam",
+        },
+        { word: "самая молодая", definition: "1", audioKey: "the youngest" },
+        { word: "примечательный, заметный", definition: "1", audioKey: "notable" },
+        { word: "зарабатывать", definition: "1", audioKey: "earn" },
+        { word: "тренер", definition: "1", audioKey: "a coach" },
+        { word: "присутствовать на", definition: "1", audioKey: "attend" },
+        // "thank for" / "believe in" moved to trackPhrasalVerbs — the
+        // preposition is the teaching point, and a bare "thank" is A1.
+        { word: "невероятно", definition: "1", audioKey: "incredibly" },
+      ],
+      // Discussion: E / S / A talk about the win.
+      "2": [
+        { word: "восходящая звезда", definition: "1", audioKey: "a rising star" },
+        { word: "следить за спортом", definition: "1", audioKey: "follow sports" },
+        { word: "шутить, разыгрывать", definition: "1", audioKey: "be kidding" },
+        { word: "потрясающий", definition: "1", audioKey: "amazing" },
+        { word: "практически", definition: "1", audioKey: "practically" },
+        { word: "школьница", definition: "1", audioKey: "a schoolgirl" },
+        { word: "слёзы радости", definition: "1", audioKey: "tears of joy" },
+        { word: "попробуй угадать", definition: "1", audioKey: "take a guess" },
+        { word: "обменный курс", definition: "1", audioKey: "an exchange rate" },
+        { word: "безумный, огромный", definition: "1", audioKey: "insane" },
+        { word: "несправедливый", definition: "1", audioKey: "unfair" },
+        { word: "тяжёлый труд", definition: "1", audioKey: "hard work" },
+        { word: "ракетка", definition: "1", audioKey: "a racket" },
+        { word: "тренировка", definition: "1", audioKey: "practice" },
+        {
+          word: "чемпионат мира",
+          definition: "1",
+          audioKey: "a world championship",
+        },
+        { word: "поднять бокал за", definition: "1", audioKey: "raise a glass" },
+        { word: "передумать", definition: "1", audioKey: "change your mind" },
+      ],
+    },
+    "news-family-visit": {
+      // Article: how young people in Russia are changing New Year traditions.
+      "1": [
+        { word: "опрос-анкетирование", definition: "1", audioKey: "a survey" },
+        { word: "безопасность", definition: "1", audioKey: "safe" },
+        { word: "уют", definition: "1", audioKey: "cozy" },
+        { word: "тратить", definition: "1", audioKey: "to spend" },
+        { word: "подарок", definition: "1", audioKey: "a gift" },
+        { word: "старше", definition: "1", audioKey: "older" },
+        {
+          word: "большинство, бо́льшая часть",
+          definition: "1",
+          audioKey: "most",
+        },
+        { word: "традиционный", definition: "1", audioKey: "traditional" },
+        { word: "праздновать", definition: "1", audioKey: "celebrate" },
+        { word: "вместо этого", definition: "1", audioKey: "instead" },
+        { word: "вообще (не)", definition: "1", audioKey: "at all" },
+        { word: "блюдо", definition: "1", audioKey: "a dish" },
+        { word: "селёдка", definition: "1", audioKey: "herring" },
+        { word: "загадать желание", definition: "1", audioKey: "make a wish" },
+        { word: "полночь", definition: "1", audioKey: "midnight" },
+        { word: "привычка", definition: "1", audioKey: "a habit" },
+        { word: "социальные сети", definition: "1", audioKey: "social media" },
+        { word: "меняться", definition: "1", audioKey: "change" },
+      ],
+      // Discussion text not written yet — fill in when the second part exists.
+      "2": [],
+    },
+    "news-grazing-board": {
+      // Article: "Grazing Board. Italian Antipasti" — mostly a shopping list,
+      // so the food nouns are the comprehension bottleneck for A2 listeners.
+      "1": [
+        {
+          word: "доска с закусками (ассорти)",
+          definition: "1",
+          audioKey: "a grazing board",
+        },
+        {
+          word: "антипасти (итальянские закуски)",
+          definition: "1",
+          audioKey: "antipasti",
+        },
+        {
+          word: "сырокопчёная колбаса",
+          definition: "1",
+          audioKey: "dry-cured sausage",
+        },
+        { word: "ветчина", definition: "1", audioKey: "ham" },
+        { word: "копчёный сыр", definition: "1", audioKey: "smoked cheese" },
+        { word: "виноград", definition: "1", audioKey: "grapes" },
+        { word: "помидоры черри", definition: "1", audioKey: "cherry tomatoes" },
+        { word: "оливки", definition: "1", audioKey: "olives" },
+        { word: "перепелиные яйца", definition: "1", audioKey: "quail eggs" },
+        { word: "форель", definition: "1", audioKey: "trout" },
+        { word: "шпроты", definition: "1", audioKey: "sprats" },
+        { word: "мёд", definition: "1", audioKey: "honey" },
+        { word: "грецкие орехи", definition: "1", audioKey: "walnuts" },
+        { word: "ржаной хлеб", definition: "1", audioKey: "rye bread" },
+        { word: "деревянная доска", definition: "1", audioKey: "a wooden board" },
+        { word: "острый нож", definition: "1", audioKey: "a sharp knife" },
+        { word: "нарезать", definition: "1", audioKey: "slice" },
+        { word: "чистить (от скорлупы)", definition: "1", audioKey: "peel" },
+        { word: "горка, кучка", definition: "1", audioKey: "a pile" },
+        { word: "сытный", definition: "1", audioKey: "filling" },
+        {
+          word: "пропасть, испортиться зря",
+          definition: "1",
+          audioKey: "go to waste",
+        },
+      ],
+      // Discussion: Katrin, Evelyn and Igor argue about what to order.
+      "2": [
+        { word: "удобный", definition: "1", audioKey: "convenient" },
+        { word: "надоесть", definition: "1", audioKey: "be tired of" },
+        { word: "альтернатива", definition: "1", audioKey: "an alternative" },
+        { word: "с нуля", definition: "1", audioKey: "from scratch" },
+        { word: "недорогой, доступный", definition: "1", audioKey: "affordable" },
+        { word: "совет", definition: "1", audioKey: "a tip" },
+        {
+          word: "ограниченный бюджет",
+          definition: "1",
+          audioKey: "a tight budget",
+        },
+        { word: "ассорти, набор", definition: "1", audioKey: "an assortment" },
+        {
+          word: "холодные закуски",
+          definition: "1",
+          audioKey: "cold appetizers",
+        },
+        { word: "пастись", definition: "1", audioKey: "graze" },
+        { word: "пастбище", definition: "1", audioKey: "a pasture" },
+        { word: "под рукой", definition: "1", audioKey: "on hand" },
+        {
+          word: "средиземноморская кухня",
+          definition: "1",
+          audioKey: "mediterranean food",
+        },
+        { word: "духовка", definition: "1", audioKey: "the oven" },
+        { word: "угадать", definition: "1", audioKey: "guess" },
+        { word: "ссылка", definition: "1", audioKey: "a link" },
       ],
     },
   },

@@ -1,0 +1,59 @@
+name: Deploy backend (staging)
+
+# Mirrors deploy-backend.yml on the `staging` branch. The image is tagged
+# `staging`, never `latest` — production's compose entry pulls `latest`, so a
+# staging build must never claim that tag. See docs/staging.md.
+on:
+  push:
+    branches: [staging]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend-staging.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Yandex Container Registry
+        uses: yc-actions/yc-cr-login@v3
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build and push
+        working-directory: backend
+        run: |
+          docker build --provenance=false --sbom=false \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-backend:staging-${{ github.sha }} \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-backend:staging \
+            .
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-backend:staging-${{ github.sha }}
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-backend:staging
+
+      - name: Deploy on VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_SSH_HOST }}
+          username: deploy
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd ~/smartplayer
+            TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+              "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
+              | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+            echo "$TOKEN" | docker login --username iam --password-stdin cr.yandex
+            docker compose --profile staging pull backend-staging
+            docker compose --profile staging up -d --no-build backend-staging
+            docker image prune -f
+            for i in $(seq 1 12); do
+              sleep 5
+              s=$(docker inspect smartplayer-backend-staging --format '{{.State.Health.Status}}' 2>/dev/null || echo starting)
+              echo "health=$s"
+              [ "$s" = "healthy" ] && exit 0
+            done
+            echo "staging backend did not become healthy; recent logs:"
+            docker compose --profile staging logs --tail 40 backend-staging
+            exit 1

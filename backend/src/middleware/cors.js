@@ -7,6 +7,11 @@ export const corsMiddleware = (req, res, next) => {
     //   малако.рф -> xn--80aa4acdq.xn--p1ai
     'https://xn--80aa4acdq.xn--p1ai',
     'https://www.xn--80aa4acdq.xn--p1ai',
+    // Staging, on the same VM. Served same-origin through its own nginx like
+    // production, so this entry is belt-and-braces rather than load-bearing —
+    // it only matters if something is ever pointed at the staging API with an
+    // absolute origin (a local bundle built against it, say).
+    'https://test.xn--80aa4acdq.xn--p1ai',
     // Legacy domain, still live on Vercel until DNS is cut over.
     'https://infinityplayer.xyz',
     'https://www.infinityplayer.xyz',

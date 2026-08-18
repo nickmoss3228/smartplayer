@@ -30,7 +30,18 @@ RUN npm run build
 # 0 critical / 0 high. Re-pin to a digest here if reproducibility ever matters
 # more than staying patched.
 FROM nginx:stable-alpine AS runtime
+
+# Which backend container nginx proxies /api/ to. Defaults to the production
+# service name, so an unparameterised build produces exactly what it always
+# has. The staging build passes http://backend-staging:3000 — without this a
+# staging frontend would proxy straight into the PRODUCTION API and write test
+# data to real users, which is the one failure this whole split exists to
+# prevent. Baked at build time rather than read from the environment because
+# nginx.conf is a static file in the image; see docs/staging.md.
+ARG BACKEND_UPSTREAM=http://backend:3000
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN sed -i "s|http://backend:3000|${BACKEND_UPSTREAM}|" /etc/nginx/conf.d/default.conf \
+ && grep -q "${BACKEND_UPSTREAM}" /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80

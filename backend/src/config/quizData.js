@@ -941,6 +941,328 @@ export const quizData = {
           }
         }
       ]
+    },
+    // ── News and Interesting things ───────────────────────────────────────
+    // Part 1 = source article, part 2 = the linked conversation. `audio` uses
+    // the "1" placeholder that leo-additional already uses — the fast/slow
+    // question recordings don't exist yet, and nothing reads these strings as
+    // URLs until they're replaced with real getStorageUrl paths.
+    "news-roland-garros": {
+      "1": [
+        {
+          "question": "How old was Mirra Andreeva on the day of her victory?",
+          "options": [
+            "17 years and 39 days",
+            "18 years and 39 days",
+            "19 years and 39 days",
+            "20 years and 39 days"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Who did Andreeva defeat in the final?",
+          "options": [
+            "A Polish player",
+            "A French player",
+            "An American player",
+            "Another Russian player"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Including Andreeva, how many Russian women have won a Grand Slam tournament?",
+          "options": [
+            "Two",
+            "Three",
+            "Four",
+            "Five"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Which Russian player completed the career Grand Slam?",
+          "options": [
+            "Anastasia Myskina",
+            "Svetlana Kuznetsova",
+            "Maria Sharapova",
+            "Mirra Andreeva"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "How much did Andreeva earn for winning the tournament?",
+          "options": [
+            "1.4 million euros",
+            "2.8 million euros",
+            "3.8 million euros",
+            "2.4 million euros"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        }
+      ],
+      "2": [
+        {
+          "question": "Why doesn't Sam know who Mirra Andreeva is?",
+          "options": [
+            "He doesn't follow tennis",
+            "He was away on holiday",
+            "He only watches women's sport",
+            "He doesn't like sport at all"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Which Russian tennis player does Sam remember?",
+          "options": [
+            "Anastasia Myskina",
+            "Svetlana Kuznetsova",
+            "Maria Sharapova",
+            "Mirra Andreeva"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does Evelyn ask the others to do about the prize money?",
+          "options": [
+            "Look it up online",
+            "Guess the amount",
+            "Divide it by two",
+            "Convert it into dollars"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What is Evelyn not sure about?",
+          "options": [
+            "Whether the money was in dollars or euros",
+            "Whether Andreeva won the final",
+            "Whether Andreeva is Russian",
+            "How many sets the final lasted"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does A want to do at the end of the conversation?",
+          "options": [
+            "Eat pizza before it gets cold",
+            "Raise a glass of champagne to Andreeva",
+            "Call Leo and Katrin",
+            "Watch the final on television"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        }
+      ]
+    },
+    "news-family-visit": {
+      "1": [
+        {
+          "question": "How many people took part in the survey?",
+          "options": [
+            "800",
+            "1,800",
+            "8,000",
+            "18,000"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Which two companies made the survey?",
+          "options": [
+            "Odnoklassniki and YuMoney",
+            "VKontakte and Sberbank",
+            "Odnoklassniki and Sberbank",
+            "Telegram and YuMoney"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What do 52% of people aged 18-26 NOT want on New Year's Eve?",
+          "options": [
+            "A traditional family dinner",
+            "A party with friends",
+            "Presents from their parents",
+            "A photo on social media"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What do people aged 27-42 spend most of their money on?",
+          "options": [
+            "Food and drinks",
+            "Gifts",
+            "Travel",
+            "Decorations"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Which two dishes must be on the table for almost everyone?",
+          "options": [
+            "Olivier salad and herring under a fur coat",
+            "Pizza and sushi",
+            "Olivier salad and lasagna",
+            "Herring under a fur coat and apple pie"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        }
+      ],
+      "2": []
+    },
+    "news-grazing-board": {
+      "1": [
+        {
+          "question": "What is a grazing board?",
+          "options": [
+            "A hot Italian main dish",
+            "A big wooden board with cold food arranged on it",
+            "A type of Italian bread",
+            "A kitchen tool for slicing cheese"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "How much of the work should the trip to the store be?",
+          "options": [
+            "20%",
+            "50%",
+            "80%",
+            "100%"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does the author say to do with the quail eggs?",
+          "options": [
+            "Boil them and leave them unpeeled for the guests",
+            "Peel them and slice them thinly",
+            "Fry them in olive oil",
+            "Serve them raw with black pepper"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does the author suggest doing with the rye bread?",
+          "options": [
+            "Toasting it in the oven",
+            "Pan-frying it in olive oil",
+            "Serving it with honey",
+            "Cutting it into triangles"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Why should you NOT slice everything you bought?",
+          "options": [
+            "So you can keep refilling the board and nothing goes to waste",
+            "Because slicing takes too long",
+            "Because guests prefer whole food",
+            "Because the board is too small"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        }
+      ],
+      "2": [
+        {
+          "question": "Why does Katrin think pizza is a good choice?",
+          "options": [
+            "It's quick and convenient, with no cooking",
+            "It's the cheapest option there is",
+            "Everyone in the group likes Asian food",
+            "Leo can make it in ten minutes"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What is Evelyn's problem with pizza?",
+          "options": [
+            "It's too expensive",
+            "She is tired of eating it every time",
+            "She doesn't like Italian food at all",
+            "It takes too long to make"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does Igor say about the price of sushi?",
+          "options": [
+            "It costs about the same as pizza",
+            "It's much more expensive than pizza",
+            "It's a lot cheaper than pizza",
+            "He has no idea what it costs"
+          ],
+          "correctAnswer": 0,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "Where did Katrin read about the grazing board?",
+          "options": [
+            "In a magazine",
+            "On Zen",
+            "On social media",
+            "In a cookbook"
+          ],
+          "correctAnswer": 1,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        },
+        {
+          "question": "What does the word \"grazing\" originally mean?",
+          "options": [
+            "Slicing food very thinly",
+            "Cooking food on a wooden board",
+            "When cows or sheep feed in a pasture",
+            "Buying food on a tight budget"
+          ],
+          "correctAnswer": 2,
+          "referenceTime": 0,
+          "audio": { "fast": "1", "slow": "1" }
+        }
+      ]
     }
   },
   "medium": {

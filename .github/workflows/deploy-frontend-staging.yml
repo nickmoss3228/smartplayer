@@ -1,0 +1,67 @@
+name: Deploy frontend (staging)
+
+# Mirrors deploy-frontend.yml, but on the `staging` branch and targeting the
+# profiled staging services in docker-compose.yml. See docs/staging.md.
+#
+# The two differences that matter, both of which keep staging off production
+# data: the image is tagged `staging` (never `latest`, which is what the
+# production compose entry pulls), and BACKEND_UPSTREAM points nginx at
+# backend-staging instead of backend.
+on:
+  push:
+    branches: [staging]
+    paths-ignore:
+      - "backend/**"
+      - "docs/**"
+      - "README.md"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Yandex Container Registry
+        uses: yc-actions/yc-cr-login@v3
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+
+      - name: Build and push
+        run: |
+          # --provenance/--sbom false: see deploy-frontend.yml for why.
+          #
+          # VITE_API_URL is empty here for the same reason as production — the
+          # staging frontend's own nginx proxies /api/ on the same origin, so
+          # the bundle must emit relative URLs. It differs from production only
+          # in WHERE that nginx proxies to, which is BACKEND_UPSTREAM below and
+          # is baked into the image, not the JS bundle.
+          docker build --provenance=false --sbom=false \
+            --build-arg VITE_API_URL="${{ vars.VITE_API_URL }}" \
+            --build-arg VITE_YOS_BASE_URL="${{ vars.VITE_YOS_BASE_URL }}" \
+            --build-arg BACKEND_UPSTREAM="http://backend-staging:3000" \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging-${{ github.sha }} \
+            -t cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging \
+            .
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging-${{ github.sha }}
+          docker push cr.yandex/${{ vars.YC_REGISTRY_ID }}/smartplayer-frontend:staging
+
+      - name: Deploy on VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_SSH_HOST }}
+          username: deploy
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd ~/smartplayer
+            TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+              "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
+              | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+            echo "$TOKEN" | sudo docker login --username iam --password-stdin cr.yandex
+            # --profile staging is required on every one of these: without it
+            # compose treats frontend-staging as out of scope and silently does
+            # nothing at all, reporting success.
+            sudo docker compose --profile staging pull frontend-staging
+            sudo docker compose --profile staging up -d frontend-staging
+            sudo docker image prune -f
