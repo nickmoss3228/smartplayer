@@ -35,15 +35,24 @@ xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
 # burn the Let's Encrypt rate limit for that name. Comment it back out rather
 # than pointing it at a name that has stopped resolving.
 #
-# basic_auth keeps staging out of search results and away from anyone who
-# stumbles onto the subdomain. The value below is a bcrypt hash, not a
-# password — regenerate with:
-#   docker compose exec caddy caddy hash-password
+# DO NOT put basic_auth on this site. It was tried and had to be removed.
+#
+# HTTP defines exactly one Authorization header. This app authenticates with
+# `Authorization: Bearer <jwt>`, so the moment a user logs in, every API call
+# overwrites the browser's cached `Authorization: Basic ...`. Caddy then sees a
+# Bearer token where it wants basic credentials and returns 401, which the app
+# reads as an expired session (logging the user out) while the browser re-opens
+# the credential prompt. The result is an unusable site: verified as a plain
+# 200 with basic credentials and 401 with a Bearer token on the same URL.
+#
+# If this really needs gating, use something that does not touch the
+# Authorization header:
+#   - remote_ip matcher, if you have a stable address
+#   - a secret-cookie gate, or forward_auth to a small endpoint
+# X-Robots-Tag is what keeps it out of search results either way.
 # ─────────────────────────────────────────────────────────────────────────────
 
 test.xn--80aa4acdq.xn--p1ai {
-	basic_auth {
-		tester $2a$14$Hu9.EVW5Q.VXJCVY8OZ7uuUPzgEFAdJIhKwCgCG4LtmtwMzP8BBD2
-	}
+	header X-Robots-Tag "noindex, nofollow"
 	reverse_proxy frontend-staging:80
 }
