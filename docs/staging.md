@@ -4,6 +4,11 @@ A second copy of the stack on the **same VM** as production, served from
 `test.малако.рф`, deployed from the `staging` git branch. Use it to try
 features and ideas without touching the live site.
 
+> **Getting in:** the site is gated by a secret cookie — see
+> [staging-access.md](./staging-access.md) for the unlock URL, and read its
+> "Do not put basic_auth on this site" section before adding any auth in front
+> of it.
+
 ```
 VM 89.169.159.92
 
