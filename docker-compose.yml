@@ -34,6 +34,19 @@ services:
     image: caddy:2-alpine
     container_name: smartplayer-caddy
     restart: unless-stopped
+    environment:
+      # Secret for the staging cookie gate, read by Caddyfile as
+      # {env.STAGING_GATE_SECRET}. Kept out of the Caddyfile because this repo
+      # is PUBLIC — committing it there would publish it and make the gate
+      # decorative. Real value lives in ~/smartplayer/.env on the VM.
+      #
+      # The default matters: if the variable is unset, the gate demands a
+      # cookie nobody can hold, so staging 404s for everyone — it fails CLOSED.
+      # An empty default would make the cookie check `*stg=*` and let anyone in.
+      #
+      # Env vars are baked in at container start, so changing this needs
+      # `docker compose up -d caddy` (a recreate); `caddy reload` will not see it.
+      - STAGING_GATE_SECRET=${STAGING_GATE_SECRET:-unset-gate-fails-closed}
     ports:
       - "80:80"
       - "443:443"

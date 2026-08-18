@@ -42,17 +42,54 @@ xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
 # overwrites the browser's cached `Authorization: Basic ...`. Caddy then sees a
 # Bearer token where it wants basic credentials and returns 401, which the app
 # reads as an expired session (logging the user out) while the browser re-opens
-# the credential prompt. The result is an unusable site: verified as a plain
-# 200 with basic credentials and 401 with a Bearer token on the same URL.
+# the credential prompt. Verified: 200 with basic credentials, 401 with a
+# Bearer token, on the same URL.
 #
-# If this really needs gating, use something that does not touch the
-# Authorization header:
-#   - remote_ip matcher, if you have a stable address
-#   - a secret-cookie gate, or forward_auth to a small endpoint
-# X-Robots-Tag is what keeps it out of search results either way.
+# The gate below uses a Cookie instead, which no part of the app touches, so
+# the collision cannot recur. Everything without the cookie gets a bare 404 —
+# not 403 — so the site does not advertise that it exists.
+#
+# To let a new browser or device in, visit the unlock URL once:
+#   https://test.xn--80aa4acdq.xn--p1ai/__unlock/<secret>
+# The secret is in the path on purpose: a bare /__unlock would let anyone in.
+# The secret is NOT in this file: this repo is public. It comes from
+# STAGING_GATE_SECRET in ~/smartplayer/.env on the VM, substituted below as
+# {$STAGING_GATE_SECRET}. Note the $: that is Caddyfile-level substitution,
+# done as text before the config is parsed. The similar-looking {env.VAR} is a
+# RUNTIME placeholder and does NOT work here — path and header matchers are
+# compiled at startup, so {env.VAR} stays literal and the gate 404s everyone,
+# including anyone holding the right secret. Rotate by changing it
+# there and recreating the caddy container (env vars are fixed at container
+# start, so a plain `caddy reload` will NOT pick up a new value).
+#
+# If the variable is unset, docker-compose.yml substitutes an unguessable
+# placeholder, so the gate fails CLOSED (404 for everyone) rather than open.
 # ─────────────────────────────────────────────────────────────────────────────
 
 test.xn--80aa4acdq.xn--p1ai {
 	header X-Robots-Tag "noindex, nofollow"
-	reverse_proxy frontend-staging:80
+
+	# One-time unlock: set the gate cookie, then bounce to the app. A year is
+	# deliberate — a short cookie means re-unlocking mid-test, and the secret
+	# is not protecting anything of value beyond keeping strangers out.
+	@unlock path /__unlock/{$STAGING_GATE_SECRET}
+	handle @unlock {
+		header Set-Cookie "stg={$STAGING_GATE_SECRET}; Max-Age=31536000; Path=/; Secure; HttpOnly; SameSite=Lax"
+		# `redir * / 302`, not `redir / 302`. Caddy reads a leading / as an
+		# inline path matcher, so the short form means "redirect only the
+		# request for exactly / — to a URL literally called 302", which never
+		# matches the unlock path and silently returns an empty 200 instead.
+		redir * / 302
+	}
+
+	# Everything else needs the cookie. Same-origin XHR always sends cookies
+	# regardless of SameSite, so the app's API calls pass this untouched.
+	@nocookie not header Cookie *stg={$STAGING_GATE_SECRET}*
+	handle @nocookie {
+		respond "Not found" 404
+	}
+
+	handle {
+		reverse_proxy frontend-staging:80
+	}
 }
