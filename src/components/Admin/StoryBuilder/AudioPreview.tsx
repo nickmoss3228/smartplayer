@@ -16,16 +16,65 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * without anything ever checking that the mp3 exists at the other end.
  */
 
-// Probing deliberately uses a media element rather than fetch()/HEAD.
-// Two reasons:
-//   1. The bucket serves audio without CORS headers. Audio elements don't
-//      need them (they're not subject to the same-origin read rules unless
-//      you set crossOrigin), but a fetch probe would fail on files that play
-//      perfectly — a false alarm on every single row.
-//   2. `loadedmetadata` is the stronger signal anyway: it means the browser
-//      decoded the container and knows the duration, not merely that some
-//      URL answered 200.
+// The pass/fail verdict comes from a media element, not from fetch():
+// `loadedmetadata` means the browser actually decoded the container and knows
+// the duration, where a 200 only means some bytes came back. But a media
+// element is uselessly vague about *why* it failed — every cause collapses
+// into one MediaError, so a typo in an audioKey and a file with a broken ACL
+// look identical.
+//
+// So on failure we ask the bucket directly. Yandex sends
+// `access-control-allow-origin: *` on error responses as well as successful
+// ones, and answers with an S3 XML body naming the real cause, which turns
+// "won't load" into "404 NoSuchKey" or "403 AccessDenied".
 type Status = "empty" | "loading" | "ready" | "error";
+
+interface Failure {
+  /** Compact enough for the inline button, e.g. "404". */
+  short: string;
+  /** Full explanation for the tooltip and the console. */
+  detail: string;
+}
+
+// Range: bytes=0-0 so a healthy file costs one byte instead of the whole clip.
+// S3 ignores Range on an error and returns the full XML body regardless, which
+// is exactly the case we need the body for.
+async function diagnose(url: string): Promise<Failure> {
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "GET", headers: { Range: "bytes=0-0" } });
+  } catch (err) {
+    return {
+      short: "network",
+      detail:
+        "The request failed outright — no response at all. Usually the bucket " +
+        `being unreachable, or the request being blocked: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+    };
+  }
+
+  if (res.ok || res.status === 206) {
+    return {
+      short: "no decode",
+      detail:
+        `The file downloads fine (HTTP ${res.status}) but the browser cannot decode it. ` +
+        "The object is probably not really an mp3, or it is truncated.",
+    };
+  }
+
+  const code = /<Code>([^<]+)<\/Code>/.exec(await res.text().catch(() => ""))?.[1] ?? "";
+  const hint =
+    res.status === 404
+      ? " Nothing is stored at this key. Check the audioKey's spelling and case against the object in the bucket — the path is built from it verbatim."
+      : res.status === 403
+      ? " The object is there but not readable. Check that it was uploaded public-read."
+      : "";
+  return {
+    short: String(res.status),
+    detail: `HTTP ${res.status}${code ? ` — ${code}` : ""}.${hint}`,
+  };
+}
 
 // Only one preview plays at a time. Dozens of these render at once (every
 // word in a part, both speeds of every question), and without a single
@@ -63,14 +112,17 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
   const [status, setStatus] = useState<Status>("empty");
   const [duration, setDuration] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [failure, setFailure] = useState<Failure | null>(null);
   // Bumped by the retry click to re-run the probe effect. A freshly uploaded
   // object can 404 for a moment, and re-mounting the whole editor to recheck
   // one row would be a silly thing to ask of the admin.
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     setPlaying(false);
     setDuration(null);
+    setFailure(null);
 
     if (!url) {
       setStatus("empty");
@@ -88,7 +140,18 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
       setStatus("ready");
       setDuration(audio.duration);
     };
-    const onError = () => setStatus("error");
+    const onError = () => {
+      if (cancelled) return;
+      setStatus("error");
+      // Also logged, not just shown in the tooltip: with a long word list the
+      // console is the only place you can see every failure at once, and its
+      // URLs are clickable straight into the Network tab.
+      diagnose(url).then((f) => {
+        if (cancelled) return;
+        setFailure(f);
+        console.error(`[AudioPreview] "${label ?? url}" did not load — ${f.detail}\n  ${url}`);
+      });
+    };
     const onPlay = () => setPlaying(true);
     const onStop = () => setPlaying(false);
 
@@ -99,6 +162,7 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
     audio.addEventListener("ended", onStop);
 
     return () => {
+      cancelled = true;
       audio.removeEventListener("loadedmetadata", onLoaded);
       audio.removeEventListener("error", onError);
       audio.removeEventListener("play", onPlay);
@@ -108,7 +172,7 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
       audio.pause();
       audioRef.current = null;
     };
-  }, [url, attempt]);
+  }, [url, attempt, label]);
 
   const toggle = useCallback(() => {
     const audio = audioRef.current;
@@ -137,10 +201,19 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
       <button
         type="button"
         onClick={() => setAttempt((n) => n + 1)}
-        title={`${label ? `"${label}": ` : ""}${url}\n\nThis file did not load. Click to retry.`}
+        title={[
+          label ? `"${label}"` : null,
+          url,
+          "",
+          failure?.detail ?? "Working out why…",
+          "",
+          "Click to retry. The same message is in the browser console.",
+        ]
+          .filter((line) => line !== null)
+          .join("\n")}
         className="text-xs text-red-600 hover:text-red-700 underline whitespace-nowrap"
       >
-        ✗ won't load
+        ✗ {failure?.short ?? "…"}
       </button>
     );
   }
