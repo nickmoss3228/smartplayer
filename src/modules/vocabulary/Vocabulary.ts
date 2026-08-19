@@ -86,7 +86,8 @@ export const storyFolderMap: Record<string, Record<string, string>> = {
     // "leo" — otherwise all three would collide on the same "1. story" /
     // "2. discussion" track folders. Full vocab path, for reference:
     //   news-grazing-board/quiz/1. story/vocab/olives.mp3
-    // Nothing is uploaded yet, so change these if the bucket layout differs.
+    // roland-garros and grazing-board are uploaded and match this layout;
+    // family-visit's clips don't exist in the bucket yet.
     "news-roland-garros": "news-roland-garros",
     "news-family-visit": "news-family-visit",
     "news-grazing-board": "news-grazing-board",
@@ -167,7 +168,6 @@ export const trackPhrasalVerbs: Record<
   ],
   "2": [
     { word: "получать весточку от", definition: "1", audioKey: "hear from" },
-    { word: "уйти, отстать (грубо)", definition: "1", audioKey: "get lost" },
     { word: "влюбиться в", definition: "1", audioKey: "fall for" },
     { word: "пытаться подкатить к", definition: "1", audioKey: "make a move on" },
   ],
@@ -529,10 +529,9 @@ export const trackVocabulary: Record<
         { word: "встречаться (с кем-то)", definition: "1", audioKey: "dating" },
         { word: "признаваться", definition: "1", audioKey: "confess" },
         { word: "выпечка", definition: "1", audioKey: "pastries" },
-        { word: "печь (готовить)", definition: "1", audioKey: "bake" },
       ],
       "2": [
-    { word: "подписываться", definition: "1", audioKey: "follow" },
+    { word: "cледить, быть подписаным", definition: "1", audioKey: "follow" },
     { word: "жаворонок (ранняя пташка)", definition: "1", audioKey: "early bird" },
     { word: "сова (полуночник)", definition: "1", audioKey: "night owl" },
     { word: "играть в видеоигры", definition: "1", audioKey: "play games" },
@@ -565,6 +564,11 @@ export const trackVocabulary: Record<
         // audioKeys stay lowercase: useVocabAudio builds the mp3 path from the
         // raw key while usePreloadStoryAssets/assembleImportPayload lowercase
         // it, so a capitalised key would preload one file and play another.
+        //
+        // NOTE: "a grand slam" is the one clip in this story with no recording
+        // in the bucket — every other vocab/phrasal key here is uploaded. The
+        // chip renders but its audio 404s until the mp3 is generated and
+        // dropped at news-roland-garros/quiz/1. story/vocab/a grand slam.mp3.
         { word: "Большой шлем", definition: "1", audioKey: "a grand slam" },
         {
           word: "карьерный Большой шлем",
@@ -573,11 +577,8 @@ export const trackVocabulary: Record<
         },
         { word: "самая молодая", definition: "1", audioKey: "the youngest" },
         { word: "примечательный, заметный", definition: "1", audioKey: "notable" },
-        { word: "зарабатывать", definition: "1", audioKey: "earn" },
         { word: "тренер", definition: "1", audioKey: "a coach" },
         { word: "присутствовать на", definition: "1", audioKey: "attend" },
-        // "thank for" / "believe in" moved to trackPhrasalVerbs — the
-        // preposition is the teaching point, and a bare "thank" is A1.
         { word: "невероятно", definition: "1", audioKey: "incredibly" },
       ],
       // Discussion: E / S / A talk about the win.
@@ -644,7 +645,7 @@ export const trackVocabulary: Record<
           audioKey: "a grazing board",
         },
         {
-          word: "антипасти (итальянские закуски)",
+          word: "итальянские закуски",
           definition: "1",
           audioKey: "antipasti",
         },
@@ -689,7 +690,6 @@ export const trackVocabulary: Record<
           definition: "1",
           audioKey: "a tight budget",
         },
-        { word: "ассорти, набор", definition: "1", audioKey: "an assortment" },
         {
           word: "холодные закуски",
           definition: "1",

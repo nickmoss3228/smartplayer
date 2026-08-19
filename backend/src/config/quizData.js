@@ -789,14 +789,14 @@ export const quizData = {
     "leo-additional": {
       "1": [
         {
-          "question": "How old does Leo say he is?",
+          "question": "What does Ava talk about with Kate?",
           "options": [
-            "20",
-            "22",
-            "23",
-            "25"
+            "About work",
+            "About new photos",
+            "About her brother Leo",
+            "About relationships"
           ],
-          "correctAnswer": 1,
+          "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
             "fast": "1",
@@ -804,12 +804,12 @@ export const quizData = {
           }
         },
         {
-          "question": "What is the name of Leo's cat?",
+          "question": "How does Katrin feel about Leo?",
           "options": [
-            "Ginger",
-            "Tiger",
-            "Shadow",
-            "Fluffy"
+            "She likes him",
+            "They are best friends with Leo",
+            "They are not friends",
+            "She hates him"
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
@@ -834,7 +834,7 @@ export const quizData = {
           }
         },
         {
-          "question": "Why did Kate go to Leo's place?",
+          "question": "Why did Katrin go to Leo's place?",
           "options": [
             "To buy pastries",
             "To meet his cat",
@@ -881,14 +881,14 @@ export const quizData = {
           }
         },
         {
-          "question": "What time does Leo say he wakes up?",
+          "question": "When did Leo post a new story on Instagram?",
           "options": [
-            "5 a.m.",
-            "6 a.m.",
-            "7 a.m.",
-            "8 a.m."
+            "In the morning",
+            "In the afternoon",
+            "In the evening",
+            "At night"
           ],
-          "correctAnswer": 1,
+          "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
             "fast": "1",
@@ -943,10 +943,18 @@ export const quizData = {
       ]
     },
     // ── News and Interesting things ───────────────────────────────────────
-    // Part 1 = source article, part 2 = the linked conversation. `audio` uses
-    // the "1" placeholder that leo-additional already uses — the fast/slow
-    // question recordings don't exist yet, and nothing reads these strings as
-    // URLs until they're replaced with real getStorageUrl paths.
+    // Part 1 = source article, part 2 = the linked conversation.
+    //
+    // roland-garros and grazing-board have real fast/slow question recordings
+    // in the bucket under the same layout the static stories use:
+    //   <slug>/quiz/<track folder>/qN-{fast,slow}.mp3
+    // where <track folder> matches trackFolderMap in the frontend's
+    // modules/vocabulary/Vocabulary.ts ("1. story" / "2. discussion"), so the
+    // quiz clips sit next to that part's vocab/ and phrasal-verbs/ folders.
+    //
+    // family-visit still uses the "1" placeholder that leo-additional uses —
+    // its recordings don't exist yet, and nothing reads these strings as URLs
+    // until they're replaced with real paths.
     "news-roland-garros": {
       "1": [
         {
@@ -959,7 +967,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q1-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q1-slow.mp3"
+          }
         },
         {
           "question": "Who did Andreeva defeat in the final?",
@@ -971,7 +982,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q2-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q2-slow.mp3"
+          }
         },
         {
           "question": "Including Andreeva, how many Russian women have won a Grand Slam tournament?",
@@ -983,7 +997,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q3-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q3-slow.mp3"
+          }
         },
         {
           "question": "Which Russian player completed the career Grand Slam?",
@@ -995,7 +1012,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q4-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q4-slow.mp3"
+          }
         },
         {
           "question": "How much did Andreeva earn for winning the tournament?",
@@ -1007,7 +1027,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q5-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q5-slow.mp3"
+          }
         }
       ],
       "2": [
@@ -1021,7 +1044,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q1-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q1-slow.mp3"
+          }
         },
         {
           "question": "Which Russian tennis player does Sam remember?",
@@ -1033,7 +1059,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q2-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q2-slow.mp3"
+          }
         },
         {
           "question": "What does Evelyn ask the others to do about the prize money?",
@@ -1045,7 +1074,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q3-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q3-slow.mp3"
+          }
         },
         {
           "question": "What is Evelyn not sure about?",
@@ -1057,10 +1089,13 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q4-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q4-slow.mp3"
+          }
         },
         {
-          "question": "What does A want to do at the end of the conversation?",
+          "question": "What does Ava want to do at the end of the conversation?",
           "options": [
             "Eat pizza before it gets cold",
             "Raise a glass of champagne to Andreeva",
@@ -1069,7 +1104,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q5-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q5-slow.mp3"
+          }
         }
       ]
     },
@@ -1150,7 +1188,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q1-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q1-slow.mp3"
+          }
         },
         {
           "question": "How much of the work should the trip to the store be?",
@@ -1162,7 +1203,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q2-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q2-slow.mp3"
+          }
         },
         {
           "question": "What does the author say to do with the quail eggs?",
@@ -1174,7 +1218,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q3-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q3-slow.mp3"
+          }
         },
         {
           "question": "What does the author suggest doing with the rye bread?",
@@ -1186,7 +1233,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q4-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q4-slow.mp3"
+          }
         },
         {
           "question": "Why should you NOT slice everything you bought?",
@@ -1198,7 +1248,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q5-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q5-slow.mp3"
+          }
         }
       ],
       "2": [
@@ -1212,7 +1265,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q1-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q1-slow.mp3"
+          }
         },
         {
           "question": "What is Evelyn's problem with pizza?",
@@ -1224,7 +1280,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q2-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q2-slow.mp3"
+          }
         },
         {
           "question": "What does Igor say about the price of sushi?",
@@ -1236,7 +1295,10 @@ export const quizData = {
           ],
           "correctAnswer": 0,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q3-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q3-slow.mp3"
+          }
         },
         {
           "question": "Where did Katrin read about the grazing board?",
@@ -1248,7 +1310,10 @@ export const quizData = {
           ],
           "correctAnswer": 1,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q4-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q4-slow.mp3"
+          }
         },
         {
           "question": "What does the word \"grazing\" originally mean?",
@@ -1260,7 +1325,10 @@ export const quizData = {
           ],
           "correctAnswer": 2,
           "referenceTime": 0,
-          "audio": { "fast": "1", "slow": "1" }
+          "audio": {
+            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q5-fast.mp3",
+            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q5-slow.mp3"
+          }
         }
       ]
     }
