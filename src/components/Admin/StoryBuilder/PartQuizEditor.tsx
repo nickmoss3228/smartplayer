@@ -6,6 +6,7 @@ import {
   uploadPartAsset,
   saveQuiz,
 } from "../../../services/adminStoryServices";
+import AudioPreview from "./AudioPreview";
 
 interface PartQuizEditorProps {
   token: string;
@@ -73,7 +74,14 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
         speed === "fast" ? "quizFast" : "quizSlow",
         { index: qIndex }
       );
-      updateQuestion(qIndex, { audio: { ...questions[qIndex].audio, [speed]: url } });
+      // Functional update, not updateQuestion(..., {...questions[qIndex].audio}):
+      // fast and slow are two independent pickers, so both can be in flight at
+      // once, and the second one to resolve would otherwise merge into a
+      // `questions` snapshot captured before the first one landed — silently
+      // dropping the URL that had just been uploaded.
+      setQuestions((prev) =>
+        prev.map((q, i) => (i === qIndex ? { ...q, audio: { ...q.audio, [speed]: url } } : q))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -123,49 +131,44 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
             className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
           />
 
-          <div className="flex flex-wrap gap-3 text-xs text-black">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-black">
             {/* Native file inputs always render their own "No file chosen"
                 text next to whatever label you give them, even when a URL is
                 already uploaded (a file input can never be pre-filled) — so
                 the input is hidden and the whole label drives the picker,
-                letting us show our own text instead ("Choose file"/"Replace"
-                + the ✓) rather than a stale-looking "No file chosen". */}
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <span>Fast audio (plays first)</span>
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={(e) => handleAudioUpload(qIndex, "fast", e.target.files?.[0] ?? null)}
-                disabled={uploadingKey === `${qIndex}-fast`}
-              />
-              <span className="text-blue-600 underline">
-                {uploadingKey === `${qIndex}-fast`
-                  ? "Uploading..."
-                  : q.audio.fast
-                  ? "Replace"
-                  : "Choose file"}
-              </span>
-              {q.audio.fast && <span className="text-green-600">✓</span>}
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <span>Slow audio (plays second)</span>
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={(e) => handleAudioUpload(qIndex, "slow", e.target.files?.[0] ?? null)}
-                disabled={uploadingKey === `${qIndex}-slow`}
-              />
-              <span className="text-blue-600 underline">
-                {uploadingKey === `${qIndex}-slow`
-                  ? "Uploading..."
-                  : q.audio.slow
-                  ? "Replace"
-                  : "Choose file"}
-              </span>
-              {q.audio.slow && <span className="text-green-600">✓</span>}
-            </label>
+                letting us show our own text instead ("Choose file"/"Replace")
+                rather than a stale-looking "No file chosen".
+                AudioPreview has to stay OUTSIDE the <label> for the same
+                reason the input is inside it: a click anywhere in a label is
+                forwarded to its control, so a play button nested in there
+                would pop the file picker every time you tried to listen. */}
+            {(["fast", "slow"] as const).map((speed) => (
+              <div key={speed} className="flex items-center gap-1.5">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <span>
+                    {speed === "fast" ? "Fast audio (plays first)" : "Slow audio (plays second)"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={(e) => handleAudioUpload(qIndex, speed, e.target.files?.[0] ?? null)}
+                    disabled={uploadingKey === `${qIndex}-${speed}`}
+                  />
+                  <span className="text-blue-600 underline">
+                    {uploadingKey === `${qIndex}-${speed}`
+                      ? "Uploading..."
+                      : q.audio[speed]
+                      ? "Replace"
+                      : "Choose file"}
+                  </span>
+                </label>
+                {/* Replaces the old ✓, which only ever meant "this question
+                    object has a non-empty string in it" — it stayed green for
+                    a URL pointing at nothing. */}
+                <AudioPreview url={q.audio[speed]} label={`Q${qIndex + 1} ${speed}`} />
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

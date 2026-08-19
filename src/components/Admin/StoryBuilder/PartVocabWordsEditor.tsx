@@ -7,6 +7,7 @@ import {
   saveVocabulary,
   savePhrasalVerbs,
 } from "../../../services/adminStoryServices";
+import AudioPreview from "./AudioPreview";
 
 interface PartVocabWordsEditorProps {
   token: string;
@@ -136,6 +137,13 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
         <div className="space-y-1">
           {words.map((w, i) => (
             <div key={i} className="flex items-center gap-3 text-sm bg-gray-50 rounded px-3 py-2">
+              {/* Leading, and a fixed width wide enough for the longest state
+                  ("✗ won't load"), so the whole list can be scanned straight
+                  down the left edge for a clip that didn't load rather than
+                  hunting along rows of varying length. */}
+              <span className="w-24 shrink-0">
+                <AudioPreview url={w.audioUrl} label={w.audioKey} />
+              </span>
               <span className="font-semibold text-black">{w.word}</span>
               <span className="text-gray-500">{w.audioKey}</span>
               {w.definition && <span className="text-gray-400 truncate">{w.definition}</span>}
