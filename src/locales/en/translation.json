@@ -92,7 +92,13 @@
     "eyebrow": "English Listening Training",
     "slogan": {
       "prefix": "as you hear it, so it",
-      "words": ["is right", "should be", "will stick", "will sail", "was meant"]
+      "words": [
+        "is right",
+        "should be",
+        "will stick",
+        "will sail",
+        "was meant"
+      ]
     },
     "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
     "startFree": "Start for Free",
@@ -1235,6 +1241,32 @@
         "Work-life balance"
       ],
       "tip": "This is the most emotionally layered episode in the entire Hard series. Listen for the final line Daniel writes in his notebook — it reframes everything he has said across all ten stories."
+    }
+  },
+  "school": {
+    "title": "Your Dream School",
+    "roomsOpen": "{{count}} of {{total}} rooms open",
+    "loadFailed": "Could not load your school.",
+    "hint": "Tap a room to open it, then furnish it from the shop.",
+    "focusedHint": "Furniture and actions below apply to the {{room}}.",
+    "lockedShort": "Locked",
+    "currency": {
+      "bitAward": "BitAward",
+      "bitWord": "BitWord",
+      "bitPhrase": "BitPhrase"
+    },
+    "shop": {
+      "rooms": "Rooms",
+      "furniture": "Furniture",
+      "actions": "Actions",
+      "owned": "Owned",
+      "inUse": "In use",
+      "use": "Use",
+      "locked": "Locked",
+      "unlock": "Unlock",
+      "buy": "Buy",
+      "cantAfford": "Not yet",
+      "pickRoom": "Open a room first, then come back to furnish it."
     }
   }
 }

@@ -22,3 +22,27 @@ export async function spendCurrency(userId, amount) {
   );
   return user?.wallet ?? null;
 }
+
+// Generalized form used by the Dream School, where each currency buys a
+// different class of thing (rooms / furniture / actions — see
+// schoolCatalog.js). spendCurrency above stays as the bitAward-only shorthand
+// its existing callers expect.
+//
+// Same conditional-update trick: the balance check and the decrement are a
+// single atomic operation, so two purchases racing each other cannot both pass
+// a read-then-write check and overdraw the wallet. Returns null when the
+// balance is too low, which callers must treat as "declined", not "error".
+const WALLETS = ["bitAward", "bitWord", "bitPhrase"];
+
+export async function spendFrom(userId, currency, amount) {
+  if (!WALLETS.includes(currency)) return null;
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const field = `wallet.${currency}`;
+  const user = await User.findOneAndUpdate(
+    { _id: userId, [field]: { $gte: amount } },
+    { $inc: { [field]: -amount } },
+    { new: true, select: "wallet" },
+  );
+  return user?.wallet ?? null;
+}

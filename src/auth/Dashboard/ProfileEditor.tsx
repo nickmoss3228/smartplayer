@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { IoPencil, IoClose } from "react-icons/io5";
 import { UserProfile } from "../../types/Dashboard";
 import { useCharacter } from "../../context/CharacterContext";
-import { useCharacterPortrait } from "../../modules/room/useCharacterPortrait";
+import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import { updateProfile } from "../../services/profileServices";
 
 interface ProfileEditorProps {

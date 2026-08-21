@@ -1,6 +1,7 @@
 // models/User.js
 import mongoose from "mongoose";
 import { DEFAULT_PLACEMENT } from "../config/roomLayout.js";
+import { STARTER_ROOM_IDS } from "../config/schoolCatalog.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -150,6 +151,26 @@ const userSchema = new mongoose.Schema({
       outfit:    { type: String, default: null },
       hat:       { type: String, default: null },
     },
+  },
+// "Dream School" — the game that replaced the office-decorating `room`
+  // above. `room` is deliberately left in place rather than dropped: it is
+  // dead for reading, but removing it would rewrite every existing document
+  // and throw away purchase history we may still want to refund against.
+  // Nothing in the app reads `room` any more.
+  school: {
+    // Seeded from the catalog so the dollhouse is never empty on first visit.
+    unlockedRoomIds: { type: [String], default: () => [...STARTER_ROOM_IDS] },
+    ownedItemIds:    { type: [String], default: [] },
+    ownedActionIds:  { type: [String], default: [] },
+
+    // "<roomId>:<slot>" -> itemId. A Map rather than a nested schema on
+    // purpose: adding a room to schoolCatalog.js then needs no schema change
+    // and no migration, which the old room.placedItems shape did not allow.
+    placed: { type: Map, of: String, default: () => new Map() },
+
+    // Which cell the dollhouse opens on, and therefore where the avatar
+    // stands. A preference, not a purchase.
+    focusedRoomId: { type: String, default: STARTER_ROOM_IDS[0] ?? "classroom" },
   },
 });
 

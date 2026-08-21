@@ -1,28 +1,35 @@
-import { useState } from "react";
+// pages/PlayerRoom.tsx — read-only visit to another player's Dream School.
+//
+// Kept at the same route and filename so existing links from the players list
+// keep working; it renders the new dollhouse instead of the old 3D room.
+//
+// Read-only in the literal sense: SchoolScene is given no onSelectRoom, which
+// makes every cell non-interactive. There is nothing to disable defensively
+// because there is no control to press — the visitor sees exactly the rooms
+// and furniture the owner has bought, which is what §11 of the plan asked for.
+
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
-import { RoomScene } from "../modules/room/RoomScene";
-import { usePlayerRoom } from "../modules/players/usePlayerRoom";
-import { useCharacterPortrait } from "../modules/room/useCharacterPortrait";
+import { SchoolScene } from "../modules/school/SchoolScene";
+import { usePlayerSchool } from "../modules/players/usePlayerSchool";
+import { SCHOOL_ROOMS } from "../config/schoolCatalog";
 
 const PlayerRoom = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
-  const { data, loading, error } = usePlayerRoom(userId);
-  const portrait = useCharacterPortrait(data?.character);
-  const [viewMode, setViewMode] = useState(false);
+  const { school, character, nickname, loading, error } = usePlayerSchool(userId);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-dvh pt-14">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-500" />
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-violet-500" />
       </div>
     );
   }
 
-  if (error || !data) {
+  if (error || !school) {
     return (
       <div className="flex justify-center items-center min-h-dvh pt-14 px-6 text-center text-black/50">
         {t("players.roomLoadFailed")}
@@ -31,56 +38,37 @@ const PlayerRoom = () => {
   }
 
   return (
-    <div className="flex flex-col h-dvh pt-13 overflow-hidden bg-gradient-to-br from-sky-50 to-amber-50">
-      <div className="flex items-center gap-3 px-3 py-2 shrink-0">
-        <button
-          onClick={() => navigate("/players")}
-          title={t("players.back")}
-          className="flex items-center gap-1 text-xs font-semibold text-black/60 bg-white/70 hover:bg-white rounded-full px-3 py-1.5 transition-colors"
-        >
-          <ChevronLeftIcon className="w-4 h-4" />
-          {t("players.back")}
-        </button>
-        <div className="flex items-center gap-2">
-          <img
-            src={portrait}
-            alt={data.nickname}
-            className="w-7 h-7 rounded-full object-cover bg-white"
-          />
-          <span className="text-sm font-bold text-black/80">
-            {data.nickname}
+    <div className="min-h-dvh pt-13 bg-gradient-to-br from-indigo-50 via-violet-50 to-rose-50">
+      <div className="mx-auto max-w-5xl px-3 py-3">
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <button
+            onClick={() => navigate("/players")}
+            title={t("players.back")}
+            className="flex items-center gap-1 text-xs font-semibold text-black/60 bg-white/70 hover:bg-white rounded-full px-3 py-1.5 transition-colors"
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+            {t("players.back")}
+          </button>
+          <span className="text-sm font-bold text-black/80">{nickname}</span>
+          <span className="text-xs text-black/45 ml-auto">
+            {t("school.roomsOpen", {
+              count: school.unlockedRoomIds.length,
+              total: SCHOOL_ROOMS.length,
+            })}
           </span>
         </div>
-        <button
-          onClick={() => setViewMode((v) => !v)}
-          title={t(viewMode ? "room.viewModeExit" : "room.viewModeEnter")}
-          className={`ml-auto text-xs font-semibold rounded-full px-3 py-1.5 cursor-pointer transition-colors ${
-            viewMode ? "bg-sky-500 text-white" : "bg-white/70 hover:bg-white"
-          }`}
-        >
-          🎥 {t(viewMode ? "room.viewModeDone" : "room.viewModeStart")}
-        </button>
-      </div>
-      <div className="flex-1 min-h-0">
-        <RoomScene
-          placedItems={data.room.placedItems}
-          placement={data.room.placement}
-          lightsOn={data.room.lightsOn}
-          // getPlayerRoom doesn't expose another user's achievement stats
-          // (privacy — same reasoning as the rest of this read-only view),
-          // so a visited room never shows trophies, only the owner's own does.
-          achievements={[]}
-          // Read-only view — arrange mode (and its rotate/drag affordances)
-          // is only for your own room. Free-look view mode is harmless here
-          // (camera-only), so it stays available.
-          arrangeMode={false}
-          viewMode={viewMode}
-          onMoveFloorItem={() => {}}
-          onMoveWallItem={() => {}}
-          rotateLabel=""
-          resetViewLabel={t("room.resetView")}
-          character={{ skinTone: data.character.skinTone, equipped: data.character.equipped }}
-        />
+
+        <div className="rounded-2xl overflow-hidden border border-violet-200/70 shadow-sm bg-white">
+          <SchoolScene
+            unlockedRoomIds={school.unlockedRoomIds}
+            placed={school.placed}
+            ownedActionIds={school.ownedActionIds}
+            focusedRoomId={school.focusedRoomId}
+            character={character}
+            // No onSelectRoom: this is a snapshot, not a playable board.
+            lockedLabel={() => t("school.lockedShort")}
+          />
+        </div>
       </div>
     </div>
   );

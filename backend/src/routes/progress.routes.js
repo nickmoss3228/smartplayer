@@ -27,6 +27,16 @@ import {
   equipCharacterItem,
   setSkinTone,
 } from "../controllers/progress.controller.js";
+import {
+  getSchool,
+  getPlayerSchool,
+  getSchoolCatalog,
+  unlockRoom,
+  buyItem,
+  placeItem,
+  buyAction,
+  focusRoom,
+} from "../controllers/school.controller.js";
 
 const router = Router();
 
@@ -51,6 +61,19 @@ router.post("/progress/room/purchase",             authenticateToken, purchaseIt
 router.post("/progress/room/equip",                authenticateToken, equipItem);
 router.patch("/progress/room/lights",               authenticateToken, toggleRoomLights);
 router.patch("/progress/room/placement",             authenticateToken, updateRoomPlacement);
+// Dream School. Registered before "/progress/:difficulty" below, which is a
+// catch-all that would otherwise swallow every one of these. Within the group,
+// "school/catalog" must precede "school/:userId" or Express matches the
+// literal path as a user id.
+router.get("/progress/school",                     authenticateToken, getSchool);
+router.get("/progress/school/catalog",             authenticateToken, getSchoolCatalog);
+router.get("/progress/school/:userId",             authenticateToken, getPlayerSchool);
+router.post("/progress/school/unlock-room",        authenticateToken, unlockRoom);
+router.post("/progress/school/buy-item",           authenticateToken, buyItem);
+router.post("/progress/school/place-item",         authenticateToken, placeItem);
+router.post("/progress/school/buy-action",         authenticateToken, buyAction);
+router.patch("/progress/school/focus",             authenticateToken, focusRoom);
+
 router.get("/progress/character",                  authenticateToken, getCharacter);
 router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);
 router.post("/progress/character/equip",           authenticateToken, equipCharacterItem);

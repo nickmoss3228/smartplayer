@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ImBook } from "react-icons/im";
 import { useAuth } from "../../context/AuthContext";
 import { useCharacter } from "../../context/CharacterContext";
-import { useCharacterPortrait } from "../../modules/room/useCharacterPortrait";
+import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
 

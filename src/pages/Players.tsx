@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { usePlayerSearch, SEARCH_MIN_LENGTH } from "../modules/players/usePlayerSearch";
 import { PlayerListItem } from "../services/profileServices";
-import { useCharacterPortrait } from "../modules/room/useCharacterPortrait";
+import { useCharacterPortrait } from "../modules/character/useCharacterPortrait";
 
 function PlayerCard({
   player,
