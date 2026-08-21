@@ -9,8 +9,8 @@
 // If quiz content changes on the frontend, this file must be updated to
 // match by hand, or scoring/serving will use stale data.
 //
-// "leo-additional" part 2 is intentionally an empty array — that story
-// part's quiz content doesn't exist yet on the frontend either (placeholder).
+// Both "leo-additional" parts now carry a full five-question quiz with real
+// recordings; only "news-family-visit" is still unwritten.
 //
 // AUDIO PATHS ARE BUCKET-RELATIVE ("leo/quiz/1.leo's%20life/q1-fast.mp3") and
 // resolved at read time against config.yandex.baseUrl — never store an
@@ -836,8 +836,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/1.%20leo's%20new%20chapter/q1-fast.mp3",
+            "slow": "leo/quiz/1.%20leo's%20new%20chapter/q1-slow.mp3"
           }
         },
         {
@@ -851,8 +851,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/1.%20leo's%20new%20chapter/q2-fast.mp3",
+            "slow": "leo/quiz/1.%20leo's%20new%20chapter/q2-slow.mp3"
           }
         },
         {
@@ -866,8 +866,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/1.%20leo's%20new%20chapter/q3-fast.mp3",
+            "slow": "leo/quiz/1.%20leo's%20new%20chapter/q3-slow.mp3"
           }
         },
         {
@@ -881,8 +881,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/1.%20leo's%20new%20chapter/q4-fast.mp3",
+            "slow": "leo/quiz/1.%20leo's%20new%20chapter/q4-slow.mp3"
           }
         },
         {
@@ -896,8 +896,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/1.%20leo's%20new%20chapter/q5-fast.mp3",
+            "slow": "leo/quiz/1.%20leo's%20new%20chapter/q5-slow.mp3"
           }
         }
       ],
@@ -913,8 +913,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/2.%20leo's%20second%20story/q1-fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20second%20story/q1-slow.mp3"
           }
         },
         {
@@ -928,8 +928,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/2.%20leo's%20second%20story/q2-fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20second%20story/q2-slow.mp3"
           }
         },
         {
@@ -943,8 +943,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/2.%20leo's%20second%20story/q3-fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20second%20story/q3-slow.mp3"
           }
         },
         {
@@ -958,8 +958,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/2.%20leo's%20second%20story/q4-fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20second%20story/q4-slow.mp3"
           }
         },
         {
@@ -973,8 +973,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "1",
-            "slow": "1"
+            "fast": "leo/quiz/2.%20leo's%20second%20story/q5-fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20second%20story/q5-slow.mp3"
           }
         }
       ]
