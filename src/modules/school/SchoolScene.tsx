@@ -140,18 +140,27 @@ const RoomCell = ({
       {unlocked ? (
         <>
           <Furnishings room={room} box={box} placed={placed} />
-          {focused && (
-            <g transform={`translate(${box.x + box.w * 0.44}, ${box.y + box.h - 30})`}>
-              <svg width={82} height={82} viewBox="0 0 100 100" overflow="visible">
+          {focused && (() => {
+            // The avatar is drawn in a 100-unit box whose ground line — feet
+            // and contact shadow — sits at y=96, NOT at the bottom edge. So it
+            // has to be placed by its feet: anchoring the box's top edge sinks
+            // it through the floor by the difference, which is most of its
+            // height.
+            const floorBand = outdoor ? 34 : 26;
+            const size = 82 * (box.h / CELL_H);
+            const feetY = box.y + box.h - floorBand + floorBand * 0.55;
+            const cx = box.x + box.w * (outdoor ? 0.38 : 0.44);
+            return (
+              <g transform={`translate(${cx - size / 2}, ${feetY - size * 0.96})`}>
                 <SchoolAvatar
                   character={character}
                   idleAnim={room.idleAnim}
                   ownedAnims={ownedAnims}
-                  size={82}
+                  size={size}
                 />
-              </svg>
-            </g>
-          )}
+              </g>
+            );
+          })()}
         </>
       ) : (
         // Locked: dimmed, with the price sitting where the furniture would be.

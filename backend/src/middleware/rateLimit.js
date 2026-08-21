@@ -50,10 +50,17 @@ const make = (label, windowMs, max, extra = {}) =>
     ...extra,
   });
 
-// Strictest tier. A single shared code word with an unlimited guess budget was
-// the worst-exposed surface in the app. skipSuccessfulRequests means an admin
-// who legitimately re-enters the panel several times in a session is never
-// locked out — only wrong guesses count.
+// NOT CURRENTLY APPLIED — removed from POST /api/admin/login on request, see
+// routes/admin.routes.js. Kept here so re-enabling is a one-line change.
+//
+// Why it existed: the admin panel is gated by a single shared code word, so
+// without a limiter that code word can be brute-forced at line speed, and a
+// hit grants the Story Builder, the ban button and currency granting. If it
+// stays off, the mitigation is code-word entropy — a long random ADMIN_CODES
+// value rather than a memorable word.
+//
+// skipSuccessfulRequests meant an admin re-entering the panel legitimately was
+// never locked out; only wrong guesses ever counted against the budget.
 export const adminLoginLimiter = make("admin-login", 15 * MINUTE, 5, {
   skipSuccessfulRequests: true,
 });
