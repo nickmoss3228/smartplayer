@@ -1266,7 +1266,9 @@
       "unlock": "Unlock",
       "buy": "Buy",
       "cantAfford": "Not yet",
-      "pickRoom": "Open a room first, then come back to furnish it."
+      "pickRoom": "Open a room first, then come back to furnish it.",
+      "open": "Open shop",
+      "close": "Close"
     }
   }
 }

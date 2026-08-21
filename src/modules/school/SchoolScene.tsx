@@ -61,6 +61,8 @@ export interface SchoolSceneProps {
   /** Omitted in the read-only visiting view, which makes cells non-interactive. */
   onSelectRoom?: (roomId: string) => void;
   lockedLabel?: (room: SchoolRoom) => string;
+  /** Mobile passes "w-full h-full" to fill a fullscreen box. */
+  className?: string;
 }
 
 // ── Furniture inside one cell ───────────────────────────────────────────────
@@ -235,6 +237,7 @@ export const SchoolScene = ({
   character,
   onSelectRoom,
   lockedLabel,
+  className = "w-full h-auto",
 }: SchoolSceneProps) => {
   const unlocked = new Set(unlockedRoomIds);
   const indoor = [...getRoomsByZone("upper"), ...getRoomsByZone("main")];
@@ -243,7 +246,7 @@ export const SchoolScene = ({
   return (
     <svg
       viewBox={`0 0 ${VW} ${VH}`}
-      className="w-full h-auto select-none"
+      className={`${className} select-none`}
       role="img"
       aria-label="Your Dream School"
     >
