@@ -19,11 +19,14 @@
 //   news-roland-garros/quiz/1. story/vocab/<audioKey>.mp3            ← useVocabAudio
 //   news-roland-garros/quiz/1. story/phrasal-verbs/<audioKey>.mp3    ← useVocabAudio
 //
-// subtitles/timeMarkers are still empty for every news track — the transcripts
-// haven't been time-aligned yet. Quiz content lives on the backend
-// (config/quizData.js), not here.
+// timeMarkers come from markers/<difficulty>.<storyId>.json, refreshed by
+// `npm run pull:markers` after you place them in the Story Builder — see
+// markers/index.ts for why they live in the repo at all. subtitles are still
+// empty for every news track (the transcripts aren't time-aligned yet), and
+// quiz content lives on the backend (config/quizData.js), not here.
 import { getStorageUrl } from "../../services/yandexStorage";
 import { AudioTrack } from "../../types";
+import { getStoryMarkers } from "./markers";
 
 // Track titles double as the folder names in trackFolderMap ("1. story" →
 // "Story"), so keep the two in step when adding a story.
@@ -36,7 +39,7 @@ const newsTracks = (slug: string, recorded: boolean): AudioTrack[] =>
     title,
     audio: recorded ? getStorageUrl(`${slug}/${file}`) : "",
     subtitles: [],
-    timeMarkers: [],
+    timeMarkers: getStoryMarkers("easy", slug, id),
   }));
 
 export const newsRolandGarrosAudioData: AudioTrack[] = newsTracks("news-roland-garros", true);

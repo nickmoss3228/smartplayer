@@ -9,6 +9,11 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    /* Time markers are authored in the Story Builder and pulled back into the
+       repo as JSON (scripts/pull-markers.mjs), so the app has to be able to
+       import them. Vite already bundles JSON natively; this only stops tsc
+       from rejecting the import. */
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
