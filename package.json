@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "verify:audio": "node scripts/verify-audio.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
