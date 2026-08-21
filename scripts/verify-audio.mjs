@@ -166,7 +166,10 @@ async function collectStatic() {
   const { storyRegistry } = await import(
     new URL("../backend/src/config/storyRegistry.js", import.meta.url).href
   );
-  const { quizData } = await import(
+  // Quiz audio is stored bucket-relative, so it has to be resolved against the
+  // bucket UNDER TEST rather than whatever the backend's own env points at —
+  // otherwise `--env staging` would silently grade production's URLs.
+  const { quizData, resolveQuizAudioPath } = await import(
     new URL("../backend/src/config/quizData.js", import.meta.url).href
   );
 
@@ -196,8 +199,8 @@ async function collectStatic() {
         }
 
         (quizData[difficulty]?.[storyId]?.[id] ?? []).forEach((q, i) => {
-          add(group, `quiz q${i + 1} fast`, q.audio?.fast);
-          add(group, `quiz q${i + 1} slow`, q.audio?.slow);
+          add(group, `quiz q${i + 1} fast`, resolveQuizAudioPath(q.audio?.fast, bucketBase));
+          add(group, `quiz q${i + 1} slow`, resolveQuizAudioPath(q.audio?.slow, bucketBase));
         });
       }
     }

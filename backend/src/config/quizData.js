@@ -11,6 +11,43 @@
 //
 // "leo-additional" part 2 is intentionally an empty array — that story
 // part's quiz content doesn't exist yet on the frontend either (placeholder).
+//
+// AUDIO PATHS ARE BUCKET-RELATIVE ("leo/quiz/1.leo's%20life/q1-fast.mp3") and
+// resolved at read time against config.yandex.baseUrl — never store an
+// absolute URL here. They used to be absolute production URLs, which meant
+// staging served 340 quiz clips out of the PRODUCTION bucket while its main
+// tracks and vocab correctly followed VITE_YOS_BASE_URL. Read-only, so nothing
+// could be damaged, but the two environments were not actually isolated and a
+// staging-only recording could never be heard.
+//
+// An audio value that isn't a path — "1" — is a placeholder for a recording
+// that doesn't exist yet, and passes through unresolved so callers can still
+// tell "not recorded" apart from a real URL.
+
+import { config } from "./env.js";
+
+// Only used if YANDEX_BASE_URL is unset — the app still boots without Object
+// Storage configured (see env.js), and quiz text should keep working rather
+// than the whole endpoint dying over a missing prefix.
+const FALLBACK_BASE = "https://storage.yandexcloud.net/audioplayer-data";
+
+/** Bucket-relative quiz path -> absolute URL for the configured environment. */
+export function resolveQuizAudioPath(path, base = config.yandex.baseUrl || FALLBACK_BASE) {
+  if (typeof path !== "string" || !path.includes("/")) return path; // placeholder
+  if (/^https?:\/\//.test(path)) return path; // already absolute
+  return `${base.replace(/\/$/, "")}/${path}`;
+}
+
+const withResolvedAudio = (question) =>
+  question.audio
+    ? {
+        ...question,
+        audio: {
+          fast: resolveQuizAudioPath(question.audio.fast),
+          slow: resolveQuizAudioPath(question.audio.slow),
+        },
+      }
+    : question;
 
 export const quizData = {
   "easy": {
@@ -27,8 +64,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q1-slow.mp3"
+            "fast": "leo/quiz/1.leo's%20life/q1-fast.mp3",
+            "slow": "leo/quiz/1.leo's%20life/q1-slow.mp3"
           }
         },
         {
@@ -42,8 +79,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q2-slow.mp3"
+            "fast": "leo/quiz/1.leo's%20life/q2-fast.mp3",
+            "slow": "leo/quiz/1.leo's%20life/q2-slow.mp3"
           }
         },
         {
@@ -57,8 +94,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q3-slow.mp3"
+            "fast": "leo/quiz/1.leo's%20life/q3-fast.mp3",
+            "slow": "leo/quiz/1.leo's%20life/q3-slow.mp3"
           }
         },
         {
@@ -72,8 +109,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q4-slow.mp3"
+            "fast": "leo/quiz/1.leo's%20life/q4-fast.mp3",
+            "slow": "leo/quiz/1.leo's%20life/q4-slow.mp3"
           }
         },
         {
@@ -87,8 +124,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/1.leo's%20life/q5-slow.mp3"
+            "fast": "leo/quiz/1.leo's%20life/q5-fast.mp3",
+            "slow": "leo/quiz/1.leo's%20life/q5-slow.mp3"
           }
         }
       ],
@@ -104,8 +141,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q1slow.mp3"
+            "fast": "leo/quiz/2.%20leo's%20mornings/q1fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20mornings/q1slow.mp3"
           }
         },
         {
@@ -119,8 +156,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q2slow.mp3"
+            "fast": "leo/quiz/2.%20leo's%20mornings/q2fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20mornings/q2slow.mp3"
           }
         },
         {
@@ -134,8 +171,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q3slow.mp3"
+            "fast": "leo/quiz/2.%20leo's%20mornings/q3fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20mornings/q3slow.mp3"
           }
         },
         {
@@ -149,8 +186,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q4slow.mp3"
+            "fast": "leo/quiz/2.%20leo's%20mornings/q4fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20mornings/q4slow.mp3"
           }
         },
         {
@@ -164,8 +201,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/2.%20leo's%20mornings/q5slow.mp3"
+            "fast": "leo/quiz/2.%20leo's%20mornings/q5fast.mp3",
+            "slow": "leo/quiz/2.%20leo's%20mornings/q5slow.mp3"
           }
         }
       ],
@@ -181,8 +218,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q1slow.mp3"
+            "fast": "leo/quiz/3.%20leo's%20favorite%20food/q1fast.mp3",
+            "slow": "leo/quiz/3.%20leo's%20favorite%20food/q1slow.mp3"
           }
         },
         {
@@ -196,8 +233,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q2slow.mp3"
+            "fast": "leo/quiz/3.%20leo's%20favorite%20food/q2fast.mp3",
+            "slow": "leo/quiz/3.%20leo's%20favorite%20food/q2slow.mp3"
           }
         },
         {
@@ -211,8 +248,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q3slow.mp3"
+            "fast": "leo/quiz/3.%20leo's%20favorite%20food/q3fast.mp3",
+            "slow": "leo/quiz/3.%20leo's%20favorite%20food/q3slow.mp3"
           }
         },
         {
@@ -226,8 +263,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q4slow.mp3"
+            "fast": "leo/quiz/3.%20leo's%20favorite%20food/q4fast.mp3",
+            "slow": "leo/quiz/3.%20leo's%20favorite%20food/q4slow.mp3"
           }
         },
         {
@@ -241,8 +278,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/3.%20leo's%20favorite%20food/q5slow.mp3"
+            "fast": "leo/quiz/3.%20leo's%20favorite%20food/q5fast.mp3",
+            "slow": "leo/quiz/3.%20leo's%20favorite%20food/q5slow.mp3"
           }
         }
       ],
@@ -258,8 +295,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q1slow.mp3"
+            "fast": "leo/quiz/4.%20leo's%20family/q1fast.mp3",
+            "slow": "leo/quiz/4.%20leo's%20family/q1slow.mp3"
           }
         },
         {
@@ -273,8 +310,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q2slow.mp3"
+            "fast": "leo/quiz/4.%20leo's%20family/q2fast.mp3",
+            "slow": "leo/quiz/4.%20leo's%20family/q2slow.mp3"
           }
         },
         {
@@ -288,8 +325,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q3slow.mp3"
+            "fast": "leo/quiz/4.%20leo's%20family/q3fast.mp3",
+            "slow": "leo/quiz/4.%20leo's%20family/q3slow.mp3"
           }
         },
         {
@@ -303,8 +340,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q4slow.mp3"
+            "fast": "leo/quiz/4.%20leo's%20family/q4fast.mp3",
+            "slow": "leo/quiz/4.%20leo's%20family/q4slow.mp3"
           }
         },
         {
@@ -318,8 +355,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/4.%20leo's%20family/q5slow.mp3"
+            "fast": "leo/quiz/4.%20leo's%20family/q5fast.mp3",
+            "slow": "leo/quiz/4.%20leo's%20family/q5slow.mp3"
           }
         }
       ],
@@ -335,8 +372,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q1slow.mp3"
+            "fast": "leo/quiz/5.%20leo's%20clothes/q1fast.mp3",
+            "slow": "leo/quiz/5.%20leo's%20clothes/q1slow.mp3"
           }
         },
         {
@@ -350,8 +387,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q2slow.mp3"
+            "fast": "leo/quiz/5.%20leo's%20clothes/q2fast.mp3",
+            "slow": "leo/quiz/5.%20leo's%20clothes/q2slow.mp3"
           }
         },
         {
@@ -365,8 +402,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q3slow.mp3"
+            "fast": "leo/quiz/5.%20leo's%20clothes/q3fast.mp3",
+            "slow": "leo/quiz/5.%20leo's%20clothes/q3slow.mp3"
           }
         },
         {
@@ -380,8 +417,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q4slow.mp3"
+            "fast": "leo/quiz/5.%20leo's%20clothes/q4fast.mp3",
+            "slow": "leo/quiz/5.%20leo's%20clothes/q4slow.mp3"
           }
         },
         {
@@ -395,8 +432,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/5.%20leo's%20clothes/q5slow.mp3"
+            "fast": "leo/quiz/5.%20leo's%20clothes/q5fast.mp3",
+            "slow": "leo/quiz/5.%20leo's%20clothes/q5slow.mp3"
           }
         }
       ],
@@ -412,8 +449,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q1slow.mp3"
+            "fast": "leo/quiz/6.%20a%20day%20at%20the%20beach/q1fast.mp3",
+            "slow": "leo/quiz/6.%20a%20day%20at%20the%20beach/q1slow.mp3"
           }
         },
         {
@@ -427,8 +464,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q2slow.mp3"
+            "fast": "leo/quiz/6.%20a%20day%20at%20the%20beach/q2fast.mp3",
+            "slow": "leo/quiz/6.%20a%20day%20at%20the%20beach/q2slow.mp3"
           }
         },
         {
@@ -442,8 +479,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q3slow.mp3"
+            "fast": "leo/quiz/6.%20a%20day%20at%20the%20beach/q3fast.mp3",
+            "slow": "leo/quiz/6.%20a%20day%20at%20the%20beach/q3slow.mp3"
           }
         },
         {
@@ -457,8 +494,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q4slow.mp3"
+            "fast": "leo/quiz/6.%20a%20day%20at%20the%20beach/q4fast.mp3",
+            "slow": "leo/quiz/6.%20a%20day%20at%20the%20beach/q4slow.mp3"
           }
         },
         {
@@ -472,8 +509,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/6.%20a%20day%20at%20the%20beach/q5slow.mp3"
+            "fast": "leo/quiz/6.%20a%20day%20at%20the%20beach/q5fast.mp3",
+            "slow": "leo/quiz/6.%20a%20day%20at%20the%20beach/q5slow.mp3"
           }
         }
       ],
@@ -489,8 +526,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q1slow.mp3"
+            "fast": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q1fast.mp3",
+            "slow": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q1slow.mp3"
           }
         },
         {
@@ -504,8 +541,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q2slow.mp3"
+            "fast": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q2fast.mp3",
+            "slow": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q2slow.mp3"
           }
         },
         {
@@ -519,8 +556,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q3slow.mp3"
+            "fast": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q3fast.mp3",
+            "slow": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q3slow.mp3"
           }
         },
         {
@@ -534,8 +571,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q4slow.mp3"
+            "fast": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q4fast.mp3",
+            "slow": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q4slow.mp3"
           }
         },
         {
@@ -549,8 +586,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q5slow.mp3"
+            "fast": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q5fast.mp3",
+            "slow": "leo/quiz/7.%20a%20country%20that%20Leo%20wants%20to%20visit/q5slow.mp3"
           }
         }
       ],
@@ -566,8 +603,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q1slow.mp3"
+            "fast": "leo/quiz/8.%20leo's%20hobbies/q1fast.mp3",
+            "slow": "leo/quiz/8.%20leo's%20hobbies/q1slow.mp3"
           }
         },
         {
@@ -581,8 +618,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q2slow.mp3"
+            "fast": "leo/quiz/8.%20leo's%20hobbies/q2fast.mp3",
+            "slow": "leo/quiz/8.%20leo's%20hobbies/q2slow.mp3"
           }
         },
         {
@@ -596,8 +633,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q3slow.mp3"
+            "fast": "leo/quiz/8.%20leo's%20hobbies/q3fast.mp3",
+            "slow": "leo/quiz/8.%20leo's%20hobbies/q3slow.mp3"
           }
         },
         {
@@ -611,8 +648,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q4slow.mp3"
+            "fast": "leo/quiz/8.%20leo's%20hobbies/q4fast.mp3",
+            "slow": "leo/quiz/8.%20leo's%20hobbies/q4slow.mp3"
           }
         },
         {
@@ -626,8 +663,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/8.%20leo's%20hobbies/q5slow.mp3"
+            "fast": "leo/quiz/8.%20leo's%20hobbies/q5fast.mp3",
+            "slow": "leo/quiz/8.%20leo's%20hobbies/q5slow.mp3"
           }
         }
       ],
@@ -643,8 +680,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q1slow.mp3"
+            "fast": "leo/quiz/9.%20meeting%20a%20friend/q1fast.mp3",
+            "slow": "leo/quiz/9.%20meeting%20a%20friend/q1slow.mp3"
           }
         },
         {
@@ -658,8 +695,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q2slow.mp3"
+            "fast": "leo/quiz/9.%20meeting%20a%20friend/q2fast.mp3",
+            "slow": "leo/quiz/9.%20meeting%20a%20friend/q2slow.mp3"
           }
         },
         {
@@ -673,8 +710,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q3slow.mp3"
+            "fast": "leo/quiz/9.%20meeting%20a%20friend/q3fast.mp3",
+            "slow": "leo/quiz/9.%20meeting%20a%20friend/q3slow.mp3"
           }
         },
         {
@@ -688,8 +725,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q4slow.mp3"
+            "fast": "leo/quiz/9.%20meeting%20a%20friend/q4fast.mp3",
+            "slow": "leo/quiz/9.%20meeting%20a%20friend/q4slow.mp3"
           }
         },
         {
@@ -703,8 +740,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/9.%20meeting%20a%20friend/q5slow.mp3"
+            "fast": "leo/quiz/9.%20meeting%20a%20friend/q5fast.mp3",
+            "slow": "leo/quiz/9.%20meeting%20a%20friend/q5slow.mp3"
           }
         }
       ],
@@ -720,8 +757,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q1fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q1slow.mp3"
+            "fast": "leo/quiz/10.%20the%20lost%20kitten/q1fast.mp3",
+            "slow": "leo/quiz/10.%20the%20lost%20kitten/q1slow.mp3"
           }
         },
         {
@@ -735,8 +772,8 @@ export const quizData = {
           "correctAnswer": 3,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q2fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q2slow.mp3"
+            "fast": "leo/quiz/10.%20the%20lost%20kitten/q2fast.mp3",
+            "slow": "leo/quiz/10.%20the%20lost%20kitten/q2slow.mp3"
           }
         },
         {
@@ -750,8 +787,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q3fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q3slow.mp3"
+            "fast": "leo/quiz/10.%20the%20lost%20kitten/q3fast.mp3",
+            "slow": "leo/quiz/10.%20the%20lost%20kitten/q3slow.mp3"
           }
         },
         {
@@ -765,8 +802,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q4fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q4slow.mp3"
+            "fast": "leo/quiz/10.%20the%20lost%20kitten/q4fast.mp3",
+            "slow": "leo/quiz/10.%20the%20lost%20kitten/q4slow.mp3"
           }
         },
         {
@@ -780,8 +817,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q5fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/leo/quiz/10.%20the%20lost%20kitten/q5slow.mp3"
+            "fast": "leo/quiz/10.%20the%20lost%20kitten/q5fast.mp3",
+            "slow": "leo/quiz/10.%20the%20lost%20kitten/q5slow.mp3"
           }
         }
       ]
@@ -968,8 +1005,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q1-slow.mp3"
+            "fast": "news-roland-garros/quiz/1.%20story/q1-fast.mp3",
+            "slow": "news-roland-garros/quiz/1.%20story/q1-slow.mp3"
           }
         },
         {
@@ -983,8 +1020,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q2-slow.mp3"
+            "fast": "news-roland-garros/quiz/1.%20story/q2-fast.mp3",
+            "slow": "news-roland-garros/quiz/1.%20story/q2-slow.mp3"
           }
         },
         {
@@ -998,8 +1035,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q3-slow.mp3"
+            "fast": "news-roland-garros/quiz/1.%20story/q3-fast.mp3",
+            "slow": "news-roland-garros/quiz/1.%20story/q3-slow.mp3"
           }
         },
         {
@@ -1013,8 +1050,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q4-slow.mp3"
+            "fast": "news-roland-garros/quiz/1.%20story/q4-fast.mp3",
+            "slow": "news-roland-garros/quiz/1.%20story/q4-slow.mp3"
           }
         },
         {
@@ -1028,8 +1065,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/1.%20story/q5-slow.mp3"
+            "fast": "news-roland-garros/quiz/1.%20story/q5-fast.mp3",
+            "slow": "news-roland-garros/quiz/1.%20story/q5-slow.mp3"
           }
         }
       ],
@@ -1045,8 +1082,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q1-slow.mp3"
+            "fast": "news-roland-garros/quiz/2.%20discussion/q1-fast.mp3",
+            "slow": "news-roland-garros/quiz/2.%20discussion/q1-slow.mp3"
           }
         },
         {
@@ -1060,8 +1097,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q2-slow.mp3"
+            "fast": "news-roland-garros/quiz/2.%20discussion/q2-fast.mp3",
+            "slow": "news-roland-garros/quiz/2.%20discussion/q2-slow.mp3"
           }
         },
         {
@@ -1075,8 +1112,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q3-slow.mp3"
+            "fast": "news-roland-garros/quiz/2.%20discussion/q3-fast.mp3",
+            "slow": "news-roland-garros/quiz/2.%20discussion/q3-slow.mp3"
           }
         },
         {
@@ -1090,8 +1127,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q4-slow.mp3"
+            "fast": "news-roland-garros/quiz/2.%20discussion/q4-fast.mp3",
+            "slow": "news-roland-garros/quiz/2.%20discussion/q4-slow.mp3"
           }
         },
         {
@@ -1105,8 +1142,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-roland-garros/quiz/2.%20discussion/q5-slow.mp3"
+            "fast": "news-roland-garros/quiz/2.%20discussion/q5-fast.mp3",
+            "slow": "news-roland-garros/quiz/2.%20discussion/q5-slow.mp3"
           }
         }
       ]
@@ -1189,8 +1226,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q1-slow.mp3"
+            "fast": "news-grazing-board/quiz/1.%20story/q1-fast.mp3",
+            "slow": "news-grazing-board/quiz/1.%20story/q1-slow.mp3"
           }
         },
         {
@@ -1204,8 +1241,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q2-slow.mp3"
+            "fast": "news-grazing-board/quiz/1.%20story/q2-fast.mp3",
+            "slow": "news-grazing-board/quiz/1.%20story/q2-slow.mp3"
           }
         },
         {
@@ -1219,8 +1256,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q3-slow.mp3"
+            "fast": "news-grazing-board/quiz/1.%20story/q3-fast.mp3",
+            "slow": "news-grazing-board/quiz/1.%20story/q3-slow.mp3"
           }
         },
         {
@@ -1234,8 +1271,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q4-slow.mp3"
+            "fast": "news-grazing-board/quiz/1.%20story/q4-fast.mp3",
+            "slow": "news-grazing-board/quiz/1.%20story/q4-slow.mp3"
           }
         },
         {
@@ -1249,8 +1286,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/1.%20story/q5-slow.mp3"
+            "fast": "news-grazing-board/quiz/1.%20story/q5-fast.mp3",
+            "slow": "news-grazing-board/quiz/1.%20story/q5-slow.mp3"
           }
         }
       ],
@@ -1266,8 +1303,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q1-slow.mp3"
+            "fast": "news-grazing-board/quiz/2.%20discussion/q1-fast.mp3",
+            "slow": "news-grazing-board/quiz/2.%20discussion/q1-slow.mp3"
           }
         },
         {
@@ -1281,8 +1318,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q2-slow.mp3"
+            "fast": "news-grazing-board/quiz/2.%20discussion/q2-fast.mp3",
+            "slow": "news-grazing-board/quiz/2.%20discussion/q2-slow.mp3"
           }
         },
         {
@@ -1296,8 +1333,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q3-slow.mp3"
+            "fast": "news-grazing-board/quiz/2.%20discussion/q3-fast.mp3",
+            "slow": "news-grazing-board/quiz/2.%20discussion/q3-slow.mp3"
           }
         },
         {
@@ -1311,8 +1348,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q4-slow.mp3"
+            "fast": "news-grazing-board/quiz/2.%20discussion/q4-fast.mp3",
+            "slow": "news-grazing-board/quiz/2.%20discussion/q4-slow.mp3"
           }
         },
         {
@@ -1326,8 +1363,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 0,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/news-grazing-board/quiz/2.%20discussion/q5-slow.mp3"
+            "fast": "news-grazing-board/quiz/2.%20discussion/q5-fast.mp3",
+            "slow": "news-grazing-board/quiz/2.%20discussion/q5-slow.mp3"
           }
         }
       ]
@@ -1347,8 +1384,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 3.1,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q1-slow.mp3"
+            "fast": "maya/quiz/1.%20meet%20me/q1-fast.mp3",
+            "slow": "maya/quiz/1.%20meet%20me/q1-slow.mp3"
           }
         },
         {
@@ -1362,8 +1399,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 9.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q2-slow.mp3"
+            "fast": "maya/quiz/1.%20meet%20me/q2-fast.mp3",
+            "slow": "maya/quiz/1.%20meet%20me/q2-slow.mp3"
           }
         },
         {
@@ -1377,8 +1414,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 26.5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q3-slow.mp3"
+            "fast": "maya/quiz/1.%20meet%20me/q3-fast.mp3",
+            "slow": "maya/quiz/1.%20meet%20me/q3-slow.mp3"
           }
         },
         {
@@ -1392,8 +1429,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 29.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q4-slow.mp3"
+            "fast": "maya/quiz/1.%20meet%20me/q4-fast.mp3",
+            "slow": "maya/quiz/1.%20meet%20me/q4-slow.mp3"
           }
         },
         {
@@ -1407,8 +1444,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 13.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/1.%20meet%20me/q5-slow.mp3"
+            "fast": "maya/quiz/1.%20meet%20me/q5-fast.mp3",
+            "slow": "maya/quiz/1.%20meet%20me/q5-slow.mp3"
           }
         }
       ],
@@ -1424,8 +1461,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q1-slow.mp3"
+            "fast": "maya/quiz/2.%20a%20trip%20to%20kyoto/q1-fast.mp3",
+            "slow": "maya/quiz/2.%20a%20trip%20to%20kyoto/q1-slow.mp3"
           }
         },
         {
@@ -1439,8 +1476,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 11.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q2-slow.mp3"
+            "fast": "maya/quiz/2.%20a%20trip%20to%20kyoto/q2-fast.mp3",
+            "slow": "maya/quiz/2.%20a%20trip%20to%20kyoto/q2-slow.mp3"
           }
         },
         {
@@ -1454,8 +1491,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 51.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q3-slow.mp3"
+            "fast": "maya/quiz/2.%20a%20trip%20to%20kyoto/q3-fast.mp3",
+            "slow": "maya/quiz/2.%20a%20trip%20to%20kyoto/q3-slow.mp3"
           }
         },
         {
@@ -1469,8 +1506,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 24.9,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q4-slow.mp3"
+            "fast": "maya/quiz/2.%20a%20trip%20to%20kyoto/q4-fast.mp3",
+            "slow": "maya/quiz/2.%20a%20trip%20to%20kyoto/q4-slow.mp3"
           }
         },
         {
@@ -1484,8 +1521,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 65.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/2.%20a%20trip%20to%20kyoto/q5-slow.mp3"
+            "fast": "maya/quiz/2.%20a%20trip%20to%20kyoto/q5-fast.mp3",
+            "slow": "maya/quiz/2.%20a%20trip%20to%20kyoto/q5-slow.mp3"
           }
         }
       ],
@@ -1501,8 +1538,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 3.1,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q1-slow.mp3"
+            "fast": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q1-fast.mp3",
+            "slow": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q1-slow.mp3"
           }
         },
         {
@@ -1516,8 +1553,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 20.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q2-slow.mp3"
+            "fast": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q2-fast.mp3",
+            "slow": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q2-slow.mp3"
           }
         },
         {
@@ -1531,8 +1568,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 36.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q3-slow.mp3"
+            "fast": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q3-fast.mp3",
+            "slow": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q3-slow.mp3"
           }
         },
         {
@@ -1546,8 +1583,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 50,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q4-slow.mp3"
+            "fast": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q4-fast.mp3",
+            "slow": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q4-slow.mp3"
           }
         },
         {
@@ -1561,8 +1598,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 64.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q5-slow.mp3"
+            "fast": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q5-fast.mp3",
+            "slow": "maya/quiz/3.%20trying%20street%20food%20in%20bangkok/q5-slow.mp3"
           }
         }
       ],
@@ -1578,8 +1615,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 8.1,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q1-slow.mp3"
+            "fast": "maya/quiz/4.%20a%20missed%20connection/q1-fast.mp3",
+            "slow": "maya/quiz/4.%20a%20missed%20connection/q1-slow.mp3"
           }
         },
         {
@@ -1593,8 +1630,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 14.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q2-slow.mp3"
+            "fast": "maya/quiz/4.%20a%20missed%20connection/q2-fast.mp3",
+            "slow": "maya/quiz/4.%20a%20missed%20connection/q2-slow.mp3"
           }
         },
         {
@@ -1608,8 +1645,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 26.7,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q3-slow.mp3"
+            "fast": "maya/quiz/4.%20a%20missed%20connection/q3-fast.mp3",
+            "slow": "maya/quiz/4.%20a%20missed%20connection/q3-slow.mp3"
           }
         },
         {
@@ -1623,8 +1660,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 29.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q4-slow.mp3"
+            "fast": "maya/quiz/4.%20a%20missed%20connection/q4-fast.mp3",
+            "slow": "maya/quiz/4.%20a%20missed%20connection/q4-slow.mp3"
           }
         },
         {
@@ -1638,8 +1675,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 68.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/4.%20a%20missed%20connection/q5-slow.mp3"
+            "fast": "maya/quiz/4.%20a%20missed%20connection/q5-fast.mp3",
+            "slow": "maya/quiz/4.%20a%20missed%20connection/q5-slow.mp3"
           }
         }
       ],
@@ -1655,8 +1692,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 10.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q1-slow.mp3"
+            "fast": "maya/quiz/5.%20family%20across%20borders/q1-fast.mp3",
+            "slow": "maya/quiz/5.%20family%20across%20borders/q1-slow.mp3"
           }
         },
         {
@@ -1670,8 +1707,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 14,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q2-slow.mp3"
+            "fast": "maya/quiz/5.%20family%20across%20borders/q2-fast.mp3",
+            "slow": "maya/quiz/5.%20family%20across%20borders/q2-slow.mp3"
           }
         },
         {
@@ -1685,8 +1722,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 21.7,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q3-slow.mp3"
+            "fast": "maya/quiz/5.%20family%20across%20borders/q3-fast.mp3",
+            "slow": "maya/quiz/5.%20family%20across%20borders/q3-slow.mp3"
           }
         },
         {
@@ -1700,8 +1737,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 37.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q4-slow.mp3"
+            "fast": "maya/quiz/5.%20family%20across%20borders/q4-fast.mp3",
+            "slow": "maya/quiz/5.%20family%20across%20borders/q4-slow.mp3"
           }
         },
         {
@@ -1715,8 +1752,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 69.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/5.%20family%20across%20borders/q5-slow.mp3"
+            "fast": "maya/quiz/5.%20family%20across%20borders/q5-fast.mp3",
+            "slow": "maya/quiz/5.%20family%20across%20borders/q5-slow.mp3"
           }
         }
       ],
@@ -1732,8 +1769,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 3.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q1-slow.mp3"
+            "fast": "maya/quiz/6.%20budgeting%20for%20adventure/q1-fast.mp3",
+            "slow": "maya/quiz/6.%20budgeting%20for%20adventure/q1-slow.mp3"
           }
         },
         {
@@ -1747,8 +1784,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 18,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q2-slow.mp3"
+            "fast": "maya/quiz/6.%20budgeting%20for%20adventure/q2-fast.mp3",
+            "slow": "maya/quiz/6.%20budgeting%20for%20adventure/q2-slow.mp3"
           }
         },
         {
@@ -1762,8 +1799,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 23.9,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q3-slow.mp3"
+            "fast": "maya/quiz/6.%20budgeting%20for%20adventure/q3-fast.mp3",
+            "slow": "maya/quiz/6.%20budgeting%20for%20adventure/q3-slow.mp3"
           }
         },
         {
@@ -1777,8 +1814,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 38.7,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q4-slow.mp3"
+            "fast": "maya/quiz/6.%20budgeting%20for%20adventure/q4-fast.mp3",
+            "slow": "maya/quiz/6.%20budgeting%20for%20adventure/q4-slow.mp3"
           }
         },
         {
@@ -1792,8 +1829,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 64.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/6.%20budgeting%20for%20adventure/q5-slow.mp3"
+            "fast": "maya/quiz/6.%20budgeting%20for%20adventure/q5-fast.mp3",
+            "slow": "maya/quiz/6.%20budgeting%20for%20adventure/q5-slow.mp3"
           }
         }
       ],
@@ -1809,8 +1846,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 3.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q1-slow.mp3"
+            "fast": "maya/quiz/7.%20discussing%20environmental%20concerns/q1-fast.mp3",
+            "slow": "maya/quiz/7.%20discussing%20environmental%20concerns/q1-slow.mp3"
           }
         },
         {
@@ -1824,8 +1861,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 35.6,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q2-slow.mp3"
+            "fast": "maya/quiz/7.%20discussing%20environmental%20concerns/q2-fast.mp3",
+            "slow": "maya/quiz/7.%20discussing%20environmental%20concerns/q2-slow.mp3"
           }
         },
         {
@@ -1839,8 +1876,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 44.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q3-slow.mp3"
+            "fast": "maya/quiz/7.%20discussing%20environmental%20concerns/q3-fast.mp3",
+            "slow": "maya/quiz/7.%20discussing%20environmental%20concerns/q3-slow.mp3"
           }
         },
         {
@@ -1854,8 +1891,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 56,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q4-slow.mp3"
+            "fast": "maya/quiz/7.%20discussing%20environmental%20concerns/q4-fast.mp3",
+            "slow": "maya/quiz/7.%20discussing%20environmental%20concerns/q4-slow.mp3"
           }
         },
         {
@@ -1869,8 +1906,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 72.9,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/7.%20discussing%20environmental%20concerns/q5-slow.mp3"
+            "fast": "maya/quiz/7.%20discussing%20environmental%20concerns/q5-fast.mp3",
+            "slow": "maya/quiz/7.%20discussing%20environmental%20concerns/q5-slow.mp3"
           }
         }
       ],
@@ -1886,8 +1923,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 8.1,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q1-slow.mp3"
+            "fast": "maya/quiz/8.%20an%20unexpected%20interview/q1-fast.mp3",
+            "slow": "maya/quiz/8.%20an%20unexpected%20interview/q1-slow.mp3"
           }
         },
         {
@@ -1901,8 +1938,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 10.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q2-slow.mp3"
+            "fast": "maya/quiz/8.%20an%20unexpected%20interview/q2-fast.mp3",
+            "slow": "maya/quiz/8.%20an%20unexpected%20interview/q2-slow.mp3"
           }
         },
         {
@@ -1916,8 +1953,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 19,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q3-slow.mp3"
+            "fast": "maya/quiz/8.%20an%20unexpected%20interview/q3-fast.mp3",
+            "slow": "maya/quiz/8.%20an%20unexpected%20interview/q3-slow.mp3"
           }
         },
         {
@@ -1931,8 +1968,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 41.6,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q4-slow.mp3"
+            "fast": "maya/quiz/8.%20an%20unexpected%20interview/q4-fast.mp3",
+            "slow": "maya/quiz/8.%20an%20unexpected%20interview/q4-slow.mp3"
           }
         },
         {
@@ -1946,8 +1983,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 75.5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/8.%20an%20unexpected%20interview/q5-slow.mp3"
+            "fast": "maya/quiz/8.%20an%20unexpected%20interview/q5-fast.mp3",
+            "slow": "maya/quiz/8.%20an%20unexpected%20interview/q5-slow.mp3"
           }
         }
       ],
@@ -1963,8 +2000,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 6.2,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q1-slow.mp3"
+            "fast": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q1-fast.mp3",
+            "slow": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q1-slow.mp3"
           }
         },
         {
@@ -1978,8 +2015,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q2-slow.mp3"
+            "fast": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q2-fast.mp3",
+            "slow": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q2-slow.mp3"
           }
         },
         {
@@ -1993,8 +2030,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 51.6,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q3-slow.mp3"
+            "fast": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q3-fast.mp3",
+            "slow": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q3-slow.mp3"
           }
         },
         {
@@ -2008,8 +2045,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 56.7,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q4-slow.mp3"
+            "fast": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q4-fast.mp3",
+            "slow": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q4-slow.mp3"
           }
         },
         {
@@ -2023,8 +2060,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 63.9,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/9.%20the%20mountain%20festival%20part%201/q5-slow.mp3"
+            "fast": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q5-fast.mp3",
+            "slow": "maya/quiz/9.%20the%20mountain%20festival%20part%201/q5-slow.mp3"
           }
         }
       ],
@@ -2040,8 +2077,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 9.5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q1-slow.mp3"
+            "fast": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q1-fast.mp3",
+            "slow": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q1-slow.mp3"
           }
         },
         {
@@ -2055,8 +2092,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 33.5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q2-slow.mp3"
+            "fast": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q2-fast.mp3",
+            "slow": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q2-slow.mp3"
           }
         },
         {
@@ -2070,8 +2107,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 43.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q3-slow.mp3"
+            "fast": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q3-fast.mp3",
+            "slow": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q3-slow.mp3"
           }
         },
         {
@@ -2085,8 +2122,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 61.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q4-slow.mp3"
+            "fast": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q4-fast.mp3",
+            "slow": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q4-slow.mp3"
           }
         },
         {
@@ -2100,8 +2137,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 76.8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/maya/quiz/10.%20the%20mountain%20festival%20part%202/q5-slow.mp3"
+            "fast": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q5-fast.mp3",
+            "slow": "maya/quiz/10.%20the%20mountain%20festival%20part%202/q5-slow.mp3"
           }
         }
       ]
@@ -2121,8 +2158,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 4.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q1-slow.mp3"
+            "fast": "daniel/quiz/1.%20introducing%20myself/q1-fast.mp3",
+            "slow": "daniel/quiz/1.%20introducing%20myself/q1-slow.mp3"
           }
         },
         {
@@ -2136,8 +2173,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 10.3,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q2-slow.mp3"
+            "fast": "daniel/quiz/1.%20introducing%20myself/q2-fast.mp3",
+            "slow": "daniel/quiz/1.%20introducing%20myself/q2-slow.mp3"
           }
         },
         {
@@ -2151,8 +2188,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 27,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q3-slow.mp3"
+            "fast": "daniel/quiz/1.%20introducing%20myself/q3-fast.mp3",
+            "slow": "daniel/quiz/1.%20introducing%20myself/q3-slow.mp3"
           }
         },
         {
@@ -2166,8 +2203,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 68.4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q4-slow.mp3"
+            "fast": "daniel/quiz/1.%20introducing%20myself/q4-fast.mp3",
+            "slow": "daniel/quiz/1.%20introducing%20myself/q4-slow.mp3"
           }
         },
         {
@@ -2181,8 +2218,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 81.5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/1.%20introducing%20myself/q5-slow.mp3"
+            "fast": "daniel/quiz/1.%20introducing%20myself/q5-fast.mp3",
+            "slow": "daniel/quiz/1.%20introducing%20myself/q5-slow.mp3"
           }
         }
       ],
@@ -2198,8 +2235,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q1-slow.mp3"
+            "fast": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q1-fast.mp3",
+            "slow": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q1-slow.mp3"
           }
         },
         {
@@ -2213,8 +2250,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 18,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q2-slow.mp3"
+            "fast": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q2-fast.mp3",
+            "slow": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q2-slow.mp3"
           }
         },
         {
@@ -2228,8 +2265,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 38,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q3-slow.mp3"
+            "fast": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q3-fast.mp3",
+            "slow": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q3-slow.mp3"
           }
         },
         {
@@ -2243,8 +2280,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 55,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q4-slow.mp3"
+            "fast": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q4-fast.mp3",
+            "slow": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q4-slow.mp3"
           }
         },
         {
@@ -2258,8 +2295,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 75,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q5-slow.mp3"
+            "fast": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q5-fast.mp3",
+            "slow": "daniel/quiz/2.%20the%20deal%20that%20nearly%20broke%20me/q5-slow.mp3"
           }
         }
       ],
@@ -2275,8 +2312,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 12,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q1-slow.mp3"
+            "fast": "daniel/quiz/3.%20the%20conference%20in%20munich/q1-fast.mp3",
+            "slow": "daniel/quiz/3.%20the%20conference%20in%20munich/q1-slow.mp3"
           }
         },
         {
@@ -2290,8 +2327,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 30,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q2-slow.mp3"
+            "fast": "daniel/quiz/3.%20the%20conference%20in%20munich/q2-fast.mp3",
+            "slow": "daniel/quiz/3.%20the%20conference%20in%20munich/q2-slow.mp3"
           }
         },
         {
@@ -2305,8 +2342,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 45,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q3-slow.mp3"
+            "fast": "daniel/quiz/3.%20the%20conference%20in%20munich/q3-fast.mp3",
+            "slow": "daniel/quiz/3.%20the%20conference%20in%20munich/q3-slow.mp3"
           }
         },
         {
@@ -2320,8 +2357,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 65,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q4-slow.mp3"
+            "fast": "daniel/quiz/3.%20the%20conference%20in%20munich/q4-fast.mp3",
+            "slow": "daniel/quiz/3.%20the%20conference%20in%20munich/q4-slow.mp3"
           }
         },
         {
@@ -2335,8 +2372,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 98,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/3.%20the%20conference%20in%20munich/q5-slow.mp3"
+            "fast": "daniel/quiz/3.%20the%20conference%20in%20munich/q5-fast.mp3",
+            "slow": "daniel/quiz/3.%20the%20conference%20in%20munich/q5-slow.mp3"
           }
         }
       ],
@@ -2352,8 +2389,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q1-slow.mp3"
+            "fast": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q1-fast.mp3",
+            "slow": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q1-slow.mp3"
           }
         },
         {
@@ -2367,8 +2404,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 25,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q2-slow.mp3"
+            "fast": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q2-fast.mp3",
+            "slow": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q2-slow.mp3"
           }
         },
         {
@@ -2382,8 +2419,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 50,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q3-slow.mp3"
+            "fast": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q3-fast.mp3",
+            "slow": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q3-slow.mp3"
           }
         },
         {
@@ -2397,8 +2434,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 65,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q4-slow.mp3"
+            "fast": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q4-fast.mp3",
+            "slow": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q4-slow.mp3"
           }
         },
         {
@@ -2412,8 +2449,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 90,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q5-slow.mp3"
+            "fast": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q5-fast.mp3",
+            "slow": "daniel/quiz/4.%20a%20failure%20with%20a%20silver%20lining/q5-slow.mp3"
           }
         }
       ],
@@ -2429,8 +2466,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 10,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q1-slow.mp3"
+            "fast": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q1-fast.mp3",
+            "slow": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q1-slow.mp3"
           }
         },
         {
@@ -2444,8 +2481,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 20,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q2-slow.mp3"
+            "fast": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q2-fast.mp3",
+            "slow": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q2-slow.mp3"
           }
         },
         {
@@ -2459,8 +2496,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 42,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q3-slow.mp3"
+            "fast": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q3-fast.mp3",
+            "slow": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q3-slow.mp3"
           }
         },
         {
@@ -2474,8 +2511,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 65,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q4-slow.mp3"
+            "fast": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q4-fast.mp3",
+            "slow": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q4-slow.mp3"
           }
         },
         {
@@ -2489,8 +2526,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 72,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q5-slow.mp3"
+            "fast": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q5-fast.mp3",
+            "slow": "daniel/quiz/5.%20the%20bridge%20at%20low%20tide/q5-slow.mp3"
           }
         }
       ],
@@ -2506,8 +2543,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 18,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q1-slow.mp3"
+            "fast": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q1-fast.mp3",
+            "slow": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q1-slow.mp3"
           }
         },
         {
@@ -2521,8 +2558,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 38,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q2-slow.mp3"
+            "fast": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q2-fast.mp3",
+            "slow": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q2-slow.mp3"
           }
         },
         {
@@ -2536,8 +2573,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 50,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q3-slow.mp3"
+            "fast": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q3-fast.mp3",
+            "slow": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q3-slow.mp3"
           }
         },
         {
@@ -2551,8 +2588,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 62,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q4-slow.mp3"
+            "fast": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q4-fast.mp3",
+            "slow": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q4-slow.mp3"
           }
         },
         {
@@ -2566,8 +2603,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 80,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q5-slow.mp3"
+            "fast": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q5-fast.mp3",
+            "slow": "daniel/quiz/6.%20night%20of%20the%20phantom%20pallets/q5-slow.mp3"
           }
         }
       ],
@@ -2583,8 +2620,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 4,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q1-slow.mp3"
+            "fast": "daniel/quiz/7.%20family%20weather%20report/q1-fast.mp3",
+            "slow": "daniel/quiz/7.%20family%20weather%20report/q1-slow.mp3"
           }
         },
         {
@@ -2598,8 +2635,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 28,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q2-slow.mp3"
+            "fast": "daniel/quiz/7.%20family%20weather%20report/q2-fast.mp3",
+            "slow": "daniel/quiz/7.%20family%20weather%20report/q2-slow.mp3"
           }
         },
         {
@@ -2613,8 +2650,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 32,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q3-slow.mp3"
+            "fast": "daniel/quiz/7.%20family%20weather%20report/q3-fast.mp3",
+            "slow": "daniel/quiz/7.%20family%20weather%20report/q3-slow.mp3"
           }
         },
         {
@@ -2628,8 +2665,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 58,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q4-slow.mp3"
+            "fast": "daniel/quiz/7.%20family%20weather%20report/q4-fast.mp3",
+            "slow": "daniel/quiz/7.%20family%20weather%20report/q4-slow.mp3"
           }
         },
         {
@@ -2643,8 +2680,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 68,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/7.%20family%20weather%20report/q5-slow.mp3"
+            "fast": "daniel/quiz/7.%20family%20weather%20report/q5-fast.mp3",
+            "slow": "daniel/quiz/7.%20family%20weather%20report/q5-slow.mp3"
           }
         }
       ],
@@ -2660,8 +2697,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 8,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q1-slow.mp3"
+            "fast": "daniel/quiz/8.%20the%20price%20of%20enough/q1-fast.mp3",
+            "slow": "daniel/quiz/8.%20the%20price%20of%20enough/q1-slow.mp3"
           }
         },
         {
@@ -2675,8 +2712,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 33,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q2-slow.mp3"
+            "fast": "daniel/quiz/8.%20the%20price%20of%20enough/q2-fast.mp3",
+            "slow": "daniel/quiz/8.%20the%20price%20of%20enough/q2-slow.mp3"
           }
         },
         {
@@ -2690,8 +2727,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 48,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q3-slow.mp3"
+            "fast": "daniel/quiz/8.%20the%20price%20of%20enough/q3-fast.mp3",
+            "slow": "daniel/quiz/8.%20the%20price%20of%20enough/q3-slow.mp3"
           }
         },
         {
@@ -2705,8 +2742,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 60,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q4-slow.mp3"
+            "fast": "daniel/quiz/8.%20the%20price%20of%20enough/q4-fast.mp3",
+            "slow": "daniel/quiz/8.%20the%20price%20of%20enough/q4-slow.mp3"
           }
         },
         {
@@ -2720,8 +2757,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 88,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/8.%20the%20price%20of%20enough/q5-slow.mp3"
+            "fast": "daniel/quiz/8.%20the%20price%20of%20enough/q5-fast.mp3",
+            "slow": "daniel/quiz/8.%20the%20price%20of%20enough/q5-slow.mp3"
           }
         }
       ],
@@ -2737,8 +2774,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q1-slow.mp3"
+            "fast": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q1-fast.mp3",
+            "slow": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q1-slow.mp3"
           }
         },
         {
@@ -2752,8 +2789,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 15,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q2-slow.mp3"
+            "fast": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q2-fast.mp3",
+            "slow": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q2-slow.mp3"
           }
         },
         {
@@ -2767,8 +2804,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 35,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q3-slow.mp3"
+            "fast": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q3-fast.mp3",
+            "slow": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q3-slow.mp3"
           }
         },
         {
@@ -2782,8 +2819,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 40,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q4-slow.mp3"
+            "fast": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q4-fast.mp3",
+            "slow": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q4-slow.mp3"
           }
         },
         {
@@ -2797,8 +2834,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 70,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/9.%20family%20on%20the%20manifest%20part%20i/q5-slow.mp3"
+            "fast": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q5-fast.mp3",
+            "slow": "daniel/quiz/9.%20family%20on%20the%20manifest,%20part%20I%20the%20itinerary%20that%20blinked/q5-slow.mp3"
           }
         }
       ],
@@ -2814,8 +2851,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 5,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q1-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q1-slow.mp3"
+            "fast": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q1-fast.mp3",
+            "slow": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q1-slow.mp3"
           }
         },
         {
@@ -2829,8 +2866,8 @@ export const quizData = {
           "correctAnswer": 1,
           "referenceTime": 32,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q2-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q2-slow.mp3"
+            "fast": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q2-fast.mp3",
+            "slow": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q2-slow.mp3"
           }
         },
         {
@@ -2844,8 +2881,8 @@ export const quizData = {
           "correctAnswer": 0,
           "referenceTime": 52,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q3-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q3-slow.mp3"
+            "fast": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q3-fast.mp3",
+            "slow": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q3-slow.mp3"
           }
         },
         {
@@ -2859,8 +2896,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 65,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q4-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q4-slow.mp3"
+            "fast": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q4-fast.mp3",
+            "slow": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q4-slow.mp3"
           }
         },
         {
@@ -2874,8 +2911,8 @@ export const quizData = {
           "correctAnswer": 2,
           "referenceTime": 92,
           "audio": {
-            "fast": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q5-fast.mp3",
-            "slow": "https://storage.yandexcloud.net/audioplayer-data/daniel/quiz/10.%20family%20on%20the%20manifest%20part%20ii/q5-slow.mp3"
+            "fast": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q5-fast.mp3",
+            "slow": "daniel/quiz/10.%20family%20on%20the%20manifest,%20part%20II%20the%20break%20that%20tested%20the%20break/q5-slow.mp3"
           }
         }
       ]
@@ -2893,5 +2930,25 @@ export function getQuizAnswerKey(difficulty, storyId, partNumber) {
 export function getPublicQuiz(difficulty, storyId, partNumber) {
   const questions = quizData[difficulty]?.[storyId]?.[partNumber];
   if (!questions) return null;
-  return questions.map(({ correctAnswer, ...rest }) => rest);
+  return questions.map(({ correctAnswer, ...rest }) => withResolvedAudio(rest));
+}
+
+/**
+ * A whole story's parts WITH correctAnswer and absolute audio URLs — the admin
+ * Story Builder's import flow only. Everything the client may see goes through
+ * getPublicQuiz instead.
+ *
+ * Resolving here matters: the import copies these URLs verbatim into the new
+ * Story doc, so a draft imported on staging must record staging URLs. Handing
+ * out raw relative paths would persist paths that resolve nowhere.
+ */
+export function getQuizPartsForImport(difficulty, storyId) {
+  const parts = quizData[difficulty]?.[storyId];
+  if (!parts) return {};
+  return Object.fromEntries(
+    Object.entries(parts).map(([partNumber, questions]) => [
+      partNumber,
+      questions.map(withResolvedAudio),
+    ]),
+  );
 }

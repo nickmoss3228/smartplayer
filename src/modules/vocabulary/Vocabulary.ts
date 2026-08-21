@@ -69,8 +69,11 @@ export const trackFolderMap: Record<
       "6": "6. night of the phantom pallets",
       "7": "7. family weather report",
       "8": "8. the price of enough",
-      "9": "9. family on the manifest, part I the itinerary that blinked.",
-      "10": "10. family on the manifest, part II the break that tested the break.",
+      // No trailing period on either: the bucket folders don't have one, and
+      // the copy here did, so every vocab and phrasal clip in daniel 9 and 10
+      // 404'd. The story title ends in a full stop; the folder name does not.
+      "9": "9. family on the manifest, part I the itinerary that blinked",
+      "10": "10. family on the manifest, part II the break that tested the break",
     },
   },
 };

@@ -6,7 +6,7 @@
 import { Story } from "../models/Story.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
-import { quizData } from "../config/quizData.js";
+import { getQuizPartsForImport } from "../config/quizData.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
@@ -69,7 +69,9 @@ export async function createStory(req, res) {
 // payload, since the frontend never otherwise sees the answer key.
 export async function getStaticQuizSource(req, res) {
   const { difficulty, storyId } = req.params;
-  res.json({ parts: quizData[difficulty]?.[storyId] ?? {} });
+  // getQuizPartsForImport, not a raw quizData slice: audio paths are stored
+  // bucket-relative and only become URLs for THIS environment when resolved.
+  res.json({ parts: getQuizPartsForImport(difficulty, storyId) });
 }
 
 // POST /api/admin/stories/import
