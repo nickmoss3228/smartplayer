@@ -9,58 +9,94 @@ import PlayerProgressModal from "./PlayerProgressModal";
 
 const DEBOUNCE_MS = 350;
 
+// Three fields, one per currency. The backend has always accepted all three
+// (POST /api/admin/grant-currency), but this form hardcoded bitWord and
+// bitPhrase to 0, so only bitAward could ever be granted — which made the two
+// Dream School currencies that gate furniture and actions untestable without
+// curl.
+const GRANT_FIELDS = [
+  { key: "bitAward" as const, label: "Award", accent: "text-amber-600", ring: "focus:border-amber-400" },
+  { key: "bitWord" as const, label: "Word", accent: "text-sky-600", ring: "focus:border-sky-400" },
+  { key: "bitPhrase" as const, label: "Phrase", accent: "text-emerald-600", ring: "focus:border-emerald-400" },
+];
+
+type GrantAmounts = { bitAward: number; bitWord: number; bitPhrase: number };
+
 function GrantCurrencyForm({
   onGrant,
 }: {
-  onGrant: (amounts: { bitAward: number; bitWord: number; bitPhrase: number }) => Promise<void>;
+  onGrant: (amounts: GrantAmounts) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [bitAward, setBitAward] = useState("0");
+  const [values, setValues] = useState<Record<string, string>>({
+    bitAward: "0",
+    bitWord: "0",
+    bitPhrase: "0",
+  });
   const [submitting, setSubmitting] = useState(false);
+
+  const reset = () => setValues({ bitAward: "0", bitWord: "0", bitPhrase: "0" });
 
   if (!open) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs text-amber-600 hover:text-amber-800"
+        className="text-xs text-amber-600 hover:text-amber-800 whitespace-nowrap"
       >
         Grant currency
       </button>
     );
   }
 
+  const amounts: GrantAmounts = {
+    bitAward: Number(values.bitAward) || 0,
+    bitWord: Number(values.bitWord) || 0,
+    bitPhrase: Number(values.bitPhrase) || 0,
+  };
+  // The server rejects an all-zero grant, so disable rather than round-trip it.
+  const nothingToGrant = !amounts.bitAward && !amounts.bitWord && !amounts.bitPhrase;
+
   return (
     <form
-      className="flex items-center gap-1"
+      className="flex items-center gap-1.5 flex-wrap"
       onSubmit={async (e) => {
         e.preventDefault();
+        if (nothingToGrant) return;
         setSubmitting(true);
         try {
-          await onGrant({ bitAward: Number(bitAward) || 0, bitWord: 0, bitPhrase: 0 });
+          await onGrant(amounts);
           setOpen(false);
-          setBitAward("0");
+          reset();
         } finally {
           setSubmitting(false);
         }
       }}
     >
-      <input
-        type="number"
-        value={bitAward}
-        onChange={(e) => setBitAward(e.target.value)}
-        className="w-16 text-black px-1.5 py-0.5 border border-gray-300 rounded text-xs"
-        autoFocus
-      />
+      {GRANT_FIELDS.map((f, i) => (
+        <label key={f.key} className="flex items-center gap-1">
+          <span className={`text-[10px] font-semibold ${f.accent}`}>{f.label}</span>
+          <input
+            type="number"
+            value={values[f.key]}
+            onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+            className={`w-14 text-black px-1.5 py-0.5 border border-gray-300 rounded text-xs ${f.ring} outline-none`}
+            autoFocus={i === 0}
+          />
+        </label>
+      ))}
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || nothingToGrant}
         className="text-xs text-white bg-amber-500 hover:bg-amber-600 rounded px-2 py-0.5 disabled:opacity-50"
       >
         {submitting ? "..." : "Send"}
       </button>
       <button
         type="button"
-        onClick={() => setOpen(false)}
+        onClick={() => {
+          setOpen(false);
+          reset();
+        }}
         className="text-xs text-gray-400 hover:text-gray-600"
       >
         Cancel
@@ -163,8 +199,10 @@ const PlayersTab = ({ token }: { token: string }) => {
               <div className="text-xs text-gray-500">{player.email}</div>
             </div>
 
-            <div className="text-xs text-gray-500 whitespace-nowrap">
-              {player.wallet.bitAward} BitAward
+            <div className="text-xs whitespace-nowrap flex items-center gap-2">
+              <span className="text-amber-600 font-semibold">{player.wallet.bitAward}</span>
+              <span className="text-sky-600 font-semibold">{player.wallet.bitWord}</span>
+              <span className="text-emerald-600 font-semibold">{player.wallet.bitPhrase}</span>
             </div>
 
             <GrantCurrencyForm onGrant={(amounts) => handleGrant(player.id, amounts)} />
