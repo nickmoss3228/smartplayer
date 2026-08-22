@@ -88,14 +88,17 @@ export interface ImportStoryPayload {
 export const importStory = async (
   token: string,
   payload: ImportStoryPayload
-): Promise<AdminStory> => {
+): Promise<{ story: AdminStory; markersRestoredForParts: number }> => {
   const res = await fetch(`${API_URL}/api/admin/stories/import`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify(payload),
   });
   const data = await parseOrThrow(res);
-  return data.story;
+  // The backend refills timeMarkers from PartMarkers for any part the payload
+  // left empty (models/PartMarkers.js). Surfaced so the import can say so —
+  // silently restored work is indistinguishable from work still being lost.
+  return { story: data.story, markersRestoredForParts: data.markersRestoredForParts ?? 0 };
 };
 
 export interface StaticQuizQuestion {

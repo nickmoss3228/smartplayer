@@ -4,6 +4,11 @@
 // helpers/storyLookup.js for how DB stories are merged with the legacy
 // static-file stories at read time.
 import { Story } from "../models/Story.js";
+import {
+  rememberPartMarkers,
+  recallStoryMarkers,
+  restoreMarkersIntoParts,
+} from "../models/PartMarkers.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { getQuizPartsForImport } from "../config/quizData.js";
@@ -45,6 +50,9 @@ export async function createStory(req, res) {
       });
     }
 
+    // Same rescue as importStory: recreating a story under an id that once had
+    // markers gets them back rather than starting from a blank waveform.
+    const remembered = await recallStoryMarkers(difficulty, storyId.trim());
     const story = await Story.create({
       difficulty,
       storyId: storyId.trim(),
@@ -52,7 +60,10 @@ export async function createStory(req, res) {
       description: description?.trim() ?? "",
       characterIcon: characterIcon?.trim() || "📖",
       totalParts: parts,
-      parts: buildEmptyParts(parts),
+      parts: buildEmptyParts(parts).map((part) => ({
+        ...part,
+        timeMarkers: remembered[part.partNumber] ?? [],
+      })),
     });
 
     res.status(201).json({ story });
@@ -115,6 +126,20 @@ export async function importStory(req, res) {
       if (quizError) return res.status(400).json({ error: `Part ${part.partNumber} quiz: ${quizError}.` });
     }
 
+    // Restore markers this story had before it was last deleted.
+    //
+    // Only ever FILLS A GAP: a part that arrives with markers keeps them, so
+    // the static repo files (src/modules/audiodata/markers/*.json) still win
+    // when they have an opinion, and nothing the caller sent is overwritten.
+    // A part that arrives empty means "no opinion", which is exactly the case
+    // where the remembered copy is the best answer available — and it is the
+    // case that used to silently discard hours of work.
+    const remembered = await recallStoryMarkers(difficulty, storyId.trim());
+    const { parts: partsWithMarkers, restoredCount: restoredParts } = restoreMarkersIntoParts(
+      parts,
+      remembered,
+    );
+
     const story = await Story.create({
       difficulty,
       storyId: storyId.trim(),
@@ -123,10 +148,10 @@ export async function importStory(req, res) {
       characterIcon: characterIcon?.trim() || "📖",
       totalParts: partsCount,
       published: false,
-      parts,
+      parts: partsWithMarkers,
     });
 
-    res.status(201).json({ story });
+    res.status(201).json({ story, markersRestoredForParts: restoredParts });
   } catch (error) {
     console.error("importStory error:", error);
     res.status(500).json({ error: "Failed to import story." });
@@ -213,7 +238,19 @@ export async function addPart(req, res) {
 // DELETE /api/admin/stories/:id
 export async function deleteStory(req, res) {
   try {
-    await Story.findByIdAndDelete(req.params.id);
+    // Snapshot the markers before the document goes. saveMarkers already
+    // mirrors them as they're placed, so this is a backstop — it's what
+    // rescues markers that were saved before PartMarkers existed, and it
+    // covers any path that wrote markers without going through saveMarkers.
+    const story = await Story.findById(req.params.id);
+    if (story) {
+      for (const part of story.parts ?? []) {
+        if (part.timeMarkers?.length) {
+          await rememberPartMarkers(story.difficulty, story.storyId, part.partNumber, part.timeMarkers);
+        }
+      }
+      await story.deleteOne();
+    }
     res.json({ success: true });
   } catch (error) {
     console.error("deleteStory error:", error);
@@ -305,6 +342,11 @@ export async function saveMarkers(req, res) {
     part.timeMarkers = sorted;
     if (audioUrl) part.audioUrl = audioUrl;
     await story.save();
+
+    // Mirror into the durable copy, so deleting this story to re-import it
+    // doesn't throw the markers away. Keyed by story identity, not _id — see
+    // models/PartMarkers.js.
+    await rememberPartMarkers(story.difficulty, story.storyId, part.partNumber, sorted);
 
     res.json({ part });
   } catch (error) {

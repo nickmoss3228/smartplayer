@@ -23,6 +23,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const [activeStory, setActiveStory] = useState<AdminStory | null>(null);
   const [importingSlug, setImportingSlug] = useState<string | null>(null);
   const [importError, setImportError] = useState("");
+  const [importNotice, setImportNotice] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultySlug | "all">("all");
 
   const load = useCallback(async () => {
@@ -82,9 +83,17 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const handleImport = async (difficulty: DifficultySlug, group: StoryGroup) => {
     setImportingSlug(group.slug);
     setImportError("");
+    setImportNotice("");
     try {
       const payload = await assembleImportPayload(token, difficulty, group);
-      const story = await importStory(token, payload);
+      const { story, markersRestoredForParts } = await importStory(token, payload);
+      if (markersRestoredForParts > 0) {
+        setImportNotice(
+          `Time markers restored on ${markersRestoredForParts} part${
+            markersRestoredForParts === 1 ? "" : "s"
+          } from the last time this story had them.`,
+        );
+      }
       setActiveStory(story); // open the new draft for review before publishing
       load();
     } catch (err) {
@@ -135,6 +144,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
             Publish. Deleting an imported draft/story reverts to the built-in version.
           </p>
           {importError && <p className="text-red-600 text-sm mb-2">{importError}</p>}
+          {importNotice && <p className="text-green-700 text-sm mb-2">{importNotice}</p>}
           <div className="flex flex-wrap gap-2">
             {importable.map(({ difficulty, group }) => (
               <button
