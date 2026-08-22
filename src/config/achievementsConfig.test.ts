@@ -4,7 +4,9 @@ import {
   TIER_ORDER,
   TIER_COLORS,
   getEarnedTiers,
+  getHighestEarnedTier,
   getNextTier,
+  getRungFills,
   getTierProgress,
 } from './achievementsConfig';
 import en from '../locales/en/translation.json';
@@ -29,6 +31,51 @@ describe('getEarnedTiers', () => {
       'silver',
       'gold',
     ]);
+  });
+});
+
+describe('getHighestEarnedTier', () => {
+  it('returns null before the first tier, not the first tier', () => {
+    expect(getHighestEarnedTier(tiers, 0)).toBeNull();
+    expect(getHighestEarnedTier(tiers, 9)).toBeNull();
+  });
+
+  it('reports the top of the earned run, not the bottom', () => {
+    // The medallion shows rank, so returning bronze at silver level would
+    // quietly demote the learner.
+    expect(getHighestEarnedTier(tiers, 25)?.tier).toBe('silver');
+    expect(getHighestEarnedTier(tiers, 999)?.tier).toBe('gold');
+  });
+});
+
+describe('getRungFills', () => {
+  it('fills earned rungs, part-fills the current one, leaves the rest empty', () => {
+    // 30 is halfway from silver (20) to gold (40).
+    expect(getRungFills(tiers, 30)).toEqual([
+      { tier: tiers[0], fill: 100, state: 'earned' },
+      { tier: tiers[1], fill: 100, state: 'earned' },
+      { tier: tiers[2], fill: 50, state: 'current' },
+    ]);
+  });
+
+  it('leaves every rung empty before anything is earned', () => {
+    const fills = getRungFills(tiers, 0);
+    expect(fills.map((r) => r.fill)).toEqual([0, 0, 0]);
+    expect(fills.map((r) => r.state)).toEqual(['current', 'locked', 'locked']);
+  });
+
+  it('fills every rung once the top tier is reached', () => {
+    // This is the distinction the old single progress bar could not draw:
+    // a finished ladder has to look different from a fresh one.
+    const fills = getRungFills(tiers, 40);
+    expect(fills.map((r) => r.fill)).toEqual([100, 100, 100]);
+    expect(fills.every((r) => r.state === 'earned')).toBe(true);
+  });
+
+  it('returns one entry per tier for every real category', () => {
+    for (const category of ACHIEVEMENT_CATEGORIES) {
+      expect(getRungFills(category.tiers, 0)).toHaveLength(category.tiers.length);
+    }
   });
 });
 

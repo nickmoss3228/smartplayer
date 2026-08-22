@@ -147,7 +147,7 @@ const Homepage = () => {
             </h1>
 
             <Slogan
-              className="mt-3 sm:mt-4 text-base sm:text-xl md:text-2xl
+              className="mt-3 sm:mt-4 text-base sm:text-m md:text-m
                 font-medium text-gray-500 lowercase tracking-tight"
             />
           </div>

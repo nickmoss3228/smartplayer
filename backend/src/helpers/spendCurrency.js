@@ -46,3 +46,47 @@ export async function spendFrom(userId, currency, amount) {
   );
   return user?.wallet ?? null;
 }
+
+/**
+ * Debits several currencies in one shot, all or nothing — what the Dream
+ * School's upgrade button needs, since a stage costs BitAward, BitWord and
+ * BitPhrase together and a player charged for two of the three would be
+ * strictly worse off than one who was declined.
+ *
+ * Three balance checks and three decrements in a single findOneAndUpdate, so
+ * the same race that spendFrom closes is closed here: there is no window
+ * between "can they afford it" and "take it".
+ *
+ * Zero-valued entries are dropped rather than sent as `$inc: -0`, which keeps
+ * a free stage (index 0) from failing the "must be positive" guard.
+ *
+ * @param {ObjectId} userId
+ * @param {{bitAward?: number, bitWord?: number, bitPhrase?: number}} costs
+ * @returns {Promise<{bitAward: number, bitWord: number, bitPhrase: number} | null>}
+ *   Updated wallet on success, null when any one balance is too low.
+ */
+export async function spendMany(userId, costs) {
+  const filter = { _id: userId };
+  const dec = {};
+
+  for (const currency of WALLETS) {
+    const amount = costs?.[currency] ?? 0;
+    if (!Number.isFinite(amount) || amount < 0) return null;
+    if (amount === 0) continue;
+    filter[`wallet.${currency}`] = { $gte: amount };
+    dec[`wallet.${currency}`] = -amount;
+  }
+
+  // A free upgrade still has to return the wallet, so read it rather than
+  // treating "nothing to charge" as a failure.
+  if (Object.keys(dec).length === 0) {
+    const user = await User.findById(userId).select("wallet");
+    return user?.wallet ?? null;
+  }
+
+  const user = await User.findOneAndUpdate(filter, { $inc: dec }, {
+    new: true,
+    select: "wallet",
+  });
+  return user?.wallet ?? null;
+}

@@ -1,19 +1,24 @@
 // pages/PlayerRoom.tsx — read-only visit to another player's Dream School.
 //
 // Kept at the same route and filename so existing links from the players list
-// keep working; it renders the new dollhouse instead of the old 3D room.
+// keep working; it renders the new isometric campus instead of the dollhouse.
 //
-// Read-only in the literal sense: SchoolScene is given no onSelectRoom, which
-// makes every cell non-interactive. There is nothing to disable defensively
-// because there is no control to press — the visitor sees exactly the rooms
-// and furniture the owner has bought, which is what §11 of the plan asked for.
+// Read-only in the literal sense: SchoolCanvas is given interactive={false},
+// which makes the people ignore taps and the chalkboard ignore them too. Pan
+// and zoom stay on, because looking around IS the visit. What is deliberately
+// missing is their vocabulary — the bubbles fall back to generic chatter, since
+// which words somebody has learned is theirs, not a thing to browse.
 
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
-import { SchoolScene } from "../modules/school/SchoolScene";
 import { usePlayerSchool } from "../modules/players/usePlayerSchool";
-import { SCHOOL_ROOMS } from "../config/schoolCatalog";
+import { MAX_STAGE, getStage } from "../config/schoolCatalog";
+
+const SchoolCanvas = lazy(() =>
+  import("../modules/school/SchoolCanvas").then((m) => ({ default: m.SchoolCanvas })),
+);
 
 const PlayerRoom = () => {
   const { t } = useTranslation();
@@ -37,37 +42,39 @@ const PlayerRoom = () => {
     );
   }
 
-  return (
-    <div className="min-h-dvh pt-13 bg-gradient-to-br from-indigo-50 via-violet-50 to-rose-50">
-      <div className="mx-auto max-w-5xl px-3 py-3">
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
-          <button
-            onClick={() => navigate("/players")}
-            title={t("players.back")}
-            className="flex items-center gap-1 text-xs font-semibold text-black/60 bg-white/70 hover:bg-white rounded-full px-3 py-1.5 transition-colors"
-          >
-            <ChevronLeftIcon className="w-4 h-4" />
-            {t("players.back")}
-          </button>
-          <span className="text-sm font-bold text-black/80">{nickname}</span>
-          <span className="text-xs text-black/45 ml-auto">
-            {t("school.roomsOpen", {
-              count: school.unlockedRoomIds.length,
-              total: SCHOOL_ROOMS.length,
-            })}
-          </span>
-        </div>
+  const stage = getStage(school.stage);
 
-        <div className="rounded-2xl overflow-hidden border border-violet-200/70 shadow-sm bg-white">
-          <SchoolScene
-            unlockedRoomIds={school.unlockedRoomIds}
-            placed={school.placed}
-            ownedActionIds={school.ownedActionIds}
-            focusedRoomId={school.focusedRoomId}
-            character={character}
-            // No onSelectRoom: this is a snapshot, not a playable board.
-            lockedLabel={() => t("school.lockedShort")}
-          />
+  return (
+    <div className="fixed inset-x-0 top-13 bottom-0 overflow-hidden bg-[#d8ebf6]">
+      <Suspense
+        fallback={
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500" />
+          </div>
+        }
+      >
+        <SchoolCanvas
+          className="w-full h-full"
+          school={school}
+          character={character}
+          learnedWords={[]}
+          interactive={false}
+        />
+      </Suspense>
+
+      <button
+        onClick={() => navigate("/players")}
+        title={t("players.back")}
+        className="absolute left-3 top-3 flex items-center gap-1 text-xs font-semibold text-black/70 bg-white/90 backdrop-blur rounded-full pl-2 pr-3 py-2 shadow-sm active:scale-95 transition-transform"
+      >
+        <ChevronLeftIcon className="w-4 h-4" />
+        {t("players.back")}
+      </button>
+
+      <div className="absolute right-3 top-3 bg-white/90 backdrop-blur rounded-full px-3.5 py-1.5 shadow-sm text-right pointer-events-none">
+        <div className="text-[13px] font-bold text-black/80 leading-tight">{nickname}</div>
+        <div className="text-[10px] font-semibold text-black/40 leading-tight">
+          {t(`school.stages.${stage.id}.name`, stage.name)} · {t("school.stageOf", { current: stage.index + 1, total: MAX_STAGE + 1 })}
         </div>
       </div>
     </div>

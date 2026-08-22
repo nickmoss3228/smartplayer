@@ -1,0 +1,1092 @@
+<title>малако — английский на слух</title>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════════
+     TOKENS
+     The page is a tool, so the palette is instrument-panel, not paper:
+     a light room with one solid dark machine sitting in it. Red is not a
+     decision I made — the app's own timeMarkers ship with color: "red",
+     so the segment marker is red because it already is.
+     ═══════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:      #f5f8fa;
+    --surface: #ffffff;
+    --panel:   #0f151c;
+    --panel-2: #19212b;
+    --on-panel:#eef4f8;
+    --fg:      #0f1720;
+    --fg-dim:  #5b6b7a;
+    --line:    #e0e7ed;
+    --signal:  #e5484d;
+    --milk:    #ffffff;
+
+    --fat-1:  #22c55e;
+    --fat-25: #f97316;
+    --fat-6:  #a855f7;
+
+    --sans: "Segoe UI Variable Display", "Segoe UI", -apple-system,
+            BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "SF Mono", ui-monospace,
+            "Liberation Mono", monospace;
+    --gutter: clamp(1rem, 4vw, 3.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1015; --surface: #131a22; --panel: #060a0e; --panel-2: #121a23;
+      --on-panel: #eef4f8; --fg: #e9eff4; --fg-dim: #94a4b3;
+      --line: #202a35; --signal: #ff5f63; --milk: #eef4f8;
+      --fat-1: #4ade80; --fat-25: #fb923c; --fat-6: #c084fc;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1015; --surface: #131a22; --panel: #060a0e; --panel-2: #121a23;
+    --on-panel: #eef4f8; --fg: #e9eff4; --fg-dim: #94a4b3;
+    --line: #202a35; --signal: #ff5f63; --milk: #eef4f8;
+    --fat-1: #4ade80; --fat-25: #fb923c; --fat-6: #c084fc;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f8fa; --surface: #ffffff; --panel: #0f151c; --panel-2: #19212b;
+    --on-panel: #eef4f8; --fg: #0f1720; --fg-dim: #5b6b7a;
+    --line: #e0e7ed; --signal: #e5484d; --milk: #ffffff;
+    --fat-1: #22c55e; --fat-25: #f97316; --fat-6: #a855f7;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  p { margin: 0; }
+  h1, h2, h3 { margin: 0; line-height: 1.08; letter-spacing: -0.03em; text-wrap: balance; }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { max-width: 80rem; margin-inline: auto; padding-inline: var(--gutter); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--signal);
+  }
+  .lede { color: var(--fg-dim); font-size: 1.0625rem; max-width: 58ch; }
+
+  section { padding-block: clamp(3.5rem, 8vw, 7rem); }
+  .head { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: clamp(2rem, 4vw, 3rem); }
+  .head h2 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 3rem); font-weight: 800; max-width: 20ch; }
+
+  /* ── top bar ── */
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-block: 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .bar__mark { display: flex; align-items: center; gap: 0.5rem; color: var(--fg); flex: none; }
+  .drop { width: 17px; height: 17px; flex: none; }
+  /* Milk is white in both themes — filling the drop with the page ground
+     would turn the milk black at night. */
+  .drop path { fill: var(--milk); stroke: currentColor; stroke-width: 1.4; }
+  .bar__spacer { flex: 1; }
+  .switch { display: inline-flex; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; flex: none; }
+  .switch button {
+    appearance: none; border: 0; background: transparent; color: var(--fg-dim);
+    font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.14em;
+    text-transform: uppercase; padding: 0.3rem 0.55rem; cursor: pointer; white-space: nowrap;
+    transition: color 0.18s ease, background 0.18s ease;
+  }
+  .switch button:hover { color: var(--fg); }
+  .switch button[aria-pressed="true"] { background: var(--signal); color: #fff; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     HERO — the machine is the hero object
+     ═══════════════════════════════════════════════════════════════════ */
+  .hero { padding-block: clamp(2rem, 5vw, 4rem) clamp(3rem, 7vw, 5.5rem); }
+  .hero__copy { display: flex; flex-direction: column; gap: 1.1rem; margin-bottom: clamp(2rem, 4vw, 3rem); }
+  .hero h1 {
+    font-size: clamp(2.25rem, 1.2rem + 5vw, 4.5rem);
+    font-weight: 850;
+    max-width: 16ch;
+  }
+  .hero h1 em { font-style: normal; color: var(--signal); }
+  .hero__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.2rem; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    padding: 0.85rem 1.6rem; border-radius: 3px;
+    border: 1px solid var(--signal); background: var(--signal); color: #fff;
+    font-family: var(--sans); font-size: 0.9375rem; font-weight: 650;
+    text-decoration: none; cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(229,72,77,0.28); }
+  .btn--ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+  .btn--ghost:hover { border-color: var(--fg); box-shadow: none; }
+  .note { font-family: var(--mono); font-size: 0.75rem; color: var(--fg-dim); }
+
+  /* ── the player instrument ── */
+  .rig {
+    background: var(--panel);
+    color: var(--on-panel);
+    border-radius: 6px;
+    padding: clamp(1rem, 3vw, 1.9rem);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 2.5vw, 1.5rem);
+    box-shadow: 0 24px 60px -30px rgba(8, 14, 22, 0.6);
+  }
+  .rig__top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1.1rem;
+    padding-bottom: 0.9rem; border-bottom: 1px solid rgba(238,244,248,0.1);
+  }
+  .rig__title { font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.02em; }
+  .rig__meta { font-family: var(--mono); font-size: 0.75rem; color: #93a4b4; font-variant-numeric: tabular-nums; }
+  .rig__meta b { color: var(--on-panel); font-weight: 600; }
+
+  /* The segment strip. Every tile is BLANK but for its number, because
+     that is literally what the product shows: timeMarkers carry labels
+     "1".."16" and the subtitle layer is switched off by design. The empty
+     tile is the argument. */
+  .strip { display: flex; gap: 3px; height: clamp(4.5rem, 11vw, 6.5rem); }
+  .seg {
+    position: relative;
+    border: 0; padding: 0; margin: 0;
+    background: var(--panel-2);
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    color: #5c6d7d;
+    overflow: hidden;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .seg:hover { background: #232e3a; color: #93a4b4; }
+  .seg.is-done { background: #1e2a36; color: #6f8598; }
+  .seg.is-on { background: var(--signal); color: #fff; }
+  /* Fill sweeps left-to-right across the active tile, so the tile itself
+     is the progress bar for its own sentence. */
+  .seg__fill {
+    position: absolute; inset: 0 auto 0 0;
+    width: 0;
+    background: rgba(255,255,255,0.16);
+    pointer-events: none;
+  }
+
+  .rig__controls { display: flex; flex-wrap: wrap; gap: 0.9rem 1.5rem; align-items: center; }
+  .ctl { display: flex; align-items: center; gap: 0.5rem; }
+  .ctl__label {
+    font-family: var(--mono); font-size: 0.5625rem; letter-spacing: 0.16em;
+    text-transform: uppercase; color: #7c8d9d;
+  }
+  .seg-btns { display: inline-flex; border: 1px solid rgba(238,244,248,0.16); border-radius: 3px; overflow: hidden; }
+  .seg-btns button {
+    appearance: none; border: 0; background: transparent; color: #93a4b4;
+    font-family: var(--mono); font-size: 0.75rem; padding: 0.32rem 0.6rem;
+    cursor: pointer; font-variant-numeric: tabular-nums; white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease;
+  }
+  .seg-btns button:hover { color: var(--on-panel); }
+  .seg-btns button[aria-pressed="true"] { background: rgba(238,244,248,0.14); color: #fff; }
+
+  .play {
+    width: 2.9rem; height: 2.9rem; border-radius: 50%;
+    border: 1px solid var(--signal); background: var(--signal); color: #fff;
+    display: grid; place-items: center; cursor: pointer; flex: none;
+    transition: transform 0.15s ease;
+  }
+  .play:hover { transform: scale(1.06); }
+  .play svg { width: 40%; height: 40%; }
+
+  .rig__read {
+    font-family: var(--mono); font-size: 0.75rem; color: #93a4b4;
+    display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .rig__read b { color: var(--signal); font-weight: 600; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THREE POINTS
+     ═══════════════════════════════════════════════════════════════════ */
+  .points { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .point { background: var(--surface); padding: clamp(1.25rem, 3vw, 1.9rem); display: flex; flex-direction: column; gap: 0.6rem; }
+  .point__n { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; color: var(--signal); }
+  .point h3 { font-size: 1.1875rem; font-weight: 750; }
+  .point p { color: var(--fg-dim); font-size: 0.9375rem; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     FAT LADDER
+     ═══════════════════════════════════════════════════════════════════ */
+  .ladder { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .band {
+    --accent: var(--fg-dim);
+    display: grid; grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-block: clamp(1.5rem, 3vw, 2.4rem);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .band::before { content: ""; position: absolute; left: 0; top: -1px; width: clamp(2.5rem, 8vw, 5rem); height: 2px; background: var(--accent); }
+  @media (max-width: 700px) { .band { grid-template-columns: 1fr; gap: 0.7rem; } }
+  .band__fat {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.6rem); font-weight: 600;
+    color: var(--accent); letter-spacing: -0.03em; line-height: 1;
+  }
+  .band__fat small { display: block; font-size: 0.5625rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); margin-top: 0.5rem; font-weight: 500; }
+  .band__body { display: flex; flex-direction: column; gap: 0.4rem; }
+  .band__body h3 { font-size: 1.25rem; font-weight: 750; }
+  .band__body p { color: var(--fg-dim); font-size: 0.9375rem; max-width: 52ch; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE SCHOOL — the real one: 10 stages, the courtyard floorplan,
+     the prices out of schoolCatalog.ts.
+     ═══════════════════════════════════════════════════════════════════ */
+  .school {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .school__view {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--fat-1) 7%, var(--surface)) 0%, var(--surface) 62%);
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    display: grid;
+    place-items: center;
+    min-height: clamp(14rem, 34vw, 24rem);
+  }
+  .school__view svg { width: 100%; height: auto; display: block; }
+  .room { transition: opacity 0.4s ease; }
+  .room.is-new { animation: rise 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .school__panel {
+    border-top: 1px solid var(--line);
+    padding: clamp(1rem, 2.5vw, 1.6rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem clamp(1rem, 3vw, 2.5rem);
+    align-items: center;
+  }
+  @media (max-width: 760px) { .school__panel { grid-template-columns: 1fr; } }
+  .school__now { display: flex; flex-direction: column; gap: 0.35rem; }
+  .school__stage { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); }
+  .school__name { font-size: clamp(1.15rem, 1rem + 0.8vw, 1.6rem); font-weight: 800; }
+  .school__blurb { color: var(--fg-dim); font-size: 0.9375rem; max-width: 46ch; }
+
+  .school__buy { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+  .coins { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .coin {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.6rem 0.22rem 0.3rem;
+    color: var(--fg-dim);
+  }
+  .coin i { width: 13px; height: 13px; border-radius: 50%; display: block; flex: none; }
+  .coin b { color: var(--fg); font-weight: 600; }
+
+  .school__track { display: flex; gap: 3px; margin-top: 1rem; }
+  .tick {
+    flex: 1; height: 5px; border: 0; padding: 0; border-radius: 2px;
+    background: var(--line); cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .tick:hover { transform: scaleY(1.8); }
+  .tick.is-built { background: var(--fat-1); }
+  .tick.is-now { background: var(--signal); transform: scaleY(1.8); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CLOSE
+     ═══════════════════════════════════════════════════════════════════ */
+  .close h2 { font-size: clamp(1.9rem, 1.2rem + 3.4vw, 3.4rem); font-weight: 850; max-width: 17ch; }
+  .close__row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; margin-top: 1.75rem; }
+  footer {
+    border-top: 1px solid var(--line); padding-block: 1.75rem 3rem;
+    display: flex; flex-wrap: wrap; gap: 0.6rem 2rem; align-items: center;
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--fg-dim);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="bar">
+    <span class="bar__mark">
+      <svg class="drop" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2C8.2 7.4 4.9 11.6 4.9 14.6a7.1 7.1 0 0 0 14.2 0C19.1 11.6 15.8 7.4 12 2Z"/>
+      </svg>
+      малако
+    </span>
+    <span class="bar__spacer"></span>
+    <div class="switch" role="group" data-i18n-aria="langGroup" aria-label="Язык">
+      <button type="button" data-set-lang="ru" aria-pressed="false">RU</button>
+      <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <div class="switch" role="group" data-i18n-aria="themeGroup" aria-label="Оформление">
+      <button type="button" data-set-theme="light" aria-pressed="false" data-i18n="themeLight">Свет</button>
+      <button type="button" data-set-theme="dark" aria-pressed="false" data-i18n="themeDark">Ночь</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ HERO ══════════════ -->
+  <header class="hero">
+    <div class="hero__copy">
+      <p class="eyebrow" data-i18n="heroEyebrow">Плеер — это и есть продукт</p>
+      <h1 data-i18n="heroTitle">Английский на слух. <em>Предложение за предложением.</em></h1>
+      <p class="lede" data-i18n="heroLede">
+        Ни субтитров, ни расшифровки. Шестнадцать предложений, три скорости
+        и столько повторов, сколько нужно, чтобы поймать каждое.
+      </p>
+      <div class="hero__cta">
+        <a class="btn" href="#start" data-i18n="ctaStart">Начать бесплатно</a>
+        <a class="btn btn--ghost" href="#school" data-i18n="ctaSchool">Посмотреть школу</a>
+        <span class="note" data-i18n="ctaNote">две истории &middot; без аккаунта</span>
+      </div>
+    </div>
+
+    <div class="rig">
+      <div class="rig__top">
+        <span class="rig__title" data-i18n="rigTitle">Жизнь Лео &middot; часть 1</span>
+        <span class="rig__meta"><b id="rig-clock">00:00</b> / 01:04</span>
+        <span class="rig__meta" data-i18n="rigSegs">16 предложений</span>
+        <span class="rig__meta" data-i18n="rigNoSubs">субтитры отключены</span>
+      </div>
+
+      <div class="strip" id="strip"></div>
+
+      <div class="rig__controls">
+        <button class="play" id="play" type="button" data-i18n-aria="playLabel" aria-label="Играть">
+          <svg id="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5 20 12 6 20.5Z" fill="currentColor"/></svg>
+        </button>
+
+        <div class="ctl">
+          <span class="ctl__label" data-i18n="ctlSpeed">Скорость</span>
+          <div class="seg-btns" id="speed-btns" role="group" data-i18n-aria="ctlSpeed" aria-label="Скорость"></div>
+        </div>
+
+        <div class="ctl">
+          <span class="ctl__label" data-i18n="ctlRepeat">Повторения</span>
+          <div class="seg-btns" id="rep-btns" role="group" data-i18n-aria="ctlRepeat" aria-label="Повторения"></div>
+        </div>
+
+        <div class="ctl">
+          <span class="ctl__label" data-i18n="ctlMode">Режим</span>
+          <div class="seg-btns" id="mode-btns" role="group" data-i18n-aria="ctlMode" aria-label="Режим"></div>
+        </div>
+      </div>
+
+      <p class="rig__read" id="rig-read"></p>
+    </div>
+  </header>
+
+  <!-- ══════════════ THREE POINTS ══════════════ -->
+  <section aria-labelledby="pts-h">
+    <div class="head">
+      <p class="eyebrow" data-i18n="ptsEyebrow">Что вы видите сверху</p>
+      <h2 id="pts-h" data-i18n="ptsTitle">Пустые клетки — это не заглушка</h2>
+      <p class="lede" data-i18n="ptsLede">
+        В плеере действительно нет слов. Предложения пронумерованы, и всё.
+        Поймать их можно только ухом — на это и рассчитано.
+      </p>
+    </div>
+    <div class="points">
+      <div class="point">
+        <span class="point__n">01</span>
+        <h3 data-i18n="pt1t">Только номера</h3>
+        <p data-i18n="pt1d">Каждая клетка — одно предложение и его длительность. Текста нет ни в плеере, ни в тесте после него.</p>
+      </div>
+      <div class="point">
+        <span class="point__n">02</span>
+        <h3 data-i18n="pt2t">Три скорости</h3>
+        <p data-i18n="pt2d">0,5× / 0,8× / 1,0×. На половинной скорости между словами можно встать. На полной они схлопываются.</p>
+      </div>
+      <div class="point">
+        <span class="point__n">03</span>
+        <h3 data-i18n="pt3t">Режим практики</h3>
+        <p data-i18n="pt3d">Одно предложение повторяется до трёх раз, и каждый раз быстрее предыдущего. К полной скорости вы уже знаете, что там.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ FAT LADDER ══════════════ -->
+  <section aria-labelledby="lad-h">
+    <div class="head">
+      <p class="eyebrow" data-i18n="ladEyebrow">Сложность измеряется как молоко</p>
+      <h2 id="lad-h" data-i18n="ladTitle">Уровни различаются по жирности</h2>
+    </div>
+    <div class="ladder">
+      <article class="band" style="--accent: var(--fat-1);">
+        <p class="band__fat"><span>1%</span><small data-i18n="fatLabel">Жирность</small></p>
+        <div class="band__body">
+          <h3 data-i18n="b1t">Базовый</h3>
+          <p data-i18n="b1d">Present Simple, будни, один голос в разговорном темпе. Истории по 45–75 секунд — короткие настолько, чтобы держать их целиком в голове.</p>
+        </div>
+      </article>
+      <article class="band" style="--accent: var(--fat-25);">
+        <p class="band__fat"><span>2,5%</span><small data-i18n="fatLabel">Жирность</small></p>
+        <div class="band__body">
+          <h3 data-i18n="b2t">Средний</h3>
+          <p data-i18n="b2d">Длиннее сюжеты, прошедшее и будущее в одной фразе, первые фразовые глаголы — которые значат совсем не то, из чего состоят.</p>
+        </div>
+      </article>
+      <article class="band" style="--accent: var(--fat-6);">
+        <p class="band__fat"><span>6%</span><small data-i18n="fatLabel">Жирность</small></p>
+        <div class="band__body">
+          <h3 data-i18n="b3t">Продвинутый</h3>
+          <p data-i18n="b3d">Полный темп, проглоченные сокращения, придаточные в три слоя. Здесь режим практики перестаёт быть необязательным.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ══════════════ THE SCHOOL ══════════════ -->
+  <section id="school" aria-labelledby="sch-h">
+    <div class="head">
+      <p class="eyebrow" data-i18n="schEyebrow">За что платят</p>
+      <h2 id="sch-h" data-i18n="schTitle">Вы слушаете — школа растёт</h2>
+      <p class="lede" data-i18n="schLede">
+        За пройденный тест начисляют BitAward, за новое слово — BitWord, за
+        отработанный повтор — BitPhrase. Тратить их можно ровно на одно:
+        десять этапов вашей школы. Тяните по шкале внизу.
+      </p>
+    </div>
+
+    <div class="school">
+      <div class="school__view">
+        <svg id="school-svg" role="img" data-i18n-aria="schAlt"
+             aria-label="Изометрический план школы, который растёт по этапам"></svg>
+      </div>
+      <div class="school__panel">
+        <div class="school__now">
+          <span class="school__stage" id="sch-stage">Этап 1 из 10</span>
+          <span class="school__name" id="sch-name">Одна комната</span>
+          <span class="school__blurb" id="sch-blurb">Доска, четыре парты и все, кто пришёл.</span>
+        </div>
+        <div class="school__buy">
+          <span class="school__stage" id="sch-cost-label" data-i18n="schCost">Стоимость этапа</span>
+          <div class="coins">
+            <span class="coin"><i style="background: var(--fat-1)"></i>BitAward&nbsp;<b id="c-award">0</b></span>
+            <span class="coin"><i style="background: var(--fat-25)"></i>BitWord&nbsp;<b id="c-word">0</b></span>
+            <span class="coin"><i style="background: var(--fat-6)"></i>BitPhrase&nbsp;<b id="c-phrase">0</b></span>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 0 clamp(1rem, 2.5vw, 1.6rem) clamp(1rem, 2.5vw, 1.6rem);">
+        <div class="school__track" id="sch-track" role="group" data-i18n-aria="schTrack" aria-label="Этапы школы"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ CLOSE ══════════════ -->
+  <section id="start" class="close">
+    <p class="eyebrow" data-i18n="closeEyebrow">Начните с первого предложения</p>
+    <h2 data-i18n="closeTitle">Две истории играют без аккаунта.</h2>
+    <p class="lede" style="margin-top: 1.1rem;" data-i18n="closeLede">
+      Дальше нужен аккаунт — он хранит серию, выученные слова и школу,
+      которую вы построили на заработанное.
+    </p>
+    <div class="close__row">
+      <a class="btn" href="#" data-i18n="ctaStart">Начать бесплатно</a>
+      <span class="note" data-i18n="closeNote">malako &middot; малако &middot; как слышится, так и правильно</span>
+    </div>
+  </section>
+
+  <footer>
+    <span class="bar__mark" style="color: var(--fg-dim);">
+      <svg class="drop" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2C8.2 7.4 4.9 11.6 4.9 14.6a7.1 7.1 0 0 0 14.2 0C19.1 11.6 15.8 7.4 12 2Z"/>
+      </svg>
+      малако
+    </span>
+    <span data-i18n="footerBy">Тренировка английского на слух</span>
+    <span>EN &middot; RU</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     COPY
+     ═══════════════════════════════════════════════════════════════════ */
+  var I18N = {
+    ru: {
+      docTitle: 'малако — английский на слух',
+      langGroup: 'Язык', themeGroup: 'Оформление',
+      themeLight: 'Свет', themeDark: 'Ночь',
+      heroEyebrow: 'Плеер — это и есть продукт',
+      heroTitle: 'Английский на слух. <em>Предложение за предложением.</em>',
+      heroLede: 'Ни субтитров, ни расшифровки. Шестнадцать предложений, три скорости и столько повторов, сколько нужно, чтобы поймать каждое.',
+      ctaStart: 'Начать бесплатно', ctaSchool: 'Посмотреть школу',
+      ctaNote: 'две истории &middot; без аккаунта',
+      rigTitle: 'Жизнь Лео &middot; часть 1',
+      rigSegs: '16 предложений', rigNoSubs: 'субтитры отключены',
+      playLabel: 'Играть', pauseLabel: 'Пауза',
+      ctlSpeed: 'Скорость', ctlRepeat: 'Повторения', ctlMode: 'Режим',
+      modeFree: 'Свободный', modeDrill: 'Практика',
+      readFree: 'Свободный режим — играет подряд, без остановок.',
+      readDrill: 'Предложение <b>{n}</b> из 16 &middot; повтор <b>{r}</b> из {t} &middot; скорость <b>{s}×</b>',
+      readIdle: 'Нажмите на любое предложение — плеер перейдёт к нему.',
+      ptsEyebrow: 'Что вы видите сверху',
+      ptsTitle: 'Пустые клетки — это не заглушка',
+      ptsLede: 'В плеере действительно нет слов. Предложения пронумерованы, и всё. Поймать их можно только ухом — на это и рассчитано.',
+      pt1t: 'Только номера',
+      pt1d: 'Каждая клетка — одно предложение и его длительность. Текста нет ни в плеере, ни в тесте после него.',
+      pt2t: 'Три скорости',
+      pt2d: '0,5× / 0,8× / 1,0×. На половинной скорости между словами можно встать. На полной они схлопываются.',
+      pt3t: 'Режим практики',
+      pt3d: 'Одно предложение повторяется до трёх раз, и каждый раз быстрее предыдущего. К полной скорости вы уже знаете, что там.',
+      ladEyebrow: 'Сложность измеряется как молоко',
+      ladTitle: 'Уровни различаются по жирности',
+      fatLabel: 'Жирность',
+      b1t: 'Базовый',
+      b1d: 'Present Simple, будни, один голос в разговорном темпе. Истории по 45–75 секунд — короткие настолько, чтобы держать их целиком в голове.',
+      b2t: 'Средний',
+      b2d: 'Длиннее сюжеты, прошедшее и будущее в одной фразе, первые фразовые глаголы — которые значат совсем не то, из чего состоят.',
+      b3t: 'Продвинутый',
+      b3d: 'Полный темп, проглоченные сокращения, придаточные в три слоя. Здесь режим практики перестаёт быть необязательным.',
+      schEyebrow: 'За что платят',
+      schTitle: 'Вы слушаете — школа растёт',
+      schLede: 'За пройденный тест начисляют BitAward, за новое слово — BitWord, за отработанный повтор — BitPhrase. Тратить их можно ровно на одно: десять этапов вашей школы. Тяните по шкале внизу.',
+      schAlt: 'Изометрический план школы, который растёт по этапам',
+      schTrack: 'Этапы школы',
+      schCost: 'Стоимость этапа', schCostFree: 'Начальный этап — бесплатно',
+      schStageOf: 'Этап {n} из 10',
+      closeEyebrow: 'Начните с первого предложения',
+      closeTitle: 'Две истории играют без аккаунта.',
+      closeLede: 'Дальше нужен аккаунт — он хранит серию, выученные слова и школу, которую вы построили на заработанное.',
+      closeNote: 'malako &middot; малако &middot; как слышится, так и правильно',
+      footerBy: 'Тренировка английского на слух',
+      rooms: {
+        classroom: 'Класс', library: 'Библиотека', corridor: 'Коридор', lab: 'Лаборатория слуха',
+        courtyard: 'Двор', hall: 'Актовый зал', lobby: 'Вестибюль', forecourt: 'Площадка',
+        classroomB: 'Второй класс', cafeteria: 'Столовая', classroomC: 'Третий класс', gym: 'Спортзал'
+      },
+      stages: [
+        ['Одна комната', 'Доска, четыре парты и все, кто пришёл.'],
+        ['Полный класс', 'Стены раздвигаются. Девять парт и полка, которую стоит читать.'],
+        ['Читальный угол', 'Библиотечное крыло, ковёр и двое, которые оттуда не уходят.'],
+        ['Лаборатория слуха', 'Коридор с шагами в нём и кабинки в конце.'],
+        ['Двор', 'Открытый воздух, одно дерево и место, где можно побыть между уроками.'],
+        ['Актовый зал', 'Сцена, баннер и полка, на которую есть что поставить.'],
+        ['Стойка при входе', 'Вход — и кто-то на ресепшене, чтобы встретить пришедшего.'],
+        ['Второй класс', 'Ещё один кабинет английского: флаги, глобус и весь алфавит.'],
+        ['Столовая', 'Подносы, длинные столы, третий класс и самая шумная комната здесь.'],
+        ['Спортзал', 'Шведская стенка, табло и место, где можно пошуметь.']
+      ]
+    },
+
+    en: {
+      docTitle: 'malako — English listening training',
+      langGroup: 'Language', themeGroup: 'Theme',
+      themeLight: 'Light', themeDark: 'Night',
+      heroEyebrow: 'The player is the product',
+      heroTitle: 'English by ear. <em>One sentence at a time.</em>',
+      heroLede: 'No subtitles, no transcript. Sixteen sentences, three speeds, and as many repeats as it takes to catch each one.',
+      ctaStart: 'Start for free', ctaSchool: 'See the school',
+      ctaNote: 'two stories &middot; no account',
+      rigTitle: 'Leo&rsquo;s Life &middot; part 1',
+      rigSegs: '16 sentences', rigNoSubs: 'subtitles off',
+      playLabel: 'Play', pauseLabel: 'Pause',
+      ctlSpeed: 'Speed', ctlRepeat: 'Repeats', ctlMode: 'Mode',
+      modeFree: 'Free', modeDrill: 'Drill',
+      readFree: 'Free mode — plays straight through, no stops.',
+      readDrill: 'Sentence <b>{n}</b> of 16 &middot; repeat <b>{r}</b> of {t} &middot; speed <b>{s}×</b>',
+      readIdle: 'Click any sentence and the player jumps to it.',
+      ptsEyebrow: 'What you see above',
+      ptsTitle: 'The blank cells are not a placeholder',
+      ptsLede: 'There really are no words in the player. The sentences are numbered, and that is all. The only way to catch them is by ear — which is the point.',
+      pt1t: 'Numbers only',
+      pt1d: 'Each cell is one sentence and its length. There is no text in the player, and none in the quiz that follows it.',
+      pt2t: 'Three speeds',
+      pt2d: '0.5× / 0.8× / 1.0×. At half speed you can stand between the words. At full speed they close up.',
+      pt3t: 'Drill mode',
+      pt3d: 'One sentence repeats up to three times, each pass faster than the last. By full speed you already know what is in it.',
+      ladEyebrow: 'Difficulty, measured the way milk is',
+      ladTitle: 'Levels are graded by fat content',
+      fatLabel: 'Milk fat',
+      b1t: 'Easy',
+      b1d: 'Present simple, everyday routine, one voice at a conversational pace. Stories run 45–75 seconds — short enough to hold whole in your head.',
+      b2t: 'Medium',
+      b2d: 'Longer arcs, past and future in the same breath, and the first phrasal verbs — which mean nothing like the words they are made of.',
+      b3t: 'Hard',
+      b3d: 'Full pace, contractions swallowed whole, clauses stacked three deep. This is where drill mode stops being optional.',
+      schEyebrow: 'What it pays for',
+      schTitle: 'You listen, the school grows',
+      schLede: 'A passed quiz earns BitAward, a newly learned word earns BitWord, a completed drill earns BitPhrase. There is exactly one thing to spend them on: the ten stages of your school. Drag the track below.',
+      schAlt: 'Isometric school plan that grows stage by stage',
+      schTrack: 'School stages',
+      schCost: 'Stage cost', schCostFree: 'Starting stage — free',
+      schStageOf: 'Stage {n} of 10',
+      closeEyebrow: 'Start at sentence one',
+      closeTitle: 'Two stories play with no account.',
+      closeLede: 'After that you need one — it keeps your streak, the words you have learned, and the school you built with what you earned.',
+      closeNote: 'malako &middot; малако &middot; as you hear it, so it is',
+      footerBy: 'English listening training',
+      rooms: {
+        classroom: 'Classroom', library: 'Library', corridor: 'Corridor', lab: 'Listening Lab',
+        courtyard: 'Courtyard', hall: 'Assembly Hall', lobby: 'Lobby', forecourt: 'Forecourt',
+        classroomB: 'Second Classroom', cafeteria: 'Cafeteria', classroomC: 'Third Classroom', gym: 'Gymnasium'
+      },
+      stages: [
+        ['One Room', 'A board, four desks, and everyone who showed up.'],
+        ['Full Class', 'The walls move out. Nine desks, and a shelf worth reading.'],
+        ['Reading Corner', 'A library wing, a rug, and two people who never leave it.'],
+        ['Listening Lab', 'A corridor with footsteps in it, and booths at the end of it.'],
+        ['Courtyard', 'Open air, one tree, and somewhere to be between lessons.'],
+        ['Assembly Hall', 'A stage, a banner, and a shelf with something to put on it.'],
+        ['Front Desk', 'A way in, and someone at reception to meet whoever uses it.'],
+        ['Second Classroom', 'A second English room — flags, a globe, and the whole alphabet.'],
+        ['Cafeteria', 'Trays, long tables, a third classroom, and the loudest room here.'],
+        ['Gymnasium', 'Wall bars, a scoreboard, and room to make some noise.']
+      ]
+    }
+  };
+
+  var lang = /^ru\b/i.test(navigator.language || '') ? 'ru' : 'en';
+  function t(k) { return I18N[lang][k]; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE PLAYER
+     Real data: these are the timeMarkers shipped for Leo's Life in
+     modules/audiodata/audioData.tsx, and their labels really are just
+     "1".."16" — the app has no subtitle layer, so a segment has a number
+     and a duration and nothing else. That is why every tile is blank.
+     ═══════════════════════════════════════════════════════════════════ */
+  var MARKS = [0.1, 2.5, 4.5, 6.4, 9.4, 12.3, 17, 20.8, 23.8, 29, 33, 37.6, 43.4, 47, 53.4, 60.5];
+  var DURATION = 64;
+  // Straight out of components/Player/hooks/useSegmentEngine.ts.
+  var SPEED_SEQUENCES = { 1: [1.0], 2: [0.8, 1.0], 3: [0.5, 0.8, 1.0] };
+
+  var segs = MARKS.map(function (m, i) {
+    return { from: m, to: i + 1 < MARKS.length ? MARKS[i + 1] : DURATION };
+  });
+
+  var stripEl = document.getElementById('strip');
+  var playBtn = document.getElementById('play');
+  var playIcon = document.getElementById('play-icon');
+  var clockEl = document.getElementById('rig-clock');
+  var readEl = document.getElementById('rig-read');
+
+  var PLAY_PATH = 'M6 3.5 20 12 6 20.5Z';
+  var PAUSE_PATH = 'M6.5 4h3.6v16H6.5zM13.9 4h3.6v16h-3.6z';
+
+  var state = {
+    playing: false, idx: 0, pos: segs[0].from,
+    speed: 1.0, repeats: 1, drill: false, cycle: 0, last: 0
+  };
+
+  segs.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'seg';
+    b.style.flex = (s.to - s.from) + ' 1 0';
+    b.setAttribute('aria-label', String(i + 1));
+    var fill = document.createElement('span');
+    fill.className = 'seg__fill';
+    b.appendChild(fill);
+    var num = document.createElement('span');
+    num.textContent = i + 1;
+    b.appendChild(num);
+    b.addEventListener('click', function () { jumpTo(i); });
+    stripEl.appendChild(b);
+  });
+
+  function tiles() { return stripEl.children; }
+
+  function jumpTo(i) {
+    state.idx = i;
+    state.pos = segs[i].from;
+    state.cycle = 0;
+    if (state.drill) state.speed = SPEED_SEQUENCES[state.repeats][0];
+    paint();
+  }
+
+  function fmt(sec) {
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function paint() {
+    var kids = tiles();
+    for (var i = 0; i < kids.length; i++) {
+      var on = i === state.idx;
+      kids[i].classList.toggle('is-on', on);
+      kids[i].classList.toggle('is-done', i < state.idx);
+      var f = kids[i].firstChild;
+      if (on) {
+        var span = (state.pos - segs[i].from) / (segs[i].to - segs[i].from);
+        f.style.width = Math.max(0, Math.min(1, span)) * 100 + '%';
+      } else {
+        f.style.width = i < state.idx ? '100%' : '0';
+      }
+    }
+    clockEl.textContent = fmt(state.pos);
+
+    if (!state.drill) {
+      readEl.innerHTML = state.playing ? t('readFree') : t('readIdle');
+    } else {
+      var seq = SPEED_SEQUENCES[state.repeats];
+      readEl.innerHTML = t('readDrill')
+        .replace('{n}', state.idx + 1)
+        .replace('{r}', state.cycle + 1)
+        .replace('{t}', seq.length)
+        .replace('{s}', String(seq[state.cycle]).replace('.', lang === 'ru' ? ',' : '.'));
+    }
+  }
+
+  function frame(now) {
+    if (!state.playing) { state.last = now; requestAnimationFrame(frame); return; }
+    var dt = Math.min(0.05, (now - state.last) / 1000);
+    state.last = now;
+
+    state.pos += dt * state.speed;
+    var seg = segs[state.idx];
+
+    if (state.pos >= seg.to) {
+      if (state.drill) {
+        var seq = SPEED_SEQUENCES[state.repeats];
+        state.cycle++;
+        if (state.cycle < seq.length) {
+          // Same sentence again, one notch faster — the real drill ladder.
+          state.speed = seq[state.cycle];
+          state.pos = seg.from;
+        } else {
+          state.cycle = 0;
+          state.idx = (state.idx + 1) % segs.length;
+          state.speed = seq[0];
+          state.pos = segs[state.idx].from;
+        }
+      } else {
+        state.idx++;
+        if (state.idx >= segs.length) { state.idx = 0; state.pos = segs[0].from; }
+        else state.pos = segs[state.idx].from;
+      }
+    }
+    paint();
+    requestAnimationFrame(frame);
+  }
+
+  function setPlaying(on) {
+    state.playing = on;
+    playIcon.firstChild.setAttribute('d', on ? PAUSE_PATH : PLAY_PATH);
+    playBtn.setAttribute('aria-label', on ? t('pauseLabel') : t('playLabel'));
+    paint();
+  }
+  playBtn.addEventListener('click', function () { setPlaying(!state.playing); });
+
+  function buildSegBtns(box, items, get, set) {
+    box.innerHTML = '';
+    items.forEach(function (it) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = it.label;
+      b.setAttribute('aria-pressed', String(get() === it.value));
+      b.addEventListener('click', function () { set(it.value); renderControls(); paint(); });
+      box.appendChild(b);
+    });
+  }
+
+  function renderControls() {
+    var dec = lang === 'ru' ? ',' : '.';
+    buildSegBtns(
+      document.getElementById('speed-btns'),
+      [1.0, 0.8, 0.5].reverse().map(function (v) {
+        return { label: String(v.toFixed(1)).replace('.', dec) + '×', value: v };
+      }),
+      function () { return state.speed; },
+      function (v) { state.speed = v; if (state.drill) { state.drill = false; } }
+    );
+    buildSegBtns(
+      document.getElementById('rep-btns'),
+      [1, 2, 3].map(function (v) { return { label: v + '×', value: v }; }),
+      function () { return state.repeats; },
+      function (v) {
+        state.repeats = v;
+        state.cycle = 0;
+        // Picking 2× or 3× only means anything in drill mode, so turn it on
+        // rather than leaving a control that silently does nothing.
+        if (v > 1) state.drill = true;
+        if (state.drill) state.speed = SPEED_SEQUENCES[v][0];
+      }
+    );
+    buildSegBtns(
+      document.getElementById('mode-btns'),
+      [{ label: t('modeFree'), value: false }, { label: t('modeDrill'), value: true }],
+      function () { return state.drill; },
+      function (v) {
+        state.drill = v;
+        state.cycle = 0;
+        state.speed = v ? SPEED_SEQUENCES[state.repeats][0] : 1.0;
+      }
+    );
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE SCHOOL
+     Rooms, stages and prices are the real ones from config/schoolCatalog.ts
+     (variant "courtyard", the default). Rooms appear at their own `from`
+     stage; the classroom and corridor also grow, which is why rects is a
+     list of [fromStage, rect] and not a single box.
+     ═══════════════════════════════════════════════════════════════════ */
+  var ROOMS = [
+    { id: 'classroom',  kind: 'classroom', from: 0, rects: [[0, [0, 0, 8, 7]], [1, [0, 0, 12, 8]]] },
+    { id: 'library',    kind: 'library',   from: 2, rects: [[2, [12, 0, 7, 8]]] },
+    { id: 'corridor',   kind: 'corridor',  from: 3, rects: [[3, [0, 8, 19, 3]], [7, [0, 8, 28, 3]]] },
+    { id: 'lab',        kind: 'lab',       from: 3, rects: [[3, [0, 11, 8, 6]]] },
+    { id: 'courtyard',  kind: 'courtyard', from: 4, rects: [[4, [8, 11, 11, 9]]], outdoor: true },
+    { id: 'hall',       kind: 'hall',      from: 5, rects: [[5, [-13, 0, 13, 11]]] },
+    { id: 'lobby',      kind: 'lobby',     from: 6, rects: [[6, [0, 17, 8, 7]]] },
+    { id: 'forecourt',  kind: 'forecourt', from: 6, rects: [[6, [0, 24, 8, 4]]], outdoor: true },
+    { id: 'classroomB', kind: 'classroom', from: 7, rects: [[7, [19, 0, 9, 8]]] },
+    { id: 'cafeteria',  kind: 'cafeteria', from: 8, rects: [[8, [-13, 11, 13, 12]]] },
+    { id: 'classroomC', kind: 'classroom', from: 8, rects: [[8, [-24, 0, 11, 11]]] },
+    { id: 'gym',        kind: 'gym',       from: 9, rects: [[9, [8, 20, 11, 10]]] }
+  ];
+
+  // The real wallpaper palette out of SCHOOL_WALLPAPERS, one per room kind.
+  var KIND = {
+    classroom: ['#e9e6df', '#cfcabf'],
+    library:   ['#d7e8dd', '#b3cdbd'],
+    corridor:  ['#ccd6e3', '#a6b5c8'],
+    lab:       ['#ddd2e4', '#bcaac8'],
+    hall:      ['#f0e4c4', '#d6c49b'],
+    lobby:     ['#e8d5d3', '#c9adaa'],
+    cafeteria: ['#e0c6ae', '#c2a58b'],
+    gym:       ['#b8ccd4', '#94adb7'],
+    courtyard: ['#a8c88f', '#8fb277'],
+    forecourt: ['#c3cbb4', '#a9b299']
+  };
+
+  var COSTS = [
+    [0, 0, 0], [40, 20, 10], [90, 45, 25], [180, 90, 50], [320, 160, 90],
+    [550, 275, 160], [800, 400, 230], [1100, 550, 320], [1500, 750, 430], [2000, 1000, 580]
+  ];
+
+  var TW = 8, TH = 4, WALL = 11;
+  function iso(x, z, y) { return [(x - z) * TW, (x + z) * TH - (y || 0) * WALL]; }
+  function pts(list) { return list.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); }
+
+  var schoolSvg = document.getElementById('school-svg');
+  var NS = 'http://www.w3.org/2000/svg';
+  var stage = 0;
+  var built = {};
+
+  function rectAt(room, s) {
+    var r = null;
+    for (var i = 0; i < room.rects.length; i++) {
+      if (room.rects[i][0] <= s) r = room.rects[i][1];
+    }
+    return r;
+  }
+
+  function drawSchool(animateNew) {
+    while (schoolSvg.firstChild) schoolSvg.removeChild(schoolSvg.firstChild);
+
+    var visible = ROOMS.filter(function (r) { return r.from <= stage; });
+    // Painter's algorithm: back (small x+z) first, so the front rooms
+    // overlap them rather than being buried.
+    visible.sort(function (a, b) {
+      var ra = rectAt(a, stage), rb = rectAt(b, stage);
+      return (ra[0] + ra[1]) - (rb[0] + rb[1]);
+    });
+
+    var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+
+    visible.forEach(function (room) {
+      var r = rectAt(room, stage);
+      var x = r[0], z = r[1], w = r[2], d = r[3];
+      var pal = KIND[room.kind] || KIND.classroom;
+      var h = room.outdoor ? 0 : 1;
+
+      var g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'room' + (animateNew && !built[room.id] ? ' is-new' : ''));
+
+      var f0 = iso(x, z, 0), f1 = iso(x + w, z, 0), f2 = iso(x + w, z + d, 0), f3 = iso(x, z + d, 0);
+
+      if (room.outdoor) {
+        add(g, 'polygon', { points: pts([f0, f1, f2, f3]), fill: pal[0], stroke: pal[1], 'stroke-width': 1 });
+      } else {
+        var t0 = iso(x, z, h), t1 = iso(x + w, z, h), t2 = iso(x + w, z + d, h), t3 = iso(x, z + d, h);
+        // Two visible wall faces: the +z edge (front-left) and the +x edge
+        // (front-right). The other two are behind the block.
+        add(g, 'polygon', { points: pts([t3, t2, f2, f3]), fill: pal[1] });
+        add(g, 'polygon', { points: pts([t1, t2, f2, f1]), fill: shade(pal[1], -14) });
+        add(g, 'polygon', { points: pts([t0, t1, t2, t3]), fill: pal[0], stroke: shade(pal[1], -8), 'stroke-width': 0.8 });
+      }
+
+      [f0, f1, f2, f3].forEach(function (p) {
+        minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+        minY = Math.min(minY, p[1] - (room.outdoor ? 0 : WALL)); maxY = Math.max(maxY, p[1]);
+      });
+
+      schoolSvg.appendChild(g);
+      built[room.id] = true;
+    });
+
+    var pad = 14;
+    schoolSvg.setAttribute('viewBox',
+      (minX - pad) + ' ' + (minY - pad) + ' ' + (maxX - minX + pad * 2) + ' ' + (maxY - minY + pad * 2));
+  }
+
+  function add(parent, name, attrs) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    parent.appendChild(n);
+    return n;
+  }
+
+  function shade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    var g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt));
+    var b = Math.max(0, Math.min(255, (n & 255) + amt));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  var trackEl = document.getElementById('sch-track');
+  for (var si = 0; si < 10; si++) {
+    (function (i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tick';
+      b.setAttribute('aria-label', String(i + 1));
+      b.addEventListener('click', function () { setStage(i); });
+      b.addEventListener('mouseenter', function () { if (dragging) setStage(i); });
+      trackEl.appendChild(b);
+    })(si);
+  }
+
+  var dragging = false;
+  trackEl.addEventListener('mousedown', function () { dragging = true; });
+  window.addEventListener('mouseup', function () { dragging = false; });
+
+  function setStage(s) {
+    if (s === stage) return;
+    if (s < stage) built = {};
+    stage = s;
+    drawSchool(!reduce);
+    renderSchoolPanel();
+  }
+
+  function renderSchoolPanel() {
+    var st = t('stages')[stage];
+    document.getElementById('sch-stage').textContent = t('schStageOf').replace('{n}', stage + 1);
+    document.getElementById('sch-name').textContent = st[0];
+    document.getElementById('sch-blurb').textContent = st[1];
+    var c = COSTS[stage];
+    document.getElementById('c-award').textContent = c[0];
+    document.getElementById('c-word').textContent = c[1];
+    document.getElementById('c-phrase').textContent = c[2];
+    document.getElementById('sch-cost-label').textContent =
+      stage === 0 ? t('schCostFree') : t('schCost');
+
+    var ticks = trackEl.children;
+    for (var i = 0; i < ticks.length; i++) {
+      ticks[i].classList.toggle('is-built', i < stage);
+      ticks[i].classList.toggle('is-now', i === stage);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     LANGUAGE + THEME
+     ═══════════════════════════════════════════════════════════════════ */
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.title = t('docTitle');
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var v = I18N[lang][nodes[i].getAttribute('data-i18n')];
+      if (v !== undefined) nodes[i].innerHTML = v;
+    }
+    var aria = document.querySelectorAll('[data-i18n-aria]');
+    for (var j = 0; j < aria.length; j++) {
+      var a = I18N[lang][aria[j].getAttribute('data-i18n-aria')];
+      if (a !== undefined) aria[j].setAttribute('aria-label', a);
+    }
+    var lb = document.querySelectorAll('[data-set-lang]');
+    for (var k = 0; k < lb.length; k++) {
+      lb[k].setAttribute('aria-pressed', String(lb[k].getAttribute('data-set-lang') === lang));
+    }
+    renderControls();
+    paint();
+    setPlaying(state.playing);
+    renderSchoolPanel();
+  }
+
+  var langBtns = document.querySelectorAll('[data-set-lang]');
+  for (var li = 0; li < langBtns.length; li++) {
+    langBtns[li].addEventListener('click', function () {
+      lang = this.getAttribute('data-set-lang');
+      applyLang();
+    });
+  }
+
+  var themeBtns = document.querySelectorAll('[data-set-theme]');
+  var darkQ = window.matchMedia('(prefers-color-scheme: dark)');
+  function effTheme() {
+    var set = document.documentElement.getAttribute('data-theme');
+    return (set === 'dark' || set === 'light') ? set : (darkQ.matches ? 'dark' : 'light');
+  }
+  function syncTheme() {
+    var now = effTheme();
+    for (var i = 0; i < themeBtns.length; i++) {
+      themeBtns[i].setAttribute('aria-pressed', String(themeBtns[i].getAttribute('data-set-theme') === now));
+    }
+  }
+  for (var tb = 0; tb < themeBtns.length; tb++) {
+    themeBtns[tb].addEventListener('click', function () {
+      document.documentElement.setAttribute('data-theme', this.getAttribute('data-set-theme'));
+      syncTheme();
+    });
+  }
+  if (darkQ.addEventListener) darkQ.addEventListener('change', syncTheme);
+  new MutationObserver(syncTheme).observe(document.documentElement,
+    { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ── boot ── */
+  drawSchool(false);
+  applyLang();
+  syncTheme();
+  requestAnimationFrame(function (n) { state.last = n; requestAnimationFrame(frame); });
+
+  // The player starts itself once it is actually on screen: a strip that
+  // has already run to the end before anyone scrolled to it shows nothing.
+  if ('IntersectionObserver' in window && !reduce) {
+    var started = false;
+    new IntersectionObserver(function (es, obs) {
+      for (var i = 0; i < es.length; i++) {
+        if (es[i].isIntersecting && !started) { started = true; setPlaying(true); obs.disconnect(); }
+      }
+    }, { threshold: 0.4 }).observe(stripEl);
+  }
+})();
+</script>

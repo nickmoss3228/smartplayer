@@ -1,5 +1,5 @@
 // components/Dashboard/Dashboard.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IoLogOutOutline, IoChevronForward } from "react-icons/io5";
@@ -17,14 +17,17 @@ import ProfileEditor from "./ProfileEditor";
 import DifficultyModal from "./DifficultyModal";
 import AchievementsRow from "./AchievementsRow";
 import WalletRow from "./WalletRow";
+import AccuracyTrendChart from "./charts/AccuracyTrendChart";
+import WeeklyActivityChart from "./charts/WeeklyActivityChart";
+import { buildWeeklySeries } from "./charts/progressChartData";
 import { useProfile } from "../../context/ProfileContext";
 
 const Dashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, signOut, loading } = useAuth();
 
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
-  const [_detailedProgress, setDetailedProgress] =
+  const [detailedProgress, setDetailedProgress] =
     useState<DetailedProgressMap>({});
   const [progressLoading, setProgressLoading] = useState<boolean>(true);
 
@@ -69,6 +72,14 @@ const Dashboard: React.FC = () => {
   }, [user]);
 
   const { profile, profileLoading, setProfileDirect } = useProfile();
+
+  // Built entirely from data the dashboard already fetches: every graded part in
+  // detailedProgress carries a completedAt, so the weekly series needs no new
+  // endpoint — this map was simply being discarded before.
+  const weeklySeries = useMemo(
+    () => buildWeeklySeries(detailedProgress, { locale: i18n.language }),
+    [detailedProgress, i18n.language]
+  );
 
   // Close modal on Escape
   useEffect(() => {
@@ -221,6 +232,23 @@ const Dashboard: React.FC = () => {
                     </button>
                   );
                 })}
+            </div>
+
+            {/* ── Progress charts ── */}
+            <div className="mb-6 animate-fade-in-delay-2">
+              <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
+                {t("dashboard.charts.sectionTitle")}
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                <AccuracyTrendChart
+                  weeks={weeklySeries.weeks}
+                  hasData={weeklySeries.hasData}
+                />
+                <WeeklyActivityChart
+                  weeks={weeklySeries.weeks}
+                  hasData={weeklySeries.hasData}
+                />
+              </div>
             </div>
 
             {/* ── Wallet ── */}

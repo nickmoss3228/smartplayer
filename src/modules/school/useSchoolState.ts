@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   SchoolState,
+  SchoolLookPatch,
   WalletBalances,
   fetchSchool,
-  unlockRoom as apiUnlockRoom,
-  buyItem as apiBuyItem,
-  placeItem as apiPlaceItem,
-  buyAction as apiBuyAction,
-  focusRoom as apiFocusRoom,
+  upgradeSchool as apiUpgrade,
+  setSchoolLook as apiSetLook,
 } from "../../services/schoolServices";
+import { fetchLearnedWords } from "../../services/vocabProgressServices";
+import { useWallet } from "../../context/WalletContext";
 
 export interface SchoolActionResult {
   ok: boolean;
@@ -18,21 +18,16 @@ export interface SchoolActionResult {
 interface UseSchoolStateResult {
   school: SchoolState | null;
   wallet: WalletBalances;
+  /** Feeds the speech bubbles and the chalkboard. Empty is a fine state. */
+  learnedWords: string[];
   loading: boolean;
   error: string | null;
-  unlockRoom: (roomId: string) => Promise<SchoolActionResult>;
-  buyItem: (itemId: string) => Promise<SchoolActionResult>;
-  placeItem: (itemId: string) => Promise<SchoolActionResult>;
-  buyAction: (actionId: string) => Promise<SchoolActionResult>;
-  focusRoom: (roomId: string) => Promise<SchoolActionResult>;
+  upgrade: () => Promise<SchoolActionResult>;
+  setLook: (patch: SchoolLookPatch) => Promise<SchoolActionResult>;
 }
 
 const EMPTY_WALLET: WalletBalances = { bitAward: 0, bitWord: 0, bitPhrase: 0 };
 
-// Every mutation returns the authoritative school (and, for purchases, the
-// wallet) so there is exactly one source of truth for balances: the server.
-// Nothing is optimistically decremented locally — a failed purchase that had
-// already subtracted coins on screen is far more confusing than a brief wait.
 function extractMessage(err: unknown, fallback: string): string {
   if (typeof err === "object" && err !== null && "response" in err) {
     const res = (err as { response?: { data?: { message?: string } } }).response;
@@ -44,8 +39,10 @@ function extractMessage(err: unknown, fallback: string): string {
 export function useSchoolState(): UseSchoolStateResult {
   const [school, setSchool] = useState<SchoolState | null>(null);
   const [wallet, setWallet] = useState<WalletBalances>(EMPTY_WALLET);
+  const [learnedWords, setLearnedWords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setWalletDirect } = useWallet();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -55,6 +52,7 @@ export function useSchoolState(): UseSchoolStateResult {
       return;
     }
     let cancelled = false;
+
     fetchSchool(token)
       .then((data) => {
         if (cancelled) return;
@@ -67,13 +65,25 @@ export function useSchoolState(): UseSchoolStateResult {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
+    // Vocabulary is decoration, not data the school needs to render — a failure
+    // here means generic chatter instead of your own words, which is exactly
+    // what a brand-new player sees anyway. So it never blocks or errors out.
+    fetchLearnedWords(token)
+      .then((words) => {
+        if (!cancelled) setLearnedWords(words ?? []);
+      })
+      .catch(() => {});
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // All five mutations differ only in which endpoint they call, so they share
-  // one wrapper rather than repeating the token/error/state dance five times.
+  // The server returns the authoritative school and wallet on every mutation,
+  // so nothing is optimistically applied here. A stage that appeared and then
+  // vanished because the purchase was declined would be far worse than the
+  // half-second the round-trip costs.
   const run = useCallback(
     async (
       call: (token: string) => Promise<{ school: SchoolState; wallet?: WalletBalances }>,
@@ -84,35 +94,30 @@ export function useSchoolState(): UseSchoolStateResult {
       try {
         const data = await call(token);
         setSchool(data.school);
-        if (data.wallet) setWallet(data.wallet);
+        if (data.wallet) {
+          setWallet(data.wallet);
+          // The navbar's chips read from WalletContext, which has no idea an
+          // upgrade just happened — push the balance it charged us straight in
+          // rather than leaving a stale number two pixels from the button.
+          setWalletDirect(data.wallet);
+        }
         return { ok: true };
       } catch (err) {
         return { ok: false, message: extractMessage(err, fallbackMessage) };
       }
     },
-    [],
+    [setWalletDirect],
   );
 
-  const unlockRoom = useCallback(
-    (roomId: string) => run((t) => apiUnlockRoom(t, roomId), "Could not unlock that room"),
-    [run],
-  );
-  const buyItem = useCallback(
-    (itemId: string) => run((t) => apiBuyItem(t, itemId), "Could not buy that"),
-    [run],
-  );
-  const placeItem = useCallback(
-    (itemId: string) => run((t) => apiPlaceItem(t, itemId), "Could not place that"),
-    [run],
-  );
-  const buyAction = useCallback(
-    (actionId: string) => run((t) => apiBuyAction(t, actionId), "Could not buy that action"),
-    [run],
-  );
-  const focusRoom = useCallback(
-    (roomId: string) => run((t) => apiFocusRoom(t, roomId), "Could not open that room"),
+  const upgrade = useCallback(
+    () => run((t) => apiUpgrade(t), "Could not upgrade the school"),
     [run],
   );
 
-  return { school, wallet, loading, error, unlockRoom, buyItem, placeItem, buyAction, focusRoom };
+  const setLook = useCallback(
+    (patch: SchoolLookPatch) => run((t) => apiSetLook(t, patch), "Could not change that"),
+    [run],
+  );
+
+  return { school, wallet, learnedWords, loading, error, upgrade, setLook };
 }

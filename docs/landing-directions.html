@@ -1,0 +1,1062 @@
+<title>малако — четыре направления</title>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════════
+     THE FRAME
+     Deliberately quiet. Every pitch below brings its own colour world,
+     so the gallery around them has to stay out of the way — near-neutral
+     ground, hairline rules, small mono labels. If the frame had an
+     opinion it would contaminate all four samples.
+     ═══════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:     #f7f8fa;
+    --bg-2:   #eef1f5;
+    --fg:     #12161d;
+    --fg-dim: #5d6875;
+    --line:   #dfe4ea;
+    --mark:   #1b54f5;
+    --mono: "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+    --sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1016; --bg-2: #141922; --fg: #e8edf3;
+      --fg-dim: #939fae; --line: #222a35; --mark: #6d92ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1016; --bg-2: #141922; --fg: #e8edf3;
+    --fg-dim: #939fae; --line: #222a35; --mark: #6d92ff;
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f8fa; --bg-2: #eef1f5; --fg: #12161d;
+    --fg-dim: #5d6875; --line: #dfe4ea; --mark: #1b54f5;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  p { margin: 0; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; line-height: 1.12; letter-spacing: -0.02em; }
+  :focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
+
+  .wrap {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+  }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+
+  /* ── page head ── */
+  .top { padding-block: clamp(3rem, 8vw, 6rem) clamp(2rem, 5vw, 3.5rem); }
+  .top h1 {
+    font-size: clamp(2rem, 1.3rem + 3.2vw, 3.5rem);
+    font-weight: 800;
+    margin-block: 1rem 1.25rem;
+    max-width: 20ch;
+  }
+  .top p { max-width: 60ch; color: var(--fg-dim); font-size: 1.0625rem; }
+  .top p + p { margin-top: 0.85rem; }
+
+  /* ── pitch shell ── */
+  .pitch { border-top: 1px solid var(--line); padding-block: clamp(2.5rem, 6vw, 4.5rem); }
+  .pitch__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .pitch__num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--mark);
+    letter-spacing: 0.1em;
+  }
+  .pitch__head h2 { font-size: clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem); font-weight: 780; }
+  .pitch__en {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--fg-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .pitch__thesis {
+    max-width: 62ch;
+    color: var(--fg-dim);
+    font-size: 1.0625rem;
+    margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  /* The demo sits in its own bordered stage — a sample mounted on a card,
+     not a section of the page. That boundary is what lets four different
+     colour worlds sit above one another without arguing. */
+  .stage {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .stage__tag {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 3;
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.6rem;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    pointer-events: none;
+  }
+
+  /* ── meta strip under each demo ── */
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-radius: 0 0 4px 4px;
+  }
+  .meta > div {
+    background: var(--bg);
+    padding: 0.9rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .meta dt {
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+  .meta dd { margin: 0; font-size: 0.875rem; line-height: 1.45; }
+  .swatches { display: flex; gap: 4px; }
+  .swatches i {
+    width: 22px; height: 22px;
+    border-radius: 3px;
+    display: block;
+    box-shadow: inset 0 0 0 1px rgba(128,128,128,0.28);
+  }
+
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 1rem 2rem;
+    margin-top: 1.25rem;
+  }
+  .verdict p { font-size: 0.9375rem; }
+  .verdict b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin-bottom: 0.2rem;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     1 — ПРОВЕРЬ УХО. Deep indigo, milk, one amber "play" signal.
+     ═══════════════════════════════════════════════════════════════════ */
+  .ear {
+    --ink: #141a2b; --milk: #f2f6fa; --amber: #ffc24b;
+    --yes: #5fd08a; --no: #ff7a6b;
+    background: var(--ink);
+    color: var(--milk);
+    padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
+    min-height: 24rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    text-align: center;
+    font-family: var(--sans);
+  }
+  .ear__prompt {
+    font-size: clamp(1.1rem, 0.9rem + 1vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    max-width: 22ch;
+    min-height: 2.2em;
+  }
+  .ear__play {
+    width: clamp(5rem, 14vw, 7rem);
+    height: clamp(5rem, 14vw, 7rem);
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    background: transparent;
+    color: var(--amber);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    position: relative;
+    flex: none;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .ear__play:hover { background: var(--amber); color: var(--ink); transform: scale(1.04); }
+  .ear__play svg { width: 34%; height: 34%; margin-left: 8%; }
+  /* The ring pulses only while audio is actually playing — motion that
+     reports state instead of decorating. */
+  .ear__play::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    opacity: 0;
+  }
+  .ear__play.is-playing::after { animation: ring 1.1s ease-out infinite; }
+  @keyframes ring {
+    from { transform: scale(1); opacity: 0.75; }
+    to   { transform: scale(1.5); opacity: 0; }
+  }
+
+  .ear__options {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    max-width: 40rem;
+  }
+  .ear__opt {
+    padding: 0.6rem 1.05rem;
+    border-radius: 999px;
+    border: 1px solid rgba(242,246,250,0.28);
+    background: transparent;
+    color: var(--milk);
+    font-family: var(--mono);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+  }
+  .ear__opt:hover { border-color: var(--milk); }
+  .ear__opt.is-yes { background: var(--yes); border-color: var(--yes); color: var(--ink); font-weight: 700; }
+  .ear__opt.is-no  { background: var(--no);  border-color: var(--no);  color: var(--ink); }
+  .ear__speed {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    min-height: 1.2em;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     2 — ОСЦИЛЛОГРАММА. Light, technical, one hot red playhead.
+     ═══════════════════════════════════════════════════════════════════ */
+  .wave {
+    --paper: #f4f7fa; --bar: #c6d3df; --bar-on: #12203a; --head: #e2483c;
+    background: var(--paper);
+    padding: clamp(1.5rem, 4vw, 2.75rem) clamp(1rem, 3vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .wave__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1.25rem;
+    color: #12203a;
+  }
+  .wave__title {
+    font-family: var(--sans);
+    font-size: clamp(1.1rem, 0.95rem + 0.7vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .wave__sub { font-family: var(--mono); font-size: 0.75rem; color: #5f7286; }
+  .wave__canvas {
+    width: 100%;
+    height: 150px;
+    display: block;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .wave__strip {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .wave__seg {
+    flex: 1 1 6rem;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #d3dde6;
+    border-radius: 3px;
+    background: #fff;
+    color: #5f7286;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+  }
+  .wave__seg:hover { border-color: #12203a; color: #12203a; }
+  .wave__seg.is-on { background: #12203a; border-color: #12203a; color: #f4f7fa; }
+  .wave__foot { font-family: var(--mono); font-size: 0.75rem; color: #5f7286; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     3 — ТРЕУГОЛЬНЫЙ ПАКЕТ. Soviet dairy print: two inks, no gradients.
+     ═══════════════════════════════════════════════════════════════════ */
+  .pack {
+    --blue: #005baa; --paper: #eef1f3; --red: #d22b2b;
+    background: var(--paper);
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2.5rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: clamp(1.25rem, 4vw, 3rem);
+    align-items: center;
+    color: var(--blue);
+  }
+  @media (max-width: 700px) { .pack { grid-template-columns: 1fr; } }
+
+  .pack__art { display: grid; place-items: center; }
+  .pack__art svg { width: 100%; max-width: 17rem; height: auto; }
+  .pack__label {
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .pack__copy { display: flex; flex-direction: column; gap: 0.85rem; }
+  .pack__copy h3 {
+    font-size: clamp(1.4rem, 1.1rem + 1.6vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .pack__copy p { color: #2c4c6b; font-size: 0.9375rem; max-width: 40ch; }
+  .pack__fats { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .pack__fat {
+    padding: 0.5rem 0.9rem;
+    border: 2px solid var(--blue);
+    background: transparent;
+    color: var(--blue);
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .pack__fat:hover { background: rgba(0,91,170,0.1); }
+  .pack__fat.is-on { background: var(--blue); color: var(--paper); }
+  .pack__stamp {
+    display: inline-block;
+    align-self: flex-start;
+    border: 2px solid var(--red);
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.55rem;
+    transform: rotate(-3deg);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     4 — ТВОЯ ШКОЛА. Toy isometric, warm and bright.
+     ═══════════════════════════════════════════════════════════════════ */
+  .school {
+    --sky: #dcebfb; --grass: #6bbf59; --wood: #c98a4b;
+    --roof: #e2574c; --coin: #f5c042; --deep: #24405c;
+    background: linear-gradient(180deg, #eaf4ff 0%, var(--sky) 100%);
+    padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 3vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: var(--deep);
+  }
+  .school__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+  }
+  .school__coins {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+    box-shadow: 0 2px 0 rgba(36,64,92,0.18);
+  }
+  .school__coins i {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--coin);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.16);
+    display: block;
+  }
+  .school__stage {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .school__build {
+    margin-left: auto;
+    border: 0;
+    border-radius: 999px;
+    background: var(--roof);
+    color: #fff;
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    padding: 0.6rem 1.3rem;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #b8443b;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .school__build:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #b8443b; }
+  .school__build:active { transform: translateY(2px); box-shadow: 0 1px 0 #b8443b; }
+  .school__build[disabled] { background: #9fb2c4; box-shadow: 0 3px 0 #8496a7; cursor: default; }
+  .school__art { display: grid; place-items: center; }
+  .school__art svg { width: 100%; max-width: 34rem; height: auto; overflow: visible; }
+  .school__blurb {
+    font-size: 0.9375rem;
+    text-align: center;
+    min-height: 2.6em;
+    max-width: 44ch;
+    margin-inline: auto;
+  }
+  .school__blurb b { display: block; font-size: 1.05rem; }
+
+  /* Pieces pop in as the school grows. Staggered by index in JS. */
+  .piece { opacity: 0; transform-box: fill-box; transform-origin: center bottom; }
+  .piece.is-in { animation: pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(14px) scale(0.86); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ── closing ── */
+  .end { border-top: 1px solid var(--line); padding-block: clamp(2.5rem, 6vw, 4rem) clamp(3rem, 8vw, 5rem); }
+  .end h2 { font-size: clamp(1.4rem, 1.1rem + 1.5vw, 2rem); font-weight: 780; margin-bottom: 0.9rem; }
+  .end p { max-width: 60ch; color: var(--fg-dim); }
+  .end ul { margin: 1.1rem 0 0; padding-left: 1.1rem; color: var(--fg-dim); max-width: 60ch; }
+  .end li { margin-bottom: 0.4rem; }
+  .end li b { color: var(--fg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <p class="kicker">малако &middot; направления для главной</p>
+    <h1>Четыре способа открыть страницу</h1>
+    <p>
+      Прошлая версия была слишком тихой: она продавала методику учителя, а не
+      продукт, в который играют школьники. Здесь — четыре громких направления,
+      и каждое показано живым, а не описано словами.
+    </p>
+    <p>
+      Каждый блок ниже — рабочая демонстрация. Нажимайте, тяните, стройте.
+      Это ровно тот момент, который встретит человека в первом экране.
+    </p>
+  </header>
+
+  <!-- ══════════════ 1 ══════════════ -->
+  <section class="pitch">
+    <div class="pitch__head">
+      <span class="pitch__num">01</span>
+      <h2>Проверь ухо</h2>
+      <span class="pitch__en">take the test</span>
+    </div>
+    <p class="pitch__thesis">
+      Первый экран не рассказывает про тренировку слуха — он её проводит.
+      Браузер произносит фразу вслух на полной скорости, вы выбираете, что
+      услышали, ошибаетесь, и он тут же повторяет медленнее. Продукт продан
+      за девять секунд, без единого слова о продукте.
+    </p>
+
+    <div class="stage">
+      <span class="stage__tag">живая демонстрация</span>
+      <div class="ear" id="ear">
+        <p class="ear__prompt" id="ear-prompt">Нажмите и послушайте. Один раз, на полной скорости.</p>
+        <button class="ear__play" id="ear-play" type="button" aria-label="Воспроизвести фразу">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5 20 12 6 20.5Z" fill="currentColor"/></svg>
+        </button>
+        <p class="ear__speed" id="ear-speed">&nbsp;</p>
+        <div class="ear__options" id="ear-options" hidden></div>
+      </div>
+    </div>
+    <dl class="meta">
+      <div><dt>Палитра</dt><dd class="swatches"><i style="background:#141a2b"></i><i style="background:#f2f6fa"></i><i style="background:#ffc24b"></i><i style="background:#5fd08a"></i><i style="background:#ff7a6b"></i></dd></div>
+      <div><dt>Движение</dt><dd>Пульс кольца только во время звука. Ответы прилетают снизу. Ничего лишнего.</dd></div>
+      <div><dt>Звук</dt><dd>Синтез речи самого браузера — без файлов, без загрузок, работает офлайн.</dd></div>
+    </dl>
+    <div class="verdict">
+      <p><b>Чем цепляет</b>Человек проваливает тест за девять секунд и сам понимает, зачем ему это. Ни одно описание так не работает.</p>
+      <p><b>Риск</b>Голоса зависят от системы: на части устройств английский голос звучит грубо или отсутствует. Нужен запасной вариант с готовыми записями.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ 2 ══════════════ -->
+  <section class="pitch">
+    <div class="pitch__head">
+      <span class="pitch__num">02</span>
+      <h2>Осциллограмма</h2>
+      <span class="pitch__en">the page is the player</span>
+    </div>
+    <p class="pitch__thesis">
+      Главный экран — сам плеер, во всю ширину. Дорожка разрезана на
+      предложения, бегунок идёт, сегмент под курсором подсвечивается.
+      Страница выглядит как инструмент, а не как реклама инструмента.
+    </p>
+
+    <div class="stage">
+      <span class="stage__tag">живая демонстрация</span>
+      <div class="wave">
+        <div class="wave__head">
+          <span class="wave__title">Жизнь Лео &middot; часть 1</span>
+          <span class="wave__sub" id="wave-time">00:00 / 00:48</span>
+        </div>
+        <canvas class="wave__canvas" id="wave-canvas" width="1200" height="300"
+                role="img" aria-label="Звуковая дорожка, разрезанная на пять предложений"></canvas>
+        <div class="wave__strip" id="wave-strip"></div>
+        <p class="wave__foot">Нажмите на предложение — бегунок повторит только его.</p>
+      </div>
+    </div>
+    <dl class="meta">
+      <div><dt>Палитра</dt><dd class="swatches"><i style="background:#f4f7fa"></i><i style="background:#c6d3df"></i><i style="background:#12203a"></i><i style="background:#e2483c"></i></dd></div>
+      <div><dt>Движение</dt><dd>Бегунок идёт постоянно. Столбики под ним слегка подрастают. Клик — и он зациклен на одном предложении.</dd></div>
+      <div><dt>Типографика</dt><dd>Плотный гротеск для заголовков, моноширинный для таймкодов и скоростей.</dd></div>
+    </dl>
+    <div class="verdict">
+      <p><b>Чем цепляет</b>Честность. Видно ровно то, что человек получит внутри, и видно, что это не «ещё один курс», а инструмент.</p>
+      <p><b>Риск</b>Холодновато для школьников. Осциллограмма — эстетика студии звукозаписи, а не игры.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ 3 ══════════════ -->
+  <section class="pitch">
+    <div class="pitch__head">
+      <span class="pitch__num">03</span>
+      <h2>Треугольный пакет</h2>
+      <span class="pitch__en">the milk carton</span>
+    </div>
+    <p class="pitch__thesis">
+      Уровни уже измеряются жирностью — 1%, 2,5%, 6%. Значит, страница может
+      быть молочной упаковкой: две краски, никаких градиентов, тот самый
+      треугольный пакет. Выбор уровня становится выбором молока.
+    </p>
+
+    <div class="stage">
+      <span class="stage__tag">живая демонстрация &middot; нажмите жирность</span>
+      <div class="pack">
+        <div class="pack__art">
+          <svg viewBox="0 0 240 250" aria-labelledby="pack-t">
+            <title id="pack-t">Треугольный пакет молока</title>
+            <defs>
+              <clipPath id="pack-clip">
+                <path d="M120 18 L228 232 L12 232 Z"/>
+              </clipPath>
+            </defs>
+            <!-- milk level, clipped to the pack -->
+            <g clip-path="url(#pack-clip)">
+              <rect x="0" y="0" width="240" height="250" fill="#eef1f3"/>
+              <rect id="pack-milk" x="0" y="120" width="240" height="250" fill="#ffffff"/>
+            </g>
+            <path d="M120 18 L228 232 L12 232 Z" fill="none" stroke="#005baa" stroke-width="5" stroke-linejoin="round"/>
+            <!-- the gable seam -->
+            <path d="M120 18 L120 232" stroke="#005baa" stroke-width="2.5" stroke-dasharray="7 6" opacity="0.5"/>
+            <text id="pack-fat-text" x="120" y="186" text-anchor="middle"
+                  font-family="Consolas, monospace" font-size="40" font-weight="700" fill="#005baa">1%</text>
+            <text x="120" y="212" text-anchor="middle"
+                  font-family="Consolas, monospace" font-size="13" letter-spacing="3" fill="#005baa">ЖИРНОСТЬ</text>
+          </svg>
+        </div>
+        <div class="pack__copy">
+          <span class="pack__stamp">ГОСТ &middot; слушать без субтитров</span>
+          <h3 id="pack-title">Базовый</h3>
+          <p id="pack-desc">
+            Present Simple, будни, один голос в разговорном темпе. Обезжиренное —
+            чтобы привыкнуть глотать.
+          </p>
+          <div class="pack__fats" id="pack-fats"></div>
+        </div>
+      </div>
+    </div>
+    <dl class="meta">
+      <div><dt>Палитра</dt><dd class="swatches"><i style="background:#005baa"></i><i style="background:#eef1f3"></i><i style="background:#ffffff"></i><i style="background:#d22b2b"></i></dd></div>
+      <div><dt>Движение</dt><dd>Молоко наливается до нужного уровня и слегка густеет с жирностью. Больше почти ничего не двигается — и в этом характер.</dd></div>
+      <div><dt>Типографика</dt><dd>Моноширинный трафарет с широкой разрядкой, как на упаковке. Заголовки — тяжёлый гротеск.</dd></div>
+    </dl>
+    <div class="verdict">
+      <p><b>Чем цепляет</b>Ни на что не похоже и мгновенно узнаётся. Название, уровни и упаковка наконец говорят одно и то же.</p>
+      <p><b>Риск</b>Ностальгия по треугольному пакету — родительская, не детская. Для школьников это может быть просто странная геометрия.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════ 4 ══════════════ -->
+  <section class="pitch">
+    <div class="pitch__head">
+      <span class="pitch__num">04</span>
+      <h2>Твоя школа</h2>
+      <span class="pitch__en">build the school</span>
+    </div>
+    <p class="pitch__thesis">
+      Первым экраном идёт не методика, а награда. Вы слушаете — вам платят —
+      вы строите школу, этаж за этажом. Здесь страница показывает не урок,
+      а то, ради чего к уроку возвращаются.
+    </p>
+
+    <div class="stage">
+      <span class="stage__tag">живая демонстрация &middot; стройте</span>
+      <div class="school">
+        <div class="school__bar">
+          <span class="school__coins"><i></i><span id="school-coins">0</span></span>
+          <span class="school__stage" id="school-stage">Этап 1 из 6</span>
+          <button class="school__build" id="school-build" type="button">Построить &mdash; 40</button>
+        </div>
+        <div class="school__art">
+          <svg viewBox="0 0 460 300" id="school-svg" aria-labelledby="school-t">
+            <title id="school-t">Изометрическая школа, которая растёт по этапам</title>
+          </svg>
+        </div>
+        <p class="school__blurb" id="school-blurb">
+          <b>Одна комната</b>Доска, четыре парты и все, кто пришёл.
+        </p>
+      </div>
+    </div>
+    <dl class="meta">
+      <div><dt>Палитра</dt><dd class="swatches"><i style="background:#dcebfb"></i><i style="background:#6bbf59"></i><i style="background:#c98a4b"></i><i style="background:#e2574c"></i><i style="background:#f5c042"></i></dd></div>
+      <div><dt>Движение</dt><dd>Каждая деталь впрыгивает с отскоком. Монеты списываются, этаж достраивается, кнопка проседает под нажатием.</dd></div>
+      <div><dt>Типографика</dt><dd>Круглый жирный гротеск, крупные цифры, всё как в мобильной игре.</dd></div>
+    </dl>
+    <div class="verdict">
+      <p><b>Чем цепляет</b>Говорит на языке школьника напрямую. Это уже есть в продукте — просто спрятано за регистрацией.</p>
+      <p><b>Риск</b>Родитель или учитель, который платит, может решить, что это игрушка, а не занятие. Методику придётся вернуть ниже по странице.</p>
+    </div>
+  </section>
+
+  <section class="end">
+    <h2>Что дальше</h2>
+    <p>
+      Скажите номер — соберу полную страницу в этом направлении, со всеми
+      секциями, обоими языками и обеими темами. Их можно и скрещивать:
+    </p>
+    <ul>
+      <li><b>01 + 04</b> — тест ловит человека в первом экране, школа держит его ниже. Самая сильная пара.</li>
+      <li><b>03 + 02</b> — упаковка снаружи, инструмент внутри: молочный первый экран, плеер в разделе «как это работает».</li>
+      <li><b>01 в одиночку</b> — если нужен максимально короткий путь до регистрации.</li>
+    </ul>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     1 — ПРОВЕРЬ УХО
+     The browser's own speech synthesiser says the line. No audio files,
+     no network, so it survives the artifact CSP and works offline. The
+     whole pitch is that the visitor fails the test themselves.
+     ═══════════════════════════════════════════════════════════════════ */
+  var PHRASE = 'he would have gone';
+  var OPTIONS = ['he would have gone', 'he wood of gone', 'he will have gone', 'he would go'];
+
+  var earPlay = document.getElementById('ear-play');
+  var earPrompt = document.getElementById('ear-prompt');
+  var earSpeed = document.getElementById('ear-speed');
+  var earOpts = document.getElementById('ear-options');
+  var stage = 'idle';
+  var voice = null;
+
+  var canSpeak = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+
+  function pickVoice() {
+    if (!canSpeak) return;
+    var all = window.speechSynthesis.getVoices() || [];
+    for (var i = 0; i < all.length; i++) {
+      if (/^en(-|_|$)/i.test(all[i].lang)) { voice = all[i]; return; }
+    }
+  }
+  if (canSpeak) {
+    pickVoice();
+    // Voice list is populated asynchronously in Chrome — it is empty on the
+    // first synchronous call and only fills in after this event.
+    window.speechSynthesis.addEventListener('voiceschanged', pickVoice);
+  }
+
+  function say(rate, done) {
+    if (!canSpeak) { done(); return; }
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(PHRASE);
+      u.rate = rate;
+      u.lang = 'en-US';
+      if (voice) u.voice = voice;
+      u.onend = done;
+      u.onerror = done;
+      earPlay.classList.add('is-playing');
+      window.speechSynthesis.speak(u);
+    } catch (e) { done(); }
+  }
+
+  function endSpeak() { earPlay.classList.remove('is-playing'); }
+
+  function showOptions() {
+    earOpts.innerHTML = '';
+    OPTIONS.forEach(function (text) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ear__opt';
+      b.textContent = text;
+      b.addEventListener('click', function () { answer(b, text); });
+      earOpts.appendChild(b);
+    });
+    earOpts.hidden = false;
+  }
+
+  function answer(btn, text) {
+    if (stage === 'done') return;
+    if (text === PHRASE) {
+      btn.classList.add('is-yes');
+      stage = 'done';
+      earPrompt.textContent = 'Вот и всё. Это и есть продукт.';
+      earSpeed.textContent = 'предложение засчитано';
+    } else {
+      btn.classList.add('is-no');
+      btn.disabled = true;
+      earPrompt.textContent = 'Не угадали. Слушайте ещё раз — вдвое медленнее.';
+      earSpeed.textContent = 'скорость 0.5×';
+      say(0.5, endSpeak);
+    }
+  }
+
+  if (earPlay) {
+    earPlay.addEventListener('click', function () {
+      if (stage === 'done') {
+        stage = 'idle';
+        earOpts.hidden = true;
+        earPrompt.textContent = 'Нажмите и послушайте. Один раз, на полной скорости.';
+        earSpeed.innerHTML = '&nbsp;';
+        return;
+      }
+      if (stage === 'idle') {
+        stage = 'asked';
+        earSpeed.textContent = canSpeak ? 'скорость 1.0×' : 'звук недоступен — вот расшифровка';
+        earPrompt.textContent = canSpeak
+          ? 'Что вы услышали?'
+          : 'Ваш браузер не умеет говорить. На живой странице здесь играет запись.';
+        say(1, function () { endSpeak(); });
+        showOptions();
+      } else {
+        say(1, endSpeak);
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     2 — ОСЦИЛЛОГРАММА
+     Canvas rather than 300 hand-authored SVG rects. The bar heights are
+     generated from a fixed seed so the waveform is identical on every
+     load — a shape that reshuffles each refresh reads as noise, not as
+     a recording of something.
+     ═══════════════════════════════════════════════════════════════════ */
+  var cv = document.getElementById('wave-canvas');
+  if (cv) {
+    var ctx = cv.getContext('2d');
+    var BARS = 150;
+    var SEGMENTS = [
+      { from: 0,   to: 30,  label: 'Leo lives in a small flat.' },
+      { from: 30,  to: 62,  label: 'He works at a bookshop.' },
+      { from: 62,  to: 95,  label: 'Every morning he feeds Ginger.' },
+      { from: 95,  to: 122, label: 'Then he walks to the corner.' },
+      { from: 122, to: 150, label: 'He is never late. Almost never.' }
+    ];
+
+    // Deterministic pseudo-noise: same waveform every visit.
+    var amps = [];
+    var seed = 20260821;
+    for (var i = 0; i < BARS; i++) {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      var base = 0.28 + (seed / 0x7fffffff) * 0.72;
+      // Dip the amplitude at each segment edge so the sentence breaks are
+      // legible as breaths rather than being marked only by colour.
+      var edge = SEGMENTS.some(function (s) { return Math.abs(i - s.from) < 3; });
+      amps.push(edge ? base * 0.22 : base);
+    }
+
+    var head = 0;
+    var loopSeg = null;
+    var strip = document.getElementById('wave-strip');
+    var timeEl = document.getElementById('wave-time');
+
+    SEGMENTS.forEach(function (s, idx) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'wave__seg';
+      b.textContent = s.label;
+      b.addEventListener('click', function () {
+        loopSeg = loopSeg === idx ? null : idx;
+        if (loopSeg !== null) head = SEGMENTS[idx].from;
+        Array.prototype.forEach.call(strip.children, function (c, ci) {
+          c.classList.toggle('is-on', ci === loopSeg);
+        });
+      });
+      strip.appendChild(b);
+    });
+
+    function segAt(i) {
+      for (var s = 0; s < SEGMENTS.length; s++) {
+        if (i >= SEGMENTS[s].from && i < SEGMENTS[s].to) return s;
+      }
+      return 0;
+    }
+
+    function draw() {
+      var w = cv.width, h = cv.height;
+      ctx.clearRect(0, 0, w, h);
+      var bw = w / BARS;
+      var active = segAt(Math.floor(head));
+
+      for (var i = 0; i < BARS; i++) {
+        var inSeg = segAt(i) === active;
+        var lift = Math.abs(i - head) < 8 ? 1.14 : 1;
+        var a = amps[i] * lift;
+        var bh = a * h * 0.82;
+        ctx.fillStyle = inSeg ? '#12203a' : '#c6d3df';
+        var x = i * bw;
+        ctx.fillRect(x + bw * 0.18, (h - bh) / 2, bw * 0.64, bh);
+      }
+
+      var hx = (head / BARS) * w;
+      ctx.fillStyle = '#e2483c';
+      ctx.fillRect(hx - 1.5, 0, 3, h);
+      ctx.beginPath();
+      ctx.arc(hx, 10, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      var secs = Math.floor((head / BARS) * 48);
+      timeEl.textContent = '00:' + (secs < 10 ? '0' : '') + secs + ' / 00:48';
+    }
+
+    function tick() {
+      head += 0.35;
+      if (loopSeg !== null) {
+        if (head >= SEGMENTS[loopSeg].to) head = SEGMENTS[loopSeg].from;
+      } else if (head >= BARS) {
+        head = 0;
+      }
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    cv.addEventListener('click', function (e) {
+      var r = cv.getBoundingClientRect();
+      head = ((e.clientX - r.left) / r.width) * BARS;
+      loopSeg = null;
+      Array.prototype.forEach.call(strip.children, function (c) { c.classList.remove('is-on'); });
+    });
+
+    draw();
+    if (!reduce) requestAnimationFrame(tick);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     3 — ТРЕУГОЛЬНЫЙ ПАКЕТ
+     The milk level and its whiteness both track fat content: 1% is thin
+     and bluish, 6% is high and cream. One control, two encodings.
+     ═══════════════════════════════════════════════════════════════════ */
+  var FATS = [
+    { fat: '1%',   y: 150, milk: '#f3f8fb', title: 'Базовый',
+      desc: 'Present Simple, будни, один голос в разговорном темпе. Обезжиренное — чтобы привыкнуть глотать.' },
+    { fat: '2,5%', y: 108, milk: '#fdfdf7', title: 'Средний',
+      desc: 'Длиннее сюжеты, прошедшее и будущее в одной фразе, первые фразовые глаголы.' },
+    { fat: '6%',   y: 62,  milk: '#fff8e2', title: 'Продвинутый',
+      desc: 'Полный темп, проглоченные сокращения, придаточные в три слоя. Тут уже надо жевать.' }
+  ];
+  var fatsBox = document.getElementById('pack-fats');
+  if (fatsBox) {
+    var milkRect = document.getElementById('pack-milk');
+    var fatText = document.getElementById('pack-fat-text');
+    var packTitle = document.getElementById('pack-title');
+    var packDesc = document.getElementById('pack-desc');
+    milkRect.style.transition = reduce ? 'none' : 'y 0.6s cubic-bezier(.16,1,.3,1), fill 0.6s ease';
+
+    FATS.forEach(function (f, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pack__fat' + (i === 0 ? ' is-on' : '');
+      b.textContent = f.fat;
+      b.addEventListener('click', function () {
+        Array.prototype.forEach.call(fatsBox.children, function (c) { c.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        milkRect.setAttribute('y', f.y);
+        milkRect.setAttribute('fill', f.milk);
+        fatText.textContent = f.fat;
+        packTitle.textContent = f.title;
+        packDesc.textContent = f.desc;
+      });
+      fatsBox.appendChild(b);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     4 — ТВОЯ ШКОЛА
+     Isometric pieces built from one helper so the projection stays
+     consistent; each stage appends its own pieces and pops them in.
+     ═══════════════════════════════════════════════════════════════════ */
+  var svg = document.getElementById('school-svg');
+  if (svg) {
+    var NS = 'http://www.w3.org/2000/svg';
+    var OX = 230, OY = 150, TW = 30, TH = 15;
+
+    function iso(x, y) { return [OX + (x - y) * TW, OY + (x + y) * TH]; }
+
+    function el(name, attrs) {
+      var n = document.createElementNS(NS, name);
+      for (var k in attrs) n.setAttribute(k, attrs[k]);
+      return n;
+    }
+
+    function tile(x, y, fill) {
+      var a = iso(x, y), b = iso(x + 1, y), c = iso(x + 1, y + 1), d = iso(x, y + 1);
+      return el('polygon', {
+        points: [a, b, c, d].map(function (p) { return p.join(','); }).join(' '),
+        fill: fill, stroke: 'rgba(36,64,92,.18)', 'stroke-width': 1, class: 'piece'
+      });
+    }
+
+    // A box is three faces: top, left, right — shaded from one light source.
+    function box(x, y, h, fill, dark, light) {
+      var g = el('g', { class: 'piece' });
+      var t0 = iso(x, y), t1 = iso(x + 1, y), t2 = iso(x + 1, y + 1), t3 = iso(x, y + 1);
+      var top = [[t0[0], t0[1] - h], [t1[0], t1[1] - h], [t2[0], t2[1] - h], [t3[0], t3[1] - h]];
+      g.appendChild(el('polygon', { points: top.map(function (p) { return p.join(','); }).join(' '), fill: light }));
+      g.appendChild(el('polygon', {
+        points: [top[3], top[2], t2, t3].map(function (p) { return p.join(','); }).join(' '), fill: fill
+      }));
+      g.appendChild(el('polygon', {
+        points: [top[0], top[3], t3, [t0[0], t0[1]]].map(function (p) { return p.join(','); }).join(' '), fill: dark
+      }));
+      return g;
+    }
+
+    var STAGES = [
+      { name: 'Одна комната', blurb: 'Доска, четыре парты и все, кто пришёл.', cost: 40,
+        build: function () { var out = [];
+          for (var x = -1; x <= 0; x++) for (var y = -1; y <= 0; y++) out.push(tile(x, y, '#a8d99b'));
+          out.push(box(-1, -1, 34, '#b5793c', '#9c6531', '#c98a4b'));
+          return out; } },
+      { name: 'Полный класс', blurb: 'Стены раздвигаются. Девять парт и полка, которую стоит читать.', cost: 60,
+        build: function () { var out = [];
+          for (var x = -2; x <= 1; x++) for (var y = -2; y <= 1; y++)
+            if (x < -1 || x > 0 || y < -1 || y > 0) out.push(tile(x, y, '#9ed392'));
+          out.push(box(0, -1, 46, '#b5793c', '#9c6531', '#c98a4b'));
+          out.push(box(-1, 0, 28, '#cc5147', '#b5443b', '#e2574c'));
+          return out; } },
+      { name: 'Читальный угол', blurb: 'Библиотечное крыло, ковёр и двое, которые оттуда не уходят.', cost: 90,
+        build: function () { var out = [];
+          out.push(tile(-2, 1, '#8fc984')); out.push(tile(1, -2, '#8fc984'));
+          out.push(box(1, -2, 40, '#a86ec4', '#8f5aa8', '#bd83d8'));
+          out.push(box(-2, 1, 34, '#b5793c', '#9c6531', '#c98a4b'));
+          return out; } },
+      { name: 'Лаборатория слуха', blurb: 'Коридор с шагами в нём и кабинки в конце.', cost: 130,
+        build: function () { var out = [];
+          for (var y = -2; y <= 1; y++) out.push(tile(2, y, '#9ed392'));
+          out.push(box(2, -2, 52, '#3f6f9e', '#345e87', '#4f86bb'));
+          out.push(box(2, 1, 30, '#3f6f9e', '#345e87', '#4f86bb'));
+          return out; } },
+      { name: 'Двор', blurb: 'Открытый воздух, одно дерево и место, где можно побыть между уроками.', cost: 170,
+        build: function () { var out = [];
+          for (var x = -2; x <= 2; x++) out.push(tile(x, 2, '#7cc46f'));
+          out.push(box(0, 2, 18, '#8a6a4a', '#75593e', '#a0805c'));
+          out.push(box(0, 2, 46, '#4c9c46', '#3f8339', '#63b85c'));
+          return out; } },
+      { name: 'Актовый зал', blurb: 'Сцена, баннер и полка, на которую есть что поставить.', cost: 220,
+        build: function () { var out = [];
+          for (var y = -2; y <= 2; y++) out.push(tile(-3, y, '#9ed392'));
+          out.push(box(-3, -1, 64, '#cc5147', '#b5443b', '#e2574c'));
+          out.push(box(-3, 1, 40, '#e0b23c', '#c69b30', '#f5c042'));
+          return out; } }
+    ];
+
+    var stageIdx = 0;
+    var coins = 40;
+    var coinsEl = document.getElementById('school-coins');
+    var stageEl = document.getElementById('school-stage');
+    var blurbEl = document.getElementById('school-blurb');
+    var buildBtn = document.getElementById('school-build');
+
+    function popIn(nodes) {
+      nodes.forEach(function (n, i) {
+        svg.appendChild(n);
+        if (reduce) { n.classList.add('is-in'); n.style.opacity = 1; return; }
+        setTimeout(function () { n.classList.add('is-in'); }, i * 55);
+      });
+    }
+
+    function renderBar() {
+      coinsEl.textContent = coins;
+      stageEl.textContent = 'Этап ' + stageIdx + ' из 6';
+      if (stageIdx >= STAGES.length) {
+        buildBtn.textContent = 'Школа построена';
+        buildBtn.disabled = true;
+        return;
+      }
+      var next = STAGES[stageIdx];
+      buildBtn.textContent = 'Построить — ' + next.cost;
+      buildBtn.disabled = false;
+    }
+
+    function buildNext() {
+      if (stageIdx >= STAGES.length) return;
+      var s = STAGES[stageIdx];
+      // Listening pays for the next wing; the demo tops the wallet up so the
+      // pitch never dead-ends on "not enough coins".
+      coins = Math.max(0, coins - s.cost) + (STAGES[stageIdx + 1] ? STAGES[stageIdx + 1].cost : 0);
+      popIn(s.build());
+      blurbEl.innerHTML = '<b>' + s.name + '</b>' + s.blurb;
+      stageIdx++;
+      renderBar();
+    }
+
+    buildBtn.addEventListener('click', buildNext);
+
+    // Ground plate, then stage one already standing — an empty lot would
+    // make the first click feel like starting from nothing.
+    var base = [];
+    for (var gx = -3; gx <= 2; gx++) for (var gy = -2; gy <= 2; gy++) base.push(tile(gx, gy, '#cfe8c6'));
+    base.forEach(function (n) { svg.appendChild(n); n.classList.add('is-in'); n.style.opacity = 1; });
+    buildNext();
+  }
+})();
+</script>

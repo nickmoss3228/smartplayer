@@ -31,11 +31,8 @@ import {
   getSchool,
   getPlayerSchool,
   getSchoolCatalog,
-  unlockRoom,
-  buyItem,
-  placeItem,
-  buyAction,
-  focusRoom,
+  upgradeSchool,
+  setSchoolLook,
 } from "../controllers/school.controller.js";
 
 const router = Router();
@@ -68,11 +65,8 @@ router.patch("/progress/room/placement",             authenticateToken, updateRo
 router.get("/progress/school",                     authenticateToken, getSchool);
 router.get("/progress/school/catalog",             authenticateToken, getSchoolCatalog);
 router.get("/progress/school/:userId",             authenticateToken, getPlayerSchool);
-router.post("/progress/school/unlock-room",        authenticateToken, unlockRoom);
-router.post("/progress/school/buy-item",           authenticateToken, buyItem);
-router.post("/progress/school/place-item",         authenticateToken, placeItem);
-router.post("/progress/school/buy-action",         authenticateToken, buyAction);
-router.patch("/progress/school/focus",             authenticateToken, focusRoom);
+router.post("/progress/school/upgrade",            authenticateToken, upgradeSchool);
+router.patch("/progress/school/look",              authenticateToken, setSchoolLook);
 
 router.get("/progress/character",                  authenticateToken, getCharacter);
 router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);

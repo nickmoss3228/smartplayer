@@ -20,11 +20,28 @@ export interface DifficultyOverview {
 
 export type OverviewData = Record<Difficulty, DifficultyOverview>;
 
+/**
+ * One graded story part, as stored in Progress.levelResults on the backend and
+ * returned verbatim by GET /api/progress/:difficulty. Keyed "storyId:partNumber".
+ * completedAt arrives as an ISO string over the wire (it is a Date in Mongo).
+ */
+export interface LevelResult {
+  completed: boolean;
+  correctAnswers: number;
+  totalQuestions: number;
+  completedAt?: string;
+}
+
 export interface DetailedProgressMap {
   [difficulty: string]: {
     totalLevels: number;
     completedLevels: number[];
     currentLevel: number;
+    /**
+     * Optional because documents written before grading was added have no
+     * results map; the endpoint has always sent the field when it exists.
+     */
+    levelResults?: Record<string, LevelResult>;
   };
 }
 

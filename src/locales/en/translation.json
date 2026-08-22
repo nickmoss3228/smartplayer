@@ -97,7 +97,8 @@
         "should be",
         "will stick",
         "will sail",
-        "was meant"
+        "was meant",
+        "is said"
       ]
     },
     "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
@@ -369,10 +370,52 @@
     "wallet": {
       "title": "Wallet"
     },
+    "charts": {
+      "sectionTitle": "Your progress",
+      "empty": "Finish a story part to start seeing your progress here.",
+      "showTable": "Show data table",
+      "week": "Week of",
+      "correct": "Correct",
+      "questions": "Questions",
+      "parts": "Parts",
+      "total": "Total",
+      "noData": "No activity",
+      "partsCount_one": "{{count}} part",
+      "partsCount_other": "{{count}} parts",
+      "accuracy": {
+        "title": "Quiz accuracy",
+        "subtitle": "Share of quiz questions answered correctly, by week",
+        "legend": "Accuracy",
+        "scrub": "Weekly quiz accuracy. Use the arrow keys to move between weeks."
+      },
+      "activity": {
+        "title": "Parts completed",
+        "subtitle": "Story parts finished each week, by difficulty"
+      }
+    },
     "achievements": {
       "title": "Achievements",
-      "maxAchieved": "Maximum achieved!",
+      "maxAchieved": "All tiers earned",
       "next": "Next: {{label}}",
+      "notStarted": "Not started",
+      "close": "Close",
+      "toGo": "to go until {{tier}}",
+      "allTiers": "All tiers · {{earned}} of {{total}} earned",
+      "cardSummary": "{{category}} — {{tier}}. {{value}}. {{earned}} of {{total}} tiers earned. Open for details.",
+      "tierCount": "{{earned}} of {{total}} tiers",
+      "tallyEarned": "{{earned}} of {{total}} earned",
+      "tiers": {
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold",
+        "platinum": "Platinum",
+        "crown": "Crown"
+      },
+      "rungState": {
+        "earned": "Earned",
+        "current": "In progress",
+        "locked": "Locked"
+      },
       "categories": {
         "listeningTime": {
           "title": "Listening Time",
@@ -1245,30 +1288,78 @@
   },
   "school": {
     "title": "Your Dream School",
-    "roomsOpen": "{{count}} of {{total}} rooms open",
     "loadFailed": "Could not load your school.",
-    "hint": "Tap a room to open it, then furnish it from the shop.",
-    "focusedHint": "Furniture and actions below apply to the {{room}}.",
-    "lockedShort": "Locked",
+    "stageOf": "Stage {{current}} of {{total}}",
+    "build": "Build the {{name}}",
+    "complete": "Your school is complete",
+    "notEnough": "Not enough coins yet",
+    "unlocked": "New wing unlocked",
     "currency": {
       "bitAward": "BitAward",
       "bitWord": "BitWord",
       "bitPhrase": "BitPhrase"
     },
-    "shop": {
-      "rooms": "Rooms",
-      "furniture": "Furniture",
-      "actions": "Actions",
-      "owned": "Owned",
-      "inUse": "In use",
-      "use": "Use",
-      "locked": "Locked",
-      "unlock": "Unlock",
-      "buy": "Buy",
-      "cantAfford": "Not yet",
-      "pickRoom": "Open a room first, then come back to furnish it.",
-      "open": "Open shop",
-      "close": "Close"
+    "look": {
+      "title": "Change the look",
+      "open": "Change the look",
+      "close": "Close",
+      "wallpaper": "Walls",
+      "floor": "Floor",
+      "layout": "Desks",
+      "lockedUntil": "Unlocks at stage {{stage}}",
+      "hint": "Free to change, as often as you like. More options open up with every stage."
+    },
+    "layouts": {
+      "rows": "Rows",
+      "u-shape": "U-shape",
+      "clusters": "Clusters",
+      "circle": "Circle"
+    },
+    "stages": {
+      "one-room": {
+        "name": "One Room",
+        "blurb": "A board, four desks, and everyone who showed up."
+      },
+      "full-class": {
+        "name": "Full Class",
+        "blurb": "The walls move out. Nine desks, and a shelf worth reading."
+      },
+      "reading-corner": {
+        "name": "Reading Corner",
+        "blurb": "A library wing, a rug, and two people who never leave it."
+      },
+      "listening-lab": {
+        "name": "Listening Lab",
+        "blurb": "A corridor with footsteps in it, and booths at the end of it."
+      },
+      "courtyard": {
+        "name": "Courtyard",
+        "blurb": "Open air, one tree, and somewhere to be between lessons."
+      },
+      "assembly-hall": {
+        "name": "Assembly Hall",
+        "blurb": "A stage, a banner, and a shelf with something to put on it."
+      },
+      "front-desk": {
+        "name": "Front Desk",
+        "blurb": "A way in, and someone at reception to meet whoever uses it."
+      },
+      "second-classroom": {
+        "name": "Second Classroom",
+        "blurb": "A second English room — flags, a globe, and the whole alphabet."
+      },
+      "cafeteria": {
+        "name": "Cafeteria",
+        "blurb": "Trays, long tables, and the loudest room on the campus."
+      },
+      "gymnasium": {
+        "name": "Gymnasium",
+        "blurb": "Wall bars, a scoreboard, and room to make some noise."
+      }
+    },
+    "view": {
+      "outside": "See the building from outside",
+      "inside": "See inside the school"
     }
   }
 }

@@ -1,0 +1,1730 @@
+<title>малако — тренировка английского на слух</title>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════════
+     TOKENS
+     Light = a sheet of exercise paper. Milk is blue-white, not cream —
+     the ground leans cold on purpose. Dark = the same sheet at night:
+     ink and paper trade places, but the red pen stays a pen.
+     ═══════════════════════════════════════════════════════════════════ */
+  :root {
+    --paper:      #fbfcfd;
+    --paper-sunk: #f2f6f9;
+    --ink:        #101822;
+    --slate:      #55677a;
+    --skim:       #c3d2de;
+    --rule:       #e2ebf1;
+    --pen:        #c62b2b;
+    --pen-wash:   rgba(198, 43, 43, 0.10);
+    --pen-on:     #ffffff;
+    --milk:       #ffffff;
+
+    /* Semantic — the app's own level accents. Meaning, not decoration. */
+    --fat-1:  #22c55e;
+    --fat-25: #f97316;
+    --fat-6:  #a855f7;
+
+    --font-display: "Segoe UI Variable Display", "Segoe UI", -apple-system,
+                    BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    --font-body:    "Segoe UI", -apple-system, BlinkMacSystemFont,
+                    "Helvetica Neue", Arial, sans-serif;
+    --font-teacher: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --font-mono:    "Cascadia Mono", Consolas, "SF Mono", ui-monospace,
+                    "Liberation Mono", monospace;
+
+    --measure: 63ch;
+    --gutter:  clamp(1.25rem, 5vw, 4.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #0e141b;
+      --paper-sunk: #141c25;
+      --ink:        #e9eff4;
+      --slate:      #93a6b7;
+      --skim:       #33465a;
+      --rule:       #1e2935;
+      --pen:        #ff6b6b;
+      --pen-wash:   rgba(255, 107, 107, 0.12);
+      --pen-on:     #0e141b;
+      --milk:       #eef4f8;
+      --fat-1:  #4ade80;
+      --fat-25: #fb923c;
+      --fat-6:  #c084fc;
+    }
+  }
+
+  /* The viewer's own toggle wins over the OS preference, both directions. */
+  :root[data-theme="dark"] {
+    --paper:      #0e141b;
+    --paper-sunk: #141c25;
+    --ink:        #e9eff4;
+    --slate:      #93a6b7;
+    --skim:       #33465a;
+    --rule:       #1e2935;
+    --pen:        #ff6b6b;
+    --pen-wash:   rgba(255, 107, 107, 0.12);
+    --pen-on:     #0e141b;
+    --milk:       #eef4f8;
+    --fat-1:  #4ade80;
+    --fat-25: #fb923c;
+    --fat-6:  #c084fc;
+  }
+  :root[data-theme="light"] {
+    --paper:      #fbfcfd;
+    --paper-sunk: #f2f6f9;
+    --ink:        #101822;
+    --slate:      #55677a;
+    --skim:       #c3d2de;
+    --rule:       #e2ebf1;
+    --pen:        #c62b2b;
+    --pen-wash:   rgba(198, 43, 43, 0.10);
+    --pen-on:     #ffffff;
+    --milk:       #ffffff;
+    --fat-1:  #22c55e;
+    --fat-25: #f97316;
+    --fat-6:  #a855f7;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     BASE
+     ═══════════════════════════════════════════════════════════════════ */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+  }
+
+  p { margin: 0; }
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--pen);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* The exercise-book margin: one red rule down the left of the whole
+     sheet, with every section's eyebrow hanging in the space beside it. */
+  .sheet {
+    position: relative;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  .sheet::before {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--gutter) - clamp(0.5rem, 2vw, 1.75rem));
+    width: 1px;
+    background: var(--pen);
+    opacity: 0.28;
+  }
+  @media (max-width: 640px) { .sheet::before { display: none; } }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pen);
+    margin: 0;
+  }
+
+  .lede {
+    max-width: var(--measure);
+    color: var(--slate);
+    font-size: 1.125rem;
+    line-height: 1.6;
+  }
+
+  /* The teacher's voice — used only for asides and takeaways, never for
+     running text. Two voices on the page: the system, and the teacher. */
+  .teacher {
+    font-family: var(--font-teacher);
+    font-style: italic;
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  section { padding-block: clamp(4.5rem, 9vw, 8rem); }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    max-width: var(--measure);
+    margin-bottom: clamp(2.5rem, 5vw, 4rem);
+  }
+  .section-head h2 {
+    font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.75rem);
+    font-weight: 800;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     HERO — the wordmark transformation is the page's whole argument
+     ═══════════════════════════════════════════════════════════════════ */
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: clamp(4.5rem, 11vh, 7rem) clamp(3rem, 7vh, 5rem);
+    position: relative;
+    isolation: isolate;
+  }
+
+  .brandbar {
+    position: absolute;
+    top: clamp(1.25rem, 3vh, 2.25rem);
+    left: var(--gutter);
+    right: var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .brandbar__mark {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--ink);
+    flex: none;
+  }
+  /* The milk drop. Filled with milk in BOTH themes, never with the page
+     ground — the app's BrandMark logic is that milk reads as white, so a
+     drop that turns black at night is the one thing the mark cannot do.
+     On paper only its edge shows; on the dark ground it reads as a solid
+     drop, which is what milk on a dark surface actually looks like. */
+  .drop { width: 18px; height: 18px; flex: none; }
+  .drop path { fill: var(--milk); stroke: currentColor; stroke-width: 1.4; }
+
+  /* The tagline is the first thing to go when the bar gets tight — the
+     mark and the two controls all have jobs, it doesn't. */
+  .brandbar__tag { display: none; }
+  @media (min-width: 56rem) { .brandbar__tag { display: inline; } }
+
+  .brandbar__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: none;
+  }
+
+  /* Both switches share one shell. Named in words rather than icons: the
+     page already calls its themes paper and night, and a word survives at
+     10px where a sun-and-moon glyph turns to mush. */
+  .switch {
+    display: inline-flex;
+    flex: none;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .switch button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--slate);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.32rem 0.6rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.18s ease, background 0.18s ease;
+  }
+  .switch button:hover { color: var(--ink); }
+  .switch button[aria-pressed="true"] {
+    background: var(--pen);
+    color: var(--pen-on);
+  }
+
+  .hero__inner {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.75rem, 4vw, 2.75rem);
+    max-width: 62rem;
+  }
+
+  /* The wordmark. Letters are individually addressable because two of
+     them get overwritten on load. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(3.4rem, 1.2rem + 12vw, 10rem);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .wordmark__ch {
+    display: inline-block;
+    position: relative;
+    transition: color 0.5s ease;
+  }
+  /* The two vowels the ear overrules. They arrive in pen. */
+  .wordmark__ch--swapped { color: var(--pen); }
+  .wordmark__slot {
+    display: inline-grid;
+    grid-template-areas: "a";
+  }
+  .wordmark__slot > span {
+    grid-area: a;
+    transition: opacity 0.42s ease, transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .wordmark__slot .out { opacity: 1; transform: none; }
+  .wordmark__slot .in  { opacity: 0; transform: translateY(0.34em); }
+  .wordmark.is-heard .wordmark__slot .out { opacity: 0; transform: translateY(-0.34em); }
+  .wordmark.is-heard .wordmark__slot .in  { opacity: 1; transform: none; }
+
+  /* The strike is the pen's verdict on the spelling — it draws itself
+     across the word, then the page spends the rest of its length
+     explaining why the pen is wrong. */
+  .wordmark__strike {
+    position: absolute;
+    left: -0.02em;
+    right: -0.02em;
+    top: 52%;
+    height: max(2px, 0.035em);
+    background: var(--pen);
+    transform: scaleX(0);
+    transform-origin: left center;
+    border-radius: 2px;
+  }
+  .wordmark.is-marked .wordmark__strike {
+    animation: strike 0.5s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+  @keyframes strike { to { transform: scaleX(1); } }
+
+  .wordline {
+    position: relative;
+    display: inline-flex;
+    align-self: flex-start;
+  }
+
+
+  /* The slogan, with its last word rotating — carried over from the app,
+     where the joke only lands if the swapped word arrives as a surprise.
+     Prefix never moves, so the eye stays parked on the slot. */
+  .slogan {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 0.9rem + 1.5vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 0.34em;
+  }
+  .slogan__slot { display: inline-grid; }
+  .slogan__slot > span {
+    grid-area: 1 / 1;
+    white-space: nowrap;
+    font-weight: 800;
+  }
+
+  .hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem 1.25rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.82rem 1.5rem;
+    border-radius: 2px;
+    border: 1px solid var(--pen);
+    background: var(--pen);
+    color: var(--pen-on);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px var(--pen-wash); }
+  .btn--ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--skim);
+  }
+  .btn--ghost:hover { border-color: var(--ink); box-shadow: none; }
+
+  .cta-note {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--slate);
+    letter-spacing: 0.03em;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: flex-start;
+    padding: 0.32rem 0.7rem;
+    border: 1px solid var(--skim);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .badge::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--pen);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE LOOP — three steps that return to the top, so it's drawn as a
+     cycle rather than a list. The numbering is legitimate here: the
+     order is the mechanic.
+     ═══════════════════════════════════════════════════════════════════ */
+  .loop {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border-block: 1px solid var(--rule);
+  }
+  .loop__step {
+    background: var(--paper);
+    padding: clamp(1.5rem, 3vw, 2.25rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+  .loop__n {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--pen);
+  }
+  .loop__step h3 { font-size: 1.25rem; font-weight: 700; }
+  .loop__step p { color: var(--slate); font-size: 0.9375rem; }
+  .loop__return {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .loop__return::before {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE FAT LADDER — difficulty as milk fat percentage, which is the
+     app's own device. Three bands, each carrying its real level accent.
+     ═══════════════════════════════════════════════════════════════════ */
+  .ladder {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--rule);
+  }
+  .band {
+    --accent: var(--slate);
+    display: grid;
+    grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+    gap: clamp(1rem, 3vw, 2.5rem);
+    align-items: start;
+    padding-block: clamp(1.75rem, 3.5vw, 2.6rem);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+  .band::before {
+    content: "";
+    position: absolute;
+    left: 0; top: -1px;
+    width: clamp(2.5rem, 8vw, 5rem);
+    height: 2px;
+    background: var(--accent);
+  }
+  @media (max-width: 780px) {
+    .band { grid-template-columns: 1fr; gap: 0.85rem; }
+  }
+
+  .band__fat {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .band__fat small {
+    display: block;
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-top: 0.5rem;
+    font-weight: 500;
+  }
+  .band__body { display: flex; flex-direction: column; gap: 0.5rem; }
+  .band__body h3 { font-size: 1.375rem; font-weight: 700; }
+  .band__body p { color: var(--slate); font-size: 0.9375rem; max-width: 44ch; }
+
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE SPECIMEN — one phrase runs through every question below, the way
+     a lab keeps one sample on the slide.
+     ═══════════════════════════════════════════════════════════════════ */
+  .specimen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    background: var(--paper-sunk);
+    border-left: 2px solid var(--pen);
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+    max-width: 52rem;
+  }
+  .specimen__label {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pen);
+  }
+  .specimen__phrase {
+    font-family: var(--font-mono);
+    font-size: clamp(0.95rem, 0.85rem + 0.5vw, 1.25rem);
+    font-weight: 600;
+  }
+  .specimen__arrow { color: var(--slate); }
+  .specimen__heard {
+    font-family: var(--font-mono);
+    font-size: clamp(0.95rem, 0.85rem + 0.5vw, 1.25rem);
+    font-weight: 600;
+    color: var(--pen);
+  }
+  .specimen__note { color: var(--slate); font-size: 0.875rem; flex-basis: 100%; }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE QUESTIONS — the app floats these as clouds you click. Here they
+     are the questions a sceptical student writes in the margin, each one
+     answered in place with a working demonstration rather than a claim.
+     ═══════════════════════════════════════════════════════════════════ */
+  /* ════════════════════════════════════════════════════════════════════
+     THE QUESTIONS — a worked answer sheet.
+     All six objections stay listed, because "there are six of these and
+     you have skipped every one" is the section's argument. An accordion
+     hid five to show one, and shoved the page under the cursor on every
+     open. The rail is the question paper, the panel is the worked answer,
+     and the pen ticks whichever one is being answered.
+     ════════════════════════════════════════════════════════════════════ */
+  .worksheet {
+    display: grid;
+    grid-template-columns: minmax(0, 19rem) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    align-items: start;
+    border-top: 1px solid var(--rule);
+    padding-top: clamp(1.25rem, 3vw, 2rem);
+  }
+  @media (max-width: 900px) {
+    .worksheet { grid-template-columns: 1fr; }
+  }
+
+  .qlist { display: flex; flex-direction: column; }
+  @media (min-width: 901px) {
+    .qlist { position: sticky; top: 2rem; }
+  }
+
+  .qlist__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.8rem 0;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--slate);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 550;
+    line-height: 1.35;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.18s ease;
+  }
+  .qlist__item:hover { color: var(--ink); }
+  .qlist__item[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+
+  .qlist__tick {
+    flex: none;
+    width: 17px; height: 17px;
+    margin-top: 0.16rem;
+    color: var(--pen);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+  .qlist__tick path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+  }
+  .qlist__item[aria-selected="true"] .qlist__tick { opacity: 1; transform: scale(1); }
+  .qlist__item[aria-selected="true"] .qlist__tick path {
+    animation: tick 0.45s 0.05s ease forwards;
+  }
+  @keyframes tick { to { stroke-dashoffset: 0; } }
+
+  /* A floor under the panel so moving from a short answer to a long one
+     doesn't drag the rail up and down beside it. */
+  .answers { min-height: 25rem; }
+
+  .answer { display: none; flex-direction: column; gap: 1rem; }
+  .answer.is-active { display: flex; }
+  .answer:focus-visible { outline-offset: 8px; }
+  .answer h3 {
+    font-size: clamp(1.3rem, 1.1rem + 1vw, 1.9rem);
+    font-weight: 750;
+  }
+
+  .q__takeaway { max-width: 48ch; }
+  .q__detail { font-size: 0.9375rem; color: var(--slate); max-width: var(--measure); }
+
+  .q__viz {
+    background: var(--paper-sunk);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    min-height: 12rem;
+    justify-content: center;
+    overflow-x: auto;
+  }
+  .viz-label {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+  .viz-note {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--slate);
+  }
+
+  .viz-btn {
+    align-self: flex-start;
+    padding: 0.42rem 0.85rem;
+    border: 1px solid var(--skim);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.16s ease, color 0.16s ease;
+  }
+  .viz-btn:hover { border-color: var(--pen); color: var(--pen); }
+
+  /* — repetition: the sentence fills in across three passes — */
+  .passes { display: flex; flex-direction: column; gap: 0.55rem; }
+  .pass {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+  }
+  .pass.is-on { opacity: 1; }
+  .pass__n {
+    color: var(--pen);
+    font-size: 0.75rem;
+    width: 2.2rem;
+    flex: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .pass__text { letter-spacing: 0.01em; }
+  .pass__gap { color: var(--skim); }
+
+  /* — speeds: word boundaries dissolve as the tempo climbs — */
+  .speedrow { display: flex; flex-direction: column; gap: 0.75rem; }
+  .speed {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+  }
+  .speed__tag {
+    width: 3rem;
+    flex: none;
+    font-size: 0.75rem;
+    color: var(--slate);
+    font-variant-numeric: tabular-nums;
+  }
+  .speed.is-on .speed__tag { color: var(--pen); }
+  .speed__word {
+    transition: letter-spacing 0.5s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s ease;
+    white-space: nowrap;
+  }
+
+  /* — subtitles: the work moves from the ears to the eyes — */
+  .workbars { display: flex; flex-direction: column; gap: 0.9rem; }
+  .workbar { display: flex; flex-direction: column; gap: 0.35rem; }
+  .workbar__head {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--slate);
+    font-variant-numeric: tabular-nums;
+  }
+  .workbar__track {
+    height: 8px;
+    background: var(--rule);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .workbar__fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .workbar__fill--eyes { background: var(--slate); }
+  .workbar__fill--ears { background: var(--pen); }
+
+  /* — ears-only: spelling fails, comprehension doesn't — */
+  .verdicts { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); }
+  .verdict {
+    background: var(--paper-sunk);
+    padding: 1rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  .verdict__mark { font-family: var(--font-mono); font-size: 1.5rem; line-height: 1; }
+  .verdict__mark--no { color: var(--pen); }
+  .verdict__mark--yes { color: var(--fat-1); }
+  .verdict__what { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 600; }
+  .verdict__label { font-size: 0.75rem; color: var(--slate); }
+
+  /* — vocab language: the detour through the written word — */
+  .routes { display: flex; flex-direction: column; gap: 1rem; }
+  .route { display: flex; flex-direction: column; gap: 0.4rem; }
+  .route__chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .route__node {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 2px;
+  }
+  .route__node svg { width: 14px; height: 14px; flex: none; }
+  .route__node--detour { border-color: var(--pen); color: var(--pen); }
+  .route__hop { color: var(--skim); }
+  .route__cost { font-size: 0.75rem; color: var(--slate); }
+
+  /* — visual memory: hunt the word in the panels — */
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .panel {
+    aspect-ratio: 4 / 3;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 2px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .panel:hover { border-color: var(--skim); }
+  .panel svg { width: 52%; height: 52%; color: var(--skim); transition: color 0.25s ease; }
+  .panel.is-found { border-color: var(--fat-1); background: color-mix(in srgb, var(--fat-1) 10%, var(--paper)); }
+  .panel.is-found svg { color: var(--fat-1); }
+  .panel.is-wrong { animation: shake 0.3s ease; }
+  @keyframes shake {
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+  .hunt-status { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--slate); }
+  .hunt-status.is-found { color: var(--fat-1); }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CLOSE
+     ═══════════════════════════════════════════════════════════════════ */
+  .close { text-align: left; }
+  .close h2 {
+    font-size: clamp(2rem, 1.2rem + 3.5vw, 3.75rem);
+    font-weight: 800;
+    max-width: 18ch;
+  }
+  .close__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.5rem;
+    margin-top: 2rem;
+  }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding-block: 2rem 3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<div class="sheet">
+
+  <!-- ══════════════════ HERO ══════════════════ -->
+  <header class="hero">
+    <div class="brandbar">
+      <span class="brandbar__mark">
+        <svg class="drop" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2C8.2 7.4 4.9 11.6 4.9 14.6a7.1 7.1 0 0 0 14.2 0C19.1 11.6 15.8 7.4 12 2Z"/>
+        </svg>
+        малако
+      </span>
+      <span class="brandbar__tag" data-i18n="brandTag">English listening training</span>
+      <div class="brandbar__controls">
+        <div class="switch" role="group" data-i18n-aria="langGroup" aria-label="Language">
+          <button type="button" data-set-lang="ru" aria-pressed="false">RU</button>
+          <button type="button" data-set-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <div class="switch" role="group" data-i18n-aria="themeGroup" aria-label="Colour theme">
+          <button type="button" data-set-theme="light" aria-pressed="false" data-i18n="themeLight">Paper</button>
+          <button type="button" data-set-theme="dark" aria-pressed="false" data-i18n="themeDark">Night</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__inner">
+      <p class="eyebrow" data-i18n="heroEyebrow">The name is the exercise</p>
+
+      <div class="wordline">
+        <h1 class="wordmark" id="wordmark" aria-label="малако">
+          <span class="wordmark__ch" aria-hidden="true">м</span>
+          <span class="wordmark__ch" aria-hidden="true"><span class="wordmark__slot"><span class="out">о</span><span class="in">а</span></span></span>
+          <span class="wordmark__ch" aria-hidden="true">л</span>
+          <span class="wordmark__ch" aria-hidden="true"><span class="wordmark__slot"><span class="out">о</span><span class="in">а</span></span></span>
+          <span class="wordmark__ch" aria-hidden="true">к</span>
+          <span class="wordmark__ch" aria-hidden="true">о</span>
+        </h1>
+        <span class="wordmark__strike" aria-hidden="true"></span>
+      </div>
+
+      <p class="slogan">
+        <span data-i18n="sloganPrefix">as you hear it, so it</span>
+        <span class="slogan__slot" id="slogan-slot"><span id="slogan-word">is right</span></span>
+      </p>
+
+      <p class="lede" data-i18n="heroLede">
+        Train your English by listening to real stories, split sentence by sentence.
+        Replay one line, slow it to half speed, drill it three times, then prove you
+        understood it &mdash; without ever being shown the words.
+      </p>
+
+      <div class="hero__cta">
+        <a class="btn" href="#start" data-i18n="ctaStart">Start for free</a>
+        <a class="btn btn--ghost" href="#questions" data-i18n="ctaWhy">Why no subtitles?</a>
+        <span class="cta-note" data-i18n="ctaNote">two stories &middot; no account &middot; no card</span>
+      </div>
+
+      <span class="badge" data-i18n="badge">Subtitles disabled by design</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════ THE LOOP ══════════════════ -->
+  <section aria-labelledby="loop-h">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="loopEyebrow">The loop a student moves through</p>
+      <h2 id="loop-h" data-i18n="loopTitle">Three moves, and then the same three again</h2>
+      <p class="lede" data-i18n="loopLede">
+        The order is the mechanic, not a list. You cannot skip to the next story
+        by reading ahead &mdash; the only way forward is through your ears.
+      </p>
+    </div>
+
+    <div class="loop">
+      <div class="loop__step">
+        <span class="loop__n" data-i18n="loop1n">FIRST</span>
+        <h3 data-i18n="loop1t">Listen</h3>
+        <p data-i18n="loop1d">One story, sentence by sentence. Replay or slow down as often as you need.</p>
+      </div>
+      <div class="loop__step">
+        <span class="loop__n" data-i18n="loop2n">THEN</span>
+        <h3 data-i18n="loop2t">Prove you understood</h3>
+        <p data-i18n="loop2d">A short comprehension quiz. Nothing to read &mdash; only what you heard. Seventy per cent to pass, graded on the server, never by your own browser.</p>
+      </div>
+      <div class="loop__step">
+        <span class="loop__n" data-i18n="loop3n">AND</span>
+        <h3 data-i18n="loop3t">Unlock the next</h3>
+        <p data-i18n="loop3d">Every story you earn is a little harder than the last.</p>
+      </div>
+    </div>
+    <p class="loop__return" data-i18n="loopReturn">back to first</p>
+  </section>
+
+  <!-- ══════════════════ THE FAT LADDER ══════════════════ -->
+  <section aria-labelledby="ladder-h">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="ladderEyebrow">Difficulty, measured the way milk is</p>
+      <h2 id="ladder-h" data-i18n="ladderTitle">Levels are graded by fat content</h2>
+      <p class="lede" data-i18n="ladderLede">
+        Three levels, and each one is thicker than the last. You start on skimmed
+        and work up to something you have to chew.
+      </p>
+    </div>
+
+    <div class="ladder">
+      <article class="band" style="--accent: var(--fat-1);">
+        <p class="band__fat"><span data-i18n="fat1">1%</span><small data-i18n="fatLabel">Milk fat</small></p>
+        <div class="band__body">
+          <h3 data-i18n="band1t">Easy &mdash; foundational</h3>
+          <p data-i18n="band1d">
+            Present simple, everyday routine, one speaker at a conversational pace.
+            Short enough to replay end to end while you are still holding the whole
+            thing in your head.
+          </p>
+        </div>
+      </article>
+
+      <article class="band" style="--accent: var(--fat-25);">
+        <p class="band__fat"><span data-i18n="fat25">2.5%</span><small data-i18n="fatLabel">Milk fat</small></p>
+        <div class="band__body">
+          <h3 data-i18n="band2t">Medium &mdash; intermediate</h3>
+          <p data-i18n="band2d">
+            Longer arcs, past and future tenses in the same breath, and the first
+            phrasal verbs that mean nothing like the words they are made of.
+          </p>
+        </div>
+      </article>
+
+      <article class="band" style="--accent: var(--fat-6);">
+        <p class="band__fat"><span data-i18n="fat6">6%</span><small data-i18n="fatLabel">Milk fat</small></p>
+        <div class="band__body">
+          <h3 data-i18n="band3t">Hard &mdash; advanced</h3>
+          <p data-i18n="band3d">
+            Full pace, contractions swallowed whole, clauses stacked three deep.
+            This is where drill mode stops being optional.
+          </p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ══════════════════ THE QUESTIONS ══════════════════ -->
+  <section id="questions" aria-labelledby="q-h">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="qEyebrow">The questions you&rsquo;re skipping</p>
+      <h2 id="q-h" data-i18n="qTitle">Six objections, answered in the margin</h2>
+      <p class="lede" data-i18n="qLede">
+        Every one of these is a fair thing to ask, and every one of them has an
+        answer you can watch happen rather than take on trust. Open any of them.
+      </p>
+    </div>
+
+    <!-- One specimen phrase carries the whole section, the way a lab keeps
+         one sample on the slide. It is also the English малако. -->
+    <div class="specimen">
+      <span class="specimen__label" data-i18n="specLabel">Specimen</span>
+      <span class="specimen__phrase">he would have gone</span>
+      <span class="specimen__arrow">&rarr;</span>
+      <span class="specimen__heard">hewudov gone</span>
+      <p class="specimen__note" data-i18n="specNote">
+        Said at full speed, that is genuinely what reaches you. The same collapse
+        that turns <em>молоко</em> into <em>малако</em> happens in English on every
+        unstressed syllable &mdash; and no amount of reading the sentence teaches
+        you to survive it.
+      </p>
+    </div>
+
+    <div class="worksheet">
+      <div class="qlist" role="tablist" aria-orientation="vertical"
+           data-i18n-aria="qListLabel" aria-label="Objections">
+        <button class="qlist__item" type="button" role="tab" id="tab-1"
+                aria-controls="ans-1" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q1ask">&nbsp;</span>
+        </button>
+        <button class="qlist__item" type="button" role="tab" id="tab-2"
+                aria-controls="ans-2" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q2ask">&nbsp;</span>
+        </button>
+        <button class="qlist__item" type="button" role="tab" id="tab-3"
+                aria-controls="ans-3" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q3ask">&nbsp;</span>
+        </button>
+        <button class="qlist__item" type="button" role="tab" id="tab-4"
+                aria-controls="ans-4" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q4ask">&nbsp;</span>
+        </button>
+        <button class="qlist__item" type="button" role="tab" id="tab-5"
+                aria-controls="ans-5" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q5ask">&nbsp;</span>
+        </button>
+        <button class="qlist__item" type="button" role="tab" id="tab-6"
+                aria-controls="ans-6" aria-selected="false" tabindex="-1">
+          <svg class="qlist__tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
+          <span data-i18n="q6ask">&nbsp;</span>
+        </button>
+      </div>
+
+      <div class="answers">
+        <div class="answer" id="ans-1" role="tabpanel" aria-labelledby="tab-1" tabindex="0">
+          <h3 data-i18n="q1title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q1take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q1detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label" data-i18n="q1viz">&nbsp;</span>
+            <div class="passes" id="passes">
+              <p class="pass" data-pass="1"><span class="pass__n">1&times;</span><span class="pass__text">he <span class="pass__gap">&#9601;&#9601;&#9601;&#9601;&#9601;</span> <span class="pass__gap">&#9601;&#9601;&#9601;&#9601;</span> gone</span></p>
+              <p class="pass" data-pass="2"><span class="pass__n">2&times;</span><span class="pass__text">he would <span class="pass__gap">&#9601;&#9601;&#9601;&#9601;</span> gone</span></p>
+              <p class="pass" data-pass="3"><span class="pass__n">3&times;</span><span class="pass__text">he would have gone</span></p>
+            </div>
+            <button class="viz-btn" type="button" data-replay="passes" data-i18n="replay">Replay</button>
+          </div>
+        </div>
+        <div class="answer" id="ans-2" role="tabpanel" aria-labelledby="tab-2" tabindex="0">
+          <h3 data-i18n="q2title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q2take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q2detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label" data-i18n="q2viz">&nbsp;</span>
+            <div class="speedrow" id="speeds">
+              <p class="speed" data-speed="0"><span class="speed__tag">0.5&times;</span><span class="speed__word" style="letter-spacing: 0.34em;">he would have gone</span></p>
+              <p class="speed" data-speed="1"><span class="speed__tag">0.8&times;</span><span class="speed__word" style="letter-spacing: 0.1em;">he would&rsquo;ve gone</span></p>
+              <p class="speed" data-speed="2"><span class="speed__tag">1.0&times;</span><span class="speed__word" style="letter-spacing: -0.045em;">hewudovgone</span></p>
+            </div>
+            <button class="viz-btn" type="button" data-replay="speeds" data-i18n="replay">Replay</button>
+          </div>
+        </div>
+        <div class="answer" id="ans-3" role="tabpanel" aria-labelledby="tab-3" tabindex="0">
+          <h3 data-i18n="q3title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q3take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q3detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label" data-i18n="q3viz">&nbsp;</span>
+            <div class="workbars">
+              <div class="workbar">
+                <div class="workbar__head"><span data-i18n="eyes">Eyes</span><span id="eyes-pct">8%</span></div>
+                <div class="workbar__track"><div class="workbar__fill workbar__fill--eyes" id="eyes-bar" style="width: 8%;"></div></div>
+              </div>
+              <div class="workbar">
+                <div class="workbar__head"><span data-i18n="ears">Ears</span><span id="ears-pct">92%</span></div>
+                <div class="workbar__track"><div class="workbar__fill workbar__fill--ears" id="ears-bar" style="width: 92%;"></div></div>
+              </div>
+            </div>
+            <button class="viz-btn" type="button" id="subs-toggle" aria-pressed="false">Turn subtitles on</button>
+          </div>
+        </div>
+        <div class="answer" id="ans-4" role="tabpanel" aria-labelledby="tab-4" tabindex="0">
+          <h3 data-i18n="q4title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q4take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q4detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label"><span data-i18n="heard">Heard</span>: <span style="font-family: var(--font-mono);">&ldquo;wudov&rdquo;</span></span>
+            <div class="verdicts">
+              <div class="verdict">
+                <span class="verdict__mark verdict__mark--no" aria-hidden="true">&times;</span>
+                <span class="verdict__what">w&#8202;u&#8202;d&#8202;o&#8202;v</span>
+                <span class="verdict__label" data-i18n="cantSpell">Can&rsquo;t spell it</span>
+              </div>
+              <div class="verdict">
+                <span class="verdict__mark verdict__mark--yes" aria-hidden="true">&#10003;</span>
+                <span class="verdict__what" data-i18n="didntGo">he didn&rsquo;t go</span>
+                <span class="verdict__label" data-i18n="understands">Understands it</span>
+              </div>
+            </div>
+            <p class="viz-note" data-i18n="q4note">One of these two is the skill being tested.</p>
+          </div>
+        </div>
+        <div class="answer" id="ans-5" role="tabpanel" aria-labelledby="tab-5" tabindex="0">
+          <h3 data-i18n="q5title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q5take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q5detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label" data-i18n="q5viz">&nbsp;</span>
+            <div class="routes">
+              <div class="route">
+                <div class="route__chain">
+                  <span class="route__node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg> chair</span>
+                  <span class="route__hop">&rarr;</span>
+                  <span class="route__node route__node--detour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> <span data-i18n="onScreen">&laquo;chair&raquo; on screen</span></span>
+                  <span class="route__hop">&rarr;</span>
+                  <span class="route__node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4v9h12V4"/><path d="M4 13h16v3H4z"/><path d="M7 16v4M17 16v4"/></svg> <span data-i18n="theThing">the thing</span></span>
+                </div>
+                <span class="route__cost" data-i18n="routeVia">Via the written word</span>
+              </div>
+              <div class="route">
+                <div class="route__chain">
+                  <span class="route__node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg> chair</span>
+                  <span class="route__hop">&rarr;</span>
+                  <span class="route__node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4v9h12V4"/><path d="M4 13h16v3H4z"/><path d="M7 16v4M17 16v4"/></svg> <span data-i18n="theThing">the thing</span></span>
+                </div>
+                <span class="route__cost" data-i18n="routeDirect">Direct</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="answer" id="ans-6" role="tabpanel" aria-labelledby="tab-6" tabindex="0">
+          <h3 data-i18n="q6title">&nbsp;</h3>
+          <p class="q__takeaway teacher" data-i18n="q6take">&nbsp;</p>
+          <p class="q__detail" data-i18n="q6detail">&nbsp;</p>
+          <div class="q__viz">
+            <span class="viz-label"><span data-i18n="heard">Heard</span>: <span style="font-family: var(--font-mono);">&ldquo;chair&rdquo;</span> &mdash; <span data-i18n="findIt">find it in the comic</span></span>
+            <div class="panels" id="panels">
+              <button class="panel" type="button" data-i18n-aria="panelCat" aria-label="Panel: a cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5 6 3l2.6 2.2h6.8L18 3l2 3.5v7A6.5 6.5 0 0 1 13.5 20h-3A6.5 6.5 0 0 1 4 13.5Z"/><path d="M9 11h.01M15 11h.01M12 14.5l-1.5 1M12 14.5l1.5 1"/></svg></button>
+              <button class="panel" type="button" data-i18n-aria="panelCup" aria-label="Panel: a cup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h13v7a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5Z"/><path d="M17 9h1.5a2.5 2.5 0 0 1 0 5H17"/></svg></button>
+              <button class="panel" type="button" data-answer="true" data-i18n-aria="panelChair" aria-label="Panel: a chair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4v9h12V4"/><path d="M4 13h16v3H4z"/><path d="M7 16v4M17 16v4"/></svg></button>
+              <button class="panel" type="button" data-i18n-aria="panelHouse" aria-label="Panel: a house"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button>
+              <button class="panel" type="button" data-i18n-aria="panelClock" aria-label="Panel: a clock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg></button>
+              <button class="panel" type="button" data-i18n-aria="panelBook" aria-label="Panel: a book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5Z"/><path d="M4 19.5A1.5 1.5 0 0 1 5.5 21H19"/></svg></button>
+            </div>
+            <p class="hunt-status" id="hunt-status">Six panels. One of them is the word.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════ CLOSE ══════════════════ -->
+  <section id="start" class="close" aria-labelledby="close-h">
+    <p class="eyebrow" data-i18n="closeEyebrow">Start where the pen is wrong</p>
+    <h2 id="close-h" data-i18n="closeTitle">Two stories are open. Nothing to sign, nothing to read.</h2>
+    <p class="lede" style="margin-top: 1.25rem;" data-i18n="closeLede">
+      Play the first two tracks without an account. If your ears want the rest,
+      making one takes a minute &mdash; and it keeps your streak, your vocabulary
+      and the school you are building with what you earn.
+    </p>
+    <div class="close__row">
+      <a class="btn" href="#" data-i18n="ctaStart">Start for free</a>
+      <span class="cta-note" data-i18n="closeNote">malako &middot; малако &middot; either spelling gets you there</span>
+    </div>
+  </section>
+
+  <footer>
+    <span class="brandbar__mark" style="color: var(--slate);">
+      <svg class="drop" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2C8.2 7.4 4.9 11.6 4.9 14.6a7.1 7.1 0 0 0 14.2 0C19.1 11.6 15.8 7.4 12 2Z"/>
+      </svg>
+      малако
+    </span>
+    <span data-i18n="footerBy">Built by an English teacher</span>
+    <span>EN &middot; RU</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     COPY
+     Russian is the source language for everything the app already ships —
+     the slogan, the six takeaways, the level names, the step text are the
+     founder's own words, lifted verbatim from src/locales/ru rather than
+     translated back out of my English. English is the second language
+     here, which is the right way round for this audience.
+     ═══════════════════════════════════════════════════════════════════ */
+  var I18N = {
+    en: {
+      docTitle: 'малако — English listening training',
+      brandTag: 'English listening training',
+      langGroup: 'Language',
+      themeGroup: 'Colour theme',
+      themeLight: 'Paper',
+      themeDark: 'Night',
+
+      heroEyebrow: 'The name is the exercise',
+      sloganPrefix: 'as you hear it, so it',
+      sloganWords: ['is right', 'should be', 'will stick', 'will sail', 'was meant', 'goes'],
+      heroLede: 'Train your English by listening to real stories, split sentence by sentence. Replay one line, slow it to half speed, drill it three times, then prove you understood it &mdash; without ever being shown the words.',
+      ctaStart: 'Start for free',
+      ctaWhy: 'Why no subtitles?',
+      ctaNote: 'two stories &middot; no account &middot; no card',
+      badge: 'Subtitles disabled by design',
+
+      loopEyebrow: 'The loop a student moves through',
+      loopTitle: 'Three moves, and then the same three again',
+      loopLede: 'The order is the mechanic, not a list. You cannot skip to the next story by reading ahead &mdash; the only way forward is through your ears.',
+      loop1n: 'FIRST', loop1t: 'Listen',
+      loop1d: 'One story, sentence by sentence. Replay or slow down as often as you need.',
+      loop2n: 'THEN', loop2t: 'Prove you understood',
+      loop2d: 'A short comprehension quiz. Nothing to read &mdash; only what you heard. Seventy per cent to pass, graded on the server, never by your own browser.',
+      loop3n: 'AND', loop3t: 'Unlock the next',
+      loop3d: 'Every story you earn is a little harder than the last.',
+      loopReturn: 'back to first',
+
+      ladderEyebrow: 'Difficulty, measured the way milk is',
+      ladderTitle: 'Levels are graded by fat content',
+      ladderLede: 'Three levels, and each one is thicker than the last. You start on skimmed and work up to something you have to chew.',
+      fatLabel: 'Milk fat',
+      fat1: '1%', fat25: '2.5%', fat6: '6%',
+      band1t: 'Easy &mdash; foundational',
+      band1d: 'Present simple, everyday routine, one speaker at a conversational pace. Short enough to replay end to end while you are still holding the whole thing in your head.',
+      band2t: 'Medium &mdash; intermediate',
+      band2d: 'Longer arcs, past and future tenses in the same breath, and the first phrasal verbs that mean nothing like the words they are made of.',
+      band3t: 'Hard &mdash; advanced',
+      band3d: 'Full pace, contractions swallowed whole, clauses stacked three deep. This is where drill mode stops being optional.',
+
+      qListLabel: 'Objections',
+      qEyebrow: 'The questions you&rsquo;re skipping',
+      qTitle: 'Six objections, answered in the margin',
+      qLede: 'Every one of these is a fair thing to ask, and every one of them has an answer you can watch happen rather than take on trust. Open any of them.',
+      specLabel: 'Specimen',
+      specNote: 'Said at full speed, that is genuinely what reaches you. The same collapse that turns <em>молоко</em> into <em>малако</em> happens in English on every unstressed syllable &mdash; and no amount of reading the sentence teaches you to survive it.',
+
+      q1ask: 'Why three repetitions?',
+      q1title: 'Repeat until it sticks',
+      q1take: 'Repetition builds memory. Every method uses it &mdash; ours just makes it audible.',
+      q1detail: 'A sentence does not arrive whole. It arrives in fragments, and each pass fills in a little more of what the last one missed. Drill mode plays the same line up to three times before it lets you move on.',
+      q1viz: 'What you catch, pass by pass',
+
+      q2ask: 'Why three speeds?',
+      q2title: 'Speed hides the words',
+      q2take: 'Slow down first. Speed up once you&rsquo;re sure.',
+      q2detail: 'At half speed the gaps between words are wide enough to stand in. At full speed they close, and four words become one. Drill mode walks the same sentence up the ladder &mdash; 0.5&times;, then 0.8&times;, then full &mdash; so you meet the fast version already knowing what is in it.',
+      q2viz: 'The same four words, three tempos',
+
+      q3ask: 'Why no subtitles?',
+      q3title: 'Your eyes did the work, not your ears',
+      q3take: 'The great self-deception is believing you understood the audio &mdash; when in fact you only understood it after reading along. If you could read it, you didn&rsquo;t have to listen.',
+      q3detail: 'Turn the captions on and watch where the effort goes. Your ears do not get better at a job your eyes keep doing for them.',
+      q3viz: 'Who is doing the work',
+      eyes: 'Eyes', ears: 'Ears',
+      subsOn: 'Turn subtitles on', subsOff: 'Turn subtitles off',
+
+      q4ask: 'Why only my ears?',
+      q4title: 'Immersion, not grammar',
+      q4take: 'People who move abroad start understanding the language by ear long before they can write a word of it. Real fluency starts in the ear, not on the page.',
+      q4detail: 'Being unable to spell something is not the same as failing to understand it. A child understands thousands of words they could not write down &mdash; and that is the order the ear prefers.',
+      q4note: 'One of these two is the skill being tested.',
+      heard: 'Heard',
+      cantSpell: 'Can&rsquo;t spell it',
+      didntGo: 'he didn&rsquo;t go',
+      understands: 'Understands it',
+
+      q5ask: 'Why is the vocabulary not written in English?',
+      q5title: 'Reading it isn&rsquo;t hearing it',
+      q5take: 'Our own vocabulary chips show the Russian word, but tap one and the audio still says it in English &mdash; the two don&rsquo;t even sound alike. Reading the translation trains your eyes. Only listening trains your ears.',
+      q5detail: 'Print the English spelling on the card and you build a route that goes through the page. Leave it off, and the sound has to reach the meaning directly.',
+      q5viz: 'Two routes from sound to meaning',
+      onScreen: '&laquo;chair&raquo; on screen',
+      theThing: 'the thing',
+      routeVia: 'Via the written word &mdash; your eyes carry it',
+      routeDirect: 'Direct &mdash; the only one that trains listening',
+
+      q6ask: 'Why train visual memory?',
+      q6title: 'Hear it. Find it. Remember it.',
+      q6take: 'Pictures stick where words slip away. Every story comes with its own comic, so when a new word plays, go hunt for it in the panels. Spot it once with your eyes and your imagination locks it in for good.',
+      q6detail: 'This is the one place the eyes are allowed to help &mdash; because here they are searching for a meaning, not reading a spelling.',
+      findIt: 'find it in the comic',
+      huntIdle: 'Six panels. One of them is the word.',
+      huntFound: 'Found it. That is one word you will not lose.',
+      huntWrong: 'Not that one. Listen again and keep looking.',
+      panelCat: 'Panel: a cat', panelCup: 'Panel: a cup', panelChair: 'Panel: a chair',
+      panelHouse: 'Panel: a house', panelClock: 'Panel: a clock', panelBook: 'Panel: a book',
+
+      replay: 'Replay',
+      closeEyebrow: 'Start where the pen is wrong',
+      closeTitle: 'Two stories are open. Nothing to sign, nothing to read.',
+      closeLede: 'Play the first two tracks without an account. If your ears want the rest, making one takes a minute &mdash; and it keeps your streak, your vocabulary and the school you are building with what you earn.',
+      closeNote: 'malako &middot; малако &middot; either spelling gets you there',
+      footerBy: 'Built by an English teacher'
+    },
+
+    ru: {
+      docTitle: 'малако — тренировка английского на слух',
+      brandTag: 'Тренировка английского на слух',
+      langGroup: 'Язык',
+      themeGroup: 'Оформление',
+      themeLight: 'Бумага',
+      themeDark: 'Ночь',
+
+      heroEyebrow: 'Название — это и есть упражнение',
+      sloganPrefix: 'как слышится — так и',
+      sloganWords: ['правильно', 'надо', 'запомнится', 'поплывёт', 'задумано', 'говорится'],
+      heroLede: 'Тренируйте английский, слушая реальные истории, разбитые по предложениям. Повторите одну фразу, замедлите её вдвое, прогоните трижды — и докажите, что поняли. Не увидев при этом ни одного слова.',
+      ctaStart: 'Начать бесплатно',
+      ctaWhy: 'Почему нет субтитров?',
+      ctaNote: 'две истории &middot; без аккаунта &middot; без карты',
+      badge: 'Субтитры отключены намеренно',
+
+      loopEyebrow: 'Путь, по которому идёт ученик',
+      loopTitle: 'Три шага — и снова те же три',
+      loopLede: 'Порядок здесь — это и есть механика, а не просто список. Нельзя перескочить к следующей истории, прочитав её заранее: единственный путь дальше — через уши.',
+      loop1n: 'СНАЧАЛА', loop1t: 'Слушайте',
+      loop1d: 'Одна история, предложение за предложением. Повторяйте и замедляйте сколько нужно.',
+      loop2n: 'ПОТОМ', loop2t: 'Докажите, что поняли',
+      loop2d: 'Короткий тест на понимание. Читать нечего — только то, что услышали. Порог — 70%, и проверяет ответы сервер, а не ваш браузер.',
+      loop3n: 'И', loop3t: 'Откройте следующую',
+      loop3d: 'Каждая заработанная история чуть сложнее предыдущей.',
+      loopReturn: 'снова сначала',
+
+      ladderEyebrow: 'Сложность измеряется так же, как молоко',
+      ladderTitle: 'Уровни различаются по жирности',
+      ladderLede: 'Три уровня, и каждый гуще предыдущего. Начинаете с обезжиренного и доходите до того, что нужно жевать.',
+      fatLabel: 'Жирность',
+      fat1: '1%', fat25: '2,5%', fat6: '6%',
+      band1t: 'Базовый — начальный уровень',
+      band1d: 'Present Simple, повседневная рутина, один голос в разговорном темпе. Достаточно короткие, чтобы прослушать целиком, пока вся история ещё держится в голове.',
+      band2t: 'Средний уровень',
+      band2d: 'Более длинные сюжеты, прошедшее и будущее время в одной фразе и первые фразовые глаголы, которые значат совсем не то, из чего состоят.',
+      band3t: 'Продвинутый уровень',
+      band3d: 'Полный темп, проглоченные сокращения, придаточные в три слоя. Здесь режим повторов перестаёт быть необязательным.',
+
+      qListLabel: 'Возражения',
+      qEyebrow: 'Вопросы, которые вы пропускаете',
+      qTitle: 'Шесть возражений, отвеченных на полях',
+      qLede: 'Каждое из них — справедливый вопрос, и на каждый есть ответ, который можно увидеть своими глазами, а не принять на веру. Откройте любой.',
+      specLabel: 'Образец',
+      specNote: 'На полной скорости до вас доходит именно это. То же самое сжатие, которое превращает <em>молоко</em> в <em>малако</em>, происходит в английском на каждом безударном слоге — и сколько ни читай эту фразу глазами, к ней это не подготовит.',
+
+      q1ask: 'Почему 3 повтора?',
+      q1title: 'Повторяй, пока не запомнится',
+      q1take: 'Повторение укрепляет память. Этим пользуются все методы — но мы делаем это на слух.',
+      q1detail: 'Фраза не приходит целиком. Она приходит кусками, и каждый повтор достраивает то, что упустил предыдущий. Режим повторов проигрывает одну и ту же строку до трёх раз, прежде чем пустить вас дальше.',
+      q1viz: 'Что вы улавливаете, повтор за повтором',
+
+      q2ask: 'Почему 3 скорости?',
+      q2title: 'Скорость прячет слова',
+      q2take: 'Сначала замедлись. Ускоряйся, когда будешь уверен.',
+      q2detail: 'На половинной скорости промежутки между словами такие, что в них можно встать. На полной они схлопываются, и четыре слова становятся одним. Режим повторов ведёт одну и ту же фразу по лестнице — 0,5×, потом 0,8×, потом полная — так что до быстрой версии вы уже знаете, что в ней.',
+      q2viz: 'Те же четыре слова, три темпа',
+
+      q3ask: 'Почему нет субтитров?',
+      q3title: 'Чтобы работали уши!',
+      q3take: 'Самый главный самообман — думать, что ты понимаешь аудио, когда на самом деле ты понял его только после прочтения текста. Если ты прочитал, значит, ты не слушал.',
+      q3detail: 'Включите субтитры и посмотрите, куда уходит усилие. Уши не станут лучше справляться с работой, которую за них продолжают делать глаза.',
+      q3viz: 'Кто делает работу',
+      eyes: 'Глаза', ears: 'Уши',
+      subsOn: 'Включить субтитры', subsOff: 'Выключить субтитры',
+
+      q4ask: 'Почему только слух?',
+      q4title: 'Погружение в среду',
+      q4take: 'Помним: люди, переезжающие в другую страну, намного быстрее начинают понимать язык на слух, чем писать и читать. Настоящее понимание начинается с ушей, а не с глаз.',
+      q4detail: 'Не уметь записать слово — не то же самое, что не понять его. Ребёнок понимает тысячи слов, которые не смог бы написать, и именно такой порядок предпочитает ухо.',
+      q4note: 'Одно из этих двух — и есть проверяемый навык.',
+      heard: 'Услышано',
+      cantSpell: 'Записать не может',
+      didntGo: 'он не пошёл',
+      understands: 'Понимает',
+
+      q5ask: 'Почему слова написаны не на английском?',
+      q5title: 'Слышишь одно, читаешь другое',
+      q5take: 'Наши же карточки слов показывают перевод на русском, а озвучка всё равно звучит по-английски — они даже не похожи. Чтение перевода тренирует глаза, а не уши. Слух тренирует только слушание.',
+      q5detail: 'Напечатайте на карточке английское написание — и вы построите маршрут, который идёт через страницу. Уберите его — и звуку придётся добираться до смысла напрямую.',
+      q5viz: 'Два маршрута от звука к смыслу',
+      onScreen: '«chair» на экране',
+      theThing: 'сам предмет',
+      routeVia: 'Через написанное слово — везут глаза',
+      routeDirect: 'Напрямую — единственный, что тренирует слух',
+
+      q6ask: 'Зачем тренировать зрительную память?',
+      q6title: 'Услышал. Нашёл. Запомнил.',
+      q6take: 'Картинки запоминаются, когда слова уже забылись. К каждой истории есть свой комикс — услышал новое слово, найди его на картинках. Один раз увидел глазами — и воображение закрепит это навсегда.',
+      q6detail: 'Это единственное место, где глазам разрешено помогать, — потому что здесь они ищут смысл, а не читают написание.',
+      findIt: 'найди её в комиксе',
+      huntIdle: 'Шесть кадров. В одном из них — это слово.',
+      huntFound: 'Нашёл. Это слово вы уже не потеряете.',
+      huntWrong: 'Не этот. Послушайте ещё раз и ищите дальше.',
+      panelCat: 'Кадр: кот', panelCup: 'Кадр: чашка', panelChair: 'Кадр: стул',
+      panelHouse: 'Кадр: дом', panelClock: 'Кадр: часы', panelBook: 'Кадр: книга',
+
+      replay: 'Повторить',
+      closeEyebrow: 'Начните там, где ручка ошиблась',
+      closeTitle: 'Две истории уже открыты. Ничего не подписывать, нечего читать.',
+      closeLede: 'Первые два трека играют без аккаунта. Если ушам захочется остального — аккаунт заводится за минуту, и он сохранит вашу серию, ваши слова и школу, которую вы строите на заработанное.',
+      closeNote: 'malako &middot; малако &middot; любое написание приведёт вас туда',
+      footerBy: 'Сделано учителем английского'
+    }
+  };
+
+  /* ── Language ──
+     Russian is the default for anyone whose browser is Russian, because
+     that is who the app is for; everyone else lands in English. */
+  var lang = /^ru\b/i.test(navigator.language || '') ? 'ru' : 'en';
+  function t(key) { return I18N[lang][key]; }
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.title = t('docTitle');
+
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var v = I18N[lang][nodes[i].getAttribute('data-i18n')];
+      if (v !== undefined) nodes[i].innerHTML = v;
+    }
+    var aria = document.querySelectorAll('[data-i18n-aria]');
+    for (var j = 0; j < aria.length; j++) {
+      var a = I18N[lang][aria[j].getAttribute('data-i18n-aria')];
+      if (a !== undefined) aria[j].setAttribute('aria-label', a);
+    }
+
+    var langBtns = document.querySelectorAll('[data-set-lang]');
+    for (var k = 0; k < langBtns.length; k++) {
+      langBtns[k].setAttribute('aria-pressed', String(langBtns[k].getAttribute('data-set-lang') === lang));
+    }
+
+    // Anything JS owns the text of has to be re-rendered in its CURRENT
+    // state, not reset — switching language must not undo a demo you have
+    // already run.
+    renderSlogan();
+    renderSubs();
+    renderHunt();
+  }
+
+  var langButtons = document.querySelectorAll('[data-set-lang]');
+  for (var lb = 0; lb < langButtons.length; lb++) {
+    langButtons[lb].addEventListener('click', function () {
+      lang = this.getAttribute('data-set-lang');
+      applyLang();
+    });
+  }
+
+  /* ── Theme ──
+     The page is token-driven, so switching is one attribute on <html>. The
+     viewer's own theme control writes the same attribute, which is why this
+     observes it: two controls writing one attribute must agree, or the page
+     ends up in a state neither of them is showing. */
+  var themeBtns = document.querySelectorAll('[data-set-theme]');
+  var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function effectiveTheme() {
+    var set = document.documentElement.getAttribute('data-theme');
+    if (set === 'dark' || set === 'light') return set;
+    return darkQuery.matches ? 'dark' : 'light';
+  }
+
+  function syncTheme() {
+    var now = effectiveTheme();
+    for (var i = 0; i < themeBtns.length; i++) {
+      themeBtns[i].setAttribute(
+        'aria-pressed',
+        String(themeBtns[i].getAttribute('data-set-theme') === now)
+      );
+    }
+  }
+
+  for (var tb = 0; tb < themeBtns.length; tb++) {
+    themeBtns[tb].addEventListener('click', function () {
+      document.documentElement.setAttribute('data-theme', this.getAttribute('data-set-theme'));
+      syncTheme();
+    });
+  }
+
+  if (darkQuery.addEventListener) darkQuery.addEventListener('change', syncTheme);
+  new MutationObserver(syncTheme).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+
+  /* ── Hero: the pen marks the spelling, the ear overrules it ──
+     Sequence matters more than the individual effects: the strike lands
+     first (the verdict), then the vowels change (the appeal). Reversed,
+     it reads as a typo being corrected instead of an argument. */
+  var wordmark = document.getElementById('wordmark');
+  function markSwapped() {
+    var slots = wordmark.querySelectorAll('.wordmark__slot');
+    for (var i = 0; i < slots.length; i++) {
+      slots[i].parentNode.classList.add('wordmark__ch--swapped');
+    }
+  }
+  if (wordmark) {
+    if (reduce) {
+      wordmark.classList.add('is-marked', 'is-heard');
+      markSwapped();
+    } else {
+      setTimeout(function () { wordmark.classList.add('is-marked'); }, 650);
+      setTimeout(function () { wordmark.classList.add('is-heard'); markSwapped(); }, 1350);
+    }
+  }
+
+  /* ── Slogan: the last word keeps changing ──
+     Cycles through the three level accents rather than owning a colour of
+     its own — six words over three colours means the pairing never
+     settles, which reads as motion rather than as a fixed label. */
+  var ACCENTS = ['var(--fat-1)', 'var(--fat-25)', 'var(--fat-6)'];
+  var TRANSITION = 'opacity .42s ease, transform .42s cubic-bezier(.16,1,.3,1)';
+  var slot = document.getElementById('slogan-slot');
+  var wordEl = document.getElementById('slogan-word');
+  var wi = 0;
+
+  function renderSlogan() {
+    if (!slot || !wordEl) return;
+    var words = t('sloganWords');
+    wi = wi % words.length;
+
+    // Reserve the widest word so the line never reflows mid-swap. Has to be
+    // re-measured per language: "запомнится" is not "will stick".
+    var probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-weight:800;';
+    slot.appendChild(probe);
+    var widest = 0;
+    for (var i = 0; i < words.length; i++) {
+      probe.textContent = words[i];
+      widest = Math.max(widest, probe.offsetWidth);
+    }
+    slot.removeChild(probe);
+    slot.style.minWidth = widest + 'px';
+
+    wordEl.textContent = words[wi];
+    wordEl.style.color = ACCENTS[wi % ACCENTS.length];
+  }
+
+  if (slot && wordEl) {
+    wordEl.style.transition = TRANSITION;
+    if (!reduce) {
+      setInterval(function () {
+        var words = t('sloganWords');
+        wordEl.style.opacity = '0';
+        wordEl.style.transform = 'translateY(-0.4em)';
+        setTimeout(function () {
+          wi = (wi + 1) % words.length;
+          wordEl.textContent = words[wi];
+          wordEl.style.color = ACCENTS[wi % ACCENTS.length];
+          wordEl.style.transition = 'none';
+          wordEl.style.transform = 'translateY(0.4em)';
+          // Force a reflow so the reset position is committed before the
+          // transition is re-enabled — otherwise the browser coalesces both
+          // writes and the word simply appears.
+          void wordEl.offsetHeight;
+          wordEl.style.transition = TRANSITION;
+          wordEl.style.opacity = '1';
+          wordEl.style.transform = 'translateY(0)';
+        }, 340);
+      }, 2200);
+    }
+  }
+
+  /* ── Question demos ──
+     Each runs on open and can be replayed, because a demonstration you
+     only get to see once is just an animation. */
+  function runSequence(selector) {
+    var rows = document.querySelectorAll(selector);
+    for (var i = 0; i < rows.length; i++) rows[i].classList.remove('is-on');
+    if (reduce) {
+      for (var j = 0; j < rows.length; j++) rows[j].classList.add('is-on');
+      return;
+    }
+    Array.prototype.forEach.call(rows, function (row, idx) {
+      setTimeout(function () { row.classList.add('is-on'); }, 320 + idx * 650);
+    });
+  }
+
+  var RUNNERS = {
+    passes: function () { runSequence('#passes .pass'); },
+    speeds: function () { runSequence('#speeds .speed'); }
+  };
+
+  var replayBtns = document.querySelectorAll('[data-replay]');
+  for (var r = 0; r < replayBtns.length; r++) {
+    replayBtns[r].addEventListener('click', function () {
+      var fn = RUNNERS[this.getAttribute('data-replay')];
+      if (fn) fn();
+    });
+  }
+
+  /* ── The worked answer sheet ──
+     A real tablist: roving tabindex, arrow keys, Home/End. Picking a
+     question runs whatever demo lives in its answer, because the demo IS
+     the answer — handing it over already finished would be showing the
+     conclusion without the working. */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var answers = Array.prototype.slice.call(document.querySelectorAll('.answer'));
+  var activeTab = 0;
+
+  function runDemoIn(panel) {
+    if (panel.querySelector('#passes')) RUNNERS.passes();
+    if (panel.querySelector('#speeds')) RUNNERS.speeds();
+  }
+
+  function selectTab(idx, focus, demo) {
+    activeTab = idx;
+    for (var i = 0; i < tabs.length; i++) {
+      var on = i === idx;
+      tabs[i].setAttribute('aria-selected', String(on));
+      tabs[i].tabIndex = on ? 0 : -1;
+      answers[i].classList.toggle('is-active', on);
+    }
+    if (focus) tabs[idx].focus();
+    if (demo) runDemoIn(answers[idx]);
+  }
+
+  for (var ti = 0; ti < tabs.length; ti++) {
+    (function (i) {
+      tabs[i].addEventListener('click', function () { selectTab(i, false, true); });
+      tabs[i].addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next === null) return;
+        e.preventDefault();
+        selectTab(next, true, true);
+      });
+    })(ti);
+  }
+
+  if (tabs.length) selectTab(0, false, false);
+
+  // The first answer is open before anyone has scrolled to it, so its demo
+  // waits for the section to actually come into view — otherwise it plays
+  // out and finishes somewhere above the fold.
+  var sheetEl = document.querySelector('.worksheet');
+  if (sheetEl && 'IntersectionObserver' in window) {
+    var played = false;
+    new IntersectionObserver(function (entries, obs) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].isIntersecting && !played) {
+          played = true;
+          runDemoIn(answers[activeTab]);
+          obs.disconnect();
+        }
+      }
+    }, { threshold: 0.2 }).observe(sheetEl);
+  }
+
+  /* ── Subtitles toggle: the work moves from the ears to the eyes ── */
+  var subsBtn = document.getElementById('subs-toggle');
+  var subsOn = false;
+
+  function renderSubs() {
+    if (!subsBtn) return;
+    var eyes = subsOn ? 91 : 8;
+    var ears = subsOn ? 9 : 92;
+    document.getElementById('eyes-bar').style.width = eyes + '%';
+    document.getElementById('ears-bar').style.width = ears + '%';
+    document.getElementById('eyes-pct').textContent = eyes + '%';
+    document.getElementById('ears-pct').textContent = ears + '%';
+    subsBtn.textContent = subsOn ? t('subsOff') : t('subsOn');
+    subsBtn.setAttribute('aria-pressed', String(subsOn));
+  }
+
+  if (subsBtn) {
+    subsBtn.addEventListener('click', function () { subsOn = !subsOn; renderSubs(); });
+  }
+
+  /* ── Word hunt ── */
+  var hunt = document.getElementById('panels');
+  var huntStatus = document.getElementById('hunt-status');
+  var huntState = 'idle';
+
+  function renderHunt() {
+    if (!huntStatus) return;
+    huntStatus.textContent =
+      huntState === 'found' ? t('huntFound') :
+      huntState === 'wrong' ? t('huntWrong') : t('huntIdle');
+    huntStatus.classList.toggle('is-found', huntState === 'found');
+  }
+
+  if (hunt) {
+    hunt.addEventListener('click', function (e) {
+      var btn = e.target.closest('.panel');
+      if (!btn || huntState === 'found') return;
+
+      if (btn.getAttribute('data-answer') === 'true') {
+        btn.classList.add('is-found');
+        huntState = 'found';
+      } else {
+        btn.classList.remove('is-wrong');
+        void btn.offsetWidth;
+        btn.classList.add('is-wrong');
+        huntState = 'wrong';
+      }
+      renderHunt();
+    });
+  }
+
+  applyLang();
+  syncTheme();
+})();
+</script>

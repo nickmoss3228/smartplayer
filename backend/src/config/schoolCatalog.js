@@ -1,261 +1,397 @@
 // config/schoolCatalog.js
 //
-// "Dream School" — the game that replaced the office-decorating Room. The
-// player earns three currencies by listening and spends each on a different
-// kind of thing, so none of them is dead weight:
+// The Dream School's entire economy: ten stages, three campus layouts, and two
+// free preferences. See docs/room-game-concept.md.
 //
-//   bitAward  -> unlocking ROOMS   (big, slow, the thing you save toward)
-//   bitWord   -> FURNITURE         (steady, what you spend most sessions)
-//   bitPhrase -> ACTIONS           (small, flavour — what the avatar does)
+// There is no item shop. A player owns nothing individually — the school is at
+// a stage, and a stage brings its rooms, furniture and people with it. That is
+// why this file has no prices except the ten upgrade costs.
 //
-// Mirrored by src/config/schoolCatalog.ts on the frontend. THIS file is the
-// source of truth for anything that costs money; the mirror carries the same
-// data so the UI can render without a round-trip, but the server re-reads
-// prices here on every purchase and never trusts the client.
+// The server is the source of truth for every number here. The frontend keeps a
+// generated mirror at src/config/schoolCatalog.ts so it can draw the building
+// and quote a price without a round-trip; the upgrade endpoint re-reads THIS
+// file when the request lands, so a tampered mirror only ever earns a 400.
+
+// ── Variants ────────────────────────────────────────────────────────────────
+// The economy is shared — every player pays the same for stage 7 — but the
+// SHAPE of the campus is not. A player is assigned one of three floorplans for
+// life, so visiting someone else's school shows a different building rather
+// than a recolour of your own.
 //
-// Art is deliberately procedural: an item carries a palette, and the slot it
-// belongs to decides which shape gets drawn (modules/school/sprites.tsx).
-// Swapping in real artwork later means changing the sprite renderers, not this
-// catalog — the same tradeoff the old shopCatalog made with its swatch field.
+// Every variant uses the same room ids and kinds; only the rectangles and the
+// doorways differ. That is what lets the props, the seating and the routing be
+// written once and work for all three.
+//
+// TWO RULES GOVERN WHERE A ROOM MAY GO, both forced by the fixed camera, which
+// looks down from +x/+z and therefore only ever draws north and west walls:
+//
+//   1. A room placed north or west of another sits BEHIND it. Wherever two
+//      rooms meet, that span of wall drops to knee height so the room behind
+//      stays visible (Building.tsx computes this span by span).
+//   2. A classroom's board hangs on its NORTH wall, so nothing may be built
+//      directly behind that wall or the board is left floating over a knee-high
+//      partition. In practice: every classroom sits on the campus's north edge.
+//
+// schoolCatalog.test.ts asserts rule 2, plus no-overlap and never-shrinking,
+// for all three variants at all ten stages.
 
-// ── Rooms ───────────────────────────────────────────────────────────────────
-// zone places the room in the dollhouse cutaway: two indoor floors stacked
-// above an outdoor strip. order is the column within that zone.
-export const SCHOOL_ROOMS = [
-  {
-    id: "classroom",
-    name: "Classroom",
-    zone: "main",
-    order: 0,
-    unlockPriceBitAward: 0, // free: the school must never open empty
-    slots: ["board", "desks", "teacherDesk"],
-    idleAnim: "write",
+/** A room that appears at stage `from`, optionally changing size later.
+ *  `rects` is [stageIndex, rect] pairs; the latest one at or below the current
+ *  stage wins. Only the classroom and the corridor actually grow. */
+const room = (id, kind, from, rects, outdoor = false) => ({ id, kind, from, rects, outdoor });
+
+const VARIANT_COURTYARD = {
+  id: "courtyard",
+  name: "Courtyard School",
+  // Rooms wrap around a central open yard, with the hall out to the west.
+  //
+  //   x=-24     x=-13    x=0        x=12  x=19  x=28
+  //  z=0 +--------+--------+----------+-----+-----+
+  //      | CLS C  |  HALL  | CLASSROOM| LIB |CLS B|
+  //  z=8 |        |        +----------+-----+-----+
+  //      |        |        |      CORRIDOR       |
+  // z=11 +--------+--------+---+-----------+
+  //               |CAFETERIA|LAB| COURTYARD |
+  // z=17          |        +---+           |
+  //               |        |LOB|           |
+  // z=20          |        |   +-----------+
+  // z=23          +--------+   |    GYM    |
+  // z=24                   +---+           |
+  // z=28                   |FORE           |
+  // z=30                   |CRT+-----------+
+  rooms: [
+    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
+    room("library", "library", 2, [[2, { x: 12, z: 0, w: 7, d: 8 }]]),
+    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 19, d: 3 }], [7, { x: 0, z: 8, w: 28, d: 3 }]]),
+    room("lab", "lab", 3, [[3, { x: 0, z: 11, w: 8, d: 6 }]]),
+    room("courtyard", "courtyard", 4, [[4, { x: 8, z: 11, w: 11, d: 9 }]], true),
+    room("hall", "hall", 5, [[5, { x: -13, z: 0, w: 13, d: 11 }]]),
+    room("lobby", "lobby", 6, [[6, { x: 0, z: 17, w: 8, d: 7 }]]),
+    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 24, w: 8, d: 4 }]], true),
+    room("classroomB", "classroom", 7, [[7, { x: 19, z: 0, w: 9, d: 8 }]]),
+    room("cafeteria", "cafeteria", 8, [[8, { x: -13, z: 11, w: 13, d: 12 }]]),
+    room("classroomC", "classroom", 8, [[8, { x: -24, z: 0, w: 11, d: 11 }]]),
+    room("gym", "gym", 9, [[9, { x: 8, z: 20, w: 11, d: 10 }]]),
+  ],
+  doors: {
+    classroom: { parent: "corridor", x: 10, z: 8 },
+    library: { parent: "corridor", x: 15.5, z: 8 },
+    classroomB: { parent: "corridor", x: 23.5, z: 8 },
+    lab: { parent: "corridor", x: 4, z: 11 },
+    courtyard: { parent: "corridor", x: 13, z: 11 },
+    hall: { parent: "corridor", x: 0, z: 9.5 },
+    classroomC: { parent: "hall", x: -13, z: 5.5 },
+    lobby: { parent: "lab", x: 4, z: 17 },
+    forecourt: { parent: "lobby", x: 4, z: 24 },
+    cafeteria: { parent: "hall", x: -6.5, z: 11 },
+    gym: { parent: "courtyard", x: 13, z: 20 },
   },
-  {
-    id: "library",
-    name: "Library",
-    zone: "main",
-    order: 1,
-    unlockPriceBitAward: 50,
-    slots: ["shelves", "nook", "rug"],
-    idleAnim: "read",
-  },
-  {
-    id: "listening-lab",
-    name: "Listening Lab",
-    zone: "main",
-    order: 2,
-    unlockPriceBitAward: 90,
-    slots: ["booth", "speakers", "labPoster"],
-    idleAnim: "listen",
-  },
-  {
-    id: "art-room",
-    name: "Art Room",
-    zone: "upper",
-    order: 0,
-    unlockPriceBitAward: 130,
-    slots: ["easel", "supplies", "wallArt"],
-    idleAnim: "paint",
-  },
-  {
-    id: "cafeteria",
-    name: "Cafeteria",
-    zone: "upper",
-    order: 1,
-    unlockPriceBitAward: 170,
-    slots: ["counter", "cafeTables", "cafePlants"],
-    idleAnim: "sip",
-  },
-  {
-    id: "theatre",
-    name: "Theatre",
-    zone: "upper",
-    order: 2,
-    // The most expensive room on purpose — the plan asked for something that
-    // feels like saving toward something big. Its phrase-staging feature comes
-    // later; for now it unlocks and decorates like any other room.
-    unlockPriceBitAward: 300,
-    slots: ["stage", "seats", "curtain"],
-    idleAnim: "bow",
-  },
-  {
-    id: "garden",
-    name: "Garden",
-    zone: "garden",
-    order: 0,
-    unlockPriceBitAward: 210,
-    slots: ["tree", "bench", "flowers"],
-    idleAnim: "stretch",
-  },
-];
-
-// ── Slots ───────────────────────────────────────────────────────────────────
-// Fixed positions, per the plan: no free placement, no grid snapping. Each
-// slot names where its sprite sits inside the cell, as fractions of the cell
-// box, so the renderer stays resolution-independent.
-export const SCHOOL_SLOTS = {
-  board:       { roomId: "classroom",     label: "Board",        x: 0.24, y: 0.34, scale: 1.0 },
-  desks:       { roomId: "classroom",     label: "Desks",        x: 0.62, y: 0.66, scale: 1.0 },
-  teacherDesk: { roomId: "classroom",     label: "Teacher Desk", x: 0.26, y: 0.70, scale: 0.8 },
-
-  shelves:     { roomId: "library",       label: "Shelves",      x: 0.24, y: 0.44, scale: 1.0 },
-  nook:        { roomId: "library",       label: "Reading Nook", x: 0.70, y: 0.64, scale: 1.0 },
-  rug:         { roomId: "library",       label: "Rug",          x: 0.46, y: 0.82, scale: 1.0 },
-
-  booth:       { roomId: "listening-lab", label: "Booth",        x: 0.64, y: 0.60, scale: 1.0 },
-  speakers:    { roomId: "listening-lab", label: "Speakers",     x: 0.22, y: 0.64, scale: 0.9 },
-  labPoster:   { roomId: "listening-lab", label: "Poster",       x: 0.44, y: 0.30, scale: 0.9 },
-
-  easel:       { roomId: "art-room",      label: "Easel",        x: 0.30, y: 0.60, scale: 1.0 },
-  supplies:    { roomId: "art-room",      label: "Supplies",     x: 0.68, y: 0.72, scale: 0.9 },
-  wallArt:     { roomId: "art-room",      label: "Wall Art",     x: 0.58, y: 0.30, scale: 0.9 },
-
-  counter:     { roomId: "cafeteria",     label: "Counter",      x: 0.26, y: 0.62, scale: 1.0 },
-  cafeTables:  { roomId: "cafeteria",     label: "Tables",       x: 0.64, y: 0.72, scale: 1.0 },
-  cafePlants:  { roomId: "cafeteria",     label: "Plants",       x: 0.86, y: 0.58, scale: 0.85 },
-
-  stage:       { roomId: "theatre",       label: "Stage",        x: 0.50, y: 0.62, scale: 1.0 },
-  seats:       { roomId: "theatre",       label: "Seats",        x: 0.50, y: 0.86, scale: 1.0 },
-  curtain:     { roomId: "theatre",       label: "Curtain",      x: 0.50, y: 0.28, scale: 1.0 },
-
-  tree:        { roomId: "garden",        label: "Tree",         x: 0.18, y: 0.52, scale: 1.0 },
-  bench:       { roomId: "garden",        label: "Bench",        x: 0.52, y: 0.74, scale: 1.0 },
-  flowers:     { roomId: "garden",        label: "Flowers",      x: 0.82, y: 0.76, scale: 0.9 },
 };
 
-// ── Furniture (bitWord) ─────────────────────────────────────────────────────
-// Three options per slot, priced by visual weight. The plan asked that small
-// things stay cheap so there is always something affordable to buy.
-const f = (id, slot, name, priceBitWord, color, accent, variant) => ({
-  id,
-  slot,
-  roomId: SCHOOL_SLOTS[slot].roomId,
-  name,
-  priceBitWord,
-  palette: { color, accent },
-  variant,
-});
+const VARIANT_QUAD = {
+  id: "quad",
+  name: "Quad School",
+  // One long teaching terrace along the north, everything else hanging south of
+  // a single corridor. Wider and shallower than the Courtyard.
+  //
+  //  x=-24    x=-12   x=0        x=12   x=20   x=29
+  //  z=0 +-------+-------+----------+------+------+
+  //      | CLS C | HALL  | CLASSROOM| LIB  | CLS B|
+  //  z=8 +-------+-------+----------+------+------+
+  //      |               CORRIDOR                 |
+  // z=11 +-------+----------+-------+------+------+
+  //      |CAFETERIA| COURTYARD | LAB |  GYM |
+  // z=18 |         |           +-----+      |
+  // z=21 +---------+-----------+     |      |
+  //                | LOBBY     |     +------+
+  // z=28           +-----------+
+  //                | FORECOURT |
+  // z=32           +-----------+
+  rooms: [
+    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
+    room("library", "library", 2, [[2, { x: 12, z: 0, w: 8, d: 8 }]]),
+    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 20, d: 3 }], [5, { x: -12, z: 8, w: 32, d: 3 }], [9, { x: -12, z: 8, w: 43, d: 3 }]]),
+    room("lab", "lab", 3, [[3, { x: 12, z: 11, w: 8, d: 7 }]]),
+    room("courtyard", "courtyard", 4, [[4, { x: 0, z: 11, w: 12, d: 10 }]], true),
+    room("hall", "hall", 5, [[5, { x: -12, z: 0, w: 12, d: 8 }]]),
+    room("lobby", "lobby", 6, [[6, { x: 0, z: 21, w: 12, d: 7 }]]),
+    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 28, w: 12, d: 4 }]], true),
+    room("classroomB", "classroom", 7, [[7, { x: 20, z: 0, w: 9, d: 8 }]]),
+    room("cafeteria", "cafeteria", 8, [[8, { x: -12, z: 11, w: 12, d: 10 }]]),
+    room("classroomC", "classroom", 8, [[8, { x: -24, z: 0, w: 12, d: 8 }]]),
+    room("gym", "gym", 9, [[9, { x: 20, z: 11, w: 11, d: 10 }]]),
+  ],
+  doors: {
+    classroom: { parent: "corridor", x: 6, z: 8 },
+    library: { parent: "corridor", x: 16, z: 8 },
+    classroomB: { parent: "corridor", x: 24.5, z: 8 },
+    hall: { parent: "corridor", x: -6, z: 8 },
+    classroomC: { parent: "hall", x: -12, z: 4 },
+    lab: { parent: "corridor", x: 16, z: 11 },
+    courtyard: { parent: "corridor", x: 6, z: 11 },
+    cafeteria: { parent: "corridor", x: -6, z: 11 },
+    gym: { parent: "corridor", x: 25.5, z: 11 },
+    lobby: { parent: "courtyard", x: 6, z: 21 },
+    forecourt: { parent: "lobby", x: 6, z: 28 },
+  },
+};
 
-export const SCHOOL_ITEMS = [
-  // Classroom
-  f("board-slate",    "board",       "Slate Board",       4, "#2f4f4a", "#e8f1ee", 0),
-  f("board-white",    "board",       "Whiteboard",        8, "#f4f7fb", "#5b7c9d", 1),
-  f("board-star",     "board",       "Starmap Board",    14, "#2b2f5e", "#f6d365", 2),
-  f("desks-plain",    "desks",       "Plain Desks",       4, "#c9a173", "#8a6a45", 0),
-  f("desks-pastel",   "desks",       "Pastel Desks",      8, "#f0c3c8", "#c98d97", 1),
-  f("desks-cloud",    "desks",       "Cloud Desks",      14, "#dbe7f6", "#93b3d6", 2),
-  f("teacher-oak",    "teacherDesk", "Oak Desk",           4, "#b07f4d", "#8a5f36", 0),
-  f("teacher-ivory",  "teacherDesk", "Ivory Desk",        8, "#f2ece1", "#c9bda6", 1),
-  f("teacher-moon",   "teacherDesk", "Moonwood Desk",    14, "#8f8fc4", "#5d5d93", 2),
+const VARIANT_TERRACE = {
+  id: "terrace",
+  name: "Terrace School",
+  // A long east-west street with the teaching rooms strung along the north and
+  // the big spaces stepping down to the south-east.
+  //
+  //  x=-21   x=-9   x=0        x=12       x=25    x=34
+  //  z=0 +------+------+----------+----------+------+
+  //      | CLS C| LIB  | CLASSROOM|   HALL   | CLS B|
+  //  z=8 +------+------+----------+----------+------+
+  //      |            CORRIDOR               |
+  // z=11 +------+----------+----------+
+  //      | LAB  | COURTYARD| CAFETERIA|
+  // z=18 +------+          |          |
+  // z=20        +----------+----------+
+  //             |  LOBBY   |   GYM    |
+  // z=27        +----------+          |
+  //             | FORECOURT|          |
+  // z=31        +----------+----------+
+  rooms: [
+    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
+    room("library", "library", 2, [[2, { x: -9, z: 0, w: 9, d: 8 }]]),
+    room("corridor", "corridor", 3, [[3, { x: -9, z: 8, w: 21, d: 3 }], [5, { x: -9, z: 8, w: 34, d: 3 }]]),
+    room("lab", "lab", 3, [[3, { x: -9, z: 11, w: 9, d: 7 }]]),
+    room("courtyard", "courtyard", 4, [[4, { x: 0, z: 11, w: 12, d: 9 }]], true),
+    room("hall", "hall", 5, [[5, { x: 12, z: 0, w: 13, d: 8 }]]),
+    room("lobby", "lobby", 6, [[6, { x: 0, z: 20, w: 12, d: 7 }]]),
+    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 27, w: 12, d: 4 }]], true),
+    room("classroomB", "classroom", 7, [[7, { x: 25, z: 0, w: 9, d: 8 }]]),
+    room("cafeteria", "cafeteria", 8, [[8, { x: 12, z: 11, w: 13, d: 9 }]]),
+    room("classroomC", "classroom", 8, [[8, { x: -21, z: 0, w: 12, d: 8 }]]),
+    room("gym", "gym", 9, [[9, { x: 12, z: 20, w: 13, d: 10 }]]),
+  ],
+  doors: {
+    classroom: { parent: "corridor", x: 6, z: 8 },
+    library: { parent: "corridor", x: -4.5, z: 8 },
+    hall: { parent: "corridor", x: 18, z: 8 },
+    classroomB: { parent: "hall", x: 25, z: 4 },
+    classroomC: { parent: "library", x: -9, z: 4 },
+    lab: { parent: "corridor", x: -4.5, z: 11 },
+    courtyard: { parent: "corridor", x: 6, z: 11 },
+    cafeteria: { parent: "corridor", x: 18, z: 11 },
+    lobby: { parent: "courtyard", x: 6, z: 20 },
+    forecourt: { parent: "lobby", x: 6, z: 27 },
+    gym: { parent: "cafeteria", x: 18, z: 20 },
+  },
+};
 
-  // Library
-  f("shelves-oak",    "shelves",     "Oak Shelves",       4, "#a9793f", "#7d5a35", 0),
-  f("shelves-tall",   "shelves",     "Tall Shelves",      8, "#8c6b4f", "#5f4632", 1),
-  f("shelves-spiral", "shelves",     "Spiral Stacks",    14, "#6b5b95", "#eddcf7", 2),
-  f("nook-cushion",   "nook",        "Cushion Nook",      4, "#e5b7a1", "#bd8a74", 0),
-  f("nook-window",    "nook",        "Window Seat",       8, "#bcd6c8", "#87ab97", 1),
-  f("nook-canopy",    "nook",        "Canopy Nook",      14, "#d8c2f0", "#9f81c9", 2),
-  f("rug-round",      "rug",         "Round Rug",          4, "#d9c4a3", "#b39a76", 0),
-  f("rug-star",       "rug",         "Star Rug",          8, "#9db8d4", "#f4e4b8", 1),
-  f("rug-galaxy",     "rug",         "Galaxy Rug",       14, "#3b3f78", "#f6d365", 2),
+export const SCHOOL_VARIANTS = [VARIANT_COURTYARD, VARIANT_QUAD, VARIANT_TERRACE];
+export const DEFAULT_VARIANT_ID = SCHOOL_VARIANTS[0].id;
 
-  // Listening Lab
-  f("booth-basic",    "booth",       "Study Booth",       4, "#cdd6de", "#93a4b3", 0),
-  f("booth-padded",   "booth",       "Padded Booth",      8, "#b8c9bf", "#7e9689", 1),
-  f("booth-dream",    "booth",       "Dream Pod",        14, "#c3b4ea", "#7c69b8", 2),
-  f("speakers-small", "speakers",    "Desk Speakers",      4, "#4a4a52", "#8f939c", 0),
-  f("speakers-tower", "speakers",    "Tower Speakers",    8, "#33333a", "#d0a75f", 1),
-  f("speakers-bloom", "speakers",    "Bloom Speakers",   14, "#e0b7d8", "#8c5f88", 2),
-  f("poster-waves",   "labPoster",   "Waveform Poster",    4, "#f2efe6", "#5b7c9d", 0),
-  f("poster-owl",     "labPoster",   "Night Owl Poster",  8, "#2d3a55", "#f2c14e", 1),
-  f("poster-aurora",  "labPoster",   "Aurora Poster",    14, "#22405a", "#7fe0c4", 2),
+export const getVariant = (id) =>
+  SCHOOL_VARIANTS.find((v) => v.id === id) ?? SCHOOL_VARIANTS[0];
 
-  // Art Room
-  f("easel-pine",     "easel",       "Pine Easel",        4, "#caa477", "#957247", 0),
-  f("easel-splash",   "easel",       "Splash Easel",      8, "#efe3d0", "#e0705f", 1),
-  f("easel-gilded",   "easel",       "Gilded Easel",     14, "#d8b25f", "#8a6a24", 2),
-  f("supplies-jars",  "supplies",    "Paint Jars",         4, "#dfd3c0", "#9b8c74", 0),
-  f("supplies-rack",  "supplies",    "Brush Rack",        8, "#b5c9b0", "#7c9377", 1),
-  f("supplies-prism", "supplies",    "Prism Set",        14, "#cfd8ff", "#7d8ad6", 2),
-  f("art-sketch",     "wallArt",     "Sketch Frame",       4, "#f4f1e8", "#a89e88", 0),
-  f("art-landscape",  "wallArt",     "Landscape",         8, "#cfe2d2", "#6f9c7d", 1),
-  f("art-nebula",     "wallArt",     "Nebula Canvas",    14, "#3a2f5e", "#e59bd0", 2),
+/** Which rectangle a room occupies at a given stage — the last override at or
+ *  below it. */
+function rectAt(spec, stageIndex) {
+  let chosen = spec.rects[0][1];
+  for (const [from, rect] of spec.rects) {
+    if (from <= stageIndex) chosen = rect;
+  }
+  return chosen;
+}
 
-  // Cafeteria
-  f("counter-wood",   "counter",     "Wood Counter",      4, "#bb8a5c", "#8b6440", 0),
-  f("counter-tile",   "counter",     "Tiled Counter",     8, "#e6e9ec", "#9aa7b1", 1),
-  f("counter-honey",  "counter",     "Honey Bar",        14, "#e8b96b", "#a8763a", 2),
-  f("tables-round",   "cafeTables",  "Round Tables",      4, "#d6c5aa", "#a89073", 0),
-  f("tables-booth",   "cafeTables",  "Booth Seating",     8, "#c2a0a8", "#8f6f78", 1),
-  f("tables-picnic",  "cafeTables",  "Picnic Tables",    14, "#b7cfa6", "#7f9a6f", 2),
-  f("plants-pot",     "cafePlants",  "Potted Fern",        4, "#7fa06a", "#b4805a", 0),
-  f("plants-hanging", "cafePlants",  "Hanging Vines",     8, "#6f9c6b", "#c8b79a", 1),
-  f("plants-bloom",   "cafePlants",  "Blooming Pots",    14, "#8fbf7a", "#ef9fbc", 2),
+/** The full floorplan of one variant at one stage. */
+export function roomsAtStage(variantId, stageIndex) {
+  const variant = getVariant(variantId);
+  return variant.rooms
+    .filter((spec) => spec.from <= stageIndex)
+    .map((spec) => ({
+      id: spec.id,
+      kind: spec.kind,
+      ...rectAt(spec, stageIndex),
+      ...(spec.outdoor ? { outdoor: true } : {}),
+    }));
+}
 
-  // Theatre
-  f("stage-wood",     "stage",       "Wooden Stage",      4, "#a9793f", "#7a5527", 0),
-  f("stage-marble",   "stage",       "Marble Stage",      8, "#eae7e0", "#b2aca0", 1),
-  f("stage-starlit",  "stage",       "Starlit Stage",    14, "#2f2a55", "#f6d365", 2),
-  f("seats-simple",   "seats",       "Simple Seats",      4, "#8f6f78", "#66505a", 0),
-  f("seats-velvet",   "seats",       "Velvet Seats",      8, "#8d3f52", "#5d2637", 1),
-  f("seats-cloud",    "seats",       "Cloud Seats",      14, "#c8cfe8", "#8f9ac0", 2),
-  f("curtain-red",    "curtain",     "Red Curtain",       4, "#a33a45", "#6f242c", 0),
-  f("curtain-teal",   "curtain",     "Teal Curtain",      8, "#2f6f6a", "#1e4b48", 1),
-  f("curtain-aurora", "curtain",     "Aurora Curtain",   14, "#5b4a8f", "#9fe0d2", 2),
-
-  // Garden
-  f("tree-young",     "tree",        "Young Tree",        4, "#7fa06a", "#8a6a45", 0),
-  f("tree-blossom",   "tree",        "Blossom Tree",      8, "#f0b7cb", "#8a6a45", 1),
-  f("tree-ancient",   "tree",        "Ancient Oak",      14, "#5f8a57", "#6b5138", 2),
-  f("bench-plain",    "bench",       "Plain Bench",        4, "#b58a5c", "#8a6440", 0),
-  f("bench-iron",     "bench",       "Iron Bench",        8, "#6b7280", "#454b54", 1),
-  f("bench-swing",    "bench",       "Garden Swing",     14, "#d8c2a8", "#9c8466", 2),
-  f("flowers-daisy",  "flowers",     "Daisies",            4, "#f4f1e0", "#e9c46a", 0),
-  f("flowers-tulip",  "flowers",     "Tulips",            8, "#e07a8f", "#7fa06a", 1),
-  f("flowers-moon",   "flowers",     "Moonflowers",      14, "#cdd4f5", "#8f9ad8", 2),
+// ── Stages ──────────────────────────────────────────────────────────────────
+// Shared across every variant: the same price buys the same amount of school,
+// whichever shape yours happens to be.
+//
+// `desks` drives the main classroom's layout presets; `students` is how many of
+// those desks are occupied by NPCs, and the two differ by at least one because
+// the player's own avatar always takes a desk. `secondaryDesks`/
+// `secondaryStudents` apply to EVERY other classroom the variant has, so adding
+// a fourth classroom later needs no new fields. `wanderers` roam; `commuters`
+// walk between rooms and sit down at each end.
+export const SCHOOL_STAGES = [
+  {
+    index: 0,
+    id: "one-room",
+    name: "One Room",
+    blurb: "A board, four desks, and everyone who showed up.",
+    cost: { bitAward: 0, bitWord: 0, bitPhrase: 0 },
+    desks: 4, students: 3, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 1, wanderers: 0, commuters: 0,
+  },
+  {
+    index: 1,
+    id: "full-class",
+    name: "Full Class",
+    blurb: "The walls move out. Nine desks, and a shelf worth reading.",
+    cost: { bitAward: 40, bitWord: 20, bitPhrase: 10 },
+    desks: 9, students: 6, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 1, wanderers: 0, commuters: 0,
+  },
+  {
+    index: 2,
+    id: "reading-corner",
+    name: "Reading Corner",
+    blurb: "A library wing, a rug, and two people who never leave it.",
+    cost: { bitAward: 90, bitWord: 45, bitPhrase: 25 },
+    desks: 9, students: 6, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 1, wanderers: 0, commuters: 0,
+  },
+  {
+    index: 3,
+    id: "listening-lab",
+    name: "Listening Lab",
+    blurb: "A corridor with footsteps in it, and booths at the end of it.",
+    cost: { bitAward: 180, bitWord: 90, bitPhrase: 50 },
+    desks: 12, students: 9, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 1, wanderers: 3, commuters: 1,
+  },
+  {
+    index: 4,
+    id: "courtyard",
+    name: "Courtyard",
+    blurb: "Open air, one tree, and somewhere to be between lessons.",
+    cost: { bitAward: 320, bitWord: 160, bitPhrase: 90 },
+    desks: 12, students: 9, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 1, wanderers: 5, commuters: 2,
+  },
+  {
+    index: 5,
+    id: "assembly-hall",
+    name: "Assembly Hall",
+    blurb: "A stage, a banner, and a shelf with something to put on it.",
+    cost: { bitAward: 550, bitWord: 275, bitPhrase: 160 },
+    desks: 12, students: 10, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 2, wanderers: 6, commuters: 2,
+  },
+  {
+    index: 6,
+    id: "front-desk",
+    name: "Front Desk",
+    blurb: "A way in, and someone at reception to meet whoever uses it.",
+    cost: { bitAward: 800, bitWord: 400, bitPhrase: 230 },
+    desks: 12, students: 10, secondaryDesks: 0, secondaryStudents: 0,
+    teachers: 2, wanderers: 7, commuters: 3,
+  },
+  {
+    index: 7,
+    id: "second-classroom",
+    name: "Second Classroom",
+    blurb: "A second English room — flags, a globe, and the whole alphabet.",
+    cost: { bitAward: 1100, bitWord: 550, bitPhrase: 320 },
+    desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 6,
+    teachers: 3, wanderers: 8, commuters: 4,
+  },
+  {
+    index: 8,
+    id: "cafeteria",
+    name: "Cafeteria",
+    blurb: "Trays, long tables, a third classroom, and the loudest room here.",
+    cost: { bitAward: 1500, bitWord: 750, bitPhrase: 430 },
+    desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 6,
+    teachers: 4, wanderers: 9, commuters: 5,
+  },
+  {
+    index: 9,
+    id: "gymnasium",
+    name: "Gymnasium",
+    blurb: "Wall bars, a scoreboard, and room to make some noise.",
+    cost: { bitAward: 2000, bitWord: 1000, bitPhrase: 580 },
+    desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 7,
+    teachers: 4, wanderers: 10, commuters: 6,
+  },
 ];
 
-// ── Actions (bitPhrase) ─────────────────────────────────────────────────────
-// Every room already animates the avatar for free (SCHOOL_ROOMS[].idleAnim) —
-// buying an action adds another animation to that room's cycle rather than
-// unlocking motion that was previously missing. Cheap by design: bitPhrase is
-// the currency a player accumulates fastest.
-const a = (id, roomId, name, priceBitPhrase, anim) => ({
-  id,
-  roomId,
-  name,
-  priceBitPhrase,
-  anim,
-});
+export const STARTER_STAGE = 0;
+export const MAX_STAGE = SCHOOL_STAGES.length - 1;
 
-export const SCHOOL_ACTIONS = [
-  a("act-cheer",    "classroom",     "Raise a hand",   6, "cheer"),
-  a("act-ponder",   "classroom",     "Ponder",        10, "ponder"),
-  a("act-browse",   "library",       "Browse shelves", 8, "browse"),
-  a("act-nap",      "library",       "Cosy nap",      12, "nap"),
-  a("act-dance",    "listening-lab", "Headphone sway", 8, "dance"),
-  a("act-note",     "listening-lab", "Take notes",    12, "note"),
-  a("act-brush",    "art-room",      "Broad strokes",  8, "brush"),
-  a("act-admire",   "art-room",      "Step back",     12, "admire"),
-  a("act-toast",    "cafeteria",     "Raise a cup",    8, "toast"),
-  a("act-chat",     "cafeteria",     "Chatter",       12, "chat"),
-  a("act-spin",     "theatre",       "Twirl",         14, "spin"),
-  a("act-applause", "theatre",       "Applause",      18, "applause"),
-  a("act-water",    "garden",        "Water plants",   8, "water"),
-  a("act-gaze",     "garden",        "Stargaze",      16, "gaze"),
+// ── Free preferences ────────────────────────────────────────────────────────
+// Nothing here costs a coin — the only sink in the game is the upgrade button.
+// They gate on stage instead: a new stage is worth pressing partly because it
+// hands you new ways to redecorate what you already had.
+
+export const SCHOOL_LAYOUTS = [
+  { id: "rows", name: "Rows", unlocksAtStage: 0 },
+  { id: "u-shape", name: "U-shape", unlocksAtStage: 1 },
+  { id: "clusters", name: "Clusters", unlocksAtStage: 2 },
+  { id: "circle", name: "Circle", unlocksAtStage: 3 },
 ];
+
+export const SCHOOL_WALLPAPERS = [
+  { id: "chalk", name: "Chalk White", color: "#e9e6df", trim: "#cfcabf", unlocksAtStage: 0 },
+  { id: "mint", name: "Mint", color: "#d7e8dd", trim: "#b3cdbd", unlocksAtStage: 0 },
+  { id: "butter", name: "Butter", color: "#f0e4c4", trim: "#d6c49b", unlocksAtStage: 1 },
+  { id: "rose", name: "Dusty Rose", color: "#e8d5d3", trim: "#c9adaa", unlocksAtStage: 2 },
+  { id: "slate", name: "Slate Blue", color: "#ccd6e3", trim: "#a6b5c8", unlocksAtStage: 3 },
+  { id: "plum", name: "Plum", color: "#ddd2e4", trim: "#bcaac8", unlocksAtStage: 4 },
+  { id: "ink", name: "Ink", color: "#9fa8bd", trim: "#7d879c", unlocksAtStage: 5 },
+  { id: "sage", name: "Sage", color: "#cfd8c3", trim: "#adb89f", unlocksAtStage: 6 },
+  { id: "clay", name: "Clay", color: "#e0c6ae", trim: "#c2a58b", unlocksAtStage: 7 },
+  { id: "harbour", name: "Harbour", color: "#b8ccd4", trim: "#94adb7", unlocksAtStage: 8 },
+  { id: "cocoa", name: "Cocoa", color: "#bda893", trim: "#9c8874", unlocksAtStage: 9 },
+];
+
+export const SCHOOL_FLOORS = [
+  { id: "parquet", name: "Parquet", color: "#c39a63", alt: "#b78d57", unlocksAtStage: 0 },
+  { id: "lino", name: "Linoleum", color: "#c9c3b6", alt: "#bdb7a9", unlocksAtStage: 0 },
+  { id: "checker", name: "Checker", color: "#e2ded5", alt: "#5c6b7a", unlocksAtStage: 1 },
+  { id: "concrete", name: "Concrete", color: "#b4b4b0", alt: "#a9a9a5", unlocksAtStage: 2 },
+  { id: "carpet", name: "Carpet", color: "#a2727a", alt: "#96686f", unlocksAtStage: 3 },
+  { id: "oak", name: "Dark Oak", color: "#7d5b3e", alt: "#6f5036", unlocksAtStage: 4 },
+  { id: "terrazzo", name: "Terrazzo", color: "#ded8cc", alt: "#8e9a86", unlocksAtStage: 6 },
+  { id: "slate-tile", name: "Slate Tile", color: "#8f969c", alt: "#7e858b", unlocksAtStage: 8 },
+];
+
+export const DEFAULT_LAYOUT_ID = SCHOOL_LAYOUTS[0].id;
+export const DEFAULT_WALLPAPER_ID = SCHOOL_WALLPAPERS[0].id;
+export const DEFAULT_FLOOR_ID = SCHOOL_FLOORS[0].id;
 
 // ── Lookups ─────────────────────────────────────────────────────────────────
-const roomById = new Map(SCHOOL_ROOMS.map((r) => [r.id, r]));
-const itemById = new Map(SCHOOL_ITEMS.map((i) => [i.id, i]));
-const actionById = new Map(SCHOOL_ACTIONS.map((x) => [x.id, x]));
 
-export const getSchoolRoom = (id) => roomById.get(id) ?? null;
-export const getSchoolItem = (id) => itemById.get(id) ?? null;
-export const getSchoolAction = (id) => actionById.get(id) ?? null;
+export const getStage = (index) =>
+  SCHOOL_STAGES.find((stage) => stage.index === index);
 
-// The room every account starts with, so the dollhouse is never empty.
-export const STARTER_ROOM_IDS = SCHOOL_ROOMS.filter(
-  (r) => r.unlockPriceBitAward === 0,
-).map((r) => r.id);
+// What the one button costs right now, or null when the school is fully built.
+export const getNextStage = (currentIndex) =>
+  SCHOOL_STAGES.find((stage) => stage.index === currentIndex + 1) ?? null;
+
+// A look is only selectable once its stage has been reached. Validated on the
+// server as well as filtered on the client: the client filter is a courtesy,
+// this is the rule.
+const unlockedAt = (list, id, stage) => {
+  const entry = list.find((e) => e.id === id);
+  return entry && entry.unlocksAtStage <= stage ? entry : null;
+};
+
+export const getLayout = (id, stage) => unlockedAt(SCHOOL_LAYOUTS, id, stage);
+export const getWallpaper = (id, stage) => unlockedAt(SCHOOL_WALLPAPERS, id, stage);
+export const getFloor = (id, stage) => unlockedAt(SCHOOL_FLOORS, id, stage);
+
+/**
+ * Which campus a player gets. Derived from their user id rather than rolled at
+ * random, so it is stable without a migration and identical on every device —
+ * and it is still persisted, so the assignment can be changed by hand later
+ * without this function silently overriding it.
+ */
+export function variantForUserId(userId) {
+  const s = String(userId ?? "");
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return SCHOOL_VARIANTS[hash % SCHOOL_VARIANTS.length].id;
+}

@@ -1,7 +1,13 @@
 // models/User.js
 import mongoose from "mongoose";
 import { DEFAULT_PLACEMENT } from "../config/roomLayout.js";
-import { STARTER_ROOM_IDS } from "../config/schoolCatalog.js";
+import {
+  STARTER_STAGE,
+  DEFAULT_LAYOUT_ID,
+  DEFAULT_WALLPAPER_ID,
+  DEFAULT_FLOOR_ID,
+  DEFAULT_VARIANT_ID,
+} from "../config/schoolCatalog.js";
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -152,25 +158,35 @@ const userSchema = new mongoose.Schema({
       hat:       { type: String, default: null },
     },
   },
-// "Dream School" — the game that replaced the office-decorating `room`
-  // above. `room` is deliberately left in place rather than dropped: it is
-  // dead for reading, but removing it would rewrite every existing document
-  // and throw away purchase history we may still want to refund against.
-  // Nothing in the app reads `room` any more.
+
+  // "Dream School" — the isometric campus that replaced both the
+  // office-decorating `room` above and the dollhouse that briefly replaced it.
+  // `room` is deliberately left in place rather than dropped: it is dead for
+  // reading, but removing it would rewrite every existing document.
+  //
+  // Four fields, and that is the whole save. The stage index implies the rooms,
+  // the furniture and the people — none of it is stored per player, because
+  // none of it is chosen per player. See docs/room-game-concept.md.
+  //
+  // Documents written by the dollhouse still carry unlockedRoomIds /
+  // ownedItemIds / ownedActionIds / placed / focusedRoomId. Mongoose simply
+  // stops reading them; school.controller.js strips them on first load rather
+  // than migrating the collection.
   school: {
-    // Seeded from the catalog so the dollhouse is never empty on first visit.
-    unlockedRoomIds: { type: [String], default: () => [...STARTER_ROOM_IDS] },
-    ownedItemIds:    { type: [String], default: [] },
-    ownedActionIds:  { type: [String], default: [] },
+    // 0..MAX_STAGE. The only thing the upgrade button moves.
+    stage: { type: Number, default: STARTER_STAGE, min: 0 },
 
-    // "<roomId>:<slot>" -> itemId. A Map rather than a nested schema on
-    // purpose: adding a room to schoolCatalog.js then needs no schema change
-    // and no migration, which the old room.placedItems shape did not allow.
-    placed: { type: Map, of: String, default: () => new Map() },
+    // Free preferences. Which ones are selectable depends on `stage`, which is
+    // why they are validated against the catalog on write, not just on read.
+    layoutId:    { type: String, default: DEFAULT_LAYOUT_ID },
+    wallpaperId: { type: String, default: DEFAULT_WALLPAPER_ID },
+    floorId:     { type: String, default: DEFAULT_FLOOR_ID },
 
-    // Which cell the dollhouse opens on, and therefore where the avatar
-    // stands. A preference, not a purchase.
-    focusedRoomId: { type: String, default: STARTER_ROOM_IDS[0] ?? "classroom" },
+    // Which of the three campus shapes this player got. NOT a preference: it
+    // is derived from the user id and then persisted, so two players rarely
+    // share a floorplan and visiting someone shows a genuinely different
+    // school. Stored rather than recomputed so it can be reassigned by hand.
+    variantId:   { type: String, default: DEFAULT_VARIANT_ID },
   },
 });
 
