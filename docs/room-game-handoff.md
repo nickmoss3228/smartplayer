@@ -6,9 +6,7 @@ Working notes for picking this up again. The design itself is in
 ## State: green
 
 `tsc -b`, `npm run typecheck:test`, `npm run build` and lint (0 errors) all
-pass. 190 tests, 189 passing — the one failure is `locales.test.ts`, and it is
-**not from this work**: an uncommitted edit to the Russian homepage slogan added
-a sixth word with no English counterpart.
+pass. **198 tests, all passing.**
 
 The school suite is `src/config/schoolCatalog.test.ts`, 40 tests, and every
 geometry test sweeps **all 3 campus variants × all 10 stages**.

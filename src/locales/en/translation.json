@@ -175,7 +175,10 @@
     "category": {
       "general": "Stories",
       "news": "News & Interesting Things"
-    }
+    },
+    "start": "Start",
+    "next": "Next",
+    "completed": "Completed"
   },
   "levels": {
     "easy": "Easy",

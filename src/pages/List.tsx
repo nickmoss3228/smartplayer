@@ -1,63 +1,37 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStoryGroups, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   IoSearchOutline,
   IoFunnelOutline,
-  IoTimeOutline,
   IoBookOutline,
-  IoCheckmarkCircle,
-  IoEllipseOutline,
-  IoPricetagOutline,
-  IoChevronForward,
+  IoNewspaperOutline,
+  IoCheckmark,
+  IoPlay,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
-const difficultyThemes: Record<DifficultySlug, {
-  gradient: string;
-  hoverGradient: string;
-  title: string;
-  textColor: string;
-  borderColor: string;
-  progressColor: string;
-  rowHover: string;
-  badgeBg: string;
+/**
+ * Story cards are 4:5 crops of each story's own comic page with the title set
+ * in a caption plate, the way a comic puts narration inside the panel. The art
+ * is monochrome, so progress is the one piece of colour on a card — red, the
+ * same red the player's timeMarkers already use.
+ *
+ * Level identity (the milk-fat metaphor) never rides on hue alone: the tag
+ * carries the fat numeral and a filled-segment meter as well as the colour, so
+ * it survives colour-blind viewing.
+ */
+const levelAccents: Record<DifficultySlug, {
+  fill: string;
+  text: string;
+  segments: number;
+  fatKey: string;
 }> = {
-  easy: {
-    gradient: 'from-green-600 to-emerald-600',
-    hoverGradient: 'hover:from-green-700 hover:to-emerald-700',
-    title: 'Easy Level',
-    textColor: 'text-green-600',
-    borderColor: 'border-green-500/30',
-    progressColor: 'bg-green-500',
-    rowHover: 'hover:bg-green-50',
-    badgeBg: 'bg-green-100 text-green-700',
-  },
-  medium: {
-    gradient: 'from-yellow-600 to-orange-600',
-    hoverGradient: 'hover:from-yellow-700 hover:to-orange-700',
-    title: 'Medium Level',
-    textColor: 'text-orange-600',
-    borderColor: 'border-orange-500/30',
-    progressColor: 'bg-orange-500',
-    rowHover: 'hover:bg-orange-50',
-    badgeBg: 'bg-orange-100 text-orange-700',
-  },
-  hard: {
-    gradient: 'from-red-600 to-purple-600',
-    hoverGradient: 'hover:from-red-700 hover:to-purple-700',
-    title: 'Hard Level',
-    textColor: 'text-purple-600',
-    borderColor: 'border-purple-500/30',
-    progressColor: 'bg-purple-500',
-    rowHover: 'hover:bg-purple-50',
-    badgeBg: 'bg-purple-100 text-purple-700',
-  },
+  easy:   { fill: 'bg-emerald-600', text: 'text-emerald-700', segments: 1, fatKey: 'fatEasy' },
+  medium: { fill: 'bg-orange-600',  text: 'text-orange-700',  segments: 2, fatKey: 'fatMedium' },
+  hard:   { fill: 'bg-purple-600',  text: 'text-purple-700',  segments: 3, fatKey: 'fatHard' },
 };
-
-type SortKey = 'title' | 'topic' | 'progress';
-type SortDir = 'asc' | 'desc';
 
 const categoryOrder: StoryGroup['category'][] = ['general', 'news'];
 
@@ -69,7 +43,7 @@ const List = () => {
 
   const diff = (difficulty || 'easy') as DifficultySlug;
   const stories = useStoryGroups(diff, t);
-  const theme = difficultyThemes[diff] || difficultyThemes.easy;
+  const accent = levelAccents[diff] || levelAccents.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
     const storyData = getStoryData(diff, story.slug);
@@ -79,9 +53,6 @@ const List = () => {
     return { completed, total, percentage };
   };
 
-  const [search, _setSearch] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('title');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [topicFilter, setTopicFilter] = useState<string>('all');
 
   const allTopics = useMemo(() => {
@@ -91,58 +62,29 @@ const List = () => {
     return ['all', ...Array.from(new Set(topics))];
   }, [stories]);
 
-  const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
-  };
+  // Cards are browsed by eye, so stories keep the order they are authored in
+  // (storyGroupsRaw, then published DB stories) rather than being alphabetised
+  // the way the old sortable table did it.
+  const filteredStories = useMemo(() => {
+    if (topicFilter === 'all') return stories;
+    return stories.filter(s => (s as any).topic === topicFilter);
+  }, [stories, topicFilter]);
 
-  const sortedFilteredStories = useMemo(() => {
-    let result = [...stories];
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        s =>
-          s.title.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q) ||
-          (s as any).topic?.toLowerCase().includes(q)
-      );
-    }
-
-    if (topicFilter !== 'all') {
-      result = result.filter(s => (s as any).topic === topicFilter);
-    }
-
-    result.sort((a, b) => {
-      let valA: string | number = '';
-      let valB: string | number = '';
-
-      if (sortKey === 'title') {
-        valA = a.title.toLowerCase();
-        valB = b.title.toLowerCase();
-      } else if (sortKey === 'topic') {
-        valA = ((a as any).topic || '').toLowerCase();
-        valB = ((b as any).topic || '').toLowerCase();
-      } else if (sortKey === 'progress') {
-        valA = getStoryProgress(a).percentage;
-        valB = getStoryProgress(b).percentage;
-      }
-
-      if (valA < valB) return sortDir === 'asc' ? -1 : 1;
-      if (valA > valB) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [stories, search, topicFilter, sortKey, sortDir, getStoryData, diff]);
+  /**
+   * Cards are held at opacity 0 by the [data-list-reveal] rule in App.css and
+   * released as they scroll into view, so a story below the fold plays its
+   * entrance when you actually reach it rather than finishing unseen — most of
+   * the Easy grid sits below the fold on a phone.
+   *
+   * Re-runs when the story list changes, because useStoryGroups appends
+   * published DB stories after its fetch resolves; without that, a story that
+   * arrived late would never be observed and would stay invisible.
+   */
+  const stageRef = useRef<HTMLDivElement>(null);
 
   const groupedStories = useMemo(() => {
     const byCategory = new Map<StoryGroup['category'], StoryGroup[]>();
-    for (const story of sortedFilteredStories) {
+    for (const story of filteredStories) {
       const list = byCategory.get(story.category) ?? [];
       list.push(story);
       byCategory.set(story.category, list);
@@ -150,192 +92,172 @@ const List = () => {
     return categoryOrder
       .filter(cat => byCategory.has(cat))
       .map(cat => ({ category: cat, stories: byCategory.get(cat)! }));
-  }, [sortedFilteredStories]);
+  }, [filteredStories]);
 
-  const SortIcon = ({ col }: { col: SortKey }) => {
-    if (sortKey !== col) return <span className="text-gray-300 ml-1">↕</span>;
-    return (
-      <span className={`ml-1 ${theme.textColor}`}>
-        {sortDir === 'asc' ? '↑' : '↓'}
+  useEffect(() => {
+    const root = stageRef.current;
+    if (!root) return;
+
+    const cards = Array.from(
+      root.querySelectorAll<HTMLElement>('[data-list-reveal="out"]')
+    );
+    if (cards.length === 0) return;
+
+    const reveal = (el: Element) => el.setAttribute('data-list-reveal', 'in');
+
+    if (typeof IntersectionObserver === 'undefined') {
+      cards.forEach(reveal);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          reveal(entry.target);
+          observer.unobserve(entry.target);
+        }
+      },
+      // A sliver is enough: the card should already be moving by the time it
+      // clears the fold, not start once it is fully on screen.
+      { threshold: 0.08, rootMargin: '0px 0px -5% 0px' }
+    );
+
+    cards.forEach(card => observer.observe(card));
+    return () => observer.disconnect();
+  }, [groupedStories]);
+
+  /** Colour + numeral + filled segments, so the level reads three ways. */
+  const FatMeter = () => (
+    <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-gray-500">
+      <span className="flex gap-[2px]" aria-hidden="true">
+        {[0, 1, 2].map(i => (
+          <span
+            key={i}
+            className={`block h-3 w-[5px] rounded-[1px] ${
+              i < accent.segments ? accent.fill : 'bg-gray-200'
+            }`}
+          />
+        ))}
       </span>
-    );
-  };
+      <span>
+        {t('levels.fatLabel')}{' '}
+        <span className={`font-semibold tabular-nums ${accent.text}`}>
+          {t(`levels.${accent.fatKey}`)}
+        </span>
+      </span>
+    </span>
+  );
 
-  const renderRow = (story: StoryGroup, index: number, list: StoryGroup[]) => {
+  const renderCard = (story: StoryGroup, index: number) => {
     const { completed, total, percentage } = getStoryProgress(story);
-    const isCompleted = percentage === 100;
-    const topic = (story as any).topic as string | undefined;
-    const duration = (story as any).duration as string | undefined;
-    const borderClass = index !== list.length - 1 ? 'border-b border-gray-100' : '';
+    const isCompleted = total > 0 && completed >= total;
+    const hasStarted = completed > 0;
+    const nextPart = Math.min(completed + 1, total);
+
+    // No cover art yet: news placeholders, and anything built in the Story
+    // Builder (dbStoryToGroup carries no image). These get a halftone screen
+    // and a category icon rather than a stretched-out placeholder.
+    const FallbackIcon = story.category === 'news' ? IoNewspaperOutline : IoBookOutline;
+
+    const stateLabel = isCompleted
+      ? t('list.completed')
+      : hasStarted
+        ? `${t('list.next')} ${nextPart}`
+        : t('list.start');
 
     return (
-      <div
+      <button
         key={story.slug}
+        type="button"
         onClick={() => navigate(`/levels/${diff}/${story.slug}`)}
-        className={`cursor-pointer transition-colors duration-150 ${theme.rowHover} ${borderClass}`}
+        data-list-reveal="out"
+        // Panels land in reading order. The stagger is capped so a long shelf
+        // never turns the entrance into a queue you have to wait out.
+        style={{ '--list-delay': `${Math.min(index, 7) * 55}ms` } as React.CSSProperties}
+        className={`group relative block w-full cursor-pointer overflow-hidden rounded-lg text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 ${
+          story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
+        }`}
       >
+        {story.cover ? (
+          <img
+            src={story.cover}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out sm:group-hover:scale-105"
+          />
+        ) : (
+          <>
+            <span
+              className="absolute inset-0 text-gray-400 opacity-60"
+              style={{
+                backgroundImage: 'radial-gradient(currentColor 1.1px, transparent 1.2px)',
+                backgroundSize: '6px 6px',
+              }}
+              aria-hidden="true"
+            />
+            <span className="absolute inset-x-0 top-[18%] flex justify-center text-gray-400">
+              <FallbackIcon size={28} aria-hidden="true" />
+            </span>
+          </>
+        )}
 
-        {/* ── MOBILE layout ── */}
-        <div className="sm:hidden flex items-center gap-3 px-4 py-4">
-
-          {/* Circular progress indicator */}
-          <div className="relative shrink-0 w-11 h-11">
-            <svg viewBox="0 0 40 40" className="w-11 h-11 -rotate-90">
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                className="text-gray-100"
-              />
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 16}
-                strokeDashoffset={2 * Math.PI * 16 * (1 - percentage / 100)}
-                className={`${theme.textColor} transition-all duration-500`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              {isCompleted ? (
-                <IoCheckmarkCircle size={16} className={theme.textColor} />
-              ) : (
-                <span className="text-[10px] font-semibold text-gray-500">
-                  {percentage}%
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800 leading-snug truncate">
-              {story.title}
-            </p>
-
-            {story.description && (
-              <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">
-                {story.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-1.5 mt-2">
-              {topic && (
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] ${theme.badgeBg}`}
-                >
-                  <IoPricetagOutline size={11} />
-                  {topic}
-                </span>
-              )}
-              {duration && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[11px]">
-                  <IoTimeOutline size={11} />
-                  {duration}
-                </span>
-              )}
-              <span className="text-[11px] text-gray-400 ml-auto">
-                {completed}/{total}
-              </span>
-            </div>
-          </div>
-
-          <IoChevronForward size={16} className="text-gray-300 shrink-0" />
-        </div>
-
-        {/* ── DESKTOP layout ── */}
-        <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-1 px-5 py-4">
-          {/* Title + description */}
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">
-                {story.title}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {story.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Topic */}
-          <div className="flex items-center">
-            {topic ? (
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${theme.badgeBg}`}>
-                {topic}
-              </span>
-            ) : (
-              <span className="text-xs text-gray-300">—</span>
-            )}
-          </div>
-
-          {/* Progress */}
-          <div className="flex items-center gap-2">
+        {/* Where you are, readable without hovering — phones have no hover. */}
+        {(hasStarted || isCompleted) && (
+          <span
+            className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
+              isCompleted ? 'bg-gray-900 text-white' : 'bg-red-500 text-white'
+            }`}
+          >
             {isCompleted ? (
-              <IoCheckmarkCircle size={16} className={theme.textColor} />
+              <IoCheckmark size={11} aria-hidden="true" />
             ) : (
-              <IoEllipseOutline size={16} className="text-gray-300" />
+              <>
+                <IoPlay size={9} aria-hidden="true" />
+                {nextPart}
+              </>
             )}
-            <div className="flex-1">
-              <div className="flex justify-between mb-1">
-                <span className="text-xs text-gray-400">{completed}/{total}</span>
-                <span className={`text-xs font-semibold ${theme.textColor}`}>
-                  {percentage}%
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full ${theme.progressColor} rounded-full transition-all duration-500`}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+          </span>
+        )}
 
-      </div>
+        {/* The caption plate. On a pointer device it slides down on hover to
+            uncover the art; on touch it simply stays put. */}
+        <span className="absolute inset-x-[7%] top-1/2 z-10 block -translate-y-1/2 rounded-[3px] bg-gray-900 px-2.5 py-2 text-white transition-transform duration-500 ease-out sm:group-hover:translate-y-0">
+          <span className="block text-[11px] font-bold uppercase leading-tight tracking-wide line-clamp-3 sm:text-[13px]">
+            {story.title}
+          </span>
+          <span className="mt-1.5 flex items-center justify-between gap-2 border-t border-white/15 pt-1.5 text-[9px] uppercase tracking-wider text-white/70 sm:text-[10px]">
+            <span className="truncate">{stateLabel}</span>
+            <span className="shrink-0 tabular-nums">
+              {completed}/{total}
+            </span>
+          </span>
+        </span>
+
+        {/* Progress sits in the panel's bottom gutter. */}
+        <span
+          className={`absolute inset-x-0 bottom-0 z-10 block h-1 ${
+            story.cover ? 'bg-black/40' : 'bg-gray-200'
+          }`}
+        >
+          {/* Width is the real value; the entrance scales it in from the left,
+              so the bar inks itself rather than animating layout. */}
+          <span
+            className="list-card__fill block h-full bg-red-500"
+            style={{ width: `${percentage}%` }}
+          />
+        </span>
+      </button>
     );
   };
-
-  const TableHeader = () => (
-    <div className="hidden sm:grid grid-cols-[2fr_1fr_1.4fr] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-      <button
-        onClick={() => handleSort('title')}
-        className="flex items-center text-left hover:text-gray-600 transition-colors"
-      >
-        <IoBookOutline size={13} className="mr-1.5" />
-        {t(`list.title`)}
-        <SortIcon col="title" />
-      </button>
-      <button
-        onClick={() => handleSort('topic')}
-        className="flex items-center hover:text-gray-600 transition-colors"
-      >
-        {t(`list.topic`)}
-        <SortIcon col="topic" />
-      </button>
-      <button
-        onClick={() => handleSort('progress')}
-        className="flex items-center hover:text-gray-600 transition-colors"
-      >
-        {t(`list.progress`)}
-        <SortIcon col="progress" />
-      </button>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
 
       {/* Header */}
       <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 animate-fade-in">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 animate-fade-in">
 
           <button
             onClick={() => navigate('/levels')}
@@ -362,7 +284,7 @@ const List = () => {
               {t(`list.difficultyTitle.${diff}`)}
             </div>
             <p className="text-gray-400 text-sm mt-1">
-              {sortedFilteredStories.length} / {stories.length} {t(`list.stories`)}
+              {filteredStories.length} / {stories.length} {t(`list.stories`)}
             </p>
           </div>
 
@@ -370,7 +292,9 @@ const List = () => {
 
         </div>
 
-        <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 animate-fade-in-delay-1">
+          <FatMeter />
+
           {allTopics.length > 1 && (
             <div className="relative">
               <IoFunnelOutline
@@ -394,18 +318,26 @@ const List = () => {
       </div>
 
       {/* Story groups */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16 space-y-8">
+      <div ref={stageRef} className="max-w-5xl mx-auto px-4 sm:px-6 pb-16 space-y-8">
         {groupedStories.length > 0 ? (
           groupedStories.map(({ category, stories: groupStories }) => (
             <div key={category}>
               {groupedStories.length > 1 && (
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1 animate-fade-in-delay-2">
                   {t(`list.category.${category}`)}
                 </h2>
               )}
-              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <TableHeader />
-                {groupStories.map((story, index) => renderRow(story, index, groupStories))}
+              {/* Medium and Hard ship a single story each. One half-width card
+                  stranded on an empty page reads as a bug, so a lone story runs
+                  as a hero card instead of a one-item grid. */}
+              <div
+                className={
+                  groupStories.length === 1
+                    ? 'grid grid-cols-1 sm:max-w-xs'
+                    : 'grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4'
+                }
+              >
+                {groupStories.map((story, index) => renderCard(story, index))}
               </div>
             </div>
           ))
@@ -422,56 +354,3 @@ const List = () => {
 };
 
 export default List;
-
-
-
-// {/* Header */}
-//       <div className="max-w-5xl pt-16 mx-auto px-4 sm:px-6">
-//         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-8 animate-fade-in">
-//           {/* <NavigationArrow
-//             direction="left"
-//             difficulty={navigationState.prevDifficulty}
-//             onClick={() => goToDifficulty(navigationState.prevDifficulty)}
-//             disabled={!navigationState.prevDifficulty}
-//           /> */}
-
-//           <div className="text-center flex-1 min-w-0 px-2">
-//             <button
-//               onClick={() => navigate('/levels')}
-//               className="flex items-left cursor-pointer gap-2 mt-6 mb-4 text-gray-500 hover:text-gray-800 transition-colors mx-auto text-sm"
-//             >
-//               <IoArrowBack size={16} />
-//               {/* <span>Back to Levels</span> */}
-//             </button>
-//             <div className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide">
-//               {t(`levelProgress.${diff}Title`)}
-//             </div>
-//             <p className="text-gray-400 text-sm mt-1">
-//               {sortedFilteredStories.length} / {stories.length} stories
-//             </p>
-//           </div>
-
-//           {/* <NavigationArrow
-//             direction="right"
-//             difficulty={navigationState.nextDifficulty}
-//             onClick={() => goToDifficulty(navigationState.nextDifficulty)}
-//             disabled={!navigationState.nextDifficulty}
-//           /> */}
-//         </div>
-
-
-        {/* Filter bar */}
-        {/* <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <IoSearchOutline
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search stories..."
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-300 text-gray-700 placeholder-gray-400"
-            />
-          </div> */}

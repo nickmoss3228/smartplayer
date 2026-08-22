@@ -63,14 +63,28 @@ function sideGeometry(room: SchoolRoomRect, side: Side) {
   }
 }
 
-/** Spans of a side that another room is pressed against. In the cutaway these
- *  drop to knee height; in the exterior view they are skipped entirely, since
- *  the neighbour draws the same wall and two coplanar boxes z-fight. */
-function neighbourSpans(room: SchoolRoomRect, rooms: SchoolRoomRect[], side: Side): [number, number][] {
+/**
+ * Spans of a side that another room is pressed against. In the cutaway these
+ * drop to knee height; in the exterior view they are skipped entirely, since
+ * the neighbour draws the same wall and two coplanar boxes z-fight.
+ *
+ * `indoorOnly` is what the exterior view passes, and it is load-bearing. An
+ * OUTDOOR neighbour — the courtyard, the forecourt — draws no walls at all, so
+ * treating it as covering the boundary left both sides drawing nothing: an open
+ * gap in the facade looking straight into the corridor, with everybody inside
+ * it plainly visible. A building needs a wall facing its own courtyard.
+ */
+function neighbourSpans(
+  room: SchoolRoomRect,
+  rooms: SchoolRoomRect[],
+  side: Side,
+  indoorOnly = false,
+): [number, number][] {
   const g = sideGeometry(room, side);
   const out: [number, number][] = [];
   for (const o of rooms) {
     if (o.id === room.id) continue;
+    if (indoorOnly && o.outdoor) continue;
     const touches =
       side === "north" ? Math.abs(o.z + o.d - room.z) < 0.01
       : side === "south" ? Math.abs(o.z - (room.z + room.d)) < 0.01
@@ -271,7 +285,7 @@ const Shell = ({
     <group>
       {sides.map((side) => {
         const g = sideGeometry(room, side);
-        const covered = neighbourSpans(room, rooms, side);
+        const covered = neighbourSpans(room, rooms, side, true);
         // Everything the neighbours do NOT cover, at full height.
         const segments = wallSegments(g.from, g.to, [], []).flatMap((seg) => {
           const pieces: Segment[] = [];
