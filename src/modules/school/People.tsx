@@ -18,9 +18,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { PatrolPerson, PeoplePlan, SeatedPerson, Spot } from "./props";
+import {
+  PatrolPerson,
+  PeoplePlan,
+  SeatedPerson,
+  Spot,
+  WALK_SPEED,
+  walkerAt,
+} from "./props";
 import { BlobShadow } from "./Building";
-import { BubblePool, pickLine, Speaker } from "./bubbles";
+import { BubblePool, PersonRole, pickLine } from "./bubbles";
 
 export interface PersonLook {
   skin: string;
@@ -316,8 +323,6 @@ const Seated = ({
 
 // ── Walker (teacher and wanderers) ──────────────────────────────────────────
 
-const WALK_SPEED = 1.15;
-
 const Walker = ({
   path,
   look,
@@ -337,40 +342,25 @@ const Walker = ({
   const refs = useBodyRefs();
   const hop = useHop();
   const group = useRef<THREE.Group>(null);
-  // Start partway along the first leg, not at its head: two wanderers handed
-  // the same loop would otherwise spawn inside one another and stay in step.
-  const state = useRef({ i: 0, t: (phase * 0.37) % 1, pause: phase % 2 });
 
   useFrame(({ clock }, dt) => {
     if (!group.current || path.length < 2) return;
-    const s = state.current;
-    const from = path[s.i];
-    const to = path[(s.i + 1) % path.length];
-    const dx = to.x - from.x;
-    const dz = to.z - from.z;
-    const dist = Math.hypot(dx, dz) || 1;
 
-    let walking = true;
-    if (s.pause > 0) {
-      s.pause -= dt;
-      walking = false;
-    } else {
-      s.t += (dt * WALK_SPEED) / dist;
-      if (s.t >= 1) {
-        s.t = 0;
-        s.i = (s.i + 1) % path.length;
-        // Uneven pauses; an identical wait at every corner reads as a machine.
-        s.pause = 0.9 + ((s.i * 7 + phase * 13) % 10) * 0.22;
-      }
-    }
+    // Position comes from the clock, not from integrating dt. Everybody on a
+    // roaming loop walks the SAME loop at the SAME speed and holds for the
+    // SAME time at each stop, so their spacing — set once, by distance, in
+    // props.ts `spaceOut` — can never drift. It used to drift: the pause at
+    // each waypoint was derived from the walker's own phase, so two wanderers
+    // took different amounts of time per lap and slowly closed on one another
+    // until they were standing in the same doorway, mixed up together.
+    const step = walkerAt(path, clock.elapsedTime);
+    const walking = step.walking;
+    group.current.position.x = step.x;
+    group.current.position.z = step.z;
 
-    group.current.position.x = from.x + dx * s.t;
-    group.current.position.z = from.z + dz * s.t;
-
-    const heading = Math.atan2(dx, dz);
     // Face the class while stopped, the direction of travel while moving, and
     // ease between the two rather than snapping.
-    const want = walking ? heading : facesClassWhenIdle ? Math.PI : heading;
+    const want = walking ? step.heading : facesClassWhenIdle ? Math.PI : step.heading;
     const cur = group.current.rotation.y;
     let delta = ((want - cur + Math.PI) % (Math.PI * 2)) - Math.PI;
     if (delta < -Math.PI) delta += Math.PI * 2;
@@ -558,21 +548,22 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
   const timer = useRef<number | null>(null);
 
   // Every actor that can hold a bubble, so the scheduler can pick one without
-  // caring which kind it is.
+  // caring which kind it is. Each carries its ROLE, which is what decides the
+  // pool it speaks from: reception says "Welcome!", the gym says "Nice pass!".
   const cast = useMemo(() => {
-    const entries: { key: string; speaker: Speaker }[] = [
-      ...plan.students.map((s) => ({ key: s.key, speaker: "student" as Speaker })),
-      ...plan.teachers.map((t) => ({ key: t.key, speaker: "teacher" as Speaker })),
-      ...plan.wanderers.map((w) => ({ key: w.key, speaker: "student" as Speaker })),
-      ...plan.commuters.map((c) => ({ key: c.key, speaker: "student" as Speaker })),
+    const entries: { key: string; role: PersonRole }[] = [
+      ...plan.students.map((s) => ({ key: s.key, role: s.role })),
+      ...plan.teachers.map((t) => ({ key: t.key, role: t.role })),
+      ...plan.wanderers.map((w) => ({ key: w.key, role: w.role })),
+      ...plan.commuters.map((c) => ({ key: c.key, role: c.role })),
     ];
-    if (plan.playerSeat) entries.push({ key: "me", speaker: "student" });
+    if (plan.playerSeat) entries.push({ key: "me", role: "student" });
     return entries;
   }, [plan]);
 
   const say = useCallback(
-    (key: string, speaker: Speaker) => {
-      setSpeaking({ key, text: pickLine(speaker === "teacher" ? pool.teacher : pool.student) });
+    (key: string, role: PersonRole) => {
+      setSpeaking({ key, text: pickLine(pool[role] ?? pool.student) });
     },
     [pool],
   );
@@ -586,7 +577,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
     const tick = () => {
       if (cancelled) return;
       const pick = cast[Math.floor(Math.random() * cast.length)];
-      say(pick.key, pick.speaker);
+      say(pick.key, pick.role);
       timer.current = window.setTimeout(() => {
         if (cancelled) return;
         setSpeaking(null);
@@ -602,12 +593,12 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
   }, [cast, say]);
 
   const tap = useCallback(
-    (key: string, speaker: Speaker) => {
+    (key: string, role: PersonRole) => {
       if (!interactive) return;
       // A poke jumps the queue: clear the pending hide so the bubble the player
       // asked for is not cut short by the scheduler's timer.
       if (timer.current) window.clearTimeout(timer.current);
-      say(key, speaker);
+      say(key, role);
       timer.current = window.setTimeout(() => setSpeaking(null), 2800);
     },
     [interactive, say],
@@ -638,7 +629,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
           look={lookForIndex(i)}
           phase={i * 1.37}
           bubble={bubbleFor(s.key)}
-          onTap={() => tap(s.key, "student")}
+          onTap={() => tap(s.key, s.role)}
         />
       ))}
 
@@ -650,7 +641,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
           phase={i * 2.1}
           facesClassWhenIdle
           bubble={bubbleFor(t.key)}
-          onTap={() => tap(t.key, "teacher")}
+          onTap={() => tap(t.key, t.role)}
         />
       ))}
 
@@ -661,7 +652,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
           look={lookForIndex(i + 11)}
           phase={i * 1.9 + 0.6}
           bubble={bubbleFor(w.key)}
-          onTap={() => tap(w.key, "student")}
+          onTap={() => tap(w.key, w.role)}
         />
       ))}
 
@@ -673,7 +664,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
           look={lookForIndex(i + 23)}
           phase={i * 2.7 + 1.3}
           bubble={bubbleFor(c.key)}
-          onTap={() => tap(c.key, "student")}
+          onTap={() => tap(c.key, c.role)}
         />
       ))}
     </group>

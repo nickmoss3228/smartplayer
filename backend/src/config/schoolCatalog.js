@@ -110,7 +110,10 @@ const VARIANT_QUAD = {
   rooms: [
     room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
     room("library", "library", 2, [[2, { x: 12, z: 0, w: 8, d: 8 }]]),
-    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 20, d: 3 }], [5, { x: -12, z: 8, w: 32, d: 3 }], [9, { x: -12, z: 8, w: 43, d: 3 }]]),
+    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 20, d: 3 }], [5, { x: -12, z: 8, w: 32, d: 3 }], [7, { x: -12, z: 8, w: 43, d: 3 }]]),
+    // The corridor reaches east at stage 7, NOT stage 9: classroomB arrives
+    // at 7, and until the corridor got there it was an island with its
+    // doorway opening onto nothing.
     room("lab", "lab", 3, [[3, { x: 12, z: 11, w: 8, d: 7 }]]),
     room("courtyard", "courtyard", 4, [[4, { x: 0, z: 11, w: 12, d: 10 }]], true),
     room("hall", "hall", 5, [[5, { x: -12, z: 0, w: 12, d: 8 }]]),

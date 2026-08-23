@@ -283,7 +283,10 @@ const Scene = ({ school, character, learnedWords, interactive, exterior = false 
     return all.filter((p) => outdoors.has(p.key.split("-")[0]));
   }, [plan, exterior]);
   const cast = useMemo(() => peoplePlan(plan, layoutId), [plan, layoutId]);
-  const pool = useMemo(() => buildBubblePool(learnedWords), [learnedWords]);
+  // Same clock the lighting reads, so "Good evening!" and the amber key light
+  // agree with each other.
+  const hour = useMemo(() => new Date().getHours(), []);
+  const pool = useMemo(() => buildBubblePool(learnedWords, hour), [learnedWords, hour]);
   const words = useMemo(() => boardWords(learnedWords), [learnedWords]);
   const playerLook = useMemo(() => playerLookFrom(character), [character]);
 
@@ -292,7 +295,7 @@ const Scene = ({ school, character, learnedWords, interactive, exterior = false 
   const [boardIdx, setBoardIdx] = useState(0);
   const boardWord = words.length ? words[boardIdx % words.length] : null;
 
-  const light = useMemo(() => lightingForHour(new Date().getHours()), []);
+  const light = useMemo(() => lightingForHour(hour), [hour]);
 
   return (
     <>

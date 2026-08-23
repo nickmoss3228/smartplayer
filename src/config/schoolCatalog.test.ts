@@ -39,10 +39,14 @@ import {
   deskLayout,
   doorZones,
   footprintOf,
+  freeWallRuns,
   peoplePlan,
   seatOf,
+  seatSurfaces,
   stageProps,
+  WALK_SPEED,
   wallOpenings,
+  walkerAt,
 } from '../modules/school/props';
 
 /**
@@ -360,7 +364,9 @@ describe('doorways', () => {
       const openings = wallOpenings(plan);
       const walls: Wall[] = [];
       for (const r of rooms) {
-        if (r.outdoor) continue; // open ground has no walls to walk through
+        // Outdoor rooms are in here too now: the yard and the forecourt are
+        // walled, so walking out of one anywhere but a gateway is as wrong as
+        // walking out through a classroom wall.
         walls.push({ roomId: r.id, side: 'north', fixed: r.z, from: r.x, to: r.x + r.w });
         walls.push({ roomId: r.id, side: 'west', fixed: r.x, from: r.z, to: r.z + r.d });
       }
@@ -410,15 +416,201 @@ describe('doorways', () => {
     }
   });
 
-  it('gives every classroom a doorway of its own', () => {
-    for (const { plan, label } of everyPlan()) {
+  it('cuts every classroom doorway into whichever wall is drawn across it', () => {
+    // Deliberately not "the classroom has an opening of its own": only north
+    // and west walls are drawn, so when the corridor is SOUTH of a classroom
+    // the gap belongs to the corridor's north wall, not the classroom's. What
+    // has to be true is that the wall standing across the doorway — whichever
+    // room draws it — has a hole in it.
+    for (const { plan, rooms, label } of everyPlan()) {
       const openings = wallOpenings(plan);
+      const byId = new Map(rooms.map((r) => [r.id, r]));
+
       for (const c of classroomsOf(plan)) {
-        const o = openings[c.id];
+        const door = plan.doors[c.id];
+        const parent = door?.parent ? byId.get(door.parent) : undefined;
+
+        if (door && parent) {
+          const cut = [c, parent].some((r) => {
+            const holes = openings[r.id];
+            if (!holes) return false;
+            if (Math.abs(door.z - r.z) < 0.01) {
+              return holes.north.some((h) => Math.abs(h.at - door.x) < 0.01);
+            }
+            if (Math.abs(door.x - r.x) < 0.01) {
+              return holes.west.some((h) => Math.abs(h.at - door.z) < 0.01);
+            }
+            return false;
+          });
+          expect(cut, `${label}/${c.id}: its doorway has no gap in the wall`).toBe(true);
+          continue;
+        }
+
+        // Before the corridor is built the classroom IS the school, and its
+        // catalog doorway leads to a room that does not exist yet. It still
+        // has to have a visible way in — the door onto whatever is west of it.
+        const own = openings[c.id];
         expect(
-          (o?.north.length ?? 0) + (o?.west.length ?? 0),
-          `${label}/${c.id} has no way in`,
+          (own?.north.length ?? 0) + (own?.west.length ?? 0),
+          `${label}/${c.id} has no way in at all`,
         ).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe('roaming students keep out of each other', () => {
+  it('never lets two of them stand in the same place', () => {
+    // The reported bug, exactly: several people walk into a room, stop, and
+    // end up standing inside one another, because nothing keeps them apart.
+    //
+    // The fix is not collision, it is arithmetic. Everybody roams the SAME
+    // loop at the SAME speed and holds for the SAME time at the SAME stops,
+    // and they are spread around it by DISTANCE rather than by waypoint index.
+    // Their separation is therefore a constant of the loop, and `walkerAt` is
+    // a pure function of the clock, so half an hour of school can be sampled
+    // here rather than argued about.
+    //
+    // Two of them may still cross paths mid-corridor for a moment, which is
+    // what people do; standing merged together is what they must never do.
+    for (const { plan, label } of everyPlan()) {
+      const wanderers = peoplePlan(plan, DEFAULT_LAYOUT_ID).wanderers;
+      if (wanderers.length < 2) continue;
+
+      let worst = Infinity;
+      let when = 0;
+      // Sampled every 1.3s: deliberately not a whole number of seconds, so the
+      // sampling cannot land on the same phase of a loop again and again and
+      // miss the moment two people meet.
+      for (let t = 0; t < 1800; t += 1.3) {
+        const at = wanderers.map((w) => walkerAt(w.path, t));
+        for (let i = 0; i < at.length; i++) {
+          for (let j = i + 1; j < at.length; j++) {
+            if (at[i].walking && at[j].walking) continue;
+            const gap = Math.hypot(at[i].x - at[j].x, at[i].z - at[j].z);
+            if (gap < worst) {
+              worst = gap;
+              when = t;
+            }
+          }
+        }
+      }
+      // A person is about 0.45m across. Two of them 0.7m apart read as two
+      // people passing; any closer and they are one smudge.
+      expect(worst, `${label}: two wanderers ${worst.toFixed(2)}m apart at t=${when}s`)
+        .toBeGreaterThan(0.7);
+    }
+  }, 30000);
+
+  it('spaces them further apart in time than either of them ever stands still', () => {
+    // Why the test above passes, stated directly rather than sampled. Two
+    // wanderers reach any given stop this many seconds apart; as long as that
+    // is longer than the stop itself, the first has always left before the
+    // second arrives — no matter how long the page stays open.
+    for (const { plan, label } of everyPlan()) {
+      const wanderers = peoplePlan(plan, DEFAULT_LAYOUT_ID).wanderers;
+      if (wanderers.length < 2) continue;
+
+      const path = wanderers[0].path;
+      let span = 0;
+      let longestHold = 0;
+      for (let i = 0; i < path.length; i++) {
+        const a = path[i];
+        const b = path[(i + 1) % path.length];
+        span += Math.hypot(b.x - a.x, b.z - a.z);
+        longestHold = Math.max(longestHold, b.hold ?? 0);
+      }
+
+      const apart = span / wanderers.length / WALK_SPEED;
+      expect(
+        apart,
+        `${label}: wanderers arrive ${apart.toFixed(1)}s apart but stand still for ` +
+          `up to ${longestHold.toFixed(1)}s`,
+      ).toBeGreaterThan(longestHold + 1);
+    }
+  });
+
+  it('walks every loop at a steady pace with no teleports', () => {
+    // `spaceOut` splits the loop mid-leg to start each person in a different
+    // place. A seam stitched back together wrongly would show up as somebody
+    // jumping across the campus once a lap.
+    for (const { plan, label } of everyPlan()) {
+      for (const w of peoplePlan(plan, DEFAULT_LAYOUT_ID).wanderers.slice(0, 2)) {
+        let prev = walkerAt(w.path, 0);
+        for (let t = 0.2; t < 400; t += 0.2) {
+          const now = walkerAt(w.path, t);
+          const moved = Math.hypot(now.x - prev.x, now.z - prev.z);
+          // 0.2s at 1.15 m/s is 0.23m; anything much over that is a jump.
+          expect(moved, `${label}/${w.key} jumped ${moved.toFixed(2)}m at t=${t.toFixed(1)}s`)
+            .toBeLessThan(0.35);
+          prev = now;
+        }
+      }
+    }
+  }, 30000);
+});
+
+describe('nothing hangs in mid-air', () => {
+  // A clock, a poster, a scoreboard and a window are all nailed to a wall, and
+  // half the walls in this building are either a 0.95m partition (because
+  // there is a room behind them) or an open doorway. Hang something on one of
+  // those and it floats — which is exactly what reception's clock, the
+  // corridor's poster and the gym's scoreboard were doing.
+  const WALL_MOUNTED = new Set(['clock', 'window', 'poster', 'board', 'banner', 'noticeboard', 'scoreboard', 'alphabet']);
+
+  it('mounts every wall prop on a wall that is actually drawn there', () => {
+    for (const { plan, rooms, label } of everyPlan()) {
+      const byId = new Map(rooms.map((r) => [r.id, r]));
+      for (const prop of stageProps(plan)) {
+        if (!WALL_MOUNTED.has(prop.type)) continue;
+        const owner = byId.get(prop.key.split('-')[0]);
+        if (!owner) continue;
+
+        // North wall props sit at the room's z with ry 0; west wall props at
+        // its x, turned a quarter turn.
+        const onNorth = Math.abs(prop.z - owner.z) < 0.4;
+        const side = onNorth ? 'north' : 'west';
+        const at = onNorth ? prop.x : prop.z;
+        const len = prop.len ?? 0.9;
+        const runs = freeWallRuns(plan, owner, side);
+
+        expect(
+          runs.some(([s, e]) => at > s - 0.05 && at < e + 0.05),
+          `${label}: ${prop.key} hangs on the ${side} wall at ${at.toFixed(2)}, ` +
+            `where the drawn wall runs are [${runs.map(([s, e]) => `${s.toFixed(1)}-${e.toFixed(1)}`).join(', ')}]`,
+        ).toBe(true);
+        // And it has to FIT: half of it poking past the end of the wall is the
+        // same bug with a smaller radius.
+        expect(
+          runs.some(([s, e]) => at - len / 2 > s - 0.35 && at + len / 2 < e + 0.35),
+          `${label}: ${prop.key} is ${len}m wide and overhangs its wall`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('never puts a window on an interior wall', () => {
+    // A window looking into the corridor is not a window. `freeWallRuns` only
+    // returns stretches with nothing at all behind them, so passing the test
+    // above already proves this — but this is the version of it that says what
+    // the player noticed.
+    for (const { plan, rooms, label } of everyPlan()) {
+      const byId = new Map(rooms.map((r) => [r.id, r]));
+      for (const prop of stageProps(plan).filter((p) => p.type === 'window')) {
+        const owner = byId.get(prop.key.split('-')[0]);
+        if (!owner) continue;
+        const onNorth = Math.abs(prop.z - owner.z) < 0.4;
+        for (const other of rooms) {
+          if (other.id === owner.id) continue;
+          const behind = onNorth
+            ? Math.abs(other.z + other.d - owner.z) < 0.01 &&
+              prop.x > other.x + 0.01 &&
+              prop.x < other.x + other.w - 0.01
+            : Math.abs(other.x + other.w - owner.x) < 0.01 &&
+              prop.z > other.z + 0.01 &&
+              prop.z < other.z + other.d - 0.01;
+          expect(behind, `${label}: ${prop.key} looks into the ${other.id}`).toBe(false);
+        }
       }
     }
   });
@@ -625,6 +817,9 @@ describe('nobody walks through anything', () => {
     return hi > lo;
   };
 
+  const inBox = (p: { x: number; z: number }, box: { x0: number; x1: number; z0: number; z1: number }) =>
+    p.x > box.x0 && p.x < box.x1 && p.z > box.z0 && p.z < box.z1;
+
   it('never routes a person through a piece of furniture', () => {
     // The counterpart to the wall test, and the same reasoning: nobody steers
     // at runtime, every actor follows an authored polyline exactly, so checking
@@ -640,15 +835,55 @@ describe('nobody walks through anything', () => {
         ...cast.wanderers.map((w) => ({ key: w.key, pts: [...w.path, w.path[0]] })),
         ...cast.teachers.map((t) => ({ key: t.key, pts: [...t.path, t.path[0]] })),
       ];
+      const seats = new Set(cast.commuters.flatMap((c) => c.seats));
 
       for (const route of routes) {
         for (let i = 0; i < route.pts.length - 1; i++) {
+          const a = route.pts[i];
+          const b = route.pts[i + 1];
           for (const box of solids) {
+            // Sitting down is not walking through. A commuter's route begins
+            // and ends ON a chair, a bench or a sofa, so the leg that reaches
+            // one is allowed inside that one piece of furniture — and nothing
+            // else, which is what keeps this a real guarantee. (The `never
+            // seats anybody on thin air` test below is the other half: the
+            // seat has to be a seat.)
+            if ((seats.has(a as never) || seats.has(b as never)) && (inBox(a, box) || inBox(b, box))) {
+              continue;
+            }
             expect(
-              hitsBox(route.pts[i], route.pts[i + 1], box),
+              hitsBox(a, b, box),
               `${label}/${route.key} leg ${i} passes through ${box.key}`,
             ).toBe(false);
           }
+        }
+      }
+    }
+  });
+
+  it('never seats anybody on thin air', () => {
+    // Every reported "the characters are floating" bug in one assertion: the
+    // lab booths with no stools, the receptionist behind a desk with no chair,
+    // visitors sitting on the library rug at chair height, and everyone parked
+    // three quarters of a metre in front of the bench they were meant to be on.
+    for (const { plan, label } of everyPlan()) {
+      for (const layoutId of layoutIds) {
+        const surfaces = seatSurfaces(plan, layoutId);
+        const cast = peoplePlan(plan, layoutId);
+        const sitters = [
+          ...(cast.playerSeat ? [{ key: 'player', spot: cast.playerSeat }] : []),
+          ...cast.students.map((s) => ({ key: s.key, spot: s.spot })),
+          ...cast.commuters.flatMap((c) =>
+            c.seats.map((spot, i) => ({ key: `${c.key}[${i}]`, spot })),
+          ),
+        ];
+
+        for (const { key, spot } of sitters) {
+          expect(
+            surfaces.some((box) => inBox(spot, box)),
+            `${label}/${layoutId}: ${key} sits at ${spot.x.toFixed(2)},${spot.z.toFixed(2)} ` +
+              `with no seat under them`,
+          ).toBe(true);
         }
       }
     }

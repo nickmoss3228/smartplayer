@@ -18,12 +18,17 @@
 //
 // Conventions every prop below obeys, and every model must too: pivot on the
 // floor at the centre of the footprint, front facing local +z, 1 unit = 1 metre.
+//
+// One more, for anything you can sit on: the BACKREST goes on local +z, so
+// whoever sits in it faces local −z. props.ts has a single `sitOn` that relies
+// on this holding for every seat without exception — the sofa used to be the
+// exception, and people sat in it back to front.
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { PropInstance, SEAT_GAP } from "./props";
+import { BOOTH_STOOL, DOOR_WIDTH, PropInstance, SEAT_GAP } from "./props";
 
 // A flat, slightly dusty palette. Deliberately narrow — a limited palette is
 // most of what makes unrelated box props read as one set.
@@ -223,11 +228,22 @@ const Window = () => (
   </group>
 );
 
+/**
+ * A CLOSED door leaf, filling its doorway in the plane of the wall.
+ *
+ * Authored like every other wall prop — width along local x, thickness along
+ * local z — which is precisely what it was not. It used to be modelled a
+ * quarter turn out, so once the caller rotated it onto a west wall it stood
+ * edge-on in the room: a 12cm-wide slab a metre deep, hanging 20cm clear of a
+ * hole nearly twice its width. It read exactly as a door left half open.
+ */
 const Door = () => (
   <group>
-    <Box p={[0, 0, 0]} s={[0.12, 2.1, 1.05]} c={PALETTE.frame} />
-    <Box p={[0.05, 0.05, 0]} s={[0.05, 1.95, 0.9]} c={PALETTE.wood} />
-    <Box p={[0.1, 1.0, 0.32]} s={[0.05, 0.06, 0.14]} c={PALETTE.gold} />
+    <Box p={[0, 0, 0]} s={[DOOR_WIDTH - 0.08, 2.02, 0.09]} c={PALETTE.wood} />
+    {/* Two panels and a handle: enough that it reads as a door, not a plank. */}
+    <Box p={[0, 0.22, 0.05]} s={[DOOR_WIDTH - 0.5, 0.66, 0.02]} c={PALETTE.woodDark} />
+    <Box p={[0, 1.06, 0.05]} s={[DOOR_WIDTH - 0.5, 0.66, 0.02]} c={PALETTE.woodDark} />
+    <Box p={[DOOR_WIDTH / 2 - 0.26, 0.94, 0.06]} s={[0.16, 0.06, 0.05]} c={PALETTE.gold} />
   </group>
 );
 
@@ -324,6 +340,19 @@ const Booth = () => (
     <Box p={[0.72, 0.79, 0]} s={[0.05, 0.5, 0.72]} c="#8a97a5" />
     <Box p={[0, 0.79, -0.2]} s={[0.62, 0.42, 0.05]} c={PALETTE.screen} />
     <Box p={[-0.45, 0.79, 0.08]} s={[0.3, 0.08, 0.24]} c={PALETTE.metalDark} />
+    {/* The stool. Without it the whole lab was people sitting in mid-air, and
+        BOOTH_STOOL is where props.ts seats them — the two must agree. */}
+    <group position={[0, 0, BOOTH_STOOL]}>
+      <mesh position={[0, 0.44, 0]}>
+        <cylinderGeometry args={[0.21, 0.19, 0.06, 10]} />
+        <meshLambertMaterial color={PALETTE.fabric} />
+      </mesh>
+      <Box p={[0, 0, 0]} s={[0.07, 0.44, 0.07]} c={PALETTE.metalDark} />
+      <mesh position={[0, 0.03, 0]}>
+        <cylinderGeometry args={[0.22, 0.24, 0.05, 10]} />
+        <meshLambertMaterial color={PALETTE.metal} />
+      </mesh>
+    </group>
   </group>
 );
 
@@ -559,7 +588,9 @@ const ReceptionDesk = ({ len = 3.4 }: { len?: number }) => (
 const Sofa = () => (
   <group>
     <Box p={[0, 0.16, 0]} s={[1.9, 0.3, 0.85]} c={PALETTE.fabric} />
-    <Box p={[0, 0, -0.36]} s={[1.9, 0.92, 0.16]} c={PALETTE.fabric} />
+    {/* Backrest on local +z, like every other seat here. It used to be the one
+        exception, which is how people ended up sitting in it back to front. */}
+    <Box p={[0, 0, 0.36]} s={[1.9, 0.92, 0.16]} c={PALETTE.fabric} />
     <Box p={[-0.94, 0.16, 0]} s={[0.16, 0.4, 0.85]} c="#5a6aa2" />
     <Box p={[0.94, 0.16, 0]} s={[0.16, 0.4, 0.85]} c="#5a6aa2" />
     <Box p={[0, 0, 0]} s={[1.8, 0.16, 0.78]} c={PALETTE.woodDark} />

@@ -19,13 +19,18 @@
 
 import { useMemo } from "react";
 import { SchoolRoomRect, SchoolSurface } from "../../config/schoolCatalog";
-import { RoomOpenings, SchoolPlan, WallOpening, wallOpenings } from "./props";
+import { SchoolPlan, WALL_T, WallOpening, WallSide, boundaryOpenings } from "./props";
 import { floorTexture, grassTexture } from "./textures";
 
 const WALL_H = 3.0;
 const PARTITION_H = 0.95;
-const WALL_T = 0.22;
 const TRIM_H = 0.16;
+/** The yard and the forecourt are walled too — they are the school's grounds,
+ *  not a hole in the world. Chest height where they face the street, and lower
+ *  still on the two sides the camera looks over, so the garden reads as
+ *  enclosed without hiding the people in it. */
+const GARDEN_H = 1.5;
+const GARDEN_LIP = 0.8;
 /** Height of a door hole; anything above it stays as a lintel. */
 const DOOR_H = 2.1;
 /** Roof deck and its parapet. Deliberately unrelated to the wallpaper: the roof
@@ -47,7 +52,8 @@ interface Segment {
   height: number;
 }
 
-type Side = "north" | "south" | "west" | "east";
+type Side = WallSide;
+type SideOpenings = Record<Side, WallOpening[]>;
 
 /** Which axis a side's wall runs along, and where it sits on the other one. */
 function sideGeometry(room: SchoolRoomRect, side: Side) {
@@ -118,6 +124,7 @@ function wallSegments(
   to: number,
   kneeSpans: [number, number][],
   openings: WallOpening[],
+  full = WALL_H,
 ): Segment[] {
   const cuts = new Set<number>([from, to]);
   const add = (v: number) => {
@@ -141,7 +148,7 @@ function wallSegments(
     const mid = (a + b) / 2;
     if (openings.some((o) => Math.abs(mid - o.at) < o.width / 2 - 0.001)) continue;
     const knee = kneeSpans.some(([s, e]) => mid > s + 0.001 && mid < e - 0.001);
-    out.push({ from: a, to: b, height: knee ? PARTITION_H : WALL_H });
+    out.push({ from: a, to: b, height: knee ? Math.min(PARTITION_H, full) : full });
   }
   return out;
 }
@@ -244,6 +251,60 @@ const Doorway = ({
   );
 };
 
+/**
+ * A door in an outside wall: the frame, and a leaf filling the hole.
+ *
+ * The leaf is the point. The exterior view has to show the way in — a school
+ * whose entrance is a blank wall that people walk through is not a school —
+ * but an actual hole in the facade is a peephole into the interior the roof
+ * exists to hide. Filling the opening back in with a door-coloured slab of the
+ * same thickness gives an entrance you can see and nothing you can see through.
+ */
+const FrontDoor = ({
+  axis,
+  at,
+  width,
+  fixed,
+  trim,
+}: {
+  axis: "x" | "z";
+  at: number;
+  width: number;
+  fixed: number;
+  trim: string;
+}) => {
+  const h = DOOR_H;
+  const leaf: [number, number, number] =
+    axis === "x" ? [width, h, WALL_T] : [WALL_T, h, width];
+  const step: [number, number, number] =
+    axis === "x" ? [width + 0.5, 0.12, 0.7] : [0.7, 0.12, width + 0.5];
+  const pos: [number, number, number] = axis === "x" ? [at, 0, fixed] : [fixed, 0, at];
+
+  return (
+    <group position={pos}>
+      <Doorway axis={axis} at={0} width={width} fixed={0} wallHeight={WALL_H} trim={trim} />
+      <mesh position={[0, h / 2, 0]}>
+        <boxGeometry args={leaf} />
+        <meshLambertMaterial color="#8a5a34" />
+      </mesh>
+      {/* Two leaves rather than one, and a step outside. Both are cheap, and
+          together they read as a main entrance rather than a cupboard. */}
+      <mesh
+        position={axis === "x" ? [0, h / 2, WALL_T / 2 + 0.02] : [WALL_T / 2 + 0.02, h / 2, 0]}
+      >
+        <boxGeometry
+          args={axis === "x" ? [0.06, h - 0.2, 0.03] : [0.03, h - 0.2, 0.06]}
+        />
+        <meshLambertMaterial color={trim} />
+      </mesh>
+      <mesh position={[0, 0.06, 0]}>
+        <boxGeometry args={step} />
+        <meshLambertMaterial color="#9a958a" />
+      </mesh>
+    </group>
+  );
+};
+
 const Floor = ({ room, floor }: { room: SchoolRoomRect; floor: SchoolSurface }) => {
   // Each room needs its own repeat count, and repeat lives on the texture — so
   // the cached texture is cloned per room rather than shared and fought over.
@@ -273,47 +334,83 @@ const Shell = ({
   room,
   rooms,
   wallpaper,
+  openings,
 }: {
   room: SchoolRoomRect;
   rooms: SchoolRoomRect[];
   wallpaper: SchoolSurface;
+  /** Only the grounds cut their boundary open — the building itself stays
+   *  sealed from outside, or a doorway becomes a peephole into the interior it
+   *  is the roof's whole job to hide. */
+  openings: SideOpenings;
 }) => {
   const trim = wallpaper.trim ?? "#c9c4b8";
   const sides: Side[] = ["north", "south", "west", "east"];
+  const height = room.outdoor ? GARDEN_H : WALL_H;
 
   return (
     <group>
       {sides.map((side) => {
         const g = sideGeometry(room, side);
         const covered = neighbourSpans(room, rooms, side, true);
-        // Everything the neighbours do NOT cover, at full height.
-        const segments = wallSegments(g.from, g.to, [], []).flatMap((seg) => {
+        // Doorways are cut into the outside walls too. Without them the school
+        // is a sealed box whose occupants walk out through the brickwork; the
+        // grounds get an open gap, the building gets a door in it.
+        const outside = (at: number) =>
+          !covered.some(([a, b]) => at > a - 0.01 && at < b + 0.01);
+        const holes = openings[side].filter((h) => outside(h.at));
+        const segments = wallSegments(g.from, g.to, [], holes, height).flatMap((seg) => {
           const pieces: Segment[] = [];
           let cursor = seg.from;
           for (const [a, b] of [...covered].sort((m, n) => m[0] - n[0])) {
             if (b <= cursor || a >= seg.to) continue;
-            if (a > cursor) pieces.push({ from: cursor, to: Math.min(a, seg.to), height: WALL_H });
+            if (a > cursor) pieces.push({ from: cursor, to: Math.min(a, seg.to), height });
             cursor = Math.max(cursor, b);
           }
-          if (cursor < seg.to) pieces.push({ from: cursor, to: seg.to, height: WALL_H });
+          if (cursor < seg.to) pieces.push({ from: cursor, to: seg.to, height });
           return pieces;
         });
 
-        return segments.map((seg) => (
+        return [
+          ...holes.map((h) =>
+            room.outdoor ? (
+              // The grounds get a gateway, not a door — you walk straight
+              // through it. The forecourt's own arch stands in this one.
+              <Doorway
+                key={`${side}gate${h.at.toFixed(2)}`}
+                axis={g.axis}
+                at={h.at}
+                width={h.width}
+                fixed={g.fixed}
+                wallHeight={height}
+                trim={trim}
+              />
+            ) : (
+              <FrontDoor
+                key={`${side}door${h.at.toFixed(2)}`}
+                axis={g.axis}
+                at={h.at}
+                width={h.width}
+                fixed={g.fixed}
+                trim={trim}
+              />
+            ),
+          ),
+          ...segments.map((seg) => (
           <group key={`${side}${seg.from.toFixed(2)}`}>
             <WallPiece
               axis={g.axis}
               from={seg.from}
               to={seg.to}
               fixed={g.fixed}
-              height={WALL_H}
+              height={height}
               color={wallpaper.color}
               trim={trim}
             />
             {/* Windows, but only on the two facades the camera can see. A blank
                 elevation reads as a slab rather than a school, and putting them
                 on all four sides would be geometry nobody ever looks at. */}
-            {(side === "south" || side === "east") &&
+            {!room.outdoor && (side === "south" || side === "east") &&
               facadeWindows(seg.from, seg.to).map((at) => (
                 <mesh
                   key={at}
@@ -330,21 +427,27 @@ const Shell = ({
                 </mesh>
               ))}
           </group>
-        ));
+          )),
+        ];
       })}
 
       {/* Flat roof with a lip. A pitched roof would read better in elevation
-          but fights the isometric camera, which sees mostly the top face. */}
-      <mesh position={[room.x + room.w / 2, WALL_H + 0.18, room.z + room.d / 2]}>
-        <boxGeometry args={[room.w + WALL_T * 2, 0.36, room.d + WALL_T * 2]} />
-        <meshLambertMaterial color={ROOF} />
-      </mesh>
-      {/* A thin parapet standing proud of the roof deck, so the edge of the
-          building reads as an edge instead of dissolving into the wall. */}
-      <mesh position={[room.x + room.w / 2, WALL_H + 0.46, room.z + room.d / 2]}>
-        <boxGeometry args={[room.w + 0.5, 0.2, room.d + 0.5]} />
-        <meshLambertMaterial color={ROOF_EDGE} />
-      </mesh>
+          but fights the isometric camera, which sees mostly the top face.
+          The grounds obviously get none of this. */}
+      {!room.outdoor && (
+        <>
+          <mesh position={[room.x + room.w / 2, WALL_H + 0.18, room.z + room.d / 2]}>
+            <boxGeometry args={[room.w + WALL_T * 2, 0.36, room.d + WALL_T * 2]} />
+            <meshLambertMaterial color={ROOF} />
+          </mesh>
+          {/* A thin parapet standing proud of the roof deck, so the edge of the
+              building reads as an edge instead of dissolving into the wall. */}
+          <mesh position={[room.x + room.w / 2, WALL_H + 0.46, room.z + room.d / 2]}>
+            <boxGeometry args={[room.w + 0.5, 0.2, room.d + 0.5]} />
+            <meshLambertMaterial color={ROOF_EDGE} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 };
@@ -359,53 +462,88 @@ const RoomShell = ({
 }: {
   room: SchoolRoomRect;
   rooms: SchoolRoomRect[];
-  openings: RoomOpenings;
+  openings: SideOpenings;
   wallpaper: SchoolSurface;
   floor: SchoolSurface;
-  /** Outdoor rooms in the exterior view keep their ground but nothing else. */
+  /** Indoor rooms in the exterior view are drawn by `Shell` instead, so here
+   *  they keep their floor and nothing else. */
   wallsOff?: boolean;
 }) => {
   const trim = wallpaper.trim ?? "#c9c4b8";
+  // The yard is walled like a yard: waist height rather than three metres, so
+  // it still reads as open air.
+  const fullH = room.outdoor ? GARDEN_H : WALL_H;
 
   const north = useMemo(() => {
     const from = room.x - WALL_T / 2;
     const to = room.x + room.w + WALL_T / 2;
-    const knees: [number, number][] = [];
-    for (const o of rooms) {
-      if (o.id === room.id) continue;
-      if (Math.abs(o.z + o.d - room.z) > 0.01) continue;
-      const span = overlapSpan(o.x, o.x + o.w, from, to);
-      if (span) knees.push(span);
-    }
-    return { segments: wallSegments(from, to, knees, openings.north), knees };
-  }, [room, rooms, openings.north]);
+    const knees = neighbourSpans(room, rooms, "north");
+    return { segments: wallSegments(from, to, knees, openings.north, fullH), knees };
+  }, [room, rooms, openings.north, fullH]);
 
   const west = useMemo(() => {
     const from = room.z - WALL_T / 2;
     const to = room.z + room.d + WALL_T / 2;
-    const knees: [number, number][] = [];
-    for (const o of rooms) {
-      if (o.id === room.id) continue;
-      if (Math.abs(o.x + o.w - room.x) > 0.01) continue;
-      const span = overlapSpan(o.z, o.z + o.d, from, to);
-      if (span) knees.push(span);
-    }
-    return { segments: wallSegments(from, to, knees, openings.west), knees };
-  }, [room, rooms, openings.west]);
+    const knees = neighbourSpans(room, rooms, "west");
+    return { segments: wallSegments(from, to, knees, openings.west, fullH), knees };
+  }, [room, rooms, openings.west, fullH]);
+
+  /**
+   * The two sides the camera looks over. Indoor rooms never draw them — that
+   * is the cutaway, and a wall there would hide the room's own contents. An
+   * outdoor room gets a low lip along whatever part of them is not another
+   * room, because a garden with two open sides is not a garden, it is a hole
+   * in the floor. Kept below knee height so the people in it stay visible.
+   */
+  const lips = useMemo(() => {
+    if (!room.outdoor) return [];
+    return (["south", "east"] as const).map((side) => {
+      const g = sideGeometry(room, side);
+      const covered = neighbourSpans(room, rooms, side);
+      let segments = wallSegments(g.from, g.to, [], openings[side], GARDEN_LIP);
+      // Anything with a room behind it is that room's business to draw.
+      for (const [a, b] of covered) {
+        segments = segments.flatMap((seg) => {
+          if (b <= seg.from || a >= seg.to) return [seg];
+          const kept: Segment[] = [];
+          if (a > seg.from) kept.push({ ...seg, to: Math.min(a, seg.to) });
+          if (b < seg.to) kept.push({ ...seg, from: Math.max(b, seg.from) });
+          return kept;
+        });
+      }
+      return { side, g, segments };
+    });
+  }, [room, rooms, openings]);
 
   /** A doorway's frame has to match the wall it pierces, not the tallest wall
    *  in the room — a full-height lintel over a gap in a knee-high partition
    *  would hang in mid-air. */
   const heightAt = (knees: [number, number][], at: number) =>
-    knees.some(([s, e]) => at > s - 0.001 && at < e + 0.001) ? PARTITION_H : WALL_H;
+    knees.some(([s, e]) => at > s - 0.001 && at < e + 0.001)
+      ? Math.min(PARTITION_H, fullH)
+      : fullH;
 
   return (
     <group>
       <Floor room={room} floor={floor} />
 
-      {/* Outdoor rooms are open ground: no walls at all, or the courtyard stops
-          being a courtyard. */}
-      {!room.outdoor && !wallsOff && (
+      {!wallsOff &&
+        lips.map(({ side, g, segments }) =>
+          segments.map((seg) => (
+            <WallPiece
+              key={`${side}${seg.from.toFixed(2)}`}
+              axis={g.axis}
+              from={seg.from}
+              to={seg.to}
+              fixed={g.fixed}
+              height={seg.height}
+              color={wallpaper.color}
+              trim={trim}
+            />
+          )),
+        )}
+
+      {!wallsOff && (
         <>
           {north.segments.map((seg) => (
             <WallPiece
@@ -460,7 +598,7 @@ const RoomShell = ({
   );
 };
 
-const EMPTY_OPENINGS: RoomOpenings = { north: [], west: [] };
+const NO_OPENINGS: SideOpenings = { north: [], south: [], west: [], east: [] };
 
 export const Building = ({
   plan,
@@ -474,8 +612,14 @@ export const Building = ({
   /** Cutaway (the default) or the whole building seen from outside. */
   exterior?: boolean;
 }) => {
-  const openings = useMemo(() => wallOpenings(plan), [plan]);
   const rooms = plan.rooms;
+  const openings = useMemo(
+    () => Object.fromEntries(rooms.map((r) => [r.id, boundaryOpenings(plan, r)])) as Record<
+      string,
+      SideOpenings
+    >,
+    [plan, rooms],
+  );
 
   return (
     <group>
@@ -497,23 +641,32 @@ export const Building = ({
         </mesh>
       ))}
 
-      {rooms.map((room) =>
-        exterior && !room.outdoor ? (
-          <group key={room.id}>
-            <Shell room={room} rooms={rooms} wallpaper={wallpaper} />
-          </group>
-        ) : (
-          <RoomShell
-            key={room.id}
-            room={room}
-            rooms={rooms}
-            openings={exterior ? EMPTY_OPENINGS : (openings[room.id] ?? EMPTY_OPENINGS)}
-            wallpaper={wallpaper}
-            floor={floor}
-            wallsOff={exterior}
-          />
-        ),
-      )}
+      {rooms.map((room) => (
+        <group key={room.id}>
+          {/* Indoor rooms disappear under the roof in the exterior view; the
+              grounds keep their grass, their planting and their boundary wall,
+              which is most of what makes the outside read as a school with a
+              yard rather than a block on a slab. */}
+          {(!exterior || room.outdoor) && (
+            <RoomShell
+              room={room}
+              rooms={rooms}
+              openings={openings[room.id] ?? NO_OPENINGS}
+              wallpaper={wallpaper}
+              floor={floor}
+              wallsOff={exterior}
+            />
+          )}
+          {exterior && (
+            <Shell
+              room={room}
+              rooms={rooms}
+              wallpaper={wallpaper}
+              openings={openings[room.id] ?? NO_OPENINGS}
+            />
+          )}
+        </group>
+      ))}
     </group>
   );
 };
