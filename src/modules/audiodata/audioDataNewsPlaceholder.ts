@@ -40,6 +40,12 @@ const newsTracks = (slug: string, recorded: boolean): AudioTrack[] =>
     audio: recorded ? getStorageUrl(`${slug}/${file}`) : "",
     subtitles: [],
     timeMarkers: getStoryMarkers("easy", slug, id),
+    // Comics can't come from comicsData's manifest: that is keyed by
+    // difficulty alone, so every easy story would be handed Leo's pages. Each
+    // news story carries its own, written by scripts/make-comics.py, and
+    // `recorded` doubles as "has artwork" — family-visit has neither yet and
+    // falls back to the empty Comics card.
+    comicUrl: recorded ? `/assets/${slug}/comics/${id}.jpg` : null,
   }));
 
 export const newsRolandGarrosAudioData: AudioTrack[] = newsTracks("news-roland-garros", true);

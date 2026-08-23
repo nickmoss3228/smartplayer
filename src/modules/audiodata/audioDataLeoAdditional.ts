@@ -13,6 +13,10 @@ export const leoAdditionalAudioData: AudioTrack[] = [
     id: "1",
     title: "Ava and Katrin",
     audio: Girls1 ,
+    // Its own artwork, not comicsData's manifest — that is keyed by difficulty
+    // alone and would hand this story Leo's pages. Written by
+    // scripts/make-comics.py.
+    comicUrl: "/assets/leo-additional/comics/1.jpg",
     helpAudio: getHelpAudioUrls("easy", "leo-additional-1"), // check this signature/path convention
     subtitles: [ /* ... */ ],
     timeMarkers: [
@@ -37,6 +41,7 @@ export const leoAdditionalAudioData: AudioTrack[] = [
     id: "2",
     title: "Ava and Sofia",
     audio: Girls2,
+    comicUrl: "/assets/leo-additional/comics/2.jpg",
     helpAudio: getHelpAudioUrls("easy", "leo-additional-2"), // check this signature/path convention
     subtitles: [ /* ... */ ],
     timeMarkers: [ /* ... */ ],

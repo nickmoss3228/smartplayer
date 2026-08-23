@@ -11,26 +11,29 @@ import {
   IoPlay,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
+import { themes } from '../modules/levelprogress/themes.levelprogress';
 
 /**
  * Story cards are 4:5 crops of each story's own comic page with the title set
  * in a caption plate, the way a comic puts narration inside the panel. The art
- * is monochrome, so progress is the one piece of colour on a card — red, the
- * same red the player's timeMarkers already use.
+ * is monochrome, so progress is the one piece of colour on a card — and that
+ * colour is the level's own, read from themes.levelprogress rather than picked
+ * again here, so a card can never drift from the level picker or LevelProgress.
+ *
+ * `accent` arrives as a var(--color-*) reference, so it is handed down as the
+ * --level-accent custom property and consumed by static utility classes
+ * (bg-[var(--level-accent)]). Interpolating a colour into a class name would
+ * not survive Tailwind's build-time scan.
  *
  * Level identity (the milk-fat metaphor) never rides on hue alone: the tag
  * carries the fat numeral and a filled-segment meter as well as the colour, so
- * it survives colour-blind viewing.
+ * it survives colour-blind viewing. The segment count and the fat label are
+ * milk-fat concepts rather than theme ones, so they stay local.
  */
-const levelAccents: Record<DifficultySlug, {
-  fill: string;
-  text: string;
-  segments: number;
-  fatKey: string;
-}> = {
-  easy:   { fill: 'bg-emerald-600', text: 'text-emerald-700', segments: 1, fatKey: 'fatEasy' },
-  medium: { fill: 'bg-orange-600',  text: 'text-orange-700',  segments: 2, fatKey: 'fatMedium' },
-  hard:   { fill: 'bg-purple-600',  text: 'text-purple-700',  segments: 3, fatKey: 'fatHard' },
+const levelFat: Record<DifficultySlug, { segments: number; fatKey: string }> = {
+  easy:   { segments: 1, fatKey: 'fatEasy' },
+  medium: { segments: 2, fatKey: 'fatMedium' },
+  hard:   { segments: 3, fatKey: 'fatHard' },
 };
 
 const categoryOrder: StoryGroup['category'][] = ['general', 'news'];
@@ -43,7 +46,8 @@ const List = () => {
 
   const diff = (difficulty || 'easy') as DifficultySlug;
   const stories = useStoryGroups(diff, t);
-  const accent = levelAccents[diff] || levelAccents.easy;
+  const theme = themes[diff] || themes.easy;
+  const fat = levelFat[diff] || levelFat.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
     const storyData = getStoryData(diff, story.slug);
@@ -127,23 +131,27 @@ const List = () => {
     return () => observer.disconnect();
   }, [groupedStories]);
 
-  /** Colour + numeral + filled segments, so the level reads three ways. */
+  /**
+   * Colour + numeral + filled segments, so the level reads three ways.
+   * The hue rides on the segment blocks, not on the numeral: the accents are
+   * 500-weight and would not carry enough contrast as small text on the
+   * near-white page background.
+   */
   const FatMeter = () => (
     <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-gray-500">
       <span className="flex gap-[2px]" aria-hidden="true">
         {[0, 1, 2].map(i => (
           <span
             key={i}
-            className={`block h-3 w-[5px] rounded-[1px] ${
-              i < accent.segments ? accent.fill : 'bg-gray-200'
-            }`}
+            className="block h-3 w-[5px] rounded-[1px]"
+            style={{ backgroundColor: i < fat.segments ? theme.accent : 'var(--color-gray-200)' }}
           />
         ))}
       </span>
       <span>
         {t('levels.fatLabel')}{' '}
-        <span className={`font-semibold tabular-nums ${accent.text}`}>
-          {t(`levels.${accent.fatKey}`)}
+        <span className="font-semibold tabular-nums text-gray-800">
+          {t(`levels.${fat.fatKey}`)}
         </span>
       </span>
     </span>
@@ -174,8 +182,11 @@ const List = () => {
         data-list-reveal="out"
         // Panels land in reading order. The stagger is capped so a long shelf
         // never turns the entrance into a queue you have to wait out.
-        style={{ '--list-delay': `${Math.min(index, 7) * 55}ms` } as React.CSSProperties}
-        className={`group relative block w-full cursor-pointer overflow-hidden rounded-lg text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 ${
+        style={{
+          '--list-delay': `${Math.min(index, 7) * 55}ms`,
+          '--level-accent': theme.accent,
+        } as React.CSSProperties}
+        className={`group relative block w-full cursor-pointer overflow-hidden rounded-lg text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
           story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
         }`}
       >
@@ -207,7 +218,7 @@ const List = () => {
         {(hasStarted || isCompleted) && (
           <span
             className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
-              isCompleted ? 'bg-gray-900 text-white' : 'bg-red-500 text-white'
+              isCompleted ? 'bg-gray-900 text-white' : 'bg-[var(--level-accent)] text-white'
             }`}
           >
             {isCompleted ? (
@@ -244,7 +255,7 @@ const List = () => {
           {/* Width is the real value; the entrance scales it in from the left,
               so the bar inks itself rather than animating layout. */}
           <span
-            className="list-card__fill block h-full bg-red-500"
+            className={`list-card__fill block h-full bg-gradient-to-r ${theme.progressGradient}`}
             style={{ width: `${percentage}%` }}
           />
         </span>

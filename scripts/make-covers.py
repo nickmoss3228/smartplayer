@@ -23,16 +23,17 @@ import sys
 
 from PIL import Image
 
-# (output slug, character folder, 1-based comic page to crop the cover from)
+# (output slug, comic folder under public/assets, 1-based page to crop from)
 JOBS = [
     ("leo", "leo", 1),
-    ("leo-additional", "leo", 9),
+    # Was cropped from leo page 9 while this story had no artwork of its own.
+    ("leo-additional", "leo-additional", 1),
     ("maya", "maya", 1),
     ("daniel", "daniel", 1),
+    ("news-roland-garros", "news-roland-garros", 1),
+    ("news-grazing-board", "news-grazing-board", 1),
 ]
 
-# The top-left region of a 1024x1536 page, already 4:5.
-CROP = (0, 0, 512, 640)
 SIZE = (480, 600)
 QUALITY = 75
 
@@ -58,7 +59,17 @@ def main():
             continue
 
         source = pages[page - 1]
-        cover = Image.open(source).convert("L").crop(CROP).resize(SIZE, Image.LANCZOS)
+        art = Image.open(source).convert("L")
+
+        # The crop is derived from the page rather than hardcoded, because the
+        # news artwork is square (1024x1024, 1254x1254) while the character
+        # stories' pages are 1024x1536. A fixed (0, 0, 512, 640) box reads as
+        # "top-left quarter" on a tall page but creeps toward the middle of a
+        # square one. Half the width, at 4:5, reproduces the original box
+        # exactly for any 1024-wide page and stays framed on the rest.
+        crop_w = art.width // 2
+        crop_h = min(round(crop_w * 5 / 4), art.height)
+        cover = art.crop((0, 0, crop_w, crop_h)).resize(SIZE, Image.LANCZOS)
 
         out_path = os.path.join(OUT_DIR, f"{slug}.jpg")
         cover.save(out_path, "JPEG", quality=QUALITY, optimize=True, progressive=True)

@@ -40,9 +40,10 @@ const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
     // source/article first, then get a story connected to it. No real audio/text yet;
     // fill in totalTracks, coverEmoji, and src/modules/audiodata placeholder tracks
     // once content is ready.
-    { slug: 'news-roland-garros', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news' },
+    { slug: 'news-roland-garros', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news', cover: '/assets/covers/news-roland-garros.jpg' },
+    // No artwork yet, so no cover — this one keeps the halftone + emoji card.
     { slug: 'news-family-visit',  character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news' },
-    { slug: 'news-grazing-board', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news' },
+    { slug: 'news-grazing-board', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news', cover: '/assets/covers/news-grazing-board.jpg' },
   ],
   medium: [
     { slug: 'maya',   character: 'Maya',   totalTracks: 10, coverEmoji: '👩', cover: '/assets/covers/maya.jpg' },
