@@ -31,8 +31,15 @@ export interface WaveformPlayerProps {
   trackId: string;
   difficulty: string;
   storySlug: string;
-  /** Comic page for this track, when the story carries its own (DB stories). */
+  /** Comic page for this track, resolved by modules/story/resolveStory.ts. */
   comicUrl?: string | null;
+  /**
+   * The track’s words, already resolved to a single source with their clip
+   * URLs filled in. Passed down rather than looked up here, so the chips
+   * cannot disagree with the Vocab Quiz about what this track contains.
+   */
+  vocabulary: { word: string; definition: string; audioKey: string; audioUrl: string }[];
+  phrasalVerbs: { word: string; definition: string; audioKey: string; audioUrl: string }[];
   level: string; // "easy" | "medium" | "hard"
   onAudioComplete?: () => void;
   subtitles: {

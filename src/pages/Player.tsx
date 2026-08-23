@@ -18,13 +18,11 @@ import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import FeedbackModal from "../components/Feedback/FeedbackModal";
-import { getAudioTracksByStory } from "../modules/audiodata/audioDataByDifficulty";
+import { resolveStory, findResolvedTrack } from "../modules/story/resolveStory";
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
-import { trackVocabulary, trackPhrasalVerbs } from "../modules/vocabulary/Vocabulary"
 import {
   fetchPublishedStory,
-  adaptPublishedStoryToTracks,
   PublishedStory,
 } from "../services/storyServices";
 import { AudioTrack } from "../types";
@@ -155,8 +153,11 @@ const Player = React.memo(() => {
     if (isInitialLoad) return;
   }, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
 
-  const staticAudioTracks = useMemo(
-    () => getAudioTracksByStory(difficulty, storySlug),
+  // Resolved once, from ONE source — see modules/story/resolveStory.ts. Before
+  // this, tracks came from the DB while the vocabulary chips came from the
+  // static tables, so a published story was only ever half itself.
+  const staticStory = useMemo(
+    () => resolveStory(difficulty, storySlug, null),
     [difficulty, storySlug],
   );
 
@@ -188,7 +189,11 @@ const Player = React.memo(() => {
     };
   }, [difficulty, storySlug]);
 
-  const audioTracks = dbStory ? adaptPublishedStoryToTracks(dbStory) : staticAudioTracks;
+  const resolvedStory = useMemo(
+    () => (dbStory ? resolveStory(difficulty, storySlug, dbStory) : staticStory),
+    [dbStory, difficulty, storySlug, staticStory],
+  );
+  const audioTracks = resolvedStory.tracks;
   const dbStoryLoading = audioTracks.length === 0 && !dbChecked;
 
   const resolvedStorySlug =
@@ -355,55 +360,30 @@ const Player = React.memo(() => {
   );
 
   const [showVocabQuiz, setShowVocabQuiz] = useState(false);
-  const { playVocabWord } = useVocabAudio(
-    String(audioTrack.id),
-    difficulty,
-    storySlug,
+  const { playVocabWord } = useVocabAudio(String(audioTrack.id));
+
+  const resolvedTrack = useMemo(
+    () => findResolvedTrack(resolvedStory, selectedTrackId),
+    [resolvedStory, selectedTrackId],
   );
 
-  // DB-backed story's vocab/phrasal words for the selected part, if any —
-  // only consulted when the static Vocabulary.ts lists have nothing (legacy
-  // stories keep using their existing folder-path-derived audio untouched).
-  const dbPart = useMemo(
-    () => dbStory?.parts.find((p) => String(p.partNumber) === selectedTrackId),
-    [dbStory, selectedTrackId],
+  // The SAME list the chips get. These used to be computed separately: this
+  // one was DB-aware and fed the Vocab Quiz, while WaveformPlayer looked up
+  // its chips from the static table — two word lists for one track, on screen
+  // at the same time.
+  const allVocabWords = useMemo(
+    () => [
+      ...(resolvedTrack?.vocabulary ?? []).map((w) => ({ ...w, type: "vocab" as const })),
+      ...(resolvedTrack?.phrasalVerbs ?? []).map((w) => ({ ...w, type: "phrasal" as const })),
+    ],
+    [resolvedTrack],
   );
 
-  const allVocabWords = useMemo(() => {
-    // A published DB story is authoritative for everything once it exists —
-    // no mixing with the static vocab list, same whole-story rule as tracks.
-    if (dbStory) {
-      const dbVocab = (dbPart?.vocabulary ?? []).map((w) => ({ ...w, type: "vocab" as const }));
-      const dbPhrasal = (dbPart?.phrasalVerbs ?? []).map((w) => ({ ...w, type: "phrasal" as const }));
-      return [...dbVocab, ...dbPhrasal];
-    }
-
-    const vocab = (trackVocabulary[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
-      .map((w) => ({ ...w, type: "vocab" as const }));
-    const phrasal = (trackPhrasalVerbs[difficulty]?.[storySlug]?.[selectedTrackId] ?? [])
-      .map((w) => ({ ...w, type: "phrasal" as const }));
-    return [...vocab, ...phrasal];
-  }, [dbStory, dbPart, difficulty, storySlug, selectedTrackId]);
-
-  // DB vocab entries already carry their full audioUrl (no folder-path
-  // construction needed) — play those directly, falling back to the
-  // legacy folder-map-based lookup for static stories.
-  const dbVocabAudioUrls = useMemo(() => {
-    const entries = [...(dbPart?.vocabulary ?? []), ...(dbPart?.phrasalVerbs ?? [])];
-    return new Map(entries.map((w) => [w.audioKey.toLowerCase(), w.audioUrl]));
-  }, [dbPart]);
-
+  // Every entry already carries a resolved URL, so there is nothing to look
+  // up and no folder-path fallback left to disagree with.
   const playVocabWordUnified = useCallback(
-    (fileName: string, type: "vocab" | "phrasal" = "vocab"): HTMLAudioElement | null => {
-      const dbUrl = dbVocabAudioUrls.get(fileName.toLowerCase());
-      if (dbUrl) {
-        const audio = new Audio(dbUrl);
-        audio.play().catch(() => {});
-        return audio;
-      }
-      return playVocabWord(fileName, type);
-    },
-    [dbVocabAudioUrls, playVocabWord],
+    (_audioKey: string, audioUrl: string) => playVocabWord(audioUrl),
+    [playVocabWord],
   );
   
   // useEffect(() => {
@@ -497,6 +477,8 @@ const Player = React.memo(() => {
                 key={`${difficulty}-${level}`}
                 audioUrl={audioTrack.audio}
                 trackId={audioTrack.id}
+                vocabulary={resolvedTrack?.vocabulary ?? []}
+                phrasalVerbs={resolvedTrack?.phrasalVerbs ?? []}
                 difficulty={difficulty}
                 level={String(level)}
                 subtitles={audioTrack.subtitles}

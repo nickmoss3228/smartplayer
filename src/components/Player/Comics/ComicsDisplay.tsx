@@ -6,32 +6,30 @@ export { getOrderedComics, comicManifest, orderedComicsEasy };
 
 // ─── Preview card ─────────────────────────────────────────────────────────────
 interface ComicsDisplayProps {
-  /** 1-based story index */
-  storyIndex: number;
+  /** Kept so existing callers compile; neither selects the page any more. */
+  storyIndex?: number;
+  difficulty?: string;
   title?: string;
-  /** "easy" | "medium" | "hard" — selects the correct character folder */
   variant?: "card" | "circular";
-  difficulty: string;
   /**
-   * An explicit page, used by DB-backed stories. The manifest fallback below
-   * is keyed only by difficulty, so it always resolves to that level's
-   * built-in character — for any second story on the same level it would hand
-   * back the wrong story's artwork.
+   * The page to show, already resolved by modules/story/resolveStory.ts.
+   *
+   * This component used to fall back to comicsData’s manifest when no src was
+   * given, but that manifest is keyed by DIFFICULTY alone, so it always
+   * returned the level’s built-in character’s pages — any second story on the
+   * same level silently displayed the wrong artwork. Resolution now happens in
+   * one place that knows which story owns those pages.
    */
   src?: string | null;
 }
 
 export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
-  storyIndex,
   title,
-  difficulty,
-  src: explicitSrc,
+  src,
   variant = "card",
 }) => {
   const [open, setOpen] = useState(false);
 
-  const comics = getOrderedComics(difficulty);
-  const src = explicitSrc ?? comics[storyIndex - 1];
 
   const handleOpen = useCallback(() => setOpen(true), []);
   const handleClose = useCallback(() => setOpen(false), []);

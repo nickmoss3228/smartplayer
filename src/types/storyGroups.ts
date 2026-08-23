@@ -190,14 +190,25 @@ export function useStoryGroup(
   const staticGroup = getStoryGroup(difficulty, slug, t);
   const [dbGroup, setDbGroup] = useState<StoryGroup | undefined>(undefined);
   const [dbChecked, setDbChecked] = useState(false);
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
     setDbChecked(false);
-    fetchPublishedStory(difficulty, slug)
-      .then((story) => {
+    // Both, because a story can be hidden without having a DB doc at all —
+    // hiding is the only control that works on the built-in stories.
+    Promise.all([
+      fetchPublishedStory(difficulty, slug),
+      fetchPublishedStoriesList(difficulty),
+    ])
+      .then(([story, list]) => {
         if (cancelled) return;
-        setDbGroup(story ? dbStoryToGroup(story) : undefined);
+        setDbGroup(
+          story
+            ? dbStoryToGroup(story, staticGroup?.category ?? 'general', staticGroup?.cover)
+            : undefined,
+        );
+        setHidden(new Set(list.hidden));
         setDbChecked(true);
       })
       .catch(() => {
@@ -206,10 +217,17 @@ export function useStoryGroup(
     return () => {
       cancelled = true;
     };
+    // staticGroup is derived from difficulty/slug/t and only supplies fallback
+    // values; re-running on its identity would refetch on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficulty, slug]);
 
+  // Hidden applies here too. useStoryGroups filtered the list while this hook
+  // did not, so a hidden story vanished from the shelves but was still fully
+  // reachable by URL — including from a bookmark or the level grid.
+  const group = dbGroup ?? staticGroup;
   return {
-    storyGroup: dbGroup ?? staticGroup,
+    storyGroup: group && hidden.has(group.slug) ? undefined : group,
     loading: !staticGroup && !dbChecked,
   };
 }

@@ -3,14 +3,16 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 interface VocabChipProps {
   word: string;
   audioKey?: string;
-  onPlay: (audioKey: string) => HTMLAudioElement | null;
+  /** Already-resolved clip URL. The chip never builds one. */
+  audioUrl?: string;
+  onPlay: (audioKey: string, audioUrl: string) => HTMLAudioElement | null;
   volume?: number;
   /** True once the student has correctly identified this word in the VocabQuiz */
   isLearned?: boolean;
 }
 
 export const VocabChip: React.FC<VocabChipProps> = React.memo(
-  ({ word, audioKey, onPlay, volume = 1, isLearned = false }) => {
+  ({ word, audioKey, audioUrl = "", onPlay, volume = 1, isLearned = false }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -30,7 +32,7 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
         return;
       }
 
-      const audio = onPlay(key);
+      const audio = onPlay(key, audioUrl);
       if (!audio) return;
 
       audio.volume = volume;
@@ -45,7 +47,7 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
           `[VocabChip] Could not load audio for "${word}" key: "${key}"`,
         );
       });
-    }, [word, audioKey, onPlay, volume]);
+    }, [word, audioKey, audioUrl, onPlay, volume]);
 
     return (
       <div className="group relative">

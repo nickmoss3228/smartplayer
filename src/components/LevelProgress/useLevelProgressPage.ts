@@ -14,12 +14,11 @@ import {
   storyPreviewData,
   StoryPreview,
 } from '../../modules/storypreview/storyPreviewData';
-import { getOrderedComics } from '../Player/Comics/ComicsDisplay';
 import { preloadImages } from '../../services/preload';
 import { FREE_TRIAL_STORIES } from '../../constants/trial';
 import type { LevelProgressProps } from '../../types/LevelProgress';
 import type { Difficulty } from '../../types/Player';
-import { getAudioTracksByStory } from '../../modules/audiodata/audioDataByDifficulty';
+import { resolveStory } from '../../modules/story/resolveStory';
 
 // ── Congrats localStorage helpers ─────────────────────────────────────────
 const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
@@ -61,7 +60,12 @@ export function useLevelProgressPage(props: LevelProgressProps) {
 
   const storySlug = props.storySlug ?? 'leo';
 
-  const audioTracks = getAudioTracksByStory(props.difficulty ?? 'easy', storySlug);
+  // Resolved the same way the player resolves it. This used to call the static
+  // track list directly, which returned [] for a DB-backed story — so the grid
+  // fell back to generic "Level N" labels for exactly the stories whose names
+  // the admin had just edited.
+  const resolvedStory = resolveStory(props.difficulty ?? 'easy', storySlug, null);
+  const audioTracks = resolvedStory.tracks;
   const totalLevels =
     props.totalLevels ?? (storyData.totalParts || audioTracks.length);
 
@@ -77,7 +81,9 @@ export function useLevelProgressPage(props: LevelProgressProps) {
 
   const theme = themes[difficulty] || themes.easy;
 const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, storySlug);
-  const comics = getOrderedComics(difficulty);
+  // Per-track, from the resolver, so a second story on a level can no longer
+  // show the level's built-in character's artwork.
+  const comics = resolvedStory.tracks.map((track) => track.comicUrl ?? '');
 
   const isAllCompleted =
     completedLevels.length === totalLevels ||

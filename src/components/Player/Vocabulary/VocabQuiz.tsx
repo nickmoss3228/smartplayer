@@ -15,6 +15,8 @@ const BitWordIcon = CURRENCIES[1].icon;
 type VocabType = "vocab" | "phrasal";
 
 interface VocabWord {
+  /** Resolved clip URL; empty when the story has no clip for this word. */
+  audioUrl?: string;
   word: string;
   audioKey?: string;
   type?: VocabType;
@@ -22,7 +24,8 @@ interface VocabWord {
 
 interface VocabQuizProps {
   words: VocabWord[];
-  onPlay: (audioKey: string, type?: VocabType) => HTMLAudioElement | null;
+  /** Words arrive with their clip URL resolved; this just plays it. */
+  onPlay: (audioKey: string, audioUrl: string) => HTMLAudioElement | null;
   onClose: () => void;
   /** Called once, when a round finishes, with the keys of correctly-answered words */
   onComplete?: (correctKeys: string[]) => void;
@@ -78,7 +81,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
   const playCurrent = useCallback(() => {
     if (!current) return;
     const key = (current.audioKey ?? current.word).toLowerCase();
-    const audio = onPlay(key, current.type);
+    const audio = onPlay(key, current.audioUrl ?? "");
     if (audio) audioRef.current = audio;
   }, [current, onPlay]);
 

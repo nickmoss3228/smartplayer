@@ -10,7 +10,6 @@ import { useVocabAudio } from "./hooks/useVocabAudio";
 import { usePlaybackSettings } from "./hooks/usePlaybackSettings";
 import { useEnhancedMode } from "./hooks/useEnhancedMode";
 import { useStoryTitles } from "./hooks/useStoryTitles";
-import { useTrackVocabulary } from "./hooks/useTrackVocabulary";
 import { useMarkerNavigation } from "./hooks/useMarkerNavigation";
 import { useTrackReset } from "./hooks/useTrackReset";
 import { usePausableModal } from "./hooks/usePausableModal";
@@ -40,6 +39,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     difficulty,
     storySlug,
     comicUrl,
+    vocabulary,
+    phrasalVerbs,
     helpAudioUrls,
     hasListenedFully,
     onOpenQuiz,
@@ -169,12 +170,15 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       else stopTimer();
     }, [isPlaying, startTimer, stopTimer]);
 
-    const { playVocabWord } = useVocabAudio(trackId, difficulty, storySlug);
-    const { currentVocabulary, currentPhrasalVerbs } = useTrackVocabulary(
-      difficulty,
-      storySlug,
-      trackId,
-    );
+    // Words arrive already resolved, from modules/story/resolveStory.ts. This
+    // component used to look them up itself via useTrackVocabulary, which read
+    // the STATIC table regardless of whether the story was DB-backed — so the
+    // chips here and the Vocab Quiz in Player.tsx could show different word
+    // lists for the same track, and editing vocabulary in the Story Builder
+    // changed one but not the other.
+    const { playVocabWord } = useVocabAudio(trackId);
+    const currentVocabulary = vocabulary;
+    const currentPhrasalVerbs = phrasalVerbs;
 
     const handleVolumeChange = useVolumeControl(wavesurfer);
 
@@ -229,7 +233,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 <div className="shrink-0" data-tour="tour-vocabulary">
                   <VocabularyRow
                     words={currentVocabulary}
-                    onPlay={(fileName) => playVocabWord(fileName, "vocab")}
+                    onPlay={(_key, audioUrl) => playVocabWord(audioUrl)}
                     volume={isMuted ? 0 : volume}
                     learnedWords={learnedWords}
                   />
@@ -240,7 +244,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 <div className="shrink-0" data-tour="tour-phrasal-verbs">
                   <VocabularyRow
                     words={currentPhrasalVerbs}
-                    onPlay={(fileName) => playVocabWord(fileName, "phrasal")}
+                    onPlay={(_key, audioUrl) => playVocabWord(audioUrl)}
                     volume={isMuted ? 0 : volume}
                     learnedWords={learnedWords}
                   />

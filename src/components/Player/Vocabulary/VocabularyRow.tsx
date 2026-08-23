@@ -5,11 +5,13 @@ import { VocabChip } from "./VocabChip";
 interface VocabWord {
   word: string;
   audioKey?: string;
+  /** Resolved by modules/story/resolveStory.ts; empty means no clip exists. */
+  audioUrl?: string;
 }
 
 interface VocabularyRowProps {
   words: VocabWord[];
-  onPlay: (audioKey: string) => HTMLAudioElement | null; // ← updated
+  onPlay: (audioKey: string, audioUrl: string) => HTMLAudioElement | null;
   volume: number;
   /** Keys (lowercased audioKey ?? word) the student has already answered correctly */
   learnedWords?: Set<string>;
@@ -23,13 +25,14 @@ export const VocabularyRow: React.FC<VocabularyRowProps> = ({ words, onPlay, vol
         className="flex pt-2 gap-2 overflow-x-auto snap-x snap-mandatory pb-1 -mx-4 px-4 scroll-px-4
                    [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {words.map(({ word, audioKey }) => {
+        {words.map(({ word, audioKey, audioUrl }) => {
           const key = (audioKey ?? word).toLowerCase();
           return (
             <div key={word} className="snap-start shrink-0">
               <VocabChip
                 word={word}
                 audioKey={audioKey}
+                audioUrl={audioUrl}
                 onPlay={onPlay}
                 volume={volume}
                 isLearned={learnedWords?.has(key)}

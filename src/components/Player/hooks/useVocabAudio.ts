@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef } from "react";
-import { trackFolderMap, storyFolderMap } from "../../../modules/vocabulary/Vocabulary";
-import { getStorageUrl } from "../../../services/yandexStorage";
 
-type VocabType = "vocab" | "phrasal";
-
-export function useVocabAudio(trackId: string, difficulty: string, storySlug: string) {
+/**
+ * Plays one vocabulary clip at a time.
+ *
+ * It takes a URL. It used to take (trackId, difficulty, storySlug) and rebuild
+ * the path from storyFolderMap/trackFolderMap, which meant playback silently
+ * disagreed with everything else: a DB-backed story has its own clip URLs and
+ * no entry in those maps, so chips either played the built-in story's audio or
+ * warned and did nothing. Resolving now happens once, in
+ * modules/story/resolveStory.ts, and this hook just plays what it is handed.
+ */
+export function useVocabAudio(resetKey: string) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const stop = useCallback(() => {
@@ -13,53 +19,23 @@ export function useVocabAudio(trackId: string, difficulty: string, storySlug: st
     audioRef.current.currentTime = 0;
   }, []);
 
-  useEffect(() => {
-    return stop;
-  }, [trackId, difficulty, storySlug, stop]);
+  // Changing track must not leave the previous track's word still playing.
+  useEffect(() => stop, [resetKey, stop]);
 
   const playVocabWord = useCallback(
-    (fileName: string, type: VocabType = "vocab"): HTMLAudioElement | null => {
+    (audioUrl: string): HTMLAudioElement | null => {
       stop();
+      if (!audioUrl) return null;
 
-      const storyFolder = storyFolderMap[difficulty]?.[storySlug] ?? "";
-      const trackFolder = trackFolderMap[difficulty]?.[storySlug]?.[trackId] ?? "";
-
-      if (!storyFolder || !trackFolder) {
-        console.warn(
-          `[useVocabAudio] No folder mapping found for difficulty: "${difficulty}", storySlug: "${storySlug}", trackId: "${trackId}"`
-        );
-        return null;
-      }
-
-      // разные подпапки для обычной лексики и фразовых глаголов
-      const subfolder = type === "phrasal" ? "phrasal-verbs" : "vocab";
-
-      const path = `${storyFolder}/quiz/${trackFolder}/${subfolder}/${fileName}.mp3`;
-      const url = getStorageUrl(path);
-
-      console.log(`[useVocabAudio] Fetching ${type} audio from YOS:`, url);
-
-      const audio = new Audio(url);
+      const audio = new Audio(audioUrl);
       audioRef.current = audio;
-
-      audio.addEventListener("canplaythrough", () => {
-        console.log(`[useVocabAudio] ✅ Successfully loaded: "${fileName}" → ${url}`);
+      audio.play().catch(() => {
+        // Autoplay rejection or a missing file: the chip simply stays silent.
+        // The Story Builder is where a broken clip gets diagnosed.
       });
-
-      audio.addEventListener("error", (e) => {
-        console.error(
-          `[useVocabAudio] ❌ Failed to load: "${fileName}" → ${url}`,
-          e
-        );
-      });
-
-      audio.play().catch((err) => {
-        console.warn(`[useVocabAudio] Playback rejected for "${fileName}":`, err.message);
-      });
-
       return audio;
     },
-    [trackId, difficulty, storySlug, stop],
+    [stop],
   );
 
   return { playVocabWord, stop };
