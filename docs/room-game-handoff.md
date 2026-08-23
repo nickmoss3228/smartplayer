@@ -145,10 +145,12 @@ see the whole building from outside. Sketch:
 - `PIXEL_DPR = 0.38` in `SchoolCanvas.tsx` is the pixelation; `MIN_READABLE_ZOOM
   = 15` is the zoom floor (chosen so the widest variant, Terrace at 55 tiles,
   still fits a desktop at stage 9).
-- The deployed Yandex backend still runs the **old** school code. The live site
-  will keep failing on `/room` until it is redeployed. The catalog changed
-  again on 2026-08-23 (the Quad corridor now reaches east at stage 7, not 9),
-  so both copies have to go up together.
+- **Deployed 2026-08-23** (commit `a57a293`, both CI workflows green). The
+  backend had been running pre-rewrite school code until then, so `/room` could
+  not have worked in production at all; all three school routes now answer 401
+  rather than 404, which is how you tell the new code is live. When the catalog
+  changes, **both copies have to go up together** — the client draws the
+  building from its mirror and the server charges from its own.
 - Every seat in `furniture.tsx` has its **backrest on local +z**, and `sitOn`
   in `props.ts` depends on that holding without exception. The sofa used to be
   the exception, and people sat in it back to front.
