@@ -28,9 +28,17 @@ export interface QuizQuestion {
   audio: { fast: string; slow: string };
 }
 
+export interface LocalizedText {
+  en: string;
+  ru: string;
+}
+
 export interface StoryPart {
   partNumber: number;
+  /** Track name shown to students. */
+  title?: string;
   audioUrl: string | null;
+  helpAudio?: string[];
   /**
    * The comic page shown alongside this part's audio. Optional because every
    * part created before the Comics tab existed has none, and because
@@ -52,6 +60,10 @@ export interface AdminStory {
   characterIcon: string;
   /** Which list heading it sits under; null means "inherit the built-in one". */
   category?: StoryCategory | null;
+  /** 4:5 card art; null means "inherit the built-in one". */
+  coverUrl?: string | null;
+  /** What students see, per locale; empty strings fall back to storyName. */
+  localized?: { title: LocalizedText; description: LocalizedText } | null;
   totalParts: number;
   published: boolean;
   parts: StoryPart[];
@@ -87,6 +99,8 @@ export interface ImportStoryPayload {
   description: string;
   characterIcon: string;
   category?: StoryCategory;
+  coverUrl?: string | null;
+  localized?: { title: LocalizedText; description: LocalizedText };
   totalParts: number;
   parts: StoryPart[];
 }
@@ -163,6 +177,7 @@ export const updateStoryMeta = async (
     description?: string;
     characterIcon?: string;
     category?: StoryCategory | null;
+    localized?: { title: LocalizedText; description: LocalizedText };
   }
 ): Promise<AdminStory> => {
   const res = await fetch(`${API_URL}/api/admin/stories/${id}`, {
@@ -349,4 +364,35 @@ export const setStoryHidden = async (
     }
   );
   await parseOrThrow(res);
+};
+
+// ─── Story cover (the 4:5 card art in the story list) ──────────────────────
+// Story-level, not per-part, so it has its own endpoints rather than going
+// through uploadPartAsset.
+
+export const uploadStoryCover = async (
+  token: string,
+  id: string,
+  file: File
+): Promise<AdminStory> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/cover`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: formData,
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
+};
+
+// Clears the field; the uploaded object stays in the bucket. The card then
+// falls back to the built-in cover for that slug, or to the emoji placeholder.
+export const clearStoryCover = async (token: string, id: string): Promise<AdminStory> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/cover`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
 };

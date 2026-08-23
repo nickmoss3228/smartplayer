@@ -37,7 +37,15 @@ const quizQuestionSchema = new mongoose.Schema(
 const partSchema = new mongoose.Schema(
   {
     partNumber: { type: Number, required: true },
+    // Shown as the track name. Static stories name their parts ("Story",
+    // "Discussion", "Meet Leo"); without this the adapter had to invent
+    // `${storyName} — ${n}`, so publishing renamed every track.
+    title: { type: String, default: "", trim: true },
     audioUrl: { type: String, default: null },
+    // Per-marker help clips. Only leo part 1 has real ones today, but the
+    // adapter dropped them entirely, leaving the Help modal silent for any
+    // published story.
+    helpAudio: { type: [String], default: [] },
     // The comic page for this part. Static stories keep theirs in the
     // comicManifest in Player/Comics/comicsData.ts, which is keyed by
     // difficulty and therefore cannot describe a second story on the same
@@ -69,8 +77,18 @@ const storySchema = new mongoose.Schema(
   {
     difficulty: { type: String, required: true, enum: ["easy", "medium", "hard"] },
     storyId: { type: String, required: true, trim: true }, // slug, unique per difficulty
+    // Admin-facing identifier, shown in the Story Builder lists.
     storyName: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
+    // What STUDENTS see, per locale. The static stories these replace are
+    // bilingual (locales/{en,ru}/translation.json), so a single storyName
+    // meant publishing showed one language to everyone. Empty strings fall
+    // back to storyName/description, which is what keeps stories imported
+    // before this field existed working unchanged.
+    localized: {
+      title: { en: { type: String, default: "" }, ru: { type: String, default: "" } },
+      description: { en: { type: String, default: "" }, ru: { type: String, default: "" } },
+    },
     characterIcon: { type: String, default: "📖" },
     totalParts: { type: Number, required: true, min: 1, max: 20 },
     // Which heading the story sits under in the list ("Stories" vs
@@ -81,6 +99,12 @@ const storySchema = new mongoose.Schema(
     // static entry's category, which is what keeps stories imported before this
     // field existed on the right shelf.
     category: { type: String, enum: ["general", "news", null], default: null },
+    // 4:5 card art for the story list. Same reasoning as `category`: a
+    // published DB story replaces its static entry outright, so without
+    // carrying this, publishing dropped the artwork and the card fell back to
+    // the halftone + emoji placeholder. Null means "no opinion" and the
+    // frontend uses the static entry's cover.
+    coverUrl: { type: String, default: null },
     // Hidden from players until the admin explicitly publishes it.
     published: { type: Boolean, default: false },
     parts: { type: [partSchema], default: [] },

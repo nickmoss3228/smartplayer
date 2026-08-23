@@ -2934,13 +2934,16 @@ export function getPublicQuiz(difficulty, storyId, partNumber) {
 }
 
 /**
- * A whole story's parts WITH correctAnswer and absolute audio URLs — the admin
+ * A whole story's parts WITH correctAnswer and BUCKET-RELATIVE audio paths — the admin
  * Story Builder's import flow only. Everything the client may see goes through
  * getPublicQuiz instead.
  *
- * Resolving here matters: the import copies these URLs verbatim into the new
- * Story doc, so a draft imported on staging must record staging URLs. Handing
- * out raw relative paths would persist paths that resolve nowhere.
+ * Deliberately NOT resolved. The import copies these into a Story doc that
+ * outlives the environment it was created in, so an absolute URL would freeze
+ * the story to whichever bucket it happened to be imported against — a story
+ * imported on staging would still ask for staging audio in production.
+ * Resolution happens on READ instead, in storyLookup.getPublicQuizAsync and
+ * story.controller.getPublishedStory.
  */
 export function getQuizPartsForImport(difficulty, storyId) {
   const parts = quizData[difficulty]?.[storyId];
@@ -2948,7 +2951,7 @@ export function getQuizPartsForImport(difficulty, storyId) {
   return Object.fromEntries(
     Object.entries(parts).map(([partNumber, questions]) => [
       partNumber,
-      questions.map(withResolvedAudio),
+      questions,
     ]),
   );
 }

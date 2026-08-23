@@ -16,6 +16,8 @@ import {
   saveComic,
   getStoryVisibility,
   setStoryVisibility,
+  uploadStoryCover,
+  clearStoryCover,
   saveVocabulary,
   savePhrasalVerbs,
   saveQuiz,
@@ -36,6 +38,8 @@ adminRouter.put("/visibility/:difficulty/:storyId", adminAuth, setStoryVisibilit
 adminRouter.get("/:id", adminAuth, getStory);
 adminRouter.patch("/:id", adminAuth, updateStoryMeta);
 adminRouter.delete("/:id", adminAuth, deleteStory);
+adminRouter.post("/:id/cover", adminAuth, adminUpload, uploadStoryCover);
+adminRouter.delete("/:id/cover", adminAuth, clearStoryCover);
 adminRouter.post("/:id/parts", adminAuth, addPart);
 adminRouter.post("/:id/parts/:partNumber/upload", adminAuth, adminUpload, uploadPartAsset);
 adminRouter.patch("/:id/parts/:partNumber/markers", adminAuth, saveMarkers);

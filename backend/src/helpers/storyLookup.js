@@ -10,7 +10,7 @@
 // version, so an in-progress import can't disrupt players. If no published
 // doc exists at all, the static files behave exactly as before.
 import { storyRegistry } from "../config/storyRegistry.js";
-import { getQuizAnswerKey, getPublicQuiz } from "../config/quizData.js";
+import { getQuizAnswerKey, getPublicQuiz, resolveQuizAudioPath } from "../config/quizData.js";
 import { scoreAgainstAnswerKey } from "./scoreQuiz.js";
 import { Story } from "../models/Story.js";
 
@@ -54,7 +54,16 @@ export async function getPublicQuizAsync(difficulty, storyId, partNumber) {
   if (dbStory) {
     const part = findDbPart(dbStory, partNumber);
     if (!part || part.quiz.length === 0) return null;
-    return part.quiz.map(({ correctAnswer, ...rest }) => rest);
+    // Resolved here, not at import: a Story doc outlives the environment it
+    // was created in, so quiz audio is stored bucket-relative and only
+    // becomes a URL for THIS environment on the way out.
+    return part.quiz.map(({ correctAnswer, ...rest }) => ({
+      ...rest,
+      audio: {
+        fast: resolveQuizAudioPath(rest.audio?.fast),
+        slow: resolveQuizAudioPath(rest.audio?.slow),
+      },
+    }));
   }
 
   return getPublicQuiz(difficulty, storyId, partNumber);

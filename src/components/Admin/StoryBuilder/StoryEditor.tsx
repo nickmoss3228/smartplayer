@@ -9,6 +9,7 @@ import {
 } from "../../../services/adminStoryServices";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
+import StoryCoverEditor from "./StoryCoverEditor";
 import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
@@ -95,6 +96,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
     setEditName(story.storyName);
     setEditDescription(story.description);
     setEditIcon(story.characterIcon);
+    setEditCategory(story.category ?? "general");
     setError("");
     setEditingMeta(true);
   };
@@ -111,6 +113,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
         storyName: editName.trim(),
         description: editDescription.trim(),
         characterIcon: editIcon.trim() || "📖",
+        category: editCategory,
       });
       onStoryUpdated(updated);
       setEditingMeta(false);
@@ -234,6 +237,12 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           {story.difficulty} · {partsReady}/{story.totalParts} parts have audio + markers ·{" "}
           {story.published ? "Published" : "Draft"}
         </p>
+
+        {/* Story-level, so it sits with the name rather than in the per-part
+            tabs below — a story has one card whatever its part count. */}
+        <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 p-3">
+          <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
+        </div>
       </div>
 
       {error && <p className="text-red-600 text-sm mb-3">{error}</p>}

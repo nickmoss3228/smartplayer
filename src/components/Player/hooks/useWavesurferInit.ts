@@ -39,7 +39,18 @@ export const useWavesurferInit = ({
   }, [onAudioComplete]);
 
   useEffect(() => {
-    if (!waveformRef.current || !audioUrl) return;
+    if (!waveformRef.current) return;
+
+    // An empty URL is a REAL state, not a not-yet-ready one: a DB part with no
+    // audio now reaches the player as audio: "" rather than being dropped from
+    // the track list. Returning early while isLoading stayed true left the UI
+    // saying "Loading audio..." forever, with nothing to wait for. Clear the
+    // flag so the surrounding UI can render an honest empty state instead.
+    if (!audioUrl) {
+      setIsLoading(false);
+      setIsInitialized(false);
+      return;
+    }
 
     if (wavesurfer.current) {
       wavesurfer.current.pause();

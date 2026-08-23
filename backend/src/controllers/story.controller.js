@@ -12,10 +12,20 @@ import {
 } from "../models/PartMarkers.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
-import { getQuizPartsForImport } from "../config/quizData.js";
+import { getQuizPartsForImport, resolveQuizAudioPath } from "../config/quizData.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
+
+// Keeps only the two locales the app ships and coerces to strings, so a
+// malformed payload cannot write arbitrary keys into the document.
+function sanitizeLocalized(localized) {
+  const pick = (obj) => ({
+    en: typeof obj?.en === "string" ? obj.en.trim() : "",
+    ru: typeof obj?.ru === "string" ? obj.ru.trim() : "",
+  });
+  return { title: pick(localized?.title), description: pick(localized?.description) };
+}
 
 function buildEmptyParts(totalParts) {
   return Array.from({ length: totalParts }, (_, i) => ({ partNumber: i + 1 }));
@@ -94,7 +104,7 @@ export async function getStaticQuizSource(req, res) {
 // unlike createStory, matching a static storyId is expected here, not rejected.
 export async function importStory(req, res) {
   try {
-    const { difficulty, storyId, storyName, description, characterIcon, category, totalParts, parts } = req.body;
+    const { difficulty, storyId, storyName, description, characterIcon, category, coverUrl, localized, totalParts, parts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -147,6 +157,12 @@ export async function importStory(req, res) {
       storyName: storyName.trim(),
       description: description?.trim() ?? "",
       characterIcon: characterIcon?.trim() || "📖",
+      // Carried from the static entry so an imported story keeps its shelf and
+      // its card art. Without these the DB copy replaces the built-in one and
+      // both are silently lost the moment it is published.
+      category: category === "news" || category === "general" ? category : null,
+      coverUrl: typeof coverUrl === "string" && coverUrl.trim() ? coverUrl.trim() : null,
+      localized: sanitizeLocalized(localized),
       totalParts: partsCount,
       published: false,
       parts: partsWithMarkers,
@@ -165,7 +181,7 @@ export async function listStories(req, res) {
     const { difficulty } = req.query;
     const filter = difficulty ? { difficulty } : {};
     const stories = await Story.find(filter)
-      .select("difficulty storyId storyName characterIcon category totalParts published createdAt")
+      .select("difficulty storyId storyName characterIcon category coverUrl totalParts published createdAt")
       .sort({ createdAt: -1 });
     res.json({ stories });
   } catch (error) {
@@ -196,7 +212,7 @@ export async function updateStoryMeta(req, res) {
     const story = await Story.findById(req.params.id);
     if (!story) return res.status(404).json({ error: "Story not found." });
 
-    const { storyName, description, characterIcon, category } = req.body;
+    const { storyName, description, characterIcon, category, localized } = req.body;
 
     if (storyName !== undefined) {
       if (!storyName.trim()) return res.status(400).json({ error: "storyName can't be empty." });
@@ -210,6 +226,7 @@ export async function updateStoryMeta(req, res) {
       }
       story.category = category;
     }
+    if (localized !== undefined) story.localized = sanitizeLocalized(localized);
 
     await story.save();
     res.json({ story });
@@ -337,6 +354,49 @@ export async function uploadPartAsset(req, res) {
   } catch (error) {
     console.error("uploadPartAsset error:", error);
     res.status(500).json({ error: error.message || "Upload failed." });
+  }
+}
+
+// POST /api/admin/stories/:id/cover   (multipart, field "file")
+// The card art in the story list. Story-level rather than per-part, so it does
+// not go through assetKeyFor — the key has no part number in it.
+export async function uploadStoryCover(req, res) {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+
+    const ext = COMIC_EXTENSIONS[req.file.mimetype];
+    if (!ext) {
+      return res.status(400).json({
+        error: `A cover must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
+      });
+    }
+
+    const key = `stories/${story.difficulty}/${story.storyId}/cover.${ext}`;
+    story.coverUrl = await uploadBuffer(key, req.file.buffer, req.file.mimetype);
+    await story.save();
+    res.json({ story });
+  } catch (error) {
+    console.error("uploadStoryCover error:", error);
+    res.status(500).json({ error: error.message || "Cover upload failed." });
+  }
+}
+
+// DELETE /api/admin/stories/:id/cover
+// Clears the field only; the object is left in the bucket. Nothing else can
+// reach that key, and a re-upload overwrites it, so deleting buys nothing and
+// risks removing art a rolled-back story still points at.
+export async function clearStoryCover(req, res) {
+  try {
+    const story = await Story.findById(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+    story.coverUrl = null;
+    await story.save();
+    res.json({ story });
+  } catch (error) {
+    console.error("clearStoryCover error:", error);
+    res.status(500).json({ error: "Failed to clear cover." });
   }
 }
 
@@ -500,9 +560,25 @@ export async function setStoryPublished(req, res) {
     }
 
     if (published) {
-      const incomplete = story.parts.some((p) => !p.audioUrl || p.timeMarkers.length === 0);
-      if (incomplete) {
-        return res.status(400).json({ error: "Every part needs audio and at least one marker before publishing." });
+      // Two markers, not one. A single marker cannot describe a segment:
+      // useSegmentEngine looks for the NEXT marker to find the segment end,
+      // finds none, and stops playback at the first boundary, so the track
+      // reports itself complete seconds in. Name the offending parts so the
+      // error says what to fix rather than just refusing.
+      const noAudio = story.parts.filter((p) => !p.audioUrl).map((p) => p.partNumber);
+      const thinMarkers = story.parts
+        .filter((p) => p.audioUrl && (p.timeMarkers?.length ?? 0) < 2)
+        .map((p) => p.partNumber);
+      if (noAudio.length || thinMarkers.length) {
+        const problems = [];
+        if (noAudio.length) problems.push("no audio on part " + noAudio.join(", "));
+        if (thinMarkers.length) {
+          problems.push(
+            "fewer than 2 time markers on part " + thinMarkers.join(", ") +
+              " (a single marker makes the track end at that marker)"
+          );
+        }
+        return res.status(400).json({ error: "Cannot publish yet: " + problems.join("; ") + "." });
       }
     }
 
@@ -530,16 +606,27 @@ export async function getPublishedStory(req, res) {
       description: story.description,
       characterIcon: story.characterIcon,
       category: story.category ?? null,
+      coverUrl: story.coverUrl ?? null,
+      localized: story.localized ?? null,
       totalParts: story.totalParts,
       parts: story.parts.map((part) => ({
         partNumber: part.partNumber,
+        title: part.title ?? "",
         audioUrl: part.audioUrl,
+        helpAudio: part.helpAudio ?? [],
         timeMarkers: part.timeMarkers,
         comicUrl: part.comicUrl ?? null,
         vocabulary: part.vocabulary,
         phrasalVerbs: part.phrasalVerbs,
         // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
-        quiz: part.quiz.map(({ correctAnswer, ...rest }) => rest),
+        // Stored bucket-relative; resolved for THIS environment on the way out.
+        quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
+          ...rest,
+          audio: {
+            fast: resolveQuizAudioPath(rest.audio?.fast),
+            slow: resolveQuizAudioPath(rest.audio?.slow),
+          },
+        })),
       })),
     });
   } catch (error) {
@@ -556,7 +643,7 @@ export async function listPublishedStories(req, res) {
     const { difficulty } = req.params;
     const [stories, hidden] = await Promise.all([
       Story.find({ difficulty, published: true })
-        .select("storyId storyName description characterIcon category totalParts")
+        .select("storyId storyName description characterIcon category coverUrl totalParts")
         .lean(),
       hiddenStoryIds(difficulty),
     ]);

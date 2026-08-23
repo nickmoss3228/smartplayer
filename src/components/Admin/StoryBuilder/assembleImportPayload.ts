@@ -12,6 +12,12 @@ import {
   storyFolderMap,
 } from "../../../modules/vocabulary/Vocabulary";
 import { getStorageUrl } from "../../../services/yandexStorage";
+// Read straight from the locale files rather than through `t`: the payload
+// needs BOTH languages at once, while `t` only ever answers in the one the
+// admin happens to be using. Importing in the admin’s language and thereby
+// deleting the other one is exactly the data loss this is meant to prevent.
+import enTranslation from "../../../locales/en/translation.json";
+import ruTranslation from "../../../locales/ru/translation.json";
 import { getOrderedComics } from "../../../components/Player/Comics/comicsData";
 import {
   fetchStaticQuizSource,
@@ -60,6 +66,17 @@ function adaptWords(
   }));
 }
 
+type StoryTextEntry = { title?: string; description?: string };
+
+function localeEntry(
+  bundle: unknown,
+  difficulty: DifficultySlug,
+  slug: string,
+): StoryTextEntry {
+  const stories = (bundle as { stories?: Record<string, Record<string, StoryTextEntry>> }).stories;
+  return stories?.[difficulty]?.[slug] ?? {};
+}
+
 export async function assembleImportPayload(
   token: string,
   difficulty: DifficultySlug,
@@ -75,7 +92,11 @@ export async function assembleImportPayload(
     const partNumber = Number(track.id);
     return {
       partNumber,
+      // The track names itself, so publishing keeps "Story"/"Discussion"
+      // instead of falling back to a generated "Name — 1".
+      title: track.title,
       audioUrl: track.audio,
+      helpAudio: track.helpAudio ?? [],
       // A track that names its own page wins; the manifest only answers for the
       // one story per difficulty that owns those pages. Without this, importing
       // leo-additional or a news story would drop the artwork they now carry.
@@ -102,6 +123,17 @@ export async function assembleImportPayload(
     // Carry the shelf across: without it a published news story lands under
     // "Stories", because the DB copy replaces the static entry wholesale.
     category: storyGroup.category,
+    localized: {
+      title: {
+        en: localeEntry(enTranslation, difficulty, storySlug).title ?? storyGroup.title,
+        ru: localeEntry(ruTranslation, difficulty, storySlug).title ?? storyGroup.title,
+      },
+      description: {
+        en: localeEntry(enTranslation, difficulty, storySlug).description ?? storyGroup.description,
+        ru: localeEntry(ruTranslation, difficulty, storySlug).description ?? storyGroup.description,
+      },
+    },
+    coverUrl: storyGroup.cover ?? null,
     totalParts: parts.length,
     parts,
   };

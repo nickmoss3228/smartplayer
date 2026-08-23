@@ -99,9 +99,11 @@ function dbStoryToGroup(
     description: string;
     characterIcon: string;
     category?: StoryCategory | null;
+    coverUrl?: string | null;
     totalParts: number;
   },
   fallbackCategory: StoryCategory = 'general',
+  fallbackCover?: string,
 ): StoryGroup {
   return {
     slug: story.storyId,
@@ -111,6 +113,10 @@ function dbStoryToGroup(
     totalTracks: story.totalParts,
     coverEmoji: story.characterIcon,
     category: story.category ?? fallbackCategory,
+    // Same fallback as the category, for the same reason: publishing replaces
+    // the static entry, so without this the card loses its art and drops back
+    // to the halftone + emoji placeholder.
+    cover: story.coverUrl ?? fallbackCover,
   };
 }
 
@@ -136,10 +142,11 @@ export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryG
     };
   }, [difficulty]);
 
-  const staticCategory = new Map(staticGroups.map((g) => [g.slug, g.category]));
-  const dbGroups = dbStories.map((s) =>
-    dbStoryToGroup(s, staticCategory.get(s.storyId) ?? 'general'),
-  );
+  const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
+  const dbGroups = dbStories.map((s) => {
+    const fallback = staticBySlug.get(s.storyId);
+    return dbStoryToGroup(s, fallback?.category ?? 'general', fallback?.cover);
+  });
 
   return mergeStoryGroups(staticGroups, dbGroups, hidden);
 }
