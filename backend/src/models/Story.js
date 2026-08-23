@@ -38,6 +38,11 @@ const partSchema = new mongoose.Schema(
   {
     partNumber: { type: Number, required: true },
     audioUrl: { type: String, default: null },
+    // The comic page for this part. Static stories keep theirs in the
+    // comicManifest in Player/Comics/comicsData.ts, which is keyed by
+    // difficulty and therefore cannot describe a second story on the same
+    // level — a DB story has to carry its own.
+    comicUrl: { type: String, default: null },
     timeMarkers: {
       type: [
         {

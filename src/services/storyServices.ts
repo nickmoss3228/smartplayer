@@ -25,6 +25,7 @@ export interface PublishedQuizQuestion {
 export interface PublishedStoryPart {
   partNumber: number;
   audioUrl: string | null;
+  comicUrl?: string | null;
   timeMarkers: { time: number; label: string; color: string }[];
   vocabulary: PublishedVocabEntry[];
   phrasalVerbs: PublishedVocabEntry[];
@@ -85,4 +86,5 @@ export const adaptPublishedStoryToTracks = (story: PublishedStory): AudioTrack[]
       audio: part.audioUrl,
       subtitles: [],
       timeMarkers: part.timeMarkers,
+      comicUrl: part.comicUrl ?? null,
     }));

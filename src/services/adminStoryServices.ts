@@ -30,6 +30,12 @@ export interface QuizQuestion {
 export interface StoryPart {
   partNumber: number;
   audioUrl: string | null;
+  /**
+   * The comic page shown alongside this part's audio. Optional because every
+   * part created before the Comics tab existed has none, and because
+   * assembleImportPayload only fills it for built-in stories that ship art.
+   */
+  comicUrl?: string | null;
   timeMarkers: TimeMarker[];
   vocabulary: VocabEntry[];
   phrasalVerbs: VocabEntry[];
@@ -178,7 +184,7 @@ export const deleteStory = async (token: string, id: string): Promise<void> => {
   await parseOrThrow(res);
 };
 
-export type UploadKind = "audio" | "vocab" | "phrasal" | "quizFast" | "quizSlow";
+export type UploadKind = "audio" | "comic" | "vocab" | "phrasal" | "quizFast" | "quizSlow";
 
 export const uploadPartAsset = async (
   token: string,
@@ -218,6 +224,23 @@ export const saveMarkers = async (
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ timeMarkers, audioUrl }),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Persists the URL returned by uploadPartAsset(..., "comic").
+// Pass null to clear the page.
+export const saveComic = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  comicUrl: string | null
+): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/comic`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ comicUrl }),
   });
   const data = await parseOrThrow(res);
   return data.part;

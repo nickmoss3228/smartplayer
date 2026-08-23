@@ -13,6 +13,12 @@ export interface AudioTrack {
   subtitles: Subtitle[];
   timeMarkers: TimeMarker[];
   helpAudio?: string[];
+  /**
+   * Comic page for this track. Only DB-backed stories set it — static stories
+   * resolve theirs from the comicManifest by difficulty, which cannot name a
+   * second story on the same level.
+   */
+  comicUrl?: string | null;
 }
 export interface TimeMarker {
   time: number;
@@ -25,6 +31,8 @@ export interface WaveformPlayerProps {
   trackId: string;
   difficulty: string;
   storySlug: string;
+  /** Comic page for this track, when the story carries its own (DB stories). */
+  comicUrl?: string | null;
   level: string; // "easy" | "medium" | "hard"
   onAudioComplete?: () => void;
   subtitles: {

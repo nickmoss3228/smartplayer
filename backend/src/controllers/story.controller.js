@@ -260,11 +260,25 @@ export async function deleteStory(req, res) {
 
 // ─── Admin: per-part asset upload ──────────────────────────────────────────
 
+// Comic pages are the only non-audio asset the builder uploads, so the key
+// needs a real extension rather than the hardcoded .mp3 the others use. The
+// object's Content-Type is set from the upload either way; the extension keeps
+// the bucket browsable and the key deterministic per format.
+const COMIC_EXTENSIONS = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/avif": "avif",
+  "image/gif": "gif",
+};
+
 function assetKeyFor(story, partNumber, kind, extra) {
   const base = `stories/${story.difficulty}/${story.storyId}/${partNumber}`;
   switch (kind) {
     case "audio":
       return `${base}/audio.mp3`;
+    case "comic":
+      return `${base}/comic.${extra.ext}`;
     case "vocab":
       return `${base}/vocab/${extra.audioKey}.mp3`;
     case "phrasal":
@@ -298,7 +312,17 @@ export async function uploadPartAsset(req, res) {
       return res.status(400).json({ error: "index is required for quiz audio uploads." });
     }
 
-    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index });
+    let ext;
+    if (kind === "comic") {
+      ext = COMIC_EXTENSIONS[req.file.mimetype];
+      if (!ext) {
+        return res.status(400).json({
+          error: `A comic page must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
+        });
+      }
+    }
+
+    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext });
     if (!key) return res.status(400).json({ error: "Invalid kind." });
 
     const url = await uploadBuffer(key, req.file.buffer, req.file.mimetype);
@@ -402,6 +426,29 @@ export async function savePhrasalVerbs(req, res) {
   }
 }
 
+// PUT /api/admin/stories/:id/parts/:partNumber/comic
+// Persists the URL returned by an upload?kind=comic. Sending null clears the
+// page, which is how the admin removes a comic they uploaded by mistake.
+export async function saveComic(req, res) {
+  try {
+    const found = await findPartOr404(req, res);
+    if (!found) return;
+    const { story, part } = found;
+
+    const { comicUrl } = req.body;
+    if (comicUrl !== null && typeof comicUrl !== "string") {
+      return res.status(400).json({ error: "comicUrl must be a string, or null to clear it." });
+    }
+
+    part.comicUrl = comicUrl || null;
+    await story.save();
+    res.json({ part });
+  } catch (error) {
+    console.error("saveComic error:", error);
+    res.status(500).json({ error: "Failed to save the comic page." });
+  }
+}
+
 function validateQuizList(quiz) {
   if (!Array.isArray(quiz)) return "must be an array";
   if (quiz.length > MAX_QUIZ_QUESTIONS) return `at most ${MAX_QUIZ_QUESTIONS} questions`;
@@ -480,6 +527,7 @@ export async function getPublishedStory(req, res) {
         partNumber: part.partNumber,
         audioUrl: part.audioUrl,
         timeMarkers: part.timeMarkers,
+        comicUrl: part.comicUrl ?? null,
         vocabulary: part.vocabulary,
         phrasalVerbs: part.phrasalVerbs,
         // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.

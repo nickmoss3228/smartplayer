@@ -505,6 +505,7 @@ const Player = React.memo(() => {
                 onAudioComplete={handleAudioComplete}
                 helpAudioUrls={audioTrack.helpAudio}
                 storySlug={storySlug}
+                comicUrl={audioTrack.comicUrl}
                 hasListenedFully={hasListenedFully}
                 onOpenQuiz={() => setShowQuiz(true)}
                 onOpenVocabQuiz={() => setShowVocabQuiz(true)}

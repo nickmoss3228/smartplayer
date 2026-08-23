@@ -13,6 +13,7 @@ import {
   addPart,
   uploadPartAsset,
   saveMarkers,
+  saveComic,
   saveVocabulary,
   savePhrasalVerbs,
   saveQuiz,
@@ -32,6 +33,7 @@ adminRouter.delete("/:id", adminAuth, deleteStory);
 adminRouter.post("/:id/parts", adminAuth, addPart);
 adminRouter.post("/:id/parts/:partNumber/upload", adminAuth, adminUpload, uploadPartAsset);
 adminRouter.patch("/:id/parts/:partNumber/markers", adminAuth, saveMarkers);
+adminRouter.put("/:id/parts/:partNumber/comic", adminAuth, saveComic);
 adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
 adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVerbs);
 adminRouter.put("/:id/parts/:partNumber/quiz", adminAuth, saveQuiz);

@@ -8,6 +8,7 @@ import {
   updateStoryMeta,
 } from "../../../services/adminStoryServices";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
+import PartComicEditor from "./PartComicEditor";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
 
@@ -19,12 +20,15 @@ interface StoryEditorProps {
   onBack: () => void;
 }
 
-type Step = "audio" | "vocabulary" | "phrasal" | "quiz";
+type Step = "audio" | "comics" | "vocabulary" | "phrasal" | "quiz";
 
 const MAX_PARTS = 20;
 
 const STEPS: { id: Step; label: string }[] = [
   { id: "audio", label: "Audio & Markers" },
+  // Next to the audio, not at the end: a part's comic is the same scene as its
+  // audio, so the two are set together.
+  { id: "comics", label: "Comics" },
   { id: "vocabulary", label: "Vocabulary" },
   { id: "phrasal", label: "Phrasal Verbs" },
   { id: "quiz", label: "Quiz" },
@@ -267,6 +271,9 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
 
       {part && step === "audio" && (
         <PartAudioMarkerEditor token={token} story={story} part={part} onPartUpdated={handlePartUpdated} />
+      )}
+      {part && step === "comics" && (
+        <PartComicEditor token={token} story={story} part={part} onPartUpdated={handlePartUpdated} />
       )}
       {part && step === "vocabulary" && (
         <PartVocabWordsEditor

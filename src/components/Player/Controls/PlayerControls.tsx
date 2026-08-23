@@ -29,6 +29,7 @@ interface PlayerControlsProps {
   canGoPrev?: boolean;
   canGoNext?: boolean;
   storyIndex?: number;
+  comicSrc?: string | null;
   comicsTitle?: string;
   difficulty?: string;
   isUserPaused?: boolean;
@@ -59,6 +60,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     canGoPrev = false,
     canGoNext = false,
     storyIndex,
+    comicSrc,
     comicsTitle,
     difficulty,
   }) => {
@@ -242,6 +244,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               <>
                 <ComicsDisplay
                   storyIndex={storyIndex!}
+                  src={comicSrc}
                   title={comicsTitle}
                   difficulty={difficulty!}
                   variant="circular" // ← circular shape

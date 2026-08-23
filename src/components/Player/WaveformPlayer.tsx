@@ -39,6 +39,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     level,
     difficulty,
     storySlug,
+    comicUrl,
     helpAudioUrls,
     hasListenedFully,
     onOpenQuiz,
@@ -217,6 +218,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             >
               <ComicsDisplay
                 storyIndex={Number(trackId)}
+                src={comicUrl}
                 title={storyTitles[Number(trackId)]}
                 difficulty={difficulty}
               />
@@ -360,6 +362,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               isEnhancedSessionActive={isEnhancedSessionActive} // ← NEW
               layout="desktop"
               storyIndex={Number(trackId)}
+              comicSrc={comicUrl}
               comicsTitle={storyTitles[Number(trackId)]}
               difficulty={difficulty}
               onOpenHelp={help.open}

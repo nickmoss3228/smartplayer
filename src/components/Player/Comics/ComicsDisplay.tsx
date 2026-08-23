@@ -12,18 +12,26 @@ interface ComicsDisplayProps {
   /** "easy" | "medium" | "hard" — selects the correct character folder */
   variant?: "card" | "circular";
   difficulty: string;
+  /**
+   * An explicit page, used by DB-backed stories. The manifest fallback below
+   * is keyed only by difficulty, so it always resolves to that level's
+   * built-in character — for any second story on the same level it would hand
+   * back the wrong story's artwork.
+   */
+  src?: string | null;
 }
 
 export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
   storyIndex,
   title,
   difficulty,
+  src: explicitSrc,
   variant = "card",
 }) => {
   const [open, setOpen] = useState(false);
 
   const comics = getOrderedComics(difficulty);
-  const src = comics[storyIndex - 1];
+  const src = explicitSrc ?? comics[storyIndex - 1];
 
   const handleOpen = useCallback(() => setOpen(true), []);
   const handleClose = useCallback(() => setOpen(false), []);
