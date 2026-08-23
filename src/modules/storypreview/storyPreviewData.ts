@@ -48,6 +48,85 @@ export interface StoryPreview {
 }
 
 export const storyPreviewData: Record<string, StoryPreview> = {
+  // ── News & Interesting Things ────────────────────────────────────────────
+  // A missing key here means the preview modal simply never opens — the lookup
+  // in useLevelProgressPage is `storyPreviewData[`${difficulty}-${slug}-${level}`]`
+  // and falls back to null. These stories had no entries at all, so tapping a
+  // card did nothing. `image` reuses each part's own comic page rather than a
+  // separate preview render; the pages already exist and are the right art.
+  // Durations are measured from the mp3s, not estimated from file size.
+  "easy-news-roland-garros-1": {
+    id: "easy-news-roland-garros-1",
+    title: "Roland Garros 2026",
+    emoji: "📰",
+    image: "/assets/news-roland-garros/comics/1.jpg",
+    difficulty: "Easy",
+    duration: "~2 min 14 sec",
+    description:
+      "A news report: Mirra Andreeva wins the French Open and becomes the youngest Russian champion since Maria Sharapova. Facts, dates and numbers — the kind of listening where one missed word changes the answer.",
+    grammar: [
+      "Past Simple for reporting events (she won, she defeated, she became)",
+      "Superlatives (the youngest, the first)",
+      "Numbers, dates and ages spoken aloud",
+      "Present Perfect for records that still stand (only three have won)",
+    ],
+    topics: ["Sport", "News", "Records & achievements", "Tennis"],
+    tip: "Numbers are where this one is won or lost. Listen for her age and the prize money — both come up again in the discussion.",
+  },
+  "easy-news-roland-garros-2": {
+    id: "easy-news-roland-garros-2",
+    title: "Talking about Roland Garros",
+    emoji: "💬",
+    image: "/assets/news-roland-garros/comics/2.jpg",
+    difficulty: "Easy",
+    duration: "~3 min 08 sec",
+    description:
+      "Now the friends react to the same news. One of them does not follow tennis at all, they try to guess the prize money, and the conversation turns to whether it is fair. Natural speech, interruptions and opinions.",
+    grammar: [
+      "Asking for and giving opinions (I think, do you really believe)",
+      "Guessing and estimating (take a guess, it must be about)",
+      "Agreeing and disagreeing (you are kidding, that is insane)",
+      "Comparatives for fairness (more than, less than, harder than)",
+    ],
+    topics: ["Opinions", "Money & fairness", "Friends talking", "Sport"],
+    tip: "You already heard the facts in part 1. Here, listen for how people react to them — the useful language is the reaction, not the number.",
+  },
+  "easy-news-grazing-board-1": {
+    id: "easy-news-grazing-board-1",
+    title: "Grazing Board: Italian Antipasti",
+    emoji: "🧀",
+    image: "/assets/news-grazing-board/comics/1.jpg",
+    difficulty: "Easy",
+    duration: "~5 min 53 sec",
+    description:
+      "How to build a grazing board: what to buy, how to cut it and how to arrange it. Almost every sentence carries a food word, so this is vocabulary listening more than story listening.",
+    grammar: [
+      "Imperatives for instructions (slice, peel, arrange, put out)",
+      "Countable and uncountable food nouns (grapes, honey, cheese)",
+      "Sequencing (first, then, after that)",
+      "Quantities (a handful of, a few, some)",
+    ],
+    topics: ["Food & cooking", "Shopping", "Hosting guests", "Italian food"],
+    tip: "The food nouns are the whole challenge here. Play the vocabulary chips first, then listen — you will catch far more the second time.",
+  },
+  "easy-news-grazing-board-2": {
+    id: "easy-news-grazing-board-2",
+    title: "What Should We Order?",
+    emoji: "💬",
+    image: "/assets/news-grazing-board/comics/2.jpg",
+    difficulty: "Easy",
+    duration: "~2 min 55 sec",
+    description:
+      "Katrin, Evelyn and Igor cannot agree on what to eat. Pizza is easy, but someone is tired of it, someone is on a tight budget, and someone wants to make everything from scratch. A real disagreement, at speed.",
+    grammar: [
+      "Making suggestions (why do not we, we could, how about)",
+      "Objecting politely (I am tired of it, that is a bit expensive)",
+      "be + adjective + preposition (tired of, good at, on a budget)",
+      "Phrasal verbs in speech (warm up, take out, put together, go back)",
+    ],
+    topics: ["Food & cooking", "Making plans", "Disagreeing", "Money"],
+    tip: "Three voices talking quickly. On the first listen just work out who wants what — the details come on the replay.",
+  },
   "easy-leo-1": {
     id: "easy-leo-1",
     title: "Leo's Life",
