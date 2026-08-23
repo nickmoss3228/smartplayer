@@ -101,19 +101,46 @@ function dbStoryToGroup(story: {
 export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
   const staticGroups = getStoryGroups(difficulty, t);
   const [dbGroups, setDbGroups] = useState<StoryGroup[]>([]);
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
-    fetchPublishedStoriesList(difficulty).then((stories) => {
-      if (!cancelled) setDbGroups(stories.map(dbStoryToGroup));
+    fetchPublishedStoriesList(difficulty).then(({ stories, hidden: hiddenIds }) => {
+      if (cancelled) return;
+      setDbGroups(stories.map(dbStoryToGroup));
+      setHidden(new Set(hiddenIds));
     });
     return () => {
       cancelled = true;
     };
   }, [difficulty]);
 
+  return mergeStoryGroups(staticGroups, dbGroups, hidden);
+}
+
+/**
+ * The rule for what a student sees, kept pure so it can be tested without
+ * mounting a hook — it decides whether content appears at all.
+ *
+ * Two separate mechanisms, deliberately not conflated:
+ *
+ *   override — a published DB story REPLACES the static entry of the same slug,
+ *              so an imported-and-edited story appears once, not twice.
+ *   hidden   — takes a story out of the list entirely, and applies to both
+ *              sides. This is the only thing that can remove a BUILT-IN story:
+ *              those are declared in storyGroupsRaw and render whatever the
+ *              database says, which is why deleting a draft never removed one
+ *              (it dropped the override and the static entry came back).
+ */
+export function mergeStoryGroups(
+  staticGroups: StoryGroup[],
+  dbGroups: StoryGroup[],
+  hidden: Set<string>,
+): StoryGroup[] {
   const dbSlugs = new Set(dbGroups.map((g) => g.slug));
-  return [...staticGroups.filter((g) => !dbSlugs.has(g.slug)), ...dbGroups];
+  return [...staticGroups.filter((g) => !dbSlugs.has(g.slug)), ...dbGroups].filter(
+    (g) => !hidden.has(g.slug),
+  );
 }
 
 // Single-story lookup with DB fallback. `loading` is true only while nothing

@@ -4,6 +4,7 @@
 // helpers/storyLookup.js for how DB stories are merged with the legacy
 // static-file stories at read time.
 import { Story } from "../models/Story.js";
+import { setStoryHidden, hiddenStoryIds } from "../models/StoryVisibility.js";
 import {
   rememberPartMarkers,
   recallStoryMarkers,
@@ -546,12 +547,51 @@ export async function getPublishedStory(req, res) {
 export async function listPublishedStories(req, res) {
   try {
     const { difficulty } = req.params;
-    const stories = await Story.find({ difficulty, published: true })
-      .select("storyId storyName description characterIcon totalParts")
-      .lean();
-    res.json({ stories });
+    const [stories, hidden] = await Promise.all([
+      Story.find({ difficulty, published: true })
+        .select("storyId storyName description characterIcon totalParts")
+        .lean(),
+      hiddenStoryIds(difficulty),
+    ]);
+    // `hidden` covers the BUILT-IN stories too, which is the point: they are
+    // declared in the frontend's static config and rendered regardless of what
+    // the database holds, so this list is the only way the admin panel can
+    // remove one. Sent on the same request the list already makes rather than
+    // as a second round trip.
+    res.json({ stories, hidden });
   } catch (error) {
     console.error("listPublishedStories error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ─── Admin: story visibility ───────────────────────────────────────────────
+
+// GET /api/admin/stories/visibility/:difficulty  -> { hidden: [storyId] }
+export async function getStoryVisibility(req, res) {
+  try {
+    res.json({ hidden: await hiddenStoryIds(req.params.difficulty) });
+  } catch (error) {
+    console.error("getStoryVisibility error:", error);
+    res.status(500).json({ error: "Failed to read story visibility." });
+  }
+}
+
+// PUT /api/admin/stories/visibility/:difficulty/:storyId  { hidden }
+// By slug, not by Mongo _id — a built-in story has no document to address.
+export async function setStoryVisibility(req, res) {
+  try {
+    const { difficulty, storyId } = req.params;
+    if (!["easy", "medium", "hard"].includes(difficulty)) {
+      return res.status(400).json({ error: "Invalid difficulty." });
+    }
+    if (typeof req.body?.hidden !== "boolean") {
+      return res.status(400).json({ error: "hidden must be true or false." });
+    }
+    await setStoryHidden(difficulty, storyId, req.body.hidden);
+    res.json({ success: true, difficulty, storyId, hidden: req.body.hidden });
+  } catch (error) {
+    console.error("setStoryVisibility error:", error);
+    res.status(500).json({ error: "Failed to update story visibility." });
   }
 }

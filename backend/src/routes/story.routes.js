@@ -14,6 +14,8 @@ import {
   uploadPartAsset,
   saveMarkers,
   saveComic,
+  getStoryVisibility,
+  setStoryVisibility,
   saveVocabulary,
   savePhrasalVerbs,
   saveQuiz,
@@ -27,6 +29,10 @@ adminRouter.post("/", adminAuth, createStory);
 adminRouter.post("/import", adminAuth, importStory);
 adminRouter.get("/quiz-source/:difficulty/:storyId", adminAuth, getStaticQuizSource);
 adminRouter.get("/", adminAuth, listStories);
+// Before "/:id", or Express matches "visibility" as a story id and the lookup
+// fails with a cast error instead of routing here.
+adminRouter.get("/visibility/:difficulty", adminAuth, getStoryVisibility);
+adminRouter.put("/visibility/:difficulty/:storyId", adminAuth, setStoryVisibility);
 adminRouter.get("/:id", adminAuth, getStory);
 adminRouter.patch("/:id", adminAuth, updateStoryMeta);
 adminRouter.delete("/:id", adminAuth, deleteStory);

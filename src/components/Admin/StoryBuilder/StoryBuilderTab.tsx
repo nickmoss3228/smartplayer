@@ -11,6 +11,7 @@ import { getStoryGroups, DifficultySlug, StoryGroup } from "../../../types/story
 import { assembleImportPayload } from "./assembleImportPayload";
 import NewStoryForm from "./NewStoryForm";
 import StoryEditor from "./StoryEditor";
+import StoryVisibilityPanel from "./StoryVisibilityPanel";
 
 const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
 
@@ -134,6 +135,8 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
           <NewStoryForm token={token} onCreated={handleCreated} onCancel={() => setShowNewForm(false)} />
         </div>
       )}
+
+      <StoryVisibilityPanel token={token} stories={stories} />
 
       {importable.length > 0 && (
         <div className="mb-6 bg-gray-50 rounded-lg border border-gray-200 p-3">

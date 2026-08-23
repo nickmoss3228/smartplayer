@@ -63,14 +63,24 @@ export const fetchPublishedStory = async (
   }
 };
 
+/**
+ * Published DB stories for a difficulty, plus the ids the admin panel has
+ * hidden — which covers the BUILT-IN stories too, and is the only way to take
+ * one of those out of the list, since they are declared in storyGroups.ts and
+ * render whether or not the database knows them.
+ *
+ * On failure both come back empty, so a backend outage shows the full built-in
+ * catalogue rather than an empty app. Failing open is the right way round here:
+ * hiding is an editorial choice, not a security boundary.
+ */
 export const fetchPublishedStoriesList = async (
   difficulty: string
-): Promise<PublishedStoryListItem[]> => {
+): Promise<{ stories: PublishedStoryListItem[]; hidden: string[] }> => {
   try {
     const res = await axios.get(`${API_BASE}/api/stories/${difficulty}`);
-    return res.data.stories;
+    return { stories: res.data.stories ?? [], hidden: res.data.hidden ?? [] };
   } catch {
-    return [];
+    return { stories: [], hidden: [] };
   }
 };
 

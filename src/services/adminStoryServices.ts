@@ -307,3 +307,37 @@ export const setStoryPublished = async (
   const data = await parseOrThrow(res);
   return data.story;
 };
+
+// ─── Story visibility ──────────────────────────────────────────────────────
+// Addressed by slug, not by Mongo _id: the built-in stories have no document,
+// and they are precisely the ones that could not be removed from the list
+// before — deleting a draft only dropped the DB override and let the static
+// entry underneath reappear.
+
+export const fetchHiddenStories = async (
+  token: string,
+  difficulty: Difficulty
+): Promise<string[]> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/visibility/${difficulty}`, {
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.hidden ?? [];
+};
+
+export const setStoryHidden = async (
+  token: string,
+  difficulty: Difficulty,
+  storyId: string,
+  hidden: boolean
+): Promise<void> => {
+  const res = await fetch(
+    `${API_URL}/api/admin/stories/visibility/${difficulty}/${encodeURIComponent(storyId)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ hidden }),
+    }
+  );
+  await parseOrThrow(res);
+};
