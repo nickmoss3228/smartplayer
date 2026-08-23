@@ -36,9 +36,6 @@ interface Failure {
   detail: string;
 }
 
-// Range: bytes=0-0 so a healthy file costs one byte instead of the whole clip.
-// S3 ignores Range on an error and returns the full XML body regardless, which
-// is exactly the case we need the body for.
 // MediaError codes, per the HTML spec.
 //
 // Treated as a HINT, not a verdict. Chromium reports a load that never got
@@ -62,7 +59,15 @@ const MEDIA_ERR = { ABORTED: 1, NETWORK: 2, DECODE: 3, SRC_NOT_SUPPORTED: 4 } as
 async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> {
   let res: Response;
   try {
-    res = await fetch(url);
+    // no-store: a diagnosis has to be about the object that exists right now.
+    // These clips are re-uploaded in place under the same URL when an admin
+    // fixes one, and any that skipped uploadToStorage.js's `?v=` versioning
+    // (the legacy quiz/vocab audio does — see backfillCacheControl.js) carry a
+    // 30-day Cache-Control with nothing to bust it. A plain fetch() can then
+    // return a perfectly complete, self-consistent response for a version of
+    // the file that was already fixed — which decodes exactly like a damaged
+    // file, even though the object itself is fine.
+    res = await fetch(url, { cache: "no-store" });
   } catch (err) {
     return {
       short: "network",
@@ -201,6 +206,21 @@ const stopCurrent = () => {
   nowPlaying = null;
 };
 
+// `<audio>` has no cache-mode option like fetch's `no-store`, so the only way
+// to force it past a stale cached response is to change the URL. Query
+// params are part of the browser's cache key but irrelevant to Yandex on a
+// plain GET, so this reaches the same object without ever risking a cached
+// copy of whatever used to live at this key.
+//
+// Applied on RETRY ONLY, not on first mount. A first mount that's happy to
+// use the cache is the common case and the cheap one; this dev environment's
+// route to the bucket drops more often than not (see diagnose()'s network
+// message), so busting the cache on every single mount would trade a rare
+// problem (a stale cached response) for a much more common one (forcing a
+// fresh round-trip over a flaky link every time a tab is revisited). Retry is
+// the one moment the admin has explicitly asked "check again, for real."
+const cacheBust = (raw: string): string => `${raw}${raw.includes("?") ? "&" : "?"}_cb=${Date.now()}`;
+
 const formatDuration = (seconds: number): string => {
   if (!Number.isFinite(seconds)) return "--:--";
   // Most clips here are a single word — "a tournament" is 0.9s. Flooring that
@@ -292,7 +312,7 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
         releaseSlot();
         return;
       }
-      audio.src = url;
+      audio.src = attempt > 0 ? cacheBust(url) : url;
     });
 
     return () => {

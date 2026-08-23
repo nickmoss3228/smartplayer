@@ -7,6 +7,7 @@ import {
   saveQuiz,
 } from "../../../services/adminStoryServices";
 import AudioPreview from "./AudioPreview";
+import { resolveQuizAudioUrl } from "../../../services/yandexStorage";
 
 interface PartQuizEditorProps {
   token: string;
@@ -166,7 +167,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
                 {/* Replaces the old ✓, which only ever meant "this question
                     object has a non-empty string in it" — it stayed green for
                     a URL pointing at nothing. */}
-                <AudioPreview url={q.audio[speed]} label={`Q${qIndex + 1} ${speed}`} />
+                <AudioPreview url={resolveQuizAudioUrl(q.audio[speed])} label={`Q${qIndex + 1} ${speed}`} />
               </div>
             ))}
           </div>
