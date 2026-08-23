@@ -338,17 +338,35 @@ const List = () => {
                   {t(`list.category.${category}`)}
                 </h2>
               )}
-              {/* Medium and Hard ship a single story each. One half-width card
-                  stranded on an empty page reads as a bug, so a lone story runs
-                  as a hero card instead of a one-item grid. */}
+              {/* A horizontal rail, not a wrapping grid. Each shelf grows
+                  sideways as stories are added, so the page keeps its shape
+                  however many there are and the shelves below stay reachable
+                  without scrolling past a wall of cards.
+
+                  Negative margin + matching padding lets the row bleed to the
+                  screen edge while the first card still lines up with the
+                  heading above it, and scroll-px keeps a snapped card off the
+                  edge. Medium and Hard ship one story each: a lone card runs at
+                  a readable width instead of stretching across the rail. */}
               <div
-                className={
-                  groupStories.length === 1
-                    ? 'grid grid-cols-1 sm:max-w-xs'
-                    : 'grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4'
-                }
+                className="flex gap-2 sm:gap-3 overflow-x-auto snap-x snap-mandatory
+                           -mx-4 px-4 sm:-mx-6 sm:px-6 scroll-px-4 sm:scroll-px-6 pb-2
+                           [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5
+                           [&::-webkit-scrollbar-thumb]:rounded-full
+                           [&::-webkit-scrollbar-thumb]:bg-gray-300"
               >
-                {groupStories.map((story, index) => renderCard(story, index))}
+                {groupStories.map((story, index) => (
+                  <div
+                    key={story.slug}
+                    className={`snap-start shrink-0 ${
+                      groupStories.length === 1
+                        ? "w-[46%] sm:w-56"
+                        : "w-[46%] sm:w-44 lg:w-48"
+                    }`}
+                  >
+                    {renderCard(story, index)}
+                  </div>
+                ))}
               </div>
             </div>
           ))
