@@ -100,6 +100,23 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     return { short: "empty", detail: "The object exists but is zero bytes. Re-upload it." };
   }
 
+  // Compare what arrived against what the server said it was sending, BEFORE
+  // trying to decode. A cut-short transfer produces bytes that cannot be
+  // decoded, which is indistinguishable from a damaged file if you only look
+  // at the decode result — and blaming the file for a dropped connection is
+  // the worst answer this control can give, because it sends you off to
+  // re-upload something that was never wrong.
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > 0 && bytes.byteLength < declared) {
+    return {
+      short: "truncated",
+      detail:
+        `Only ${bytes.byteLength} of ${declared} bytes arrived, so the transfer was cut ` +
+        `short. That says nothing about the file itself — the stored object is the full ` +
+        `${declared} bytes. Click to retry.`,
+    };
+  }
+
   // decodeAudioData is the authority: it either turns these exact bytes into
   // audio or it does not.
   const AudioCtx =
@@ -127,8 +144,10 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     return {
       short: "corrupt",
       detail:
-        `Downloaded ${bytes.byteLength} bytes, but they could not be decoded as audio. This one ` +
-        `really is damaged, truncated, or not an mp3 — re-upload it.` +
+        `All ${bytes.byteLength} bytes arrived` +
+        (Number.isFinite(declared) && declared > 0 ? ` (the full ${declared} the server declared)` : "") +
+        `, and they still could not be decoded as audio. This one really is damaged or is not ` +
+        `an mp3 — re-upload it.` +
         (mediaErrorCode === MEDIA_ERR.DECODE ? " The player reported a decode error too." : ""),
     };
   } finally {
