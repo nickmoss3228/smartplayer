@@ -651,16 +651,16 @@
         "description": "People surrounding Leo talk about him!"
       },
       "news-roland-garros": {
-        "title": "[Placeholder] Roland Garros 2026",
-        "description": "[Placeholder] Based on the news article \"Love & Money: only pleasant news\" — coming soon."
+        "title": "Roland Garros 2026",
+        "description": "Mirra Andreeva wins the French Open — then the friends argue about the prize money."
       },
       "news-family-visit": {
-        "title": "[Placeholder] Leo Visits Family Friends",
-        "description": "[Placeholder] Based on the news article \"Ugh, nothing to wear again! And that's not news\" — coming soon."
+        "title": "Leo Visits Family Friends",
+        "description": "How young people are changing New Year traditions. Recordings coming soon."
       },
       "news-grazing-board": {
-        "title": "[Placeholder] Grazing Board: Italian Antipasti",
-        "description": "[Placeholder] Based on a food-news article about trendy recipes — coming soon."
+        "title": "Grazing Board: Italian Antipasti",
+        "description": "Building an Italian antipasti board, and a debate about what to order instead."
       }
     },
     "medium": {
