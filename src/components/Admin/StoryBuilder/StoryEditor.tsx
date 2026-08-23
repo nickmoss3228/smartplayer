@@ -9,6 +9,7 @@ import {
 } from "../../../services/adminStoryServices";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
+import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
 
@@ -48,6 +49,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
   const [editName, setEditName] = useState(story.storyName);
   const [editDescription, setEditDescription] = useState(story.description);
   const [editIcon, setEditIcon] = useState(story.characterIcon);
+  const [editCategory, setEditCategory] = useState<StoryCategory>(story.category ?? "general");
   const [savingMeta, setSavingMeta] = useState(false);
 
   const part = story.parts.find((p) => p.partNumber === partNumber) as StoryPart;
@@ -176,6 +178,19 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                 placeholder="Story name"
                 className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-lg"
               />
+              {/* Which shelf the story sits on in the students' list. A
+                  published story REPLACES its built-in entry outright, so
+                  without setting this a news story silently moves under
+                  "Stories" the moment it goes live. */}
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value as StoryCategory)}
+                className="text-black text-sm px-2 py-1.5 border border-gray-300 rounded-lg bg-white"
+                title="Which section of the story list this appears under"
+              >
+                <option value="general">Stories</option>
+                <option value="news">News &amp; Interesting Things</option>
+              </select>
             </div>
             <textarea
               value={editDescription}

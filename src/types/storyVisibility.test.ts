@@ -74,3 +74,35 @@ describe('mergeStoryGroups', () => {
     expect(mergeStoryGroups(statics, [], none)).toHaveLength(3);
   });
 });
+
+/**
+ * Publishing a story must not move it to a different shelf. A published DB
+ * story REPLACES its static counterpart wholesale, so the category has to
+ * survive the swap — otherwise every news story silently lands under
+ * "Stories" the moment it goes live, which is exactly what happened.
+ */
+describe('category survives publishing', () => {
+  const dbGroup = (slug: string, category: 'general' | 'news'): StoryGroup => ({
+    ...group(slug),
+    category,
+  });
+
+  it('keeps a news story under news when its DB copy says so', () => {
+    const out = mergeStoryGroups(
+      [{ ...group('news-roland-garros'), category: 'news' }],
+      [dbGroup('news-roland-garros', 'news')],
+      none,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].category).toBe('news');
+  });
+
+  it('lets an explicit category move a story between shelves', () => {
+    const out = mergeStoryGroups(
+      [{ ...group('leo'), category: 'general' }],
+      [dbGroup('leo', 'news')],
+      none,
+    );
+    expect(out[0].category).toBe('news');
+  });
+});

@@ -1,6 +1,10 @@
 import { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
-import { fetchPublishedStoriesList, fetchPublishedStory } from '../services/storyServices';
+import {
+  fetchPublishedStoriesList,
+  fetchPublishedStory,
+  type PublishedStoryListItem,
+} from '../services/storyServices';
 
 export type StoryCategory = 'general' | 'news';
 
@@ -80,13 +84,25 @@ export const getStoryGroup = (
 // the whole-story "DB wins once published" precedence in the backend's
 // helpers/storyLookup.js.
 
-function dbStoryToGroup(story: {
-  storyId: string;
-  storyName: string;
-  description: string;
-  characterIcon: string;
-  totalParts: number;
-}): StoryGroup {
+/**
+ * @param fallbackCategory the static entry's category, used when the DB story
+ *   has no opinion. A published DB story REPLACES its static counterpart
+ *   wholesale, so hardcoding 'general' here silently moved every news story to
+ *   the Stories shelf the moment it was published. Stories imported before the
+ *   category field existed carry null, and this is what keeps them in place
+ *   without a data migration.
+ */
+function dbStoryToGroup(
+  story: {
+    storyId: string;
+    storyName: string;
+    description: string;
+    characterIcon: string;
+    category?: StoryCategory | null;
+    totalParts: number;
+  },
+  fallbackCategory: StoryCategory = 'general',
+): StoryGroup {
   return {
     slug: story.storyId,
     title: story.storyName,
@@ -94,26 +110,36 @@ function dbStoryToGroup(story: {
     character: story.storyName,
     totalTracks: story.totalParts,
     coverEmoji: story.characterIcon,
-    category: 'general',
+    category: story.category ?? fallbackCategory,
   };
 }
 
 export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
   const staticGroups = getStoryGroups(difficulty, t);
-  const [dbGroups, setDbGroups] = useState<StoryGroup[]>([]);
+  // The RAW rows are held in state and adapted during render, not in the
+  // effect: adapting needs the static entry's category as a fallback, and
+  // reaching for staticGroups inside the effect would either capture a stale
+  // copy or, if listed as a dependency, refetch on every render since
+  // getStoryGroups builds a new array each time.
+  const [dbStories, setDbStories] = useState<PublishedStoryListItem[]>([]);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
     fetchPublishedStoriesList(difficulty).then(({ stories, hidden: hiddenIds }) => {
       if (cancelled) return;
-      setDbGroups(stories.map(dbStoryToGroup));
+      setDbStories(stories);
       setHidden(new Set(hiddenIds));
     });
     return () => {
       cancelled = true;
     };
   }, [difficulty]);
+
+  const staticCategory = new Map(staticGroups.map((g) => [g.slug, g.category]));
+  const dbGroups = dbStories.map((s) =>
+    dbStoryToGroup(s, staticCategory.get(s.storyId) ?? 'general'),
+  );
 
   return mergeStoryGroups(staticGroups, dbGroups, hidden);
 }

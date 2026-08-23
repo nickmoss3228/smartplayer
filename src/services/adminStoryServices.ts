@@ -3,6 +3,7 @@
 // (and the fetch/error-handling helpers) from adminServices.ts. `id` below is
 // always the Mongo _id (not the storyId slug) — matches the backend routes.
 import { API_URL, authHeaders, parseOrThrow } from "./adminServices";
+import type { StoryCategory } from "../types/storyGroups";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -49,6 +50,8 @@ export interface AdminStory {
   storyName: string;
   description: string;
   characterIcon: string;
+  /** Which list heading it sits under; null means "inherit the built-in one". */
+  category?: StoryCategory | null;
   totalParts: number;
   published: boolean;
   parts: StoryPart[];
@@ -83,6 +86,7 @@ export interface ImportStoryPayload {
   storyName: string;
   description: string;
   characterIcon: string;
+  category?: StoryCategory;
   totalParts: number;
   parts: StoryPart[];
 }
@@ -154,7 +158,12 @@ export const getStory = async (token: string, id: string): Promise<AdminStory> =
 export const updateStoryMeta = async (
   token: string,
   id: string,
-  updates: { storyName?: string; description?: string; characterIcon?: string }
+  updates: {
+    storyName?: string;
+    description?: string;
+    characterIcon?: string;
+    category?: StoryCategory | null;
+  }
 ): Promise<AdminStory> => {
   const res = await fetch(`${API_URL}/api/admin/stories/${id}`, {
     method: "PATCH",

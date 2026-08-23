@@ -99,6 +99,9 @@ export async function assembleImportPayload(
     storyName: storyGroup.title,
     description: storyGroup.description,
     characterIcon: storyGroup.coverEmoji,
+    // Carry the shelf across: without it a published news story lands under
+    // "Stories", because the DB copy replaces the static entry wholesale.
+    category: storyGroup.category,
     totalParts: parts.length,
     parts,
   };

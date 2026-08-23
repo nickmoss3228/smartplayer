@@ -73,6 +73,14 @@ const storySchema = new mongoose.Schema(
     description: { type: String, default: "" },
     characterIcon: { type: String, default: "📖" },
     totalParts: { type: Number, required: true, min: 1, max: 20 },
+    // Which heading the story sits under in the list ("Stories" vs
+    // "News & Interesting Things"). A published DB story REPLACES its static
+    // counterpart wholesale, so without carrying the category the replacement
+    // silently moved every news story onto the general shelf the moment it was
+    // published. Null means "no opinion" — the frontend then falls back to the
+    // static entry's category, which is what keeps stories imported before this
+    // field existed on the right shelf.
+    category: { type: String, enum: ["general", "news", null], default: null },
     // Hidden from players until the admin explicitly publishes it.
     published: { type: Boolean, default: false },
     parts: { type: [partSchema], default: [] },

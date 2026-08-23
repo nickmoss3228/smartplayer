@@ -46,6 +46,8 @@ export interface PublishedStoryListItem {
   storyName: string;
   description: string;
   characterIcon: string;
+  /** Which list heading it belongs under; null means "use the static entry's". */
+  category?: 'general' | 'news' | null;
   totalParts: number;
 }
 

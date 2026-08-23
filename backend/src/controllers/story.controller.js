@@ -94,7 +94,7 @@ export async function getStaticQuizSource(req, res) {
 // unlike createStory, matching a static storyId is expected here, not rejected.
 export async function importStory(req, res) {
   try {
-    const { difficulty, storyId, storyName, description, characterIcon, totalParts, parts } = req.body;
+    const { difficulty, storyId, storyName, description, characterIcon, category, totalParts, parts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -165,7 +165,7 @@ export async function listStories(req, res) {
     const { difficulty } = req.query;
     const filter = difficulty ? { difficulty } : {};
     const stories = await Story.find(filter)
-      .select("difficulty storyId storyName characterIcon totalParts published createdAt")
+      .select("difficulty storyId storyName characterIcon category totalParts published createdAt")
       .sort({ createdAt: -1 });
     res.json({ stories });
   } catch (error) {
@@ -196,7 +196,7 @@ export async function updateStoryMeta(req, res) {
     const story = await Story.findById(req.params.id);
     if (!story) return res.status(404).json({ error: "Story not found." });
 
-    const { storyName, description, characterIcon } = req.body;
+    const { storyName, description, characterIcon, category } = req.body;
 
     if (storyName !== undefined) {
       if (!storyName.trim()) return res.status(400).json({ error: "storyName can't be empty." });
@@ -204,6 +204,12 @@ export async function updateStoryMeta(req, res) {
     }
     if (description !== undefined) story.description = description.trim();
     if (characterIcon !== undefined) story.characterIcon = characterIcon.trim() || "📖";
+    if (category !== undefined) {
+      if (!["general", "news", null].includes(category)) {
+        return res.status(400).json({ error: "category must be general, news, or null." });
+      }
+      story.category = category;
+    }
 
     await story.save();
     res.json({ story });
@@ -523,6 +529,7 @@ export async function getPublishedStory(req, res) {
       storyName: story.storyName,
       description: story.description,
       characterIcon: story.characterIcon,
+      category: story.category ?? null,
       totalParts: story.totalParts,
       parts: story.parts.map((part) => ({
         partNumber: part.partNumber,
@@ -549,7 +556,7 @@ export async function listPublishedStories(req, res) {
     const { difficulty } = req.params;
     const [stories, hidden] = await Promise.all([
       Story.find({ difficulty, published: true })
-        .select("storyId storyName description characterIcon totalParts")
+        .select("storyId storyName description characterIcon category totalParts")
         .lean(),
       hiddenStoryIds(difficulty),
     ]);
