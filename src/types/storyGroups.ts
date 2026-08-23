@@ -1,5 +1,6 @@
 import { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   fetchPublishedStoriesList,
   fetchPublishedStory,
@@ -92,11 +93,24 @@ export const getStoryGroup = (
  *   category field existed carry null, and this is what keeps them in place
  *   without a data migration.
  */
+export type AppLocale = 'en' | 'ru';
+
+/**
+ * Which locale's text to show. i18next language codes can carry a region
+ * ("ru-RU"), so match on the prefix rather than equality — the app only ever
+ * ships these two bundles.
+ */
+function useAppLocale(): AppLocale {
+  const { i18n } = useTranslation();
+  return i18n.language?.toLowerCase().startsWith('ru') ? 'ru' : 'en';
+}
+
 function dbStoryToGroup(
   story: {
     storyId: string;
     storyName: string;
     description: string;
+    localized?: { title: { en: string; ru: string }; description: { en: string; ru: string } } | null;
     characterIcon: string;
     category?: StoryCategory | null;
     coverUrl?: string | null;
@@ -104,11 +118,14 @@ function dbStoryToGroup(
   },
   fallbackCategory: StoryCategory = 'general',
   fallbackCover?: string,
+  locale: AppLocale = 'en',
 ): StoryGroup {
   return {
     slug: story.storyId,
-    title: story.storyName,
-    description: story.description,
+    // Per-locale text wins; storyName is the admin-facing identifier and only
+    // stands in for stories imported before localized existed.
+    title: story.localized?.title?.[locale]?.trim() || story.storyName,
+    description: story.localized?.description?.[locale]?.trim() || story.description,
     character: story.storyName,
     totalTracks: story.totalParts,
     coverEmoji: story.characterIcon,
@@ -122,6 +139,7 @@ function dbStoryToGroup(
 
 export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
   const staticGroups = getStoryGroups(difficulty, t);
+  const locale = useAppLocale();
   // The RAW rows are held in state and adapted during render, not in the
   // effect: adapting needs the static entry's category as a fallback, and
   // reaching for staticGroups inside the effect would either capture a stale
@@ -145,7 +163,7 @@ export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryG
   const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
   const dbGroups = dbStories.map((s) => {
     const fallback = staticBySlug.get(s.storyId);
-    return dbStoryToGroup(s, fallback?.category ?? 'general', fallback?.cover);
+    return dbStoryToGroup(s, fallback?.category ?? 'general', fallback?.cover, locale);
   });
 
   return mergeStoryGroups(staticGroups, dbGroups, hidden);
@@ -191,6 +209,7 @@ export function useStoryGroup(
   const [dbGroup, setDbGroup] = useState<StoryGroup | undefined>(undefined);
   const [dbChecked, setDbChecked] = useState(false);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+  const locale = useAppLocale();
 
   useEffect(() => {
     let cancelled = false;
@@ -205,7 +224,7 @@ export function useStoryGroup(
         if (cancelled) return;
         setDbGroup(
           story
-            ? dbStoryToGroup(story, staticGroup?.category ?? 'general', staticGroup?.cover)
+            ? dbStoryToGroup(story, staticGroup?.category ?? 'general', staticGroup?.cover, locale)
             : undefined,
         );
         setHidden(new Set(list.hidden));

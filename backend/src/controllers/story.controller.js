@@ -643,7 +643,7 @@ export async function listPublishedStories(req, res) {
     const { difficulty } = req.params;
     const [stories, hidden] = await Promise.all([
       Story.find({ difficulty, published: true })
-        .select("storyId storyName description characterIcon category coverUrl totalParts")
+        .select("storyId storyName description characterIcon category coverUrl localized totalParts")
         .lean(),
       hiddenStoryIds(difficulty),
     ]);

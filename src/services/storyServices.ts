@@ -60,6 +60,8 @@ export interface PublishedStoryListItem {
   category?: 'general' | 'news' | null;
   /** 4:5 card art; null means "use the static entry's cover". */
   coverUrl?: string | null;
+  /** Per-locale display text; empty strings fall back to storyName. */
+  localized?: { title: LocalizedText; description: LocalizedText } | null;
   totalParts: number;
 }
 
