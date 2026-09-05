@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 import { corsMiddleware } from "./middleware/cors.js";
 import { apiLimiter } from "./middleware/rateLimit.js";
 import { auditAdminAction } from "./middleware/auditLog.js";
@@ -21,6 +22,35 @@ app.set("trust proxy", 2);
 // ip/xff are logged on purpose: if the trust-proxy hop count above is ever
 // wrong, every user collapses into one rate-limit bucket. Seeing a real
 // public IP here rather than a 172.x container address is the check.
+// helmet was a dependency for a long time without ever being imported, so the
+// package.json looked hardened while the running app sent none of these.
+//
+// Scope, so this is not mistaken for more than it is: THIS PROCESS SERVES JSON.
+// The SPA's HTML comes from nginx, so the headers below apply to API responses
+// only. They are still worth having (nosniff, HSTS, no framing, no referrer
+// leakage, and X-Powered-By stops advertising Express), but the CSP that would
+// actually blunt an XSS against the player — the thing that matters while the
+// session token lives in localStorage — has to be set on the origin that
+// serves index.html. nginx.conf currently sets no security headers at all.
+app.use(
+  helmet({
+    // A CSP on a JSON body governs nothing, so the only useful policy here is
+    // the maximally restrictive one. It applies solely if a browser is pointed
+    // straight at an API URL, and it cannot affect fetch() consumers.
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: { "default-src": ["'none'"], "frame-ancestors": ["'none'"] },
+    },
+    // Local dev calls this API cross-origin (:5173 -> :3000). CORP targets
+    // no-cors subresource embedding and does not gate CORS fetches, but the
+    // same-origin default would be a lie about how this service is used.
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    // COEP would force every cross-origin response the FRONTEND loads to opt
+    // in, the Yandex audio bucket included. Not this service's decision.
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use((req, res, next) => {
   console.log(
     `${new Date().toISOString()} - ${req.method} ${req.url} ip=${req.ip} xff=${
@@ -42,8 +72,12 @@ app.use(corsMiddleware);
 // body parsing happens.
 app.use("/api", apiLimiter);
 
-app.use(express.json()); // parses JSON request bodies
-app.use(express.urlencoded({ extended: true })); // parses URL-encoded bodies
+// Explicit rather than implied. 100kb is what Express defaults to anyway; the
+// point is that the ceiling is now a stated decision sitting next to the rate
+// limiter, so raising it for one endpoint is a visible change rather than a
+// silent inheritance.
+app.use(express.json({ limit: "100kb" })); // parses JSON request bodies
+app.use(express.urlencoded({ extended: true, limit: "100kb" })); // URL-encoded
 
 // Add this root route handler
 app.get('/', (req, res) => {
@@ -83,18 +117,6 @@ app.use((err, req, res, next) => {
     error: "Something went wrong on our end.",
     message: "Something went wrong on our end.",
   });
-});
-
-app._router.stack.forEach((middleware) => {
-  if (middleware.route) {
-    console.log('Route:', middleware.route.path);
-  } else if (middleware.name === 'router') {
-    middleware.handle.stack.forEach((handler) => {
-      if (handler.route) {
-        console.log('Route:', handler.route.path);
-      }
-    });
-  }
 });
 
 export default app;

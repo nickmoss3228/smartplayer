@@ -50,21 +50,22 @@ const make = (label, windowMs, max, extra = {}) =>
     ...extra,
   });
 
-// NOT CURRENTLY APPLIED — removed from POST /api/admin/login on request, see
-// routes/admin.routes.js. Kept here so re-enabling is a one-line change.
+// APPLIED to POST /api/admin/login (routes/admin.routes.js).
 //
-// Why it existed: the admin panel is gated by a single shared code word, so
-// without a limiter that code word can be brute-forced at line speed, and a
-// hit grants the Story Builder, the ban button and currency granting. If it
-// stays off, the mitigation is code-word entropy — a long random ADMIN_CODES
-// value rather than a memorable word.
+// The admin panel is gated by a single shared code word, so without a limiter
+// that code word can be brute-forced at line speed, and a hit grants the Story
+// Builder, the ban button and currency granting. This is the ceiling; code-word
+// entropy (a long random ADMIN_CODES value, not a memorable word) is still the
+// thing actually protecting the panel.
 //
-// skipSuccessfulRequests meant an admin re-entering the panel legitimately was
-// never locked out; only wrong guesses ever counted against the budget.
-export const adminLoginLimiter = make("admin-login", 15 * MINUTE, 5, {
+// skipSuccessfulRequests: an admin re-entering the panel legitimately is never
+// locked out — only wrong guesses count against the budget. That is why 10 is
+// safe here: it is 10 *failures* per 15 minutes, enough to absorb typos and
+// avoid the friction that got this limiter removed once already, while still
+// capping an attacker at 40 guesses/hour against one secret.
+export const adminLoginLimiter = make("admin-login", 15 * MINUTE, 10, {
   skipSuccessfulRequests: true,
 });
-
 // Costs real money and IO per call (a Resend send plus a user lookup), so
 // unlike the login tiers this counts successes too — the cost is incurred
 // either way, and it doubles as anti-mailbomb protection for the recipient.

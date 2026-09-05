@@ -11,13 +11,25 @@ export async function requestPasswordReset(req, res) {
 
     console.log("=== PASSWORD RESET REQUEST ===");
 
-    if (!email) {
+    // typeof, not just falsiness: `email` lands in a Mongo query below, so a
+    // JSON body of {"email": {"$ne": null}} must be rejected as input rather
+    // than reaching the query builder as an operator object.
+    if (!email || typeof email !== "string") {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({
-      email: { $regex: new RegExp(`^${email}$`, "i") },
-    });
+    // Exact match on the stored value, NOT a regex. This previously built
+    // `new RegExp(`^${email}$`, "i")` straight from the request body, which
+    // meant {"email": ".*"} matched the first user in the collection and mailed
+    // a real account a reset link nobody asked for — while also defeating the
+    // deliberate no-enumeration response a few lines down. A regex can't use
+    // the unique index on email either, so every request was a full collection
+    // scan on an unauthenticated route.
+    //
+    // No escapeRegex() call is needed because there is no longer a pattern to
+    // escape: the field is stored `lowercase: true` (models/User.js), so
+    // lowercasing the input is all the case-insensitivity this ever required.
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
     console.log("User found:", user ? "YES" : "NO");
 
     // Don't reveal if user exists for security

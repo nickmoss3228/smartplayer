@@ -296,6 +296,31 @@ const COMIC_EXTENSIONS = {
   "image/gif": "gif",
 };
 
+// Every non-comic kind is audio. Browsers are not consistent about which of
+// these they attach to a .mp3, so the allowlist is wide on the way in — but
+// whatever arrives, the object is stored as a single normalised type below.
+const AUDIO_MIME_TYPES = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mpeg3",
+  "audio/x-mpeg-3",
+]);
+
+// Mirrors ENGLISH_KEY_PATTERN in components/Admin/StoryBuilder/
+// PartVocabWordsEditor.tsx. The client already refuses anything else; this is
+// the half of that check an attacker cannot skip. Note what it excludes: no
+// dots and no slashes, so the value cannot walk out of the story's folder.
+const AUDIO_KEY_PATTERN = /^[a-zA-Z0-9 _-]+$/;
+
+const UPLOAD_KINDS = new Set([
+  "audio",
+  "comic",
+  "vocab",
+  "phrasal",
+  "quizFast",
+  "quizSlow",
+]);
+
 function assetKeyFor(story, partNumber, kind, extra) {
   const base = `stories/${story.difficulty}/${story.storyId}/${partNumber}`;
   switch (kind) {
@@ -329,14 +354,34 @@ export async function uploadPartAsset(req, res) {
     if (!req.file) return res.status(400).json({ error: "No file uploaded." });
 
     const { kind, audioKey, index } = req.query;
+    if (!UPLOAD_KINDS.has(kind)) {
+      return res.status(400).json({ error: "Invalid kind." });
+    }
     if (["vocab", "phrasal"].includes(kind) && !audioKey?.trim()) {
       return res.status(400).json({ error: "audioKey is required for vocab/phrasal uploads." });
+    }
+    // audioKey is interpolated straight into the object key by assetKeyFor, so
+    // it has to be constrained before it gets there — otherwise "../../" walks
+    // out of this story's folder and overwrites another story's asset.
+    if (["vocab", "phrasal"].includes(kind) && !AUDIO_KEY_PATTERN.test(audioKey.trim())) {
+      return res.status(400).json({
+        error:
+          "audioKey may contain only letters, numbers, spaces, hyphens and underscores.",
+      });
     }
     if (["quizFast", "quizSlow"].includes(kind) && (index === undefined || Number.isNaN(Number(index)))) {
       return res.status(400).json({ error: "index is required for quiz audio uploads." });
     }
 
+    // Content-Type is the only thing deciding how a browser treats one of these
+    // objects, and every one of them is written ACL public-read on the same
+    // origin the player loads media from. Echoing req.file.mimetype meant an
+    // upload keyed as .mp3 could be *stored* as text/html and then served as a
+    // rendered page — stored XSS on the media domain. Only the comic branch
+    // ever validated. So: the type is picked from an allowlist here, never
+    // taken from the request.
     let ext;
+    let contentType;
     if (kind === "comic") {
       ext = COMIC_EXTENSIONS[req.file.mimetype];
       if (!ext) {
@@ -344,16 +389,30 @@ export async function uploadPartAsset(req, res) {
           error: `A comic page must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
         });
       }
+      // Safe to reuse: it matched a COMIC_EXTENSIONS key, so it is one of five
+      // known image types rather than arbitrary client input.
+      contentType = req.file.mimetype;
+    } else {
+      if (!AUDIO_MIME_TYPES.has(req.file.mimetype)) {
+        return res.status(400).json({
+          error: `This upload must be an MP3 — got ${req.file.mimetype}.`,
+        });
+      }
+      // Normalised, not echoed: assetKeyFor hardcodes a .mp3 key for every
+      // non-comic kind, so the stored type has to agree with the key.
+      contentType = "audio/mpeg";
     }
 
     const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext });
     if (!key) return res.status(400).json({ error: "Invalid kind." });
 
-    const url = await uploadBuffer(key, req.file.buffer, req.file.mimetype);
+    const url = await uploadBuffer(key, req.file.buffer, contentType);
     res.json({ url });
   } catch (error) {
+    // error.message is deliberately not forwarded: these are AWS SDK errors and
+    // they name the bucket, the endpoint and the internal object key.
     console.error("uploadPartAsset error:", error);
-    res.status(500).json({ error: error.message || "Upload failed." });
+    res.status(500).json({ error: "Upload failed." });
   }
 }
 
@@ -378,8 +437,9 @@ export async function uploadStoryCover(req, res) {
     await story.save();
     res.json({ story });
   } catch (error) {
+    // Same reasoning as uploadPartAsset: SDK errors name internals.
     console.error("uploadStoryCover error:", error);
-    res.status(500).json({ error: error.message || "Cover upload failed." });
+    res.status(500).json({ error: "Cover upload failed." });
   }
 }
 
