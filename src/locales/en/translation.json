@@ -8,12 +8,7 @@
     "feedback": "Feedback",
     "room": "My Room",
     "wallet": "Wallet",
-    "players": "Players",
-    "game": "City"
-  },
-  "city": {
-    "title": "City Builder",
-    "controlsHint": "Drag to pan · Scroll to zoom"
+    "players": "Players"
   },
   "players": {
     "title": "Find a player",

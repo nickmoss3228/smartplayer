@@ -35,7 +35,6 @@ const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
 const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
-const Game = lazy(() => import("./pages/Game"));
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -94,10 +93,6 @@ function App() {
                 <Route
                   path="/room"
                   element={<ProtectedRoute><Room /></ProtectedRoute>}
-                />
-                <Route
-                  path="/game"
-                  element={<ProtectedRoute><Game /></ProtectedRoute>}
                 />
                 <Route
                   path="/players"

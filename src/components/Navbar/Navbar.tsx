@@ -6,7 +6,6 @@ import {
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
   UsersIcon,
-  BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
 import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
@@ -126,16 +125,6 @@ const Navbar = () => {
                   className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                 >
                   <UsersIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
-                </button>
-              )}
-
-              {user && (
-                <button
-                  onClick={() => navigate("/game")}
-                  title={t("navbar.game")}
-                  className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                >
-                  <BuildingOffice2Icon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 </button>
               )}
 

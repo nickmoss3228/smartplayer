@@ -6,7 +6,6 @@ import passwordRoutes from "./password.routes.js";
 import feedbackRoutes from "./feedback.routes.js";
 import adminRoutes from "./admin.routes.js";
 import { adminStoryRoutes, publicStoryRoutes } from "./story.routes.js";
-import cityRoutes from "./city.routes.js";
 
 const router = Router();
 
@@ -14,7 +13,6 @@ router.use("/", authRoutes);
 router.use("/", userRoutes);
 router.use("/", progressRoutes);
 router.use("/", passwordRoutes); // was missing the path
-router.use("/", cityRoutes);
 router.use("/feedback", feedbackRoutes); // -> /api/feedback
 router.use("/admin", adminRoutes);       // -> /api/admin/login
 router.use("/admin/stories", adminStoryRoutes); // -> /api/admin/stories
