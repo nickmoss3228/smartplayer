@@ -1,7 +1,11 @@
 // routes/progress.routes.js
 import { Router } from "express";
 import { authenticateToken } from "../middleware/auth.js";
-import { publicQuizLimiter } from "../middleware/rateLimit.js";
+import {
+  publicQuizLimiter,
+  phraseRepeatLimiter,
+  vocabCompleteLimiter,
+} from "../middleware/rateLimit.js";
 import {
   getProgress,
   completeLevel,
@@ -46,12 +50,14 @@ router.get("/progress/overview",                   authenticateToken, getOvervie
 router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);
 router.get("/progress/achievements",               authenticateToken, getAchievements);
 router.get("/progress/vocab-learned",              authenticateToken, getLearnedWords);
-router.post("/progress/vocab-complete",            authenticateToken, completeVocabQuiz);
+// Limiters sit AFTER authenticateToken so they can key by user id — see the
+// byUser note in middleware/rateLimit.js.
+router.post("/progress/vocab-complete",            authenticateToken, vocabCompleteLimiter, completeVocabQuiz);
 router.post("/progress/complete",                  authenticateToken, completeLevel);
 router.post("/progress/migrate-guest",             authenticateToken, migrateGuestProgress);
 router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
 router.get("/progress/wallet",                     authenticateToken, getWallet);
-router.post("/progress/phrase-repeat",             authenticateToken, recordPhraseRepeat);
+router.post("/progress/phrase-repeat",             authenticateToken, phraseRepeatLimiter, recordPhraseRepeat);
 router.get("/progress/room",                       authenticateToken, getRoom);
 router.get("/progress/room/:userId",               authenticateToken, getPlayerRoom);
 router.post("/progress/room/purchase",             authenticateToken, purchaseItem);

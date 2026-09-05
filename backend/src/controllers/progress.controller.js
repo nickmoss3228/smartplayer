@@ -11,6 +11,7 @@ import {
   scoreQuizSubmissionAsync,
 } from "../helpers/storyLookup.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
+import { partitionVocabKeys } from "../helpers/vocabKeyCatalog.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { getShopItem } from "../config/shopCatalog.js";
@@ -587,6 +588,13 @@ export async function getLearnedWords(req, res) {
 // into the student's permanent learned-words set (no duplicates, no loss on
 // retries) and recomputes the "Words Learned" achievement tier.
 
+// A vocab round is a handful of words; the largest legitimate deck in the app
+// is well under this. The cap exists so one request cannot carry a dictionary.
+const MAX_WORDS_PER_SUBMISSION = 60;
+// Longest real key is a short phrase ("a lot of friends"). Anything past this
+// is not a vocabulary key.
+const MAX_WORD_LENGTH = 80;
+
 export async function completeVocabQuiz(req, res) {
   try {
     const { words } = req.body;
@@ -595,11 +603,46 @@ export async function completeVocabQuiz(req, res) {
     if (
       !Array.isArray(words) ||
       words.length === 0 ||
-      !words.every((w) => typeof w === "string")
+      words.length > MAX_WORDS_PER_SUBMISSION ||
+      !words.every((w) => typeof w === "string" && w.length <= MAX_WORD_LENGTH)
     ) {
-      return res
-        .status(400)
-        .json({ message: "words must be a non-empty array of strings" });
+      return res.status(400).json({
+        message: `words must be a non-empty array of at most ${MAX_WORDS_PER_SUBMISSION} strings`,
+      });
+    }
+
+    // Normalise to the shape the player reports and the catalogue stores:
+    // lowercased, trimmed, no duplicates. De-duplicating here also means a body
+    // repeating one word 60 times can't be counted 60 times.
+    const submitted = [...new Set(words.map((w) => w.toLowerCase().trim()).filter(Boolean))];
+    if (submitted.length === 0) {
+      return res.status(400).json({ message: "words must contain a real value" });
+    }
+
+    // THE check this endpoint was missing. Without it every string in the body
+    // minted a BitWord and counted toward the wordsLearned achievement, so a
+    // few thousand invented words bought a maxed achievement and a full wallet
+    // in one request. Unknown words are dropped rather than 400'd: a rejection
+    // would turn this into an oracle for probing the catalogue, and a student
+    // must not lose a whole round because one key drifted.
+    const { known, unknown } = await partitionVocabKeys(submitted);
+
+    if (unknown.length > 0) {
+      // Loud on purpose. In normal use this should never fire, so if it starts
+      // appearing it means either abuse or — more likely — that
+      // config/vocabKeys.js is stale after a Vocabulary.ts edit and real
+      // students are silently not being credited. Regenerate it:
+      // `node scripts/generate-vocab-keys.mjs`.
+      console.warn(
+        `[vocab] user=${userId} ignored ${unknown.length} unknown key(s):`,
+        unknown.slice(0, 10)
+      );
+    }
+
+    if (known.length === 0) {
+      const current = await User.findById(userId).select("learnedWords wallet");
+      if (!current) return res.status(404).json({ message: "User not found" });
+      return res.json({ learnedWords: current.learnedWords, wallet: current.wallet ?? null });
     }
 
     // Snapshot before the merge so we can tell which words are genuinely new —
@@ -608,11 +651,11 @@ export async function completeVocabQuiz(req, res) {
     const existingUser = await User.findById(userId).select("learnedWords");
     if (!existingUser) return res.status(404).json({ message: "User not found" });
     const alreadyLearned = new Set(existingUser.learnedWords ?? []);
-    const newlyLearnedCount = words.filter((w) => !alreadyLearned.has(w)).length;
+    const newlyLearnedCount = known.filter((w) => !alreadyLearned.has(w)).length;
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { $addToSet: { learnedWords: { $each: words } } },
+      { $addToSet: { learnedWords: { $each: known } } },
       { new: true, select: "learnedWords" }
     );
 
