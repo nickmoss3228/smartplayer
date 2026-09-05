@@ -77,6 +77,33 @@ export const loginLimiter = make("login", 15 * MINUTE, 10, {
 });
 export const signupLimiter = make("signup", 60 * MINUTE, 5);
 
+// ── Currency-minting endpoints ─────────────────────────────────────────────
+// These two are keyed by USER, not IP. Both sit behind authenticateToken and
+// both add coins, so the thing worth capping is "how much can one account mint"
+// — an IP key would let one account mint freely from several networks, and
+// would also lump a whole school computer lab into one bucket.
+//
+// keyGenerator can safely assume req.user because the limiter is mounted AFTER
+// authenticateToken in progress.routes.js. The req.ip fallback only fires if
+// that order is ever changed, and fails closed rather than throwing.
+const byUser = (req) => (req.user?._id ? `u:${req.user._id}` : `ip:${req.ip}`);
+
+// A repeat cycle is bounded by real audio playback — a segment has to actually
+// play through two or three times before this fires. 200/hour is far above any
+// genuine listening session and still 20x tighter than the global ceiling this
+// endpoint used to sit behind. NOTE: this is a bound, not a fix. The endpoint
+// still cannot verify that a repeat happened at all; that needs story/marker
+// context from the client. See docs/improvement-backlog.md 0.3.
+export const phraseRepeatLimiter = make("phrase-repeat", 60 * MINUTE, 200, {
+  keyGenerator: byUser,
+});
+
+// One submission carries a whole vocab round (capped at MAX_WORDS_PER_SUBMISSION
+// in the controller), so a legitimate student needs very few of these per hour.
+export const vocabCompleteLimiter = make("vocab-complete", 60 * MINUTE, 60, {
+  keyGenerator: byUser,
+});
+
 // Spam surface — an unmoderated row straight into Mongo.
 export const feedbackLimiter = make("feedback", 60 * MINUTE, 5);
 
