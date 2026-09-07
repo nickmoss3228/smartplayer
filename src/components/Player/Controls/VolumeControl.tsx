@@ -13,7 +13,7 @@ export const VolumeControl: React.FC<VolumeControlProps> = React.memo(
   ({ isMuted, volume, onMuteToggle, onVolumeChange }) => (
     <div className="flex items-center gap-2 sm:gap-2 md:gap-2.5 w-full justify-center">
       <div
-        className="cursor-pointer text-black/90 flex items-center hover:text-white transition-colors duration-200"
+        className="cursor-pointer text-white/90 flex items-center hover:text-white transition-colors duration-200"
         onClick={onMuteToggle}
       >
         {isMuted ? (
@@ -31,7 +31,7 @@ export const VolumeControl: React.FC<VolumeControlProps> = React.memo(
           step="1"
           value={isMuted ? 0 : Math.round(volume * 10)}
           onChange={(e) => onVolumeChange(parseInt(e.target.value, 10))}
-          className="w-[156px] sm:w-[156px] md:w-[220px] h-[5px] md:h-[3px] bg-black/90 rounded-[3px] outline-none cursor-pointer appearance-none
+          className="w-[156px] sm:w-[156px] md:w-[220px] h-[5px] md:h-[3px] bg-white/30 rounded-[3px] outline-none cursor-pointer appearance-none
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-5
             [&::-webkit-slider-thumb]:h-5
@@ -61,7 +61,7 @@ export const VolumeControl: React.FC<VolumeControlProps> = React.memo(
           {Array.from({ length: 11 }, (_, i) => (
             <div key={i} className="flex flex-col items-center gap-[2px]">
               <div className="w-[1px] h-[5px] bg-white/40" />
-              <span className="text-black/80 text-[9px] sm:text-[9px] md:text-[10px] font-['Montserrat'] leading-none select-none">
+              <span className="text-white/60 text-[9px] sm:text-[9px] md:text-[10px] font-['Montserrat'] leading-none select-none">
                 {i}
               </span>
             </div>

@@ -201,6 +201,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const help = usePausableModal(wavesurfer, setIsEnhancedSessionActive);
     const feedback = usePausableModal(wavesurfer, setIsEnhancedSessionActive);
 
+    // Help is only ever as good as the per-marker explanation clips behind it.
+    // A track with none — a Story Builder story published without them, or a
+    // static one whose bucket folder is empty — used to open an empty modal
+    // with a dead play button, which reads as a broken feature rather than as
+    // an absent one. Grey the button out instead.
+    //
+    // .filter(Boolean): the array can be present but padded with "" for the
+    // markers that were never recorded, and length alone would call that help.
+    const hasHelpAudio = (helpAudioUrls ?? []).filter(Boolean).length > 0;
+
     return (
       <div className="waveform-overlay h-full min-h-0">
         <div className="md:hidden flex flex-col h-full min-h-0">
@@ -299,6 +309,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               canGoPrev={canGoPrev}
               canGoNext={canGoNext}
               onOpenHelp={help.open}
+              hasHelpAudio={hasHelpAudio}
               onOpenFeedback={feedback.open}
             />
 
@@ -349,7 +360,10 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
           </div>
 
           <div
-            className="max-w-[1100px] bg-white/60 mx-auto p-[35px] rounded-2xl md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
+            /* No bg-white/60 card: the controls sit straight on the page
+               gradient the way the mobile ones do. The white panel was the
+               only reason desktop needed dark, filled buttons. */
+            className="max-w-[1100px] mx-auto p-[35px] rounded-2xl md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
             data-tour="tour-controls"
           >
             <PlayerControls
@@ -370,6 +384,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               comicsTitle={storyTitles[Number(trackId)]}
               difficulty={difficulty}
               onOpenHelp={help.open}
+              hasHelpAudio={hasHelpAudio}
             />
             <VolumeControl
               isMuted={isMuted}

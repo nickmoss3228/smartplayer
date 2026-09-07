@@ -214,6 +214,8 @@
     "levelLabel": "Level"
   },
   "controls": {
+    "help": "Help",
+    "helpUnavailable": "No help audio for this part",
     "repeat": "Repeat",
     "comics": "Comics",
     "play": "Play",
