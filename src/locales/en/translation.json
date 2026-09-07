@@ -8,7 +8,8 @@
     "feedback": "Feedback",
     "room": "My Room",
     "wallet": "Wallet",
-    "players": "Players"
+    "players": "Players",
+    "stories": "Stories"
   },
   "players": {
     "title": "Find a player",
@@ -102,7 +103,7 @@
       ]
     },
     "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
-    "startFree": "Start for Free",
+    "startFree": "Let's get started",
     "howItWorks": "How it works",
     "badge": "Subtitles disabled by design",
     "guideMore": "See the full walkthrough",
@@ -118,6 +119,7 @@
       "close": "Close",
       "repetition": {
         "cloud": "Why 3 repetitions?",
+        "slogan": "3 repetitions",
         "title": "Repeat until it sticks",
         "tag1": "1×",
         "tag2": "2×",
@@ -126,6 +128,7 @@
       },
       "speeds": {
         "cloud": "Why 3 speeds?",
+        "slogan": "3 speeds",
         "title": "Speed hides the words",
         "tagFast": "1.0×",
         "tagMid": "0.8×",
@@ -134,6 +137,7 @@
       },
       "noSubtitles": {
         "cloud": "Why no subtitles?",
+        "slogan": "no subtitles",
         "title": "Your eyes did the work, not the ears",
         "eyeLabel": "Eyes",
         "earLabel": "Ears",
@@ -141,6 +145,7 @@
       },
       "earsOnly": {
         "cloud": "Why only my ears?",
+        "slogan": "your ears only",
         "title": "Immersion, not grammar",
         "leftLabel": "Can't spell it",
         "rightLabel": "Understand it",
@@ -148,6 +153,7 @@
       },
       "vocabLanguage": {
         "cloud": "Why is the vocabulary not written in English?",
+        "slogan": "words in your language",
         "title": "Reading it isn't hearing it",
         "viaTranslation": "🔊 chair → 👁 стул → 🪑",
         "direct": "🔊 chair → 🪑",
@@ -155,6 +161,7 @@
       },
       "visualMemory": {
         "cloud": "Why train your visual memory?",
+        "slogan": "visual memory",
         "title": "Hear it. Find it. Remember it.",
         "searchPrompt": "Find it in the comic",
         "foundLabel": "Found it!",
@@ -213,7 +220,16 @@
     "completedCount": "",
     "levelLabel": "Level"
   },
+  "legal": {
+    "backHome": "Back to the homepage",
+    "updated": "Updated",
+    "version": "version",
+    "draftNotice": "Draft. This text is a placeholder and is not yet the operator’s final legal document.",
+    "russianOnlyNotice": "This document is published in Russian only — it governs use of the service in the Russian Federation, and the Russian text is the binding one."
+  },
   "controls": {
+    "help": "Help",
+    "helpUnavailable": "No help audio for this part",
     "repeat": "Repeat",
     "comics": "Comics",
     "play": "Play",
@@ -250,8 +266,8 @@
   "login": {
     "title": "Welcome!",
     "subtitle": "Sign in to continue your listening journey.",
-    "usernameOrEmail": "Username or Email",
-    "usernameOrEmailPlaceholder": "Enter your username or email",
+    "usernameOrEmail": "Username, phone or email",
+    "usernameOrEmailPlaceholder": "Username, phone or email",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "forgotPassword": "Forgot password?",
@@ -262,7 +278,16 @@
     "errors": {
       "tooManyAttempts": "Too many attempts. Please try again in {{minutes}} minutes.",
       "sessionExpired": "Your session expired. Please sign in again.",
-      "accountBanned": "This account has been suspended. Contact support if you think this is a mistake."
+      "accountBanned": "This account has been suspended. Contact support if you think this is a mistake.",
+      "sessionRevoked": "You were signed out on this device. If that wasn't you, change your password."
+    },
+    "deviceLimit": {
+      "title": "Too many devices",
+      "description": "This account is already signed in on the maximum number of devices. Sign one out to continue here.",
+      "lastUsed": "Last used {{when}}",
+      "signOut": "Sign out",
+      "evictFailed": "That didn't work. Please try signing in again.",
+      "cancel": "Never mind"
     }
   },
   "signup": {
@@ -270,7 +295,10 @@
     "subtitle": "Join us and start your journey",
     "username": "Username",
     "usernamePlaceholder": "Choose a username",
+    "phoneNumber": "Phone number",
+    "phonePlaceholder": "+7 999 123-45-67",
     "email": "Email",
+    "emailOptional": "Email (optional)",
     "emailPlaceholder": "Enter your email",
     "password": "Password",
     "passwordPlaceholder": "Create a password",
@@ -280,16 +308,36 @@
     "submitting": "Creating Account...",
     "haveAccount": "Already have an account?",
     "signInLink": "Sign in",
+    "agreements": {
+      "terms": "I accept the <terms>User Agreement</terms> and have read the <privacy>Privacy Policy</privacy>.",
+      "dataConsent": "I give my <consent>consent to the processing of my personal data</consent> under Federal Law No. 152-FZ."
+    },
     "errors": {
+      "agreementsRequired": "Please accept the User Agreement and the personal-data consent to continue.",
       "passwordMismatch": "Passwords do not match",
       "passwordLength": "Password must be at least 6 characters long",
       "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid Russian phone number (+7XXXXXXXXXX).",
       "tooManyAttempts": "Too many sign-up attempts. Please try again in {{minutes}} minutes."
+    },
+    "phoneVerification": {
+      "title": "Verify your phone",
+      "description": "We sent a 6-digit verification code by SMS. Enter it to finish creating your account.",
+      "codePlaceholder": "123456",
+      "verify": "Verify phone",
+      "resend": "Resend code",
+      "addTitle": "Add your phone number",
+      "addDescription": "This older account needs a verified phone number before you can continue.",
+      "send": "Send verification code",
+      "descriptionTo": "We sent a 6-digit code by SMS to {{phone}}. Enter it below to continue.",
+      "sent": "A new code is on its way.",
+      "alreadySent": "You already have a valid code — check your messages.",
+      "back": "Back"
     }
   },
   "forgotPassword": {
     "title": "Forgot Password?",
-    "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+    "subtitle": "Enter the email address on your account and we will send you a reset link.",
     "emailLabel": "Email Address",
     "emailPlaceholder": "Enter your email",
     "sendButton": "Send Reset Link",
@@ -322,7 +370,8 @@
       "passwordTooShort": "Password must be at least 6 characters long",
       "invalidToken": "Invalid reset token",
       "tooManyAttempts": "Too many reset requests. Please try again in {{minutes}} minutes."
-    }
+    },
+    "noEmailHint": "Signed up with a phone number and no email? Password reset by SMS is not available yet — contact support to recover your account."
   },
   "dashboard": {
     "loading": "Loading...",
@@ -573,6 +622,13 @@
         "text": "Voiced by a neural network, every story must include breaths, clicking sounds, tone changes, and sarcastic expressions — everything found in real human speech. Emotional context is just as important as the words. Without it, the audio sounds unnatural."
       }
     }
+  },
+  "notFound": {
+    "title": "Page not found · malako",
+    "eyebrow": "No such page",
+    "body": "The link may be out of date, or there is a typo in the address. Start from the homepage, or pick a story by level.",
+    "home": "Go home",
+    "levels": "Browse levels"
   },
   "congrats": {
     "title": "Congratulations!",
@@ -1290,10 +1346,10 @@
     }
   },
   "school": {
+    "build": "Build the {{name}}",
+    "stageOf": "Stage {{current}} of {{total}}",
     "title": "Your Dream School",
     "loadFailed": "Could not load your school.",
-    "stageOf": "Stage {{current}} of {{total}}",
-    "build": "Build the {{name}}",
     "complete": "Your school is complete",
     "notEnough": "Not enough coins yet",
     "unlocked": "New wing unlocked",
@@ -1363,6 +1419,159 @@
     "view": {
       "outside": "See the building from outside",
       "inside": "See inside the school"
+    },
+    "roomsOf": "{{current}} of {{total}} rooms",
+    "buildOpen": "Build",
+    "buildTitle": "What to build next",
+    "buildClose": "Close",
+    "buildHint": "Each room is paid for in one currency — the one you earn doing what that room is for.",
+    "needsFirst": "Build the {{name}} first",
+    "rooms": {
+      "classroom": {
+        "name": "Classroom",
+        "blurb": "A board, some desks, and everyone who showed up."
+      },
+      "corridor": {
+        "name": "Corridor",
+        "blurb": "The spine. Every other room opens off it."
+      },
+      "library": {
+        "name": "Library",
+        "blurb": "A reading wing, a rug, and two people who never leave it."
+      },
+      "lab": {
+        "name": "Listening Lab",
+        "blurb": "Booths, headphones, and the same track one more time."
+      },
+      "courtyard": {
+        "name": "Courtyard",
+        "blurb": "Open air, one tree, and somewhere to be between lessons."
+      },
+      "hall": {
+        "name": "Assembly Hall",
+        "blurb": "A stage, a banner, and a shelf with something to put on it."
+      },
+      "lobby": {
+        "name": "Reception",
+        "blurb": "A front desk, and someone behind it to meet whoever comes in."
+      },
+      "forecourt": {
+        "name": "Forecourt",
+        "blurb": "The way in off the street, with a gate that says so."
+      },
+      "classroomB": {
+        "name": "Second Classroom",
+        "blurb": "Another English room — flags, a globe, the whole alphabet."
+      },
+      "cafeteria": {
+        "name": "Cafeteria",
+        "blurb": "Trays, long tables, and the loudest room here."
+      },
+      "classroomC": {
+        "name": "Third Classroom",
+        "blurb": "A third English room, out past the hall."
+      },
+      "gym": {
+        "name": "Gymnasium",
+        "blurb": "Wall bars, a scoreboard, and room to make some noise."
+      },
+      "archive": {
+        "name": "Archive",
+        "blurb": "The stacks. Older books, and nobody talking."
+      },
+      "studyHall": {
+        "name": "Study Hall",
+        "blurb": "Desks, chairs, and somewhere quiet to use them."
+      },
+      "staffRoom": {
+        "name": "Staff Room",
+        "blurb": "Armchairs, a kettle, and the one room with nothing to teach in it."
+      },
+      "musicRoom": {
+        "name": "Music Room",
+        "blurb": "A piano, a small stage, and somewhere to be heard."
+      },
+      "office": {
+        "name": "Head's Office",
+        "blurb": "A desk, a trophy shelf, and whoever is running this place."
+      },
+      "garden": {
+        "name": "Garden",
+        "blurb": "Raised beds, a tree, and two benches out of the wind."
+      },
+      "classroomD": {
+        "name": "Fourth Classroom",
+        "blurb": "Another English room, out at the east end."
+      },
+      "classroomE": {
+        "name": "Fifth Classroom",
+        "blurb": "The far corner — its board hangs on the west wall."
+      }
     }
+  },
+  "paywall": {
+    "title": "This story is locked",
+    "description": "Unlock it on its own, take the whole level, or open everything for three months.",
+    "locked": "Locked",
+    "comingSoon": "Coming soon",
+    "buyStory": "This story",
+    "buyPack": "This level",
+    "buyAllAccess": "Everything, 3 months",
+    "browseShop": "See everything in the shop",
+    "maybeLater": "Maybe later"
+  },
+  "shop": {
+    "title": "Shop",
+    "subtitle": "Buy a story, a level, or everything at once.",
+    "allAccess": "All access",
+    "allAccessBlurb": "Every story on every level for three months, including anything added while it runs.",
+    "packs": "Level packs",
+    "packBlurb": "Three more stories with the character you already know.",
+    "singleStories": "Single stories",
+    "owned": "Owned",
+    "comingSoon": "Coming soon",
+    "addToCart": "Add",
+    "inCart": "In basket",
+    "remove": "Remove",
+    "cartTitle": "Basket",
+    "cartEmpty": "Your basket is empty.",
+    "total": "Total",
+    "checkout": "Checkout",
+    "checkoutLoginRequired": "Log in to buy",
+    "paymentsDisabled": "The shop is not taking payments yet.",
+    "months": "3 months"
+  },
+  "library": {
+    "title": "My library",
+    "subtitle": "Everything you can listen to.",
+    "empty": "Nothing here yet.",
+    "starter": "Included with your account",
+    "purchased": "Purchased",
+    "passActive": "All access until {{date}}",
+    "passExpired": "Your all-access pass ended on {{date}}",
+    "perpetual": "Yours permanently",
+    "goToShop": "Go to the shop",
+    "openStory": "Open"
+  },
+  "payment": {
+    "pending": "Confirming your payment…",
+    "success": "Payment complete",
+    "failed": "Payment did not go through",
+    "backToLibrary": "Go to my library",
+    "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again."
+  },
+  "shelf": {
+    "title": "Stories",
+    "subtitle": "Everything in the app. Yours, and the rest.",
+    "filterAll": "All",
+    "filterMine": "Mine",
+    "filterBuy": "To buy",
+    "yours": "Yours",
+    "freePart": "1 part free",
+    "parts": "{{count}} parts",
+    "ownedOf": "{{owned}} of {{total}}",
+    "wholeLevel": "All of {{level}}",
+    "packSaving": "Three stories at once — less than {{singles}} separately",
+    "allAccessTitle": "Everything, 3 months"
   }
 }
