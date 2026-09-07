@@ -29,7 +29,9 @@ const WhyCloudsSection = () => {
           <Cloud
             key={q.id}
             index={i}
-            label={t(`homepage.why.${q.id}.cloud`)}
+            // The statement, not the question — see ACTIVE_WHY_IDS in
+            // whyCloudsData.ts. `.cloud` still holds the question wording.
+            label={t(`homepage.why.${q.id}.slogan`)}
             onClick={() => handleOpen(q.id)}
             isPaused={active !== null}
           />
