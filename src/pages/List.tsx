@@ -25,17 +25,12 @@ import { themes } from '../modules/levelprogress/themes.levelprogress';
  * (bg-[var(--level-accent)]). Interpolating a colour into a class name would
  * not survive Tailwind's build-time scan.
  *
- * Level identity (the milk-fat metaphor) never rides on hue alone: the tag
- * carries the fat numeral and a filled-segment meter as well as the colour, so
- * it survives colour-blind viewing. The segment count and the fat label are
- * milk-fat concepts rather than theme ones, so they stay local.
+ * The page header is the level name and the story count, and that is all. The
+ * milk-fat tag ("1% FAT" plus its segment meter) used to sit between the header
+ * and the shelf; the level picker at /levels already states the fat for every
+ * level, and repeating it on the page you reached BY choosing that level was a
+ * line nobody needed to read twice. levelFat/FatMeter went with it.
  */
-const levelFat: Record<DifficultySlug, { segments: number; fatKey: string }> = {
-  easy:   { segments: 1, fatKey: 'fatEasy' },
-  medium: { segments: 2, fatKey: 'fatMedium' },
-  hard:   { segments: 3, fatKey: 'fatHard' },
-};
-
 const categoryOrder: StoryGroup['category'][] = ['general', 'news'];
 
 const List = () => {
@@ -47,7 +42,6 @@ const List = () => {
   const diff = (difficulty || 'easy') as DifficultySlug;
   const stories = useStoryGroups(diff, t);
   const theme = themes[diff] || themes.easy;
-  const fat = levelFat[diff] || levelFat.easy;
 
   const getStoryProgress = (story: StoryGroup) => {
     const storyData = getStoryData(diff, story.slug);
@@ -131,32 +125,6 @@ const List = () => {
     return () => observer.disconnect();
   }, [groupedStories]);
 
-  /**
-   * Colour + numeral + filled segments, so the level reads three ways.
-   * The hue rides on the segment blocks, not on the numeral: the accents are
-   * 500-weight and would not carry enough contrast as small text on the
-   * near-white page background.
-   */
-  const FatMeter = () => (
-    <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-gray-500">
-      <span className="flex gap-[2px]" aria-hidden="true">
-        {[0, 1, 2].map(i => (
-          <span
-            key={i}
-            className="block h-3 w-[5px] rounded-[1px]"
-            style={{ backgroundColor: i < fat.segments ? theme.accent : 'var(--color-gray-200)' }}
-          />
-        ))}
-      </span>
-      <span>
-        {t('levels.fatLabel')}{' '}
-        <span className="font-semibold tabular-nums text-gray-800">
-          {t(`levels.${fat.fatKey}`)}
-        </span>
-      </span>
-    </span>
-  );
-
   const renderCard = (story: StoryGroup, index: number) => {
     const { completed, total, percentage } = getStoryProgress(story);
     const isCompleted = total > 0 && completed >= total;
@@ -167,12 +135,6 @@ const List = () => {
     // Builder (dbStoryToGroup carries no image). These get a halftone screen
     // and a category icon rather than a stretched-out placeholder.
     const FallbackIcon = story.category === 'news' ? IoNewspaperOutline : IoBookOutline;
-
-    const stateLabel = isCompleted
-      ? t('list.completed')
-      : hasStarted
-        ? `${t('list.next')} ${nextPart}`
-        : t('list.start');
 
     return (
       <button
@@ -233,16 +195,17 @@ const List = () => {
         )}
 
         {/* The caption plate. On a pointer device it slides down on hover to
-            uncover the art; on touch it simply stays put. */}
+            uncover the art; on touch it simply stays put.
+
+            The title, and nothing else. It used to carry a second row with a
+            state word ("Start" / "Next 3") and a completed/total counter, but
+            that is three pieces of text stacked on one 4:5 panel to say what
+            the panel already says twice over: the progress chip sits in the
+            top-left corner, and the accent progress bar runs along the bottom
+            edge. */}
         <span className="absolute inset-x-[7%] top-1/2 z-10 block -translate-y-1/2 rounded-[3px] bg-gray-900 px-2.5 py-2 text-white transition-transform duration-500 ease-out sm:group-hover:translate-y-0">
           <span className="block text-[11px] font-bold uppercase leading-tight tracking-wide line-clamp-3 sm:text-[13px]">
             {story.title}
-          </span>
-          <span className="mt-1.5 flex items-center justify-between gap-2 border-t border-white/15 pt-1.5 text-[9px] uppercase tracking-wider text-white/70 sm:text-[10px]">
-            <span className="truncate">{stateLabel}</span>
-            <span className="shrink-0 tabular-nums">
-              {completed}/{total}
-            </span>
           </span>
         </span>
 
@@ -304,8 +267,6 @@ const List = () => {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4 animate-fade-in-delay-1">
-          <FatMeter />
-
           {allTopics.length > 1 && (
             <div className="relative">
               <IoFunnelOutline
