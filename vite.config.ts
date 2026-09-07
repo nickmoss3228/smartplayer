@@ -1,10 +1,21 @@
-import { defineConfig } from "vite";
+// defineConfig comes from vitest/config, not vite, so the `test` block below
+// type-checks. It is vite's own defineConfig re-exported with the test field
+// added — the build config is unaffected.
+import { defineConfig, configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    // backend/ is a separate package with its own runner: its tests are
+    // written against node:test and run via `npm test` in backend/. Vitest
+    // matches *.test.js anywhere outside node_modules, so without this it
+    // collects them and reports "No test suite found" — a red suite that says
+    // nothing about the code.
+    exclude: [...configDefaults.exclude, "backend/**"],
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,

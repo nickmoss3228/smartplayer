@@ -165,6 +165,250 @@ services:
         max-size: "10m"
         max-file: "3"
 
+
+  # ── Monitoring ──────────────────────────────────────────────────────────
+  # Logs, container/host health, and request-level traffic for this VM.
+  # Full runbook: docs/monitoring.md.
+  #
+  # Behind `profiles` for the same reason staging is: a service carrying a
+  # profile is invisible to every command that does not name it, so the two
+  # production workflows and any bare `docker compose up -d frontend` continue
+  # to behave exactly as before and will never start or recreate these.
+  # They come up only via `docker compose --profile monitoring up -d`.
+  #
+  # EVERY service here carries a `mem_limit`. That is the load-bearing detail:
+  # this stack shares a small VM with production, and an unbounded Prometheus
+  # or Loki under query load would otherwise let the kernel OOM-kill the
+  # backend instead. The limits cap the whole stack at roughly 1.3GB; typical
+  # steady-state draw is closer to 600MB. If this VM has 2GB, read the sizing
+  # note in docs/monitoring.md before starting all six.
+  #
+  # None of them publish a host port. Grafana is reached only through Caddy at
+  # metrics.малако.рф behind the same cookie gate as staging; Loki, Prometheus
+  # and the exporters are reachable only from inside smartplayer-net.
+
+  loki:
+    profiles: ["monitoring"]
+    image: grafana/loki:3.1.1
+    container_name: smartplayer-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    expose:
+      - "3100"
+    networks: [smartplayer-net]
+    mem_limit: 320m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  promtail:
+    profiles: ["monitoring"]
+    image: grafana/promtail:3.1.1
+    container_name: smartplayer-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      # Needed for docker_sd_configs: Promtail asks the daemon what containers
+      # exist so new services are picked up without a config change.
+      #
+      # NOTE: mounting the Docker socket is root-equivalent access to this host.
+      # The `:ro` suffix does NOT meaningfully constrain it — a read-only bind
+      # mount blocks writes to the socket FILE, not the bidirectional API spoken
+      # over it. Accepted here because this is a single-tenant VM whose only
+      # other socket consumer, cAdvisor, already runs privileged; do not carry
+      # this pattern onto a shared or multi-tenant box.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail_positions:/promtail
+    networks: [smartplayer-net]
+    depends_on: [loki]
+    mem_limit: 96m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  prometheus:
+    profiles: ["monitoring"]
+    image: prom/prometheus:v2.53.1
+    container_name: smartplayer-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      # 14d matches Loki's retention so both halves of an investigation cover
+      # the same window; 1GB is a hard stop so the TSDB cannot fill the disk
+      # even if the retention math is wrong.
+      - --storage.tsdb.retention.time=14d
+      - --storage.tsdb.retention.size=1GB
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    expose:
+      - "9090"
+    networks: [smartplayer-net]
+    mem_limit: 400m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # DOES NOT WORK ON THIS VM - do not start it. Docker here uses the `overlayfs`
+  # driver with the containerd image store, which has no overlay2/layerdb for
+  # cAdvisor to read each container's read-write layer from. It starts, reports
+  # healthy, and exports only the root cgroup with no per-container metrics.
+  # Kept because the definition is correct for an overlay2 host. See the note in
+  # monitoring/prometheus.yml.
+  cadvisor:
+    profiles: ["monitoring"]
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: smartplayer-cadvisor
+    restart: unless-stopped
+    # cAdvisor reads cgroup and namespace state for every container on the host,
+    # which needs privileged. This is the single most invasive component in the
+    # stack — if that trade is unwanted, drop this service and the `cadvisor`
+    # scrape job in monitoring/prometheus.yml. Host metrics (node-exporter) and
+    # all logging keep working without it; only the per-container CPU/memory
+    # panels go blank.
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      # Trim the collectors down to what the dashboards use. Left at defaults,
+      # cAdvisor is usually the largest CPU consumer of the whole stack.
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --disable_metrics=percpu,sched,tcp,udp,advtcp,process,hugetlb,referenced_memory,cpu_topology,resctrl
+    expose:
+      - "8080"
+    networks: [smartplayer-net]
+    mem_limit: 192m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # Per-container CPU / memory / network / block-IO.
+  #
+  # This replaces cAdvisor, which cannot work on this host (see the note on the
+  # cadvisor service above). The crucial difference is the data source: cAdvisor
+  # reads cgroup and image-layer state off the filesystem, which the containerd
+  # image store does not lay out the way it expects. This exporter asks the
+  # Docker API for `docker stats` instead, so it is completely independent of
+  # the storage driver.
+  #
+  # It reports every container on the host by `name`, including the monitoring
+  # stack's own, which is what makes the overhead of this stack visible.
+  docker-stats-exporter:
+    profiles: ["monitoring"]
+    image: wywywywy/docker_stats_exporter:latest
+    container_name: smartplayer-docker-stats-exporter
+    restart: unless-stopped
+    environment:
+      # Default is 15s; matched to Prometheus's 30s scrape so the exporter is
+      # not polling the Docker API more often than anything reads it.
+      - DOCKERSTATS_INTERVAL=30
+    volumes:
+      # Read-only intent, same caveat as promtail: a ro bind mount does not
+      # actually constrain the Docker API spoken over this socket.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "9487"
+    networks: [smartplayer-net]
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  node-exporter:
+    profiles: ["monitoring"]
+    image: prom/node-exporter:v1.8.2
+    container_name: smartplayer-node-exporter
+    restart: unless-stopped
+    # pid: host so it sees the real process table rather than its own namespace.
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      # Without this exclusion every container overlay layer appears as its own
+      # filesystem and the disk panel becomes unreadable.
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2)($$|/)
+    expose:
+      - "9100"
+    networks: [smartplayer-net]
+    mem_limit: 64m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  grafana:
+    profiles: ["monitoring"]
+    image: grafana/grafana:11.1.4
+    container_name: smartplayer-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      # The password is read from a FILE, not from a compose variable. Two
+      # separate reasons, both learned the hard way:
+      #
+      # 1. `${GRAFANA_ADMIN_PASSWORD:?...}` cannot be used here. Compose
+      #    interpolates the whole file before it applies profile filtering, so a
+      #    required-variable marker fails the ENTIRE project on a VM that has
+      #    never set that variable — including plain `docker compose up -d
+      #    backend`. That would break production deploys from a monitoring-only
+      #    setting. This is the same class of bug the `required: false` note on
+      #    backend-staging's env_file guards against.
+      # 2. A `${VAR:-default}` fallback is worse than useless for a password: the
+      #    default is committed to this PUBLIC repo, so forgetting to set it
+      #    would leave a known admin credential rather than a broken login.
+      #
+      # With a file, a missing secret breaks only this container and it fails
+      # CLOSED. Create it on the VM before the first monitoring start:
+      #   printf '%s' 'a-long-random-password' > ~/smartplayer/monitoring/grafana_admin_password
+      # The env var form also leaks into `docker inspect`; the file does not.
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      # Grafana builds every redirect and asset URL from this. Left at the
+      # default it emits localhost:3000 links, which break behind the proxy.
+      - GF_SERVER_ROOT_URL=https://metrics.xn--80aa4acdq.xn--p1ai/
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_NEWS_NEWS_FEED_ENABLED=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana_admin_password:/run/secrets/grafana_admin_password:ro
+      - grafana_data:/var/lib/grafana
+    # Bound to the VM's LOOPBACK, not 0.0.0.0. The 127.0.0.1 prefix is the whole
+    # point: the port is unreachable from the internet (and Docker does not punch
+    # a hole in the firewall for it, which a bare "3000:3000" would), but it IS
+    # reachable by an SSH session on the box — which is what makes
+    #   ssh -N -L 3001:localhost:3000 smartplayer
+    # work. With `expose:` alone nothing listens on the host at all, the tunnel
+    # forwards into a closed port, and the browser just hangs.
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [smartplayer-net]
+    depends_on: [loki, prometheus]
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
 networks:
   smartplayer-net:
     driver: bridge
@@ -172,3 +416,10 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  # Monitoring state. Named volumes, not bind mounts: Loki and Prometheus both
+  # want their own uid/permissions on these paths, and a host bind mount is the
+  # usual cause of a "permission denied" crash loop on first start.
+  loki_data:
+  promtail_positions:
+  prometheus_data:
+  grafana_data:

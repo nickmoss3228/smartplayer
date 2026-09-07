@@ -22,8 +22,52 @@
 # the old Vercel deployment. Add it back only after repointing it here.
 # ─────────────────────────────────────────────────────────────────────────────
 
-xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
+xn--80aa4acdq.xn--p1ai {
+	# Structured access log -> Docker stdout -> Promtail -> Loki. This is the
+	# ONLY source of request-level data for the dashboards; Caddy's Prometheus
+	# metrics live on the admin API, and exposing that would hand anything on
+	# smartplayer-net the ability to rewrite this proxy's config.
+	#
+	# time_format rfc3339_nano is REQUIRED, not cosmetic. Caddy's default `ts`
+	# is a float epoch, which Promtail's timestamp stage cannot parse - every
+	# line would silently fall back to ingest time and the latency graphs would
+	# bunch up after any restart. Changing this means changing the matching
+	# `format: RFC3339Nano` in monitoring/promtail-config.yml.
+	log {
+		output stdout
+		format json {
+			time_format rfc3339_nano
+		}
+	}
+
 	reverse_proxy frontend:80
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# www -> apex, permanent (301).
+#
+# SPLIT OUT OF THE BLOCK ABOVE 2026-09-05 for SEO. While both names shared one
+# site block they both served the app at 200, so every page existed at two
+# URLs with nothing to tell a search engine which one counts. That splits
+# ranking signals between the duplicates, and there is no canonical link in the
+# HTML to break the tie either.
+#
+# Apex is the canonical form: it is what the manifest, the marketing copy, and
+# the Metrica/Webmaster registrations all use.
+#
+# No new certificate risk here. The cert issued 2026-08-16 already covers both
+# apex and www, so this rearranges routing for names Caddy is already serving —
+# it does NOT trigger a fresh ACME validation, and none of the rate-limit
+# caution at the top of this file applies.
+#
+# {uri} preserves path AND query string, so https://www.малако.рф/levels/easy
+# lands on https://малако.рф/levels/easy rather than the homepage. Redirecting
+# every deep link to / would throw away the exact signal this block exists to
+# consolidate.
+# ─────────────────────────────────────────────────────────────────────────────
+
+www.xn--80aa4acdq.xn--p1ai {
+	redir https://xn--80aa4acdq.xn--p1ai{uri} permanent
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +111,23 @@ xn--80aa4acdq.xn--p1ai, www.xn--80aa4acdq.xn--p1ai {
 # ─────────────────────────────────────────────────────────────────────────────
 
 test.xn--80aa4acdq.xn--p1ai {
+	# Structured access log -> Docker stdout -> Promtail -> Loki. This is the
+	# ONLY source of request-level data for the dashboards; Caddy's Prometheus
+	# metrics live on the admin API, and exposing that would hand anything on
+	# smartplayer-net the ability to rewrite this proxy's config.
+	#
+	# time_format rfc3339_nano is REQUIRED, not cosmetic. Caddy's default `ts`
+	# is a float epoch, which Promtail's timestamp stage cannot parse - every
+	# line would silently fall back to ingest time and the latency graphs would
+	# bunch up after any restart. Changing this means changing the matching
+	# `format: RFC3339Nano` in monitoring/promtail-config.yml.
+	log {
+		output stdout
+		format json {
+			time_format rfc3339_nano
+		}
+	}
+
 	header X-Robots-Tag "noindex, nofollow"
 
 	# One-time unlock: set the gate cookie, then bounce to the app. A year is
@@ -82,6 +143,28 @@ test.xn--80aa4acdq.xn--p1ai {
 		redir * / 302
 	}
 
+	# The payment webhook, BEFORE the cookie gate.
+	#
+	# ЮKassa calls this server-to-server. There is no browser, so there is no
+	# cookie, so the gate below would 404 every notification — and ЮKassa
+	# retries a failed delivery for 24 hours before giving up. The purchase
+	# would still eventually settle (the reconciliation job asks the provider
+	# about stale pending payments), but the webhook path would be untestable
+	# on staging, which is the whole reason staging exists.
+	#
+	# `path` is an EXACT match, not a prefix. A prefix here would punch a
+	# cookie-gate hole through everything under /api/payments/.
+	#
+	# Routed through frontend-staging (nginx) rather than straight to
+	# backend-staging on purpose: that keeps the chain at exactly the two
+	# proxy hops `app.set("trust proxy", 2)` documents, so req.ip is the real
+	# client address and the ЮKassa IP allowlist works. Going direct would
+	# make it one hop and quietly break the allowlist.
+	@yookassa path /api/payments/yookassa/webhook
+	handle @yookassa {
+		reverse_proxy frontend-staging:80
+	}
+
 	# Everything else needs the cookie. Same-origin XHR always sends cookies
 	# regardless of SameSite, so the app's API calls pass this untouched.
 	@nocookie not header Cookie *stg={$STAGING_GATE_SECRET}*
@@ -93,3 +176,57 @@ test.xn--80aa4acdq.xn--p1ai {
 		reverse_proxy frontend-staging:80
 	}
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# METRICS — metrics.малако.рф -> metrics.xn--80aa4acdq.xn--p1ai
+#
+# COMMENTED OUT DELIBERATELY. Read the block at the top of this file before
+# enabling: Caddy requests a certificate on startup for every name listed here,
+# and five failed HTTP-01 challenges burn the Let's Encrypt rate limit for that
+# hostname for an hour. Uncomment ONLY after
+#
+#     dig +short metrics.xn--80aa4acdq.xn--p1ai
+#
+# returns 89.169.159.92. Until then Grafana is still reachable for a quick look
+# over an SSH tunnel, with no DNS and no certificate involved:
+#
+#     ssh -N -L 3001:localhost:3000 smartplayer
+#     # then open http://localhost:3001
+#
+# (That works because grafana publishes 127.0.0.1:3000 on the VM — loopback
+# only, so it is reachable through an SSH session on the box but not from the
+# internet. Note `expose:` alone is NOT enough for a tunnel: nothing would be
+# listening on the host and the forward would land on a closed port.)
+#
+# The same cookie gate as staging is applied on purpose. Grafana has its own
+# login, but the gate means an unauthenticated scanner sees a bare 404 instead
+# of a Grafana login page advertising the version it could look up a CVE for.
+# It reuses STAGING_GATE_SECRET, so one unlock covers both hosts.
+#
+# metrics.xn--80aa4acdq.xn--p1ai {
+# 	log {
+# 		output stdout
+# 		format json {
+# 			time_format rfc3339_nano
+# 		}
+# 	}
+#
+# 	header X-Robots-Tag "noindex, nofollow"
+#
+# 	@unlock path /__unlock/{$STAGING_GATE_SECRET}
+# 	handle @unlock {
+# 		header Set-Cookie "stg={$STAGING_GATE_SECRET}; Max-Age=31536000; Path=/; Secure; HttpOnly; SameSite=Lax"
+# 		redir * / 302
+# 	}
+#
+# 	@nocookie not header Cookie *stg={$STAGING_GATE_SECRET}*
+# 	handle @nocookie {
+# 		respond "Not found" 404
+# 	}
+#
+# 	handle {
+# 		# Grafana serves websockets for live tailing; reverse_proxy upgrades
+# 		# them automatically, so no extra configuration is needed here.
+# 		reverse_proxy grafana:3000
+# 	}
+# }

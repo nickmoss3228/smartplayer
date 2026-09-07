@@ -1,0 +1,34 @@
+# robots.txt for малако.рф
+#
+# Lives in public/ so Vite copies it verbatim into dist/ and nginx serves it as
+# a real file. Before this file existed, /robots.txt fell through nginx's SPA
+# fallback and returned index.html with `content-type: text/html` and a 200 —
+# so every crawler asking for crawl rules got an HTML document instead.
+#
+# The Sitemap line uses the punycode A-label for the same reason the Caddyfile
+# does: that is the form that appears in logs, headers, and Search Console, so
+# keeping the config in the same alphabet as the tooling avoids confusion.
+# малако.рф -> xn--80aa4acdq.xn--p1ai
+
+User-agent: *
+Allow: /
+
+# Private app surface. These are either behind ProtectedRoute or are auth
+# forms — nothing here is useful in a search result, and crawling them wastes
+# crawl budget on a new domain that has very little to spend.
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /room
+Disallow: /game
+Disallow: /players
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /player
+
+# NOTE: Disallow stops crawling, not indexing — a URL linked from elsewhere can
+# still be indexed without ever being fetched. /admin therefore ALSO renders a
+# noindex meta tag from AdminPanel.tsx. The two mechanisms cover different
+# failure modes and both are needed.
+
+Sitemap: https://xn--80aa4acdq.xn--p1ai/sitemap.xml

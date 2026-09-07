@@ -1,0 +1,49 @@
+# Prometheus here covers HOST and CONTAINER health only — CPU, memory, disk,
+# restarts. Request-level data (rate, status, latency) comes from Caddy's
+# access logs via Loki instead, so there is exactly one ingestion path for
+# traffic data and Caddy's admin API stays closed.
+global:
+  # 30s, not the default 15s: with ~4 targets on a small shared VM this halves
+  # both series churn and disk without losing anything a human would notice on
+  # a dashboard.
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+  external_labels:
+    host: smartplayer-vm
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Host-level: CPU, RAM, disk fill, load. This is what answers "is the box
+  # about to run out of disk" — the most likely way this VM dies.
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # NOTE: there is deliberately NO cadvisor job here.
+  #
+  # This VM's Docker uses the `overlayfs` storage driver backed by the
+  # containerd image store, so /var/lib/docker/image/ holds only
+  # identity-cache.db - there is no overlay2/layerdb. cAdvisor v0.49 looks up
+  # each container's read-write layer under that path before it will create a
+  # handler, fails with "failed to identify the read-write layer ID", and
+  # therefore exports only the root cgroup (id="/") and no per-container series.
+  # No flag works around it: the failure is in handler creation, so disabling
+  # disk metrics does not help. Verified on this host 2026-09-05.
+  #
+  # The cadvisor service is still defined in docker-compose.yml because it is
+  # correct for a host using overlay2. If you move to one, re-add:
+  #   - job_name: cadvisor
+  #     static_configs: [{ targets: ['cadvisor:8080'] }]
+
+  # Per-container metrics via the Docker API (storage-driver agnostic).
+  - job_name: docker-stats
+    static_configs:
+      - targets: ['docker-stats-exporter:9487']
+
+  - job_name: loki
+    static_configs:
+      - targets: ['loki:3100']

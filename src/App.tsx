@@ -8,6 +8,10 @@ import {
   useParams,
 } from "react-router-dom";
 import Homepage from "./pages/Homepage";
+// Eager, unlike the lazy routes below. It is a handful of elements, and a 404
+// that has to fetch its own chunk before it can say it is a 404 spends a
+// network round-trip to display an error.
+import NotFound from "./pages/NotFound";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import "./App.css";
@@ -125,7 +129,12 @@ function App() {
                 />
 
                 {/* ── Catch-all ── */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* A real NotFound page, not <Navigate to="/">. The redirect
+                    made every wrong URL answer 200 with the homepage, which is
+                    a soft 404: crawlers see an infinite space of "real" pages
+                    with duplicate content. nginx.conf now returns a genuine 404
+                    status for unknown paths and serves this shell as the body. */}
+                <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
                 </Layout>
