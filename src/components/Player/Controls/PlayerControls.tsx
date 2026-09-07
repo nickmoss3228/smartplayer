@@ -12,6 +12,18 @@ import { PLAYBACK_RATES } from "../hooks/constants";
 import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
 
+// One set of button tokens for BOTH layouts. Desktop used to paint its pills
+// bg-black/90 on a bg-white/60 panel while mobile drew them transparent over
+// the page gradient, so the same control looked like two different products
+// depending on the viewport. These are the mobile values — desktop now shares
+// them, and the panel behind it went transparent to match (WaveformPlayer.tsx).
+const ACTIVE_PILL = "bg-gray-700/30 text-white";
+const IDLE_PILL = "text-white/90 hover:bg-white/10";
+/** Round transport/utility button: no fill until hover. */
+const GHOST_BTN =
+  "flex items-center justify-center rounded-full text-white " +
+  "hover:bg-white/10 transition-all duration-200 active:scale-95 cursor-pointer";
+
 interface PlayerControlsProps {
   isPlaying: boolean;
   isControlledMode: boolean;
@@ -35,6 +47,12 @@ interface PlayerControlsProps {
   isUserPaused?: boolean;
   isEnhancedSessionActive?: boolean;
   onOpenHelp?: () => void;
+  /**
+   * Whether this track actually has help audio to play. Defaults to true so an
+   * older caller that does not pass it keeps the button live rather than
+   * silently disabling Help everywhere.
+   */
+  hasHelpAudio?: boolean;
   onOpenFeedback?: () => void;
 }
 
@@ -55,6 +73,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     isEnhancedMode,
     layout = "desktop",
     onOpenHelp,
+    hasHelpAudio = true,
     onPrev,
     onNext,
     canGoPrev = false,
@@ -67,7 +86,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     const { t } = useTranslation();
 
     const labelClass =
-      "text-black/50 text-[9px] uppercase tracking-widest font-semibold font-['Montserrat'] whitespace-nowrap";
+      "text-white/60 text-[9px] uppercase tracking-widest font-semibold font-['Montserrat'] whitespace-nowrap";
 
     const disabledClass = !isEnhancedMode
       ? "opacity-40 pointer-events-none cursor-not-allowed"
@@ -98,8 +117,8 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
-      const activeBtn = "bg-gray-700/30 text-green border-green-500";
-      const idleBtn = " text-white/90 ";
+      const activeBtn = ACTIVE_PILL;
+      const idleBtn = IDLE_PILL;
 
       return (
         <div className="relative flex flex-col w-full h-full justify-start gap-6">
@@ -107,11 +126,22 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
           <div className="flex items-center justify-between gap-0">
             <button
               onClick={onOpenHelp}
-              aria-label={t("controls.help", "Help")}
+              disabled={!hasHelpAudio}
+              aria-label={
+                hasHelpAudio
+                  ? t("controls.help", "Help")
+                  : t("controls.helpUnavailable", "No help audio for this part")
+              }
+              title={
+                hasHelpAudio
+                  ? undefined
+                  : t("controls.helpUnavailable", "No help audio for this part")
+              }
               className="shrink-0 flex items-center justify-center rounded-full
      w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)]
      text-white
-     transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+     transition-all duration-200 active:scale-95 cursor-pointer shadow-sm
+     disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               <IoHelpCircle className="w-[clamp(22px,6.5vw,30px)] h-[clamp(22px,6.5vw,30px)]" />
             </button>
@@ -218,138 +248,151 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     const showComics =
       storyIndex != null && difficulty != null && difficulty !== "";
 
+    const pillBase =
+      "rounded-full w-10 h-10 flex items-center justify-center " +
+      "cursor-pointer text-xs font-medium font-['Montserrat'] " +
+      "transition-all duration-200 active:scale-95";
+
     return (
       <div className="flex flex-col items-center w-full gap-2">
-        <div className="flex items-end justify-between w-full">
-          {/* ── HELP ── */}
-          <div className="flex flex-col items-center gap-1 min-w-[80px]">
-            <button
-              onClick={onOpenHelp}
-              aria-label={t("controls.help", "Help")}
-              className="flex items-center justify-center rounded-full w-10 h-10
-                bg-black/90 hover:bg-black/50 text-white
-                transition-all duration-200 active:scale-95 cursor-pointer shadow-sm"
+        {/* 1fr | auto | 1fr rather than one justify-between row: the two sides
+            hold different numbers of controls (three clusters left, two right),
+            so a plain flex row parked Play/Pause wherever their widths happened
+            to land — visibly off-centre. Equal side tracks pin it to the
+            panel's centre line whatever the clusters end up containing. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-end w-full gap-4">
+          {/* ══ LEFT: Help · Comics · Repeat ══ */}
+          <div className="flex items-end justify-evenly gap-4">
+            {/* ── HELP ── */}
+            <div className="flex flex-col items-center gap-1 min-w-[80px]">
+              <button
+                onClick={onOpenHelp}
+                disabled={!hasHelpAudio}
+                aria-label={
+                  hasHelpAudio
+                    ? t("controls.help", "Help")
+                    : t("controls.helpUnavailable", "No help audio for this part")
+                }
+                title={
+                  hasHelpAudio
+                    ? undefined
+                    : t("controls.helpUnavailable", "No help audio for this part")
+                }
+                className={`${GHOST_BTN} w-10 h-10
+                  disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:active:scale-100`}
+              >
+                <IoHelpCircle className="w-6 h-6" />
+              </button>
+              {/* The label dims with the button so the whole cluster reads as
+                  one unavailable control, not a live label over a dead icon. */}
+              <span className={`${labelClass} ${hasHelpAudio ? "" : "opacity-30"}`}>
+                {t("controls.help", "Help")}
+              </span>
+            </div>
+
+            {/* ── COMICS: circular comics button ── */}
+            <div
+              className="flex flex-col items-center gap-1 min-w-[80px]"
+              data-tour="tour-comics"
             >
-              <IoHelpCircle className="w-6 h-6" />
-            </button>
-            <span className={labelClass}>{t("controls.help", "Help")}</span>
-          </div>
+              {showComics ? (
+                <>
+                  <ComicsDisplay
+                    storyIndex={storyIndex!}
+                    src={comicSrc}
+                    title={comicsTitle}
+                    difficulty={difficulty!}
+                    variant="circular" // ← circular shape
+                  />
+                  <span className={labelClass}>{t("controls.comics")}</span>
+                </>
+              ) : null}
+            </div>
 
-          {/* ── LEFT SLOT: circular comics button ── */}
-          <div
-            className="flex flex-col items-center gap-1 min-w-[80px]"
-            data-tour="tour-comics"
-          >
-            {showComics ? (
-              <>
-                <ComicsDisplay
-                  storyIndex={storyIndex!}
-                  src={comicSrc}
-                  title={comicsTitle}
-                  difficulty={difficulty!}
-                  variant="circular" // ← circular shape
-                />
-                <span className={labelClass}>{t("controls.comics")}</span>
-              </>
-            ) : null}
-          </div>
-
-          {/* ── REPEAT ── */}
-          <div
-            className={`flex flex-col items-center gap-1 ${disabledClass}`}
-            data-tour="tour-repeat"
-          >
-            <div className="flex items-center gap-2">
-              {[3, 2, 1].map((count) => (
-                <button
-                  key={count}
-                  className={`rounded-full w-10 h-10 flex items-center justify-center
-                    cursor-pointer text-xs font-medium font-['Montserrat']
-                    transition-all duration-200 active:scale-95
-                    ${
-                      repeatCount === count
-                        ? "bg-[#05df3bff] text-black"
-                        : "bg-black/90 text-white/90 hover:bg-black/50"
+            {/* ── REPEAT ── */}
+            <div
+              className={`flex flex-col items-center gap-1 ${disabledClass}`}
+              data-tour="tour-repeat"
+            >
+              <div className="flex items-center gap-2">
+                {[3, 2, 1].map((count) => (
+                  <button
+                    key={count}
+                    className={`${pillBase} ${
+                      repeatCount === count ? ACTIVE_PILL : IDLE_PILL
                     }`}
-                  onClick={() => onRepeatCountChange(count)}
-                  title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
-                >
-                  x{count}
-                </button>
-              ))}
-            </div>
-            <span className={labelClass}>{t("controls.repeat")}</span>
-          </div>
-
-          {/* ── PLAY / STEP ── */}
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-center gap-1">
-                <button
-                  className={`p-2 border-none rounded-full cursor-pointer
-                  transition-all duration-200 active:scale-95
-                  flex items-center justify-center
-                  ${
-                    buttonIsGreen
-                      ? "bg-[#05df3bff] hover:bg-green-400"
-                      : "bg-black/90 hover:bg-black/50"
-                  } text-white`}
-                  onClick={onPlayPause}
-                  title={showPauseIcon ? "Pause" : "Play"}
-                >
-                  {showPauseIcon ? (
-                    <IoPause className="text-white w-[45px] h-[45px]" />
-                  ) : (
-                    <IoPlay className="text-white w-[45px] h-[45px]" />
-                  )}
-                </button>
-                <span className={labelClass}>
-                  {showPauseIcon ? t("controls.pause") : t("controls.play")}
-                </span>
+                    onClick={() => onRepeatCountChange(count)}
+                    title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+                  >
+                    x{count}
+                  </button>
+                ))}
               </div>
-              {/* here was controlled mode code */}
+              <span className={labelClass}>{t("controls.repeat")}</span>
             </div>
           </div>
 
-          {/* ── SPEED ── */}
-          <div
-            className={`flex flex-col items-center gap-1 ${disabledClass}`}
-            data-tour="tour-speed"
-          >
-            <div className="flex items-center gap-2">
-              {PLAYBACK_RATES.map((speed) => (
-                <button
-                  key={speed}
-                  disabled={!isEnhancedMode}
-                  className={`rounded-full w-10 h-10 flex items-center justify-center
-      cursor-pointer text-xs font-medium font-['Montserrat']
-      transition-all duration-200 active:scale-95
-      disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
-      ${
-        playbackRate === speed
-          ? "bg-[#05df3bff] text-black"
-          : "bg-black/90 text-white/90 hover:bg-black/50"
-      }`}
-                  onClick={() => onSpeedChange(speed)}
-                >
-                  x{speed}
-                </button>
-              ))}
-            </div>
-            <span className={labelClass}>{t("controls.speed")}</span>
+          {/* ══ CENTRE: PLAY / PAUSE ══ */}
+          <div className="flex flex-col items-center gap-1">
+            <button
+              className={`p-2 border-none rounded-full cursor-pointer
+                transition-all duration-200 active:scale-95
+                flex items-center justify-center
+                ${
+                  buttonIsGreen
+                    ? "bg-[#05df3bff] hover:bg-green-400"
+                    : "bg-black/20 hover:bg-black/30"
+                } text-white`}
+              onClick={onPlayPause}
+              title={showPauseIcon ? "Pause" : "Play"}
+            >
+              {showPauseIcon ? (
+                <IoPause className="text-white w-[45px] h-[45px]" />
+              ) : (
+                <IoPlay className="text-white w-[45px] h-[45px]" />
+              )}
+            </button>
+            <span className={labelClass}>
+              {showPauseIcon ? t("controls.pause") : t("controls.play")}
+            </span>
           </div>
 
-          {/* ── RIGHT SLOT: Enhanced toggle ── */}
-          <div className="flex flex-col items-center gap-1 min-w-[80px]">
-            <ToggleSwitch
-              checked={isEnhancedMode}
-              onChange={onToggleEnhancedMode}
-              label={
-                isEnhancedMode
-                  ? t("controls.drillmode")
-                  : t("controls.freemode")
-              }
-            />
+          {/* ══ RIGHT: Speed · Enhanced toggle ══ */}
+          <div className="flex items-end justify-evenly gap-4">
+            {/* ── SPEED ── */}
+            <div
+              className={`flex flex-col items-center gap-1 ${disabledClass}`}
+              data-tour="tour-speed"
+            >
+              <div className="flex items-center gap-2">
+                {PLAYBACK_RATES.map((speed) => (
+                  <button
+                    key={speed}
+                    disabled={!isEnhancedMode}
+                    className={`${pillBase}
+                      disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
+                      ${playbackRate === speed ? ACTIVE_PILL : IDLE_PILL}`}
+                    onClick={() => onSpeedChange(speed)}
+                  >
+                    x{speed}
+                  </button>
+                ))}
+              </div>
+              <span className={labelClass}>{t("controls.speed")}</span>
+            </div>
+
+            {/* ── Enhanced toggle ── */}
+            <div className="flex flex-col items-center gap-1 min-w-[80px]">
+              <ToggleSwitch
+                checked={isEnhancedMode}
+                onChange={onToggleEnhancedMode}
+                label={
+                  isEnhancedMode
+                    ? t("controls.drillmode")
+                    : t("controls.freemode")
+                }
+              />
+            </div>
           </div>
         </div>
       </div>
