@@ -39,6 +39,8 @@ const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
 const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
+// Public and unauthenticated on purpose — see the note in Legal.tsx.
+const Legal = lazy(() => import("./pages/Legal"));
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -84,6 +86,7 @@ function App() {
                 {/* ── Fully public ── */}
                 <Route path="/"                element={<Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
+                <Route path="/legal/:docId" element={<Legal />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/login"           element={<Login />} />
                 <Route path="/signup"          element={<SignUp />} />

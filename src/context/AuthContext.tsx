@@ -25,6 +25,7 @@ import {
   AuthContextValue,
   AuthProviderProps,
   LoginRequest,
+  LegalConsent,
   SignUpRequest,
   AuthResponse,
   TokenValidationResponse,
@@ -230,12 +231,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signUp = async (username: string, email: string, password: string): Promise<AuthResult> => {
+  const signUp = async (
+    username: string,
+    email: string,
+    password: string,
+    consent: LegalConsent,
+  ): Promise<AuthResult> => {
     try {
       const requestData: SignUpRequest = {
         username,
         email,
-        password
+        password,
+        // Spread rather than re-listed: the server validates all three, and a
+        // field silently dropped here would surface as a confusing 400 rather
+        // than as a type error.
+        ...consent,
       };
       
       const response = await api.post<AuthResponse>('/api/signup', requestData, {

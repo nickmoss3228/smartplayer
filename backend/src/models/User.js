@@ -35,6 +35,26 @@ const userSchema = new mongoose.Schema({
     minLength: 6,
   },
   isEmailVerified: { type: Boolean, default: false },
+  // What this account agreed to at signup, and when.
+  //
+  // 152-ФЗ puts the burden of proving consent on the operator, so the tick has
+  // to survive somewhere the operator controls — a checkbox that only ever
+  // existed in the browser proves nothing later. Timestamps rather than
+  // booleans for the same reason: "consented" is a question about a moment.
+  //
+  // `version` is the LEGAL_VERSION the frontend was showing (config/legal.ts).
+  // Rewriting the documents therefore cannot retroactively claim that someone
+  // agreed to the new wording — it just leaves them on the old version, which
+  // is the honest answer.
+  //
+  // Absent on every account created before this field existed; that is
+  // deliberate too, since backfilling a consent nobody gave would be worse
+  // than admitting it was not recorded.
+  legalConsent: {
+    version: { type: String },
+    termsAcceptedAt: { type: Date },
+    dataConsentAcceptedAt: { type: Date },
+  },
   // Admin moderation flag — checked at login and on every authenticated
   // request (middleware/auth.js) so a ban also kills already-issued sessions.
   banned: { type: Boolean, default: false },

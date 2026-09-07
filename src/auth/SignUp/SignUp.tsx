@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, Trans } from 'react-i18next'
 import {
   IoPersonAddOutline,
   IoPersonOutline,
@@ -12,6 +12,7 @@ import {
   IoSyncOutline,
 } from 'react-icons/io5'
 import { useAuth } from '../../context/AuthContext'
+import { LEGAL_VERSION, legalPath } from '../../config/legal'
 
 const SignUp = () => {
   const { t } = useTranslation()
@@ -23,6 +24,12 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  // Two boxes, not one. 152-ФЗ treats consent to processing personal data as a
+  // separate, knowing act of the subject, so folding it into "I accept the
+  // terms" would not be consent at all. Both start unticked — a pre-ticked
+  // consent box is exactly what the law does not count.
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [acceptedDataConsent, setAcceptedDataConsent] = useState(false)
 
   const { signUp, user } = useAuth()
   const location = useLocation()
@@ -52,9 +59,18 @@ const SignUp = () => {
       return
     }
 
+    if (!acceptedTerms || !acceptedDataConsent) {
+      setError(t('signup.errors.agreementsRequired'))
+      return
+    }
+
     setIsLoading(true)
 
-    const result = await signUp(username, email, password)
+    const result = await signUp(username, email, password, {
+      acceptedTerms,
+      acceptedDataConsent,
+      legalVersion: LEGAL_VERSION,
+    })
     if (result.error) {
       // A 429 from the signup throttle carries how long to wait — localize it
       // rather than showing the server's English string.
@@ -181,9 +197,72 @@ const SignUp = () => {
             </div>
           </div>
 
+          {/* ── Agreements ──
+              The links open in a new tab so reading one does not throw away a
+              half-filled form. handleSubmit re-checks both flags rather than
+              relying on the disabled button alone: `disabled` is a UI state, and
+              the account is created by the request, not by the button. */}
+          <div className="space-y-3 rounded-2xl bg-black/[0.02] border border-black/5 p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 flex-shrink-0 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-xs leading-relaxed text-black/60">
+                <Trans
+                  i18nKey="signup.agreements.terms"
+                  components={{
+                    terms: (
+                      <Link
+                        to={legalPath('terms')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline underline-offset-2 hover:text-blue-700"
+                      />
+                    ),
+                    privacy: (
+                      <Link
+                        to={legalPath('privacy')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline underline-offset-2 hover:text-blue-700"
+                      />
+                    ),
+                  }}
+                />
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedDataConsent}
+                onChange={(e) => setAcceptedDataConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 flex-shrink-0 accent-blue-600 cursor-pointer"
+              />
+              <span className="text-xs leading-relaxed text-black/60">
+                <Trans
+                  i18nKey="signup.agreements.dataConsent"
+                  components={{
+                    consent: (
+                      <Link
+                        to={legalPath('consent')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline underline-offset-2 hover:text-blue-700"
+                      />
+                    ),
+                  }}
+                />
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !acceptedTerms || !acceptedDataConsent}
             className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (

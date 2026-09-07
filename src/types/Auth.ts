@@ -24,7 +24,7 @@ export interface AuthContextValue {
   user: User | null;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<AuthResult>;
-  signUp: (username: string, email: string, password: string) => Promise<AuthResult>;
+  signUp: (username: string, email: string, password: string, consent: LegalConsent) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<ResetPasswordResult>;
   confirmPasswordReset: (token: string, newPassword: string) => Promise<ResetPasswordResult>;
@@ -39,10 +39,25 @@ export interface LoginRequest {
   password: string;
 }
 
+/**
+ * The two consent flags are part of the request rather than an afterthought:
+ * the server refuses a signup that does not carry both (AGREEMENTS_REQUIRED),
+ * so a caller that cannot produce them cannot create an account.
+ */
+export interface LegalConsent {
+  acceptedTerms: boolean;
+  acceptedDataConsent: boolean;
+  /** LEGAL_VERSION the form was showing, stamped onto the account. */
+  legalVersion: string;
+}
+
 export interface SignUpRequest {
   username: string;
   email: string;
   password: string;
+  acceptedTerms: boolean;
+  acceptedDataConsent: boolean;
+  legalVersion: string;
 }
 
 export interface AuthResponse {

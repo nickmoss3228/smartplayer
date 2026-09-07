@@ -5,12 +5,34 @@ import { config } from "../config/env.js";
 
 export async function signup(req, res) {
   try {
-    const { username, email, password } = req.body;
+    const {
+      username,
+      email,
+      password,
+      acceptedTerms,
+      acceptedDataConsent,
+      legalVersion,
+    } = req.body;
 
     if (!username || !email || !password) {
       return res
         .status(400)
         .json({ message: "Username, email, and password are required" });
+    }
+
+    // Enforced here, not only in the form. The signup endpoint is reachable
+    // without the page — and an account created without a recorded consent is
+    // an account the operator cannot lawfully process data for, so refusing is
+    // the only correct answer rather than defaulting the flags to true.
+    //
+    // `=== true`: a JSON body can carry "false", 0 or "on" for a checkbox, and
+    // only an actual boolean true is an acceptance.
+    if (acceptedTerms !== true || acceptedDataConsent !== true) {
+      return res.status(400).json({
+        code: "AGREEMENTS_REQUIRED",
+        message:
+          "The user agreement and the personal-data consent must both be accepted.",
+      });
     }
 
     if (password.length < 6) {
@@ -35,10 +57,23 @@ export async function signup(req, res) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // One timestamp for both: they were ticked on the same form, in the same
+    // submission, and pretending to know a sub-second ordering between them
+    // would be inventing precision.
+    const consentedAt = new Date();
+
     const user = await User.create({
       username,
       email,
       password: hashedPassword,
+      legalConsent: {
+        // Recorded as whatever the client said it was showing, and trimmed —
+        // it is evidence of which text was on screen, not an instruction.
+        version:
+          typeof legalVersion === "string" ? legalVersion.slice(0, 32) : undefined,
+        termsAcceptedAt: consentedAt,
+        dataConsentAcceptedAt: consentedAt,
+      },
     });
 
     const token = jwt.sign({ userId: user._id }, config.jwtSecret, {
