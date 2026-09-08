@@ -12,8 +12,17 @@ campus. The room is alive: students write, fidget and glance around, the teacher
 paces in front of the board, speech bubbles pop. You watch it more than you play
 it.
 
-There is exactly **one button**: _Upgrade the school_. It costs BitAward,
-BitWord and BitPhrase together. Press it and the school gets visibly bigger.
+You grow it by **buying rooms, one at a time**, in whatever order you like. Build
+mode puts every room you could add into the scene as a translucent ghost,
+standing where it would actually stand, so the question "where does that go"
+is answered by looking rather than by reading a list.
+Each room has one authored home on the campus and one price in one currency —
+BitAward for the corridor and the classrooms, BitWord for the rooms you read and
+listen in, BitPhrase for the rooms you talk in. Which currency a room takes is
+the point: the way you study decides what you can afford to build.
+
+A room can only be bought once the room you would walk in through has been, so
+what you own is always somewhere you can actually walk.
 
 Everything else on screen is the school itself.
 
@@ -21,22 +30,27 @@ Everything else on screen is the school itself.
 
 |                              |                                                        |
 | ---------------------------- | ------------------------------------------------------ |
-| Upgrade to the next stage    | yes — the one button, costs all three currencies       |
-| Change wallpaper / floor     | yes, free; new options unlock with stages              |
+| Buy the next room            | yes — any room whose way in you already own            |
+| Choose which room comes next | yes — the order is yours                               |
+| See it before you buy it     | yes — build mode stands it where it would go           |
+| Decorate one room on its own | yes, free — customize mode, per room                   |
+| Pay the staff                | yes, weekly. Skipping it costs morale and nothing else |
+| Choose where a room goes     | **no.** Each room has one authored home                |
+| Change wallpaper / floor     | yes, free; new options unlock with levels              |
 | Rearrange the desks          | yes, free — pick one of four layout presets            |
 | Pan and zoom the view        | yes, fullscreen, one finger to pan, two to zoom        |
 | Poke a student or the teacher| yes — they answer with a speech bubble                 |
 | Buy individual furniture     | **no.** Removed. Furniture arrives with stages         |
 | Enter/leave rooms, menus     | **no.** One continuous view, always                    |
 
-## 3. The ten stages, and three campuses
+## 3. The rooms, the levels, and three campuses
 
 One growing floorplan, all on a single ground plane, never a second floor — a
 second floor would have to hide the first one, and hiding progress is the
 opposite of the point.
 
 **There are three floorplans**, and a player is assigned one for life. The
-economy is identical across all three — stage 7 costs the same whoever you are —
+economy is identical across all three — the gym costs the same whoever you are —
 but the shape of the building is not, so visiting somebody else's school shows a
 different campus rather than a recolour of your own. The variant is derived from
 the user id (stable, no migration) and then persisted, so it can be reassigned
@@ -52,23 +66,53 @@ Every variant uses the same room **ids and kinds**; only the rectangles and the
 doorways differ. That is what lets the props, the seating and the routing be
 written once and work for all three.
 
-| Stage | Name             | What appears                                                             | Cost (Award / Word / Phrase) |
-| ----- | ---------------- | ------------------------------------------------------------------------ | ---------------------------- |
-| 0     | One Room         | small classroom, 4 desks, board, teacher, 3 students                      | — (you start here)           |
-| 1     | Full Class       | classroom grows, 9 desks, bookshelf, plants, more windows                 | 40 / 20 / 10                 |
-| 2     | Reading Corner   | library wing: shelves, rug, armchairs, 2 readers                          | 90 / 45 / 25                 |
-| 3     | Listening Lab    | corridor + lab: booths, lockers, corridor walkers, the first commuter     | 180 / 90 / 50                |
-| 4     | Courtyard        | open-air yard: tree, fountain, benches, lamppost                          | 320 / 160 / 90               |
-| 5     | Assembly Hall    | hall wing: stage, banner, chair rows, trophy shelf, second teacher        | 550 / 275 / 160              |
-| 6     | Front Desk       | reception + the way in: gate, sign, lamps, sofas, receptionist, cupboards | 800 / 400 / 230              |
-| 7     | Second Classroom | a second English room — flags, globe, alphabet frieze                     | 1100 / 550 / 320             |
-| 8     | Cafeteria        | servery, long tables, **a third classroom**, computers appear             | 1500 / 750 / 430             |
-| 9     | Gymnasium        | wall bars, hoops, vaulting horse, mats, a scoreboard that keeps score     | 2000 / 1000 / 580            |
+Twenty rooms, each bought on its own, each in one currency. `Needs` is the room
+you walk in through, and you cannot buy a room before it.
 
-Prices are steep on purpose — a quiz pass mints 5 BitAward, so stage 9 is a
-long-term goal, not an afternoon of play. All prices live in
-`backend/src/config/schoolCatalog.js`; the client only ever sends a stage
-number, never a price.
+| Room             | Price       | Needs      | What it brings                                                            |
+| ---------------- | ----------- | ---------- | ------------------------------------------------------------------------- |
+| Classroom        | — (you start here) | —   | 4 desks, board, teacher, 3 students. Grows to 12 desks with the corridor   |
+| Corridor         | 60 Award    | —          | the spine, and corridor walkers. Every other room opens off it             |
+| Library          | 80 Word     | corridor   | shelves, rug, armchairs, 2 readers                                        |
+| Listening Lab    | 400 Word    | corridor   | booths, lockers, headphones                                               |
+| Courtyard        | 160 Phrase  | corridor   | open-air yard: tree, fountain, benches, lamppost                          |
+| Assembly Hall    | 900 Word    | corridor   | stage, banner, chair rows, trophy shelf, a second teacher                 |
+| Reception        | 1900 Word   | varies     | front desk, sofas, receptionist, cupboards                                |
+| Forecourt        | 300 Phrase  | reception  | the way in off the street: gate, sign, lamps                              |
+| Second Classroom | 2200 Award  | varies     | another English room — flags, globe, alphabet frieze                      |
+| Cafeteria        | 600 Phrase  | varies     | servery, long tables, the loudest room here                               |
+| Third Classroom  | 4300 Award  | varies     | a third English room, out past the hall                                   |
+| Gymnasium        | 840 Phrase  | varies     | wall bars, hoops, vaulting horse, mats, a scoreboard that keeps score      |
+
+And the second ring, which arrives once the first twelve are up:
+
+| Room             | Price       | Needs      | What it brings                                                            |
+| ---------------- | ----------- | ---------- | ------------------------------------------------------------------------- |
+| Staff Room       | 900 Phrase  | varies     | armchairs round a low table, and three teachers off duty in them          |
+| Music Room       | 1400 Phrase | varies     | a piano, a riser, speakers, and an audience of three                      |
+| Garden           | 1900 Phrase | varies     | walled and planted: raised beds, a tree, two benches                      |
+| Archive          | 2400 Word   | varies     | a second library — stacks, a reading corner, study desks                  |
+| Head's Office    | 3000 Award  | varies     | a desk, a trophy shelf, and whoever is running the place                  |
+| Study Hall       | 4900 Word   | varies     | a third library, quieter than either                                      |
+| Fourth Classroom | 5200 Award  | varies     | another English room, out at the east end                                 |
+| Fifth Classroom  | 6400 Award  | varies     | the far corner — the first room whose board hangs on its WEST wall        |
+
+"Varies" means the parent differs by campus — the Terrace hangs its second
+classroom off the hall, the Quad off the corridor. The tree is in each variant's
+`doors` map.
+
+A whole campus costs **21160 BitAward, 10580 BitWord and 6100 BitPhrase** — the
+same 2 : 1 : 0.57 ratio the ten stages charged in, about three times as much of
+it. Prices are steep on purpose — a quiz pass mints 5 BitAward — so a finished
+school is a long-term goal, not an afternoon of play.
+
+All prices live in `backend/src/config/schoolCatalog.js`; the client only ever
+sends a room id, never a price.
+
+**Levels** are what the ten stages became. `levelFor(owned)` maps the room count
+through `LEVEL_AT_ROOMS` onto the same ten records, which still carry the desk
+counts, the student counts and how many people wander and commute. Buying a room
+is what moves it; nothing charges for it.
 
 **Two rules govern where a room may go**, and both are forced by the fixed
 camera. Break either and the damage is invisible until you look at a render:
@@ -77,13 +121,21 @@ camera. Break either and the damage is invisible until you look at a render:
    rooms meet that span of wall drops to knee height and the room behind stays
    visible. Height is computed **span by span**, not per wall, so a wall can be
    full height for part of its run and knee-high for the rest.
-2. Therefore **nothing may be built directly north of a classroom** — that is
-   the wall its board hangs on, and a knee-high partition leaves the board
-   floating in mid-air. In practice every classroom sits on the campus's
-   northern edge.
+2. Therefore **every classroom needs one drawn wall with room for a board on
+   it** — north for preference, else west. A board on a knee-high partition
+   floats in mid-air, and the cutaway draws only those two walls, so those are
+   the only two a board can go on at all.
+
+   This used to be the flat rule "nothing may be built directly north of a
+   classroom", which pinned every classroom to the campus's northern edge. It
+   was true while the board was nailed to the north wall regardless, and it is
+   what `boardFrameOf` replaced: a classroom now lays itself out in board-local
+   space and gets mapped onto whichever of the two walls it actually has. The
+   fifth classroom in every campus is the one that uses it.
 
 `schoolCatalog.test.ts` asserts rule 2, no-overlap, never-shrinking and a dozen
-other invariants across **all three variants at all ten stages**.
+other invariants across **all three variants over a spread of owned sets** —
+see §10.
 
 ## 3a. Doors are real holes, not decoration
 
@@ -220,20 +272,40 @@ for any of that.
 
 ## 7. Data
 
-The whole save is four fields:
+The room list is the whole save:
 
 ```js
 school: {
-  stage:       Number,  // 0..9
-  layoutId:    String,  // "rows" | "u-shape" | "clusters" | "circle"
-  wallpaperId: String,
-  floorId:     String,
-  variantId:   String,  // "courtyard" | "quad" | "terrace" — fixed per player
+  ownedRoomIds: [String], // THE save. Everything on screen derives from it
+  stage:        Number,   // 0..9 — dead as progress, kept as the LEVEL FLOOR
+  layoutId:     String,   // "rows" | "u-shape" | "clusters" | "circle"
+  wallpaperId:  String,
+  floorId:      String,
+  variantId:    String,   // "courtyard" | "quad" | "terrace" — fixed per player
 }
 ```
 
-The old `unlockedRoomIds` / `ownedItemIds` / `ownedActionIds` / `placed` are
-dropped, along with everything that read them. Coins already spent on old
+**How developed the school is, is derived, not stored.** `levelFor(owned)` maps
+the room count onto the same ten levels that used to be stages, and those levels
+still drive how many people turn up and which free looks are selectable. Keeping
+the level derived is what let the whole rendering layer stay untouched: `plan.stage`
+is still a resolved level record, so every `stage.students` and
+`stage.index >= 7` downstream reads exactly as before.
+
+`stage` survives as the **level floor** and nothing else. A player migrated off
+the ten-stage economy does not always re-earn the level they paid for — the old
+stage 1 bought the classroom's extension rather than a room — and a level that
+went *down* would drop a wallpaper they had already chosen out of the unlocked
+list, leaving the server refusing their own save. The floor makes that
+impossible. A player who never saw that economy has 0 here, which floors nothing.
+
+Migration runs lazily on first read, in `ensureSchool`, from a frozen
+`LEGACY_STAGE_ROOMS` table rather than from the live catalog — the catalog is
+free to move from here on, and that table has to keep saying what the game
+looked like on the day it changed.
+
+The dollhouse's `unlockedRoomIds` / `ownedItemIds` / `ownedActionIds` / `placed`
+are still stripped on read rather than migrated. Coins already spent on old
 furniture are not refunded.
 
 Endpoints:
@@ -242,23 +314,118 @@ Endpoints:
 | ------------------------------ | -------------------------------------------------- |
 | `GET /progress/school`         | your school + wallet                                |
 | `GET /progress/school/:userId` | someone else's school, no wallet (visiting)         |
-| `POST /progress/school/upgrade`| the one button. Server re-reads the price           |
+| `POST /progress/school/rooms`  | `{ roomId }`. Server reads the price and the rules |
 | `PATCH /progress/school/look`  | `{ layoutId?, wallpaperId?, floorId? }`, free       |
-| `GET /progress/school/catalog` | stages + looks, for sanity-checking the mirror      |
+| `GET /progress/school/catalog` | rooms + levels + looks, for checking the mirror     |
 
-The upgrade endpoint takes **no** body. It charges whatever the catalog says the
-_next_ stage costs, and it debits all three currencies or none.
+The buy endpoint's body names a room and **nothing else**. The price, the
+currency, and whether the room may be bought at all are read from the server's
+own catalog when the request lands, so a client can never name a price, a
+currency or a discount. It charges one currency, and the `$ne` guard on the
+recording write is what stops a double tap paying twice.
 
 ## 8. Non-goals
 
-Not a management sim. No staff to hire, no timetable, no money loop of its own,
-no failure state, nothing to lose. If a feature needs a second button on the
-main view, it does not belong here.
+A management sim only in the gentlest sense. There is a weekly payroll and a
+morale number, and that is the whole of it: **nothing can ever be taken away**.
+No room closes, no teacher leaves, no progress is lost. A school left unpaid gets
+quieter — fewer students turn up — and recovers the moment you pay. The currency
+here comes from studying, and a fortnight of real life must not be able to
+dismantle what somebody built. Still no timetable and no failure state.
+
+> The original rule here was "if a feature needs a second button on the main
+> view, it does not belong here", and per-room purchase broke it deliberately
+> rather than by accident. The one button was a good constraint while the game
+> was a progress bar you pressed ten times; it stops being one the moment the
+> player has a real choice to make about what to build next. Three more buttons
+> are planned — build preview, per-room customization, and a director who asks
+> you to make payroll — and each of them has to earn its place the same way:
+> by giving the player a decision, not a setting.
 
 ## 9. Still open
 
-- Whether stage 9 is really the end, or the campus keeps extending.
+- Whether the campus keeps extending past its current twelve rooms.
 - Whether three campus variants is enough, or new players should get more.
 - Whether visiting another player's school should show their people animated
   (currently yes) or frozen.
 - The real art. Everything above is placeholder geometry.
+
+## 10. How the invariants are still checked
+
+Rooms used to be a pure function of one integer, so thirty plans — three
+variants at ten stages — was the *whole* space, and `schoolCatalog.test.ts`
+swept it exhaustively. Buying rooms one at a time makes the space 2^12 per
+variant, and an exhaustive sweep is no longer on the table.
+
+So the suite samples, and the sampling is chosen to cover the shapes that
+actually break things:
+
+- **The chain.** Buying in catalog order, one room at a time, yielding the owned
+  set after every purchase. This is the run almost every real player is
+  somewhere along.
+- **Four scrambled runs per variant**, seeded from a tiny LCG so a failure
+  reproduces from its label alone. These reach the lopsided campuses the chain
+  never does — a gym and no library, a cafeteria wing with nothing east of the
+  corridor — and they are where a room that quietly depended on a neighbour
+  existing shows up.
+- **The full set.** The only plan with every room in it at once.
+
+Both run kinds only ever buy what `canBuy` allows, so nothing is checked against
+a campus a player could not be holding. About a hundred plans, against thirty
+before.
+
+The sampling found two real bugs on its first run, both latent under the old
+fixed unlock order:
+
+1. **Commuters vanished on a lopsided campus.** The list of journeys worth
+   walking was hardcoded and assumed the stage unlock order, so a player who
+   bought seven rooms in their own order could end up with one commuter where
+   the level promised three. Journeys are now generated from the destinations
+   the campus actually has, and walked in rounds — two students on the same
+   library-to-cafeteria run is what a small school looks like.
+2. **Reception's trophy shelf stood across a seat approach.** The far end of the
+   near sofa is only reached once reception is busy enough to need all three
+   seats, which no fixed unlock order ever produced. The shelf moved to the east
+   wall.
+
+Neither was introduced by per-room purchase. Both were always there, waiting for
+a player to buy rooms in an order nobody had tried.
+
+## 11. What the second ring taught us
+
+Twelve rooms became twenty, and the sampling found the same class of bug three
+more times. All of it was latent; none of it was caused by the new rooms.
+
+**A route to a room cuts straight through whatever room it hangs off.**
+`routeBetween` walks door to door in straight lines up the parent chain, so
+passing through a room is a straight line between two of its doorways. The first
+twelve rooms hid this by hanging almost everything directly off the corridor —
+the three that did not (reception, the lab, the cafeteria) already took a `doorX`
+and laid themselves out around that lane, which is the documented fix and was
+already in the code. The second ring is two rooms deep, so it had nowhere to hide.
+
+The fix is to put doors on the lane the room already keeps clear: a library-kind
+room reserves its east aisle, and the music room now reserves one too. Where a
+lane could not be found the room was re-parented instead — the garden hangs off
+the forecourt in two campuses because hanging it off the archive meant walking
+over the reading table.
+
+**A prop that ignores its own `len` is a collision bug waiting for a second
+caller.** `StagePlatform` was hardcoded at 7.2m while `footprintOf` believed
+whatever `len` it was handed. Invisible for as long as only the hall used it;
+the moment the music room asked for a 2.8m riser, two and a half metres of
+visible stage had no collision box behind it. Anything that takes a `len` has to
+be built from it.
+
+**A wander stop is somewhere on a circuit, not a destination.** Adding the second
+ring to `ROAM_STOPS` put two walkers half a metre apart: those rooms are leaves,
+so a lap that went in had to come back out the way it went and retrace its own
+approach. They get commuters and their own residents instead — which is the truer
+reading of a staff room or an archive anyway.
+
+**`visitSeats` offered a bench that `clearDoorways` had already deleted.** A
+doorway carries a 1.9m clearance zone and anything standing in it is dropped;
+put one halfway down the cafeteria's east wall and it takes a long table with it,
+while the seating logic went on offering seats at that table. The backstop is
+there to catch a stray plant, not to cover for a door placed through the
+furniture.

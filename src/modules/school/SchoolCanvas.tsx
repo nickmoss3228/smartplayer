@@ -12,26 +12,32 @@
 // and invites the player to fight the camera instead of looking at the room;
 // one finger pans, two fingers zoom, and that is the whole interaction.
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { MapControls } from "@react-three/drei";
 import * as THREE from "three";
-import {
-  DEFAULT_VARIANT_ID,
-  getFloor,
-  getLayoutId,
-  getStage,
-  getWallpaper,
-  planBounds,
-} from "../../config/schoolCatalog";
-import { SchoolState } from "../../services/schoolServices";
+import { DEFAULT_VARIANT_ID, RoomLook, lookFor, planBounds } from "../../config/schoolCatalog";
+import { SchoolState, WalletBalances } from "../../services/schoolServices";
 import { CharacterState } from "../../types/Character";
 import { getCharacterItem } from "../../config/characterCatalog";
 import { Building } from "./Building";
 import { Deskware, Furnishings } from "./furniture";
 import { People, PersonLook } from "./People";
 import { boardWords, buildBubblePool } from "./bubbles";
-import { SchoolPlan, buildPlan, classroomsOf, deskLayout, peoplePlan, stageProps } from "./props";
+import { SchoolRoomRect } from "../../config/schoolCatalog";
+import {
+  GhostRoom,
+  SchoolPlan,
+  buildPlan,
+  classroomsOf,
+  deskLayout,
+  ghostBounds,
+  ghostRooms,
+  peoplePlan,
+  stageProps,
+} from "./props";
+import { Ghosts } from "./Ghosts";
+import { RoomPicks } from "./RoomPicks";
 
 /** Render scale. 0.38 ≈ chunky pixels on a phone; 1 is a crisp modern render. */
 const PIXEL_DPR = 0.38;
@@ -48,7 +54,7 @@ const WALL_H = 3;
 // point of the scene — that it is full of people doing things — is lost. A
 // campus too wide to fit at this zoom starts centred and gets panned, which is
 // the interaction the player already has two fingers for. Set low enough that
-// all three variants fit whole on a desktop at stage 9 — the Terrace is 55
+// all three variants fit whole on a desktop when complete — the Terrace is 55
 // tiles across — while a phone still clamps here and pans.
 const MIN_READABLE_ZOOM = 15;
 
@@ -88,7 +94,7 @@ interface ControlsLike {
 }
 
 /**
- * Frames the whole campus on load, re-frames it when a stage is bought, and
+ * Frames the whole campus on load, re-frames it when a room is bought, and
  * otherwise stays out of the way.
  *
  * "Otherwise stays out of the way" is the load-bearing part. This used to run
@@ -103,7 +109,17 @@ interface ControlsLike {
  * be dragged off screen, but nothing pulls back while you are inside that
  * range.
  */
-const CameraRig = ({ plan }: { plan: SchoolPlan }) => {
+const CameraRig = ({
+  plan,
+  ghosts,
+  focus,
+}: {
+  plan: SchoolPlan;
+  ghosts: GhostRoom[];
+  /** One room to frame instead of the whole campus. Customize mode sets it, so
+   *  the room being changed is the room you are looking at. */
+  focus?: SchoolRoomRect | null;
+}) => {
   const camera = useThree((s) => s.camera) as THREE.OrthographicCamera;
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as unknown as ControlsLike | null;
@@ -111,7 +127,18 @@ const CameraRig = ({ plan }: { plan: SchoolPlan }) => {
   const goal = useRef({ zoom: 1, cx: 0, cz: 0 });
   const easing = useRef(false);
   const settled = useRef(false);
-  const bounds = useMemo(() => planBounds(plan.rooms), [plan]);
+  // Build mode has to fit what you could buy as well as what you have, or the
+  // rooms being offered sit off the edge of the frame. Widening the EXISTING
+  // bounds rather than adding a second camera path also means the leash and the
+  // glide keep working unchanged: buying a room re-frames, and so does opening
+  // build mode.
+  const bounds = useMemo(
+    () =>
+      planBounds(
+        focus ? [focus] : ghosts.length ? ghostBounds(plan.rooms, ghosts) : plan.rooms,
+      ),
+    [plan, ghosts, focus],
+  );
 
   // Deliberately NOT keyed on `size`: a mobile browser fires a resize every
   // time the address bar collapses, and re-framing there would yank the view
@@ -146,12 +173,12 @@ const CameraRig = ({ plan }: { plan: SchoolPlan }) => {
       return;
     }
 
-    // A stage was bought: glide out to reveal the new wing. This is the only
-    // thing that ever moves the camera on its own.
+    // A room was bought, or one was picked to customize: glide to it. These are
+    // the only things that ever move the camera on its own.
     easing.current = true;
   }, [bounds, camera, controls]);
 
-  // Touching the camera cancels any pending glide. Without this, buying a stage
+  // Touching the camera cancels any pending glide. Without this, buying a room
   // and immediately grabbing the view means fighting the animation for a second.
   useEffect(() => {
     if (!controls) return;
@@ -249,6 +276,11 @@ function playerLookFrom(character: Pick<CharacterState, "skinTone" | "equipped">
   };
 }
 
+/** What the scene is FOR right now. "play" is the school; "build" swaps the
+ *  people for the rooms you could add. Not a boolean because customize mode
+ *  lands in the same slot next. */
+export type SchoolMode = "play" | "build" | "customize";
+
 interface SceneProps {
   school: SchoolState;
   character: Pick<CharacterState, "skinTone" | "equipped"> | null;
@@ -256,23 +288,70 @@ interface SceneProps {
   interactive: boolean;
   /** Whole building from outside instead of the cutaway. */
   exterior?: boolean;
+  mode?: SchoolMode;
+  /** Build mode only. Drives which ghosts read as affordable. */
+  wallet?: WalletBalances;
+  selectedRoomId?: string | null;
+  onPickRoom?: (roomId: string) => void;
+  /** Translated room name; falls back to the id so the canvas needs no i18n. */
+  roomName?: (roomId: string) => string;
+  /** Translated "build X first" for a room that is still locked. */
+  roomNote?: (roomId: string) => string | null;
 }
 
-const Scene = ({ school, character, learnedWords, interactive, exterior = false }: SceneProps) => {
-  const stage = useMemo(() => getStage(school.stage), [school.stage]);
-  const plan = useMemo(
-    () => buildPlan(stage, school.variantId ?? DEFAULT_VARIANT_ID),
-    [stage, school.variantId],
-  );
-  const layoutId = useMemo(() => getLayoutId(school.layoutId), [school.layoutId]);
-  const wallpaper = useMemo(() => getWallpaper(school.wallpaperId), [school.wallpaperId]);
-  const floor = useMemo(() => getFloor(school.floorId), [school.floorId]);
+const NO_WALLET: WalletBalances = { bitAward: 0, bitWord: 0, bitPhrase: 0 };
 
-  // Desks from EVERY classroom, not just the main one — the player's layout
-  // preset rearranges the whole school at once.
+const Scene = ({
+  school,
+  character,
+  learnedWords,
+  interactive,
+  exterior = false,
+  mode = "play",
+  wallet = NO_WALLET,
+  selectedRoomId = null,
+  onPickRoom,
+  roomName,
+  roomNote,
+}: SceneProps) => {
+  const building = mode === "build";
+  const customizing = mode === "customize";
+  const plan = useMemo(
+    () =>
+      buildPlan(
+        school.ownedRoomIds,
+        school.variantId ?? DEFAULT_VARIANT_ID,
+        school.levelFloor,
+        school.payroll?.morale ?? 100,
+      ),
+    [school.ownedRoomIds, school.variantId, school.levelFloor, school.payroll?.morale],
+  );
+  // One resolved look per room: its own overrides where it has them, the
+  // school's default everywhere else. Memoised as a map rather than resolved at
+  // each call site, because Building asks for every room on every render.
+  const looks = useMemo(() => {
+    const base = {
+      layoutId: school.layoutId,
+      wallpaperId: school.wallpaperId,
+      floorId: school.floorId,
+    };
+    const out = new Map<string, RoomLook>();
+    for (const r of plan.rooms) out.set(r.id, lookFor(r.id, school.presets ?? {}, base));
+    return out;
+  }, [plan.rooms, school.presets, school.layoutId, school.wallpaperId, school.floorId]);
+
+  const lookOf = useCallback(
+    (roomId: string) => looks.get(roomId) ?? lookFor(roomId, {}, school),
+    [looks, school],
+  );
+
+  // Per classroom, so a room the player has rearranged keeps its arrangement —
+  // and so the students sit at the desks that room actually has.
+  const layoutOf = useCallback((roomId: string) => lookOf(roomId).layoutId, [lookOf]);
+
   const desks = useMemo(
-    () => classroomsOf(plan).flatMap((c) => deskLayout(plan, layoutId, c.id)),
-    [plan, layoutId],
+    () => classroomsOf(plan).flatMap((c) => deskLayout(plan, layoutOf(c.id), c.id)),
+    [plan, layoutOf],
   );
   // From outside, only what stands on open ground is still visible; everything
   // indoors is behind a wall and a roof, so drawing it is pure waste.
@@ -282,7 +361,20 @@ const Scene = ({ school, character, learnedWords, interactive, exterior = false 
     const outdoors = new Set(plan.rooms.filter((r) => r.outdoor).map((r) => r.id));
     return all.filter((p) => outdoors.has(p.key.split("-")[0]));
   }, [plan, exterior]);
-  const cast = useMemo(() => peoplePlan(plan, layoutId), [plan, layoutId]);
+  const cast = useMemo(() => peoplePlan(plan, layoutOf), [plan, layoutOf]);
+  const ghosts = useMemo(
+    () => (building ? ghostRooms(school.variantId ?? DEFAULT_VARIANT_ID, school.ownedRoomIds) : []),
+    [building, school.variantId, school.ownedRoomIds],
+  );
+  // Framed only while customizing. In build mode the selected room is a ghost
+  // and the point is to see it in context, not to fill the screen with it.
+  const focusRect = useMemo(
+    () =>
+      customizing && selectedRoomId
+        ? (plan.rooms.find((r) => r.id === selectedRoomId) ?? null)
+        : null,
+    [customizing, selectedRoomId, plan.rooms],
+  );
   // Same clock the lighting reads, so "Good evening!" and the amber key light
   // agree with each other.
   const hour = useMemo(() => new Date().getHours(), []);
@@ -306,12 +398,14 @@ const Scene = ({ school, character, learnedWords, interactive, exterior = false 
           going flat black at the bottom of the frame. */}
       <directionalLight position={[-12, 9, -14]} intensity={0.45} color={light.fill} />
 
-      <Building plan={plan} wallpaper={wallpaper} floor={floor} exterior={exterior} />
+      <Building plan={plan} lookFor={lookOf} exterior={exterior} />
       <Furnishings
         props={furniture}
-        boardWord={exterior ? null : boardWord}
+        boardWord={exterior || building ? null : boardWord}
         onBoardTap={
-          interactive && !exterior && words.length ? () => setBoardIdx((i) => i + 1) : undefined
+          interactive && !exterior && !building && words.length
+            ? () => setBoardIdx((i) => i + 1)
+            : undefined
         }
       />
       {!exterior && <Deskware desks={desks} />}
@@ -319,13 +413,30 @@ const Scene = ({ school, character, learnedWords, interactive, exterior = false 
         plan={cast}
         pool={pool}
         playerLook={playerLook}
-        interactive={interactive && !exterior}
+        interactive={interactive && !exterior && !building && !customizing}
         // Bubbles are DOM overlays and ignore depth, so from outside they would
         // float over the roof while the person saying them is correctly hidden.
-        mute={exterior}
+        // In build and customize mode they would fight the room labels for the
+        // same pixels, and those labels are what you are there to read.
+        mute={exterior || building || customizing}
       />
 
-      <CameraRig plan={plan} />
+      {customizing && (
+        <RoomPicks rooms={plan.rooms} selected={selectedRoomId} onPick={onPickRoom} nameOf={roomName ?? ((id) => id)} />
+      )}
+
+      {building && (
+        <Ghosts
+          ghosts={ghosts}
+          wallet={wallet}
+          selectedRoomId={selectedRoomId}
+          nameOf={roomName ?? ((id) => id)}
+          noteOf={roomNote}
+          onPick={onPickRoom}
+        />
+      )}
+
+      <CameraRig plan={plan} ghosts={ghosts} focus={focusRect} />
     </>
   );
 };

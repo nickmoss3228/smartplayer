@@ -35,7 +35,8 @@ import {
   getSchool,
   getPlayerSchool,
   getSchoolCatalog,
-  upgradeSchool,
+  buyRoom,
+  paySchoolPayroll,
   setSchoolLook,
 } from "../controllers/school.controller.js";
 
@@ -71,7 +72,8 @@ router.patch("/progress/room/placement",             authenticateToken, updateRo
 router.get("/progress/school",                     authenticateToken, getSchool);
 router.get("/progress/school/catalog",             authenticateToken, getSchoolCatalog);
 router.get("/progress/school/:userId",             authenticateToken, getPlayerSchool);
-router.post("/progress/school/upgrade",            authenticateToken, upgradeSchool);
+router.post("/progress/school/rooms",              authenticateToken, buyRoom);
+router.post("/progress/school/payroll",            authenticateToken, paySchoolPayroll);
 router.patch("/progress/school/look",              authenticateToken, setSchoolLook);
 
 router.get("/progress/character",                  authenticateToken, getCharacter);

@@ -602,13 +602,14 @@ const NO_OPENINGS: SideOpenings = { north: [], south: [], west: [], east: [] };
 
 export const Building = ({
   plan,
-  wallpaper,
-  floor,
+  lookFor,
   exterior = false,
 }: {
   plan: SchoolPlan;
-  wallpaper: SchoolSurface;
-  floor: SchoolSurface;
+  /** Surfaces for ONE room. Every room resolves its own, because a room may
+   *  override the school's wallpaper or floor — see customize mode. Passing a
+   *  single pair for the whole campus is what this replaced. */
+  lookFor: (roomId: string) => { wallpaper: SchoolSurface; floor: SchoolSurface };
   /** Cutaway (the default) or the whole building seen from outside. */
   exterior?: boolean;
 }) => {
@@ -641,7 +642,9 @@ export const Building = ({
         </mesh>
       ))}
 
-      {rooms.map((room) => (
+      {rooms.map((room) => {
+        const { wallpaper, floor } = lookFor(room.id);
+        return (
         <group key={room.id}>
           {/* Indoor rooms disappear under the roof in the exterior view; the
               grounds keep their grass, their planting and their boundary wall,
@@ -666,7 +669,8 @@ export const Building = ({
             />
           )}
         </group>
-      ))}
+        );
+      })}
     </group>
   );
 };

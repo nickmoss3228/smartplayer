@@ -1346,8 +1346,6 @@
     }
   },
   "school": {
-    "build": "Build the {{name}}",
-    "stageOf": "Stage {{current}} of {{total}}",
     "title": "Your Dream School",
     "loadFailed": "Could not load your school.",
     "complete": "Your school is complete",
@@ -1422,9 +1420,7 @@
     },
     "roomsOf": "{{current}} of {{total}} rooms",
     "buildOpen": "Build",
-    "buildTitle": "What to build next",
-    "buildClose": "Close",
-    "buildHint": "Each room is paid for in one currency — the one you earn doing what that room is for.",
+    "buildClose": "Done",
     "needsFirst": "Build the {{name}} first",
     "rooms": {
       "classroom": {
@@ -1507,6 +1503,14 @@
         "name": "Fifth Classroom",
         "blurb": "The far corner — its board hangs on the west wall."
       }
+    },
+    "buildPick": "Tap a room to see what it costs",
+    "buildDone": "Build it here",
+    "customizeOpen": "Customize a room",
+    "customizePick": "Tap a room to change how it looks",
+    "customizeReset": "Reset",
+    "payroll": {
+      "pay": "Pay {{amount}}"
     }
   },
   "paywall": {

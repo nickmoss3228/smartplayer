@@ -14,7 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { usePlayerSchool } from "../modules/players/usePlayerSchool";
-import { MAX_STAGE, getStage } from "../config/schoolCatalog";
+import { buildableRooms, stageFor } from "../config/schoolCatalog";
 
 const SchoolCanvas = lazy(() =>
   import("../modules/school/SchoolCanvas").then((m) => ({ default: m.SchoolCanvas })),
@@ -42,7 +42,10 @@ const PlayerRoom = () => {
     );
   }
 
-  const stage = getStage(school.stage);
+  const stage = stageFor(school.ownedRoomIds, school.levelFloor);
+  // How far along THEIR campus is, not yours — the total is the size of the
+  // variant they were assigned, which is not always the size of yours.
+  const total = school.ownedRoomIds.length + buildableRooms(school.variantId, school.ownedRoomIds).length;
 
   return (
     <div className="fixed inset-x-0 top-13 bottom-0 overflow-hidden bg-[#d8ebf6]">
@@ -74,7 +77,8 @@ const PlayerRoom = () => {
       <div className="absolute right-3 top-3 bg-white/90 backdrop-blur rounded-full px-3.5 py-1.5 shadow-sm text-right pointer-events-none">
         <div className="text-[13px] font-bold text-black/80 leading-tight">{nickname}</div>
         <div className="text-[10px] font-semibold text-black/40 leading-tight">
-          {t(`school.stages.${stage.id}.name`, stage.name)} · {t("school.stageOf", { current: stage.index + 1, total: MAX_STAGE + 1 })}
+          {t(`school.stages.${stage.id}.name`, stage.name)} ·{" "}
+          {t("school.roomsOf", { current: school.ownedRoomIds.length, total })}
         </div>
       </div>
     </div>

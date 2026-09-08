@@ -1,23 +1,79 @@
-# Dream School — where things stand (2026-08-23)
+# Dream School — where things stand (2026-09-08, all five phases)
 
 Working notes for picking this up again. The design itself is in
 `room-game-concept.md`; this file is only "what is done, what is not".
 
 ## State: green
 
-`tsc -b`, `npm run typecheck:test` and `npm run build` pass; lint reports
-nothing in `modules/school` beyond two long-standing fast-refresh warnings.
-**204 tests, all passing.**
+`tsc -b` and `npm run build` pass; lint reports nothing in `modules/school`
+beyond two long-standing fast-refresh warnings. **283 tests, all passing.**
 
-The school suite is `src/config/schoolCatalog.test.ts`, 46 tests, and every
-geometry test sweeps **all 3 campus variants × all 10 stages** — 30 floorplans.
-That sweep is the whole point: three of the bugs fixed on 2026-08-23 were only
-ever visible in a campus or at a stage nobody had looked at.
+> `npm run typecheck:test` has one error, in `src/config/catalogMirror.test.ts`
+> around the `pack-*` entitlement map. It is in **uncommitted payments work**,
+> not in anything the school touches, and it predates this change — `git stash`
+> that one file and the typecheck is clean.
+
+The school suite is `src/config/schoolCatalog.test.ts`, 69 tests. Because rooms
+are now bought one at a time, the old exhaustive sweep is gone and the suite
+samples the owned-set space instead — the chain, four seeded scrambles per
+variant, and the full set, about 160 plans across twenty rooms. See §10 and §11
+of the concept doc for why, and for the six latent bugs the sampling has found
+so far. None of them were introduced by the changes that exposed them.
 
 ## Done
 
-- **10 stages**, `one-room` → `gymnasium`. Prices in
-  `backend/src/config/schoolCatalog.js` are the only source of truth.
+- **Per-room purchase.** Twelve rooms, each priced in one currency, bought in
+  whatever order the player likes, gated only on owning the room you walk in
+  through. `backend/src/config/schoolCatalog.js` is the only source of truth;
+  the buy request names a room id and never a price.
+- **The level is derived**, not stored — `levelFor(ownedRoomIds)` onto the same
+  ten records the stages used to be. `plan.stage` is still a resolved level
+  record, which is why nothing in `props.ts` had to change beyond `buildPlan`.
+- **Migration is done and verified.** `ensureSchool` grants a legacy player
+  exactly the rooms their old stage drew, from a frozen `LEGACY_STAGE_ROOMS`
+  table. Checked against `smartplayer-dev` over all 10 old stages × 3 variants,
+  plus a brand-new account and a dollhouse-era document: every one lands on
+  exactly its rooms, and no level ever goes down (the old `school.stage` is kept
+  as the level floor for precisely that).
+- **Twenty rooms**, up from twelve, identical on all three campuses. Four new
+  kinds — `staff`, `office`, `music`, `garden` — and only two new props
+  (`piano`, `planter`); everything else is furnished from what the first twelve
+  already had. Every new room has residents, so none of them is ever empty.
+- **Props dispatch on KIND, not room id** (`FURNISHERS` in props.ts). Keyed on
+  the id, a second library-kind room rendered as an empty box, which is why a
+  campus could only ever hold one of each. Adding a room to the catalog now
+  costs nothing in props.ts at all.
+- **The director** (`src/modules/school/advisor.ts`). Wages come due weekly and
+  the deputy head asks for them from the bottom-right corner. The entire save is
+  ONE DATE, `school.payroll.lastPaidAt`: weeks owed, morale and the bill are all
+  derived from it, the same way the level is derived from the room list. Arrears
+  cap at 8 weeks, morale is `100 * (1 - weeks / cap)` so it lands exactly on 0
+  where the arrears stop, and its only effect is `attend()` in peoplePlan —
+  `0.45 + 0.55 * morale/100`, which is exactly the identity at 100 and is why
+  morale could be added without moving a single existing count. **Nothing is
+  ever taken away.** There is a test that says so.
+- **Customize mode.** `school.presets` is a sparse map of room id to any of the
+  three free preferences; what a room does not override falls through to the
+  school's own setting, so a player who never opens it sees what they always
+  saw. `customisable(kind, outdoor)` gates which of the three a room may set
+  (no desk layout outside a classroom, no flooring outdoors) and it is enforced
+  on the server, not just hidden in the UI. `CameraRig` gained a `focus` rect
+  that reuses the existing easing path.
+- **Build mode** (`src/modules/school/Ghosts.tsx`). Every buildable room is
+  drawn as a translucent slab with a knee band, corner posts and an `<Html>`
+  label, standing on the rect it would actually occupy — including any growth
+  the purchase triggers, which is drawn for the SELECTED ghost only. Green
+  affordable, amber too dear, grey still locked (with the reason: "needs the
+  Courtyard"). `CameraRig` widens its existing bounds to take the ghosts in,
+  rather than growing a second camera path, so the leash and the glide keep
+  working. People, bubbles and the chalkboard mute; the view and palette
+  buttons hide.
+- **Classrooms are no longer pinned to the north edge.** `boardFrameOf` picks
+  the wall the board hangs on — north for preference, else west, the only two
+  the cutaway draws — and the four desk presets are authored in board-local
+  space and mapped through it. The whole refactor landed with all 60 existing
+  tests passing unchanged, which is the proof that the north frame is exactly
+  the identity. The fifth classroom on every campus faces west.
 - **3 campus variants** — `courtyard`, `quad`, `terrace`. Same economy,
   different floorplans. `school.variantId` is derived from the user id (stable,
   no migration) then persisted. Verified end to end: a throwaway user gets a
@@ -34,8 +90,13 @@ ever visible in a campus or at a stage nobody had looked at.
 ## The five invariants that matter
 
 Nobody steers at runtime — every actor follows an authored polyline exactly —
-so a static check over those polylines is a **complete** guarantee, not a
-sample. That is why these are tests and not eyeballing:
+so within one floorplan, a static check over those polylines is a **complete**
+guarantee rather than a sample. That is why these are tests and not eyeballing.
+
+What is now sampled is the set of floorplans, not the checking of any one of
+them: rooms are bought individually, so the suite covers about a hundred owned
+sets instead of all thirty that used to exist (§10 of the concept doc). If you
+add a room, add it to the chain and let the scrambles find the rest.
 
 1. `never walks anybody through a wall` — walks every route and asserts each
    wall crossing lands inside an opening.
@@ -43,7 +104,10 @@ sample. That is why these are tests and not eyeballing:
    every solid prop footprint (`FOOTPRINTS` in `props.ts`; `null` means
    passable — wall-mounted things, rugs, mats, the gate arch). The first and
    last leg of a commuter's route may enter the one piece of furniture their
-   seat is on: sitting down is not walking through.
+   seat is on: sitting down is not walking through. It collects every collision
+   and asserts once at the end rather than asserting per leg — this is the
+   innermost loop in the suite and an `expect()` per combination cost several
+   times what the geometry did.
 3. `never seats anybody on thin air` — every seated person, in every desk
    preset, has to land inside a seat surface (`SEAT_AREAS`). This is the one
    that would have caught the lab booths with no stools, the receptionist
@@ -125,20 +189,30 @@ Two consequences worth knowing before changing any of it:
 
 ## Not done — next task
 
-**The exterior view the user asked for**: a toggle to turn off the cutaway and
-see the whole building from outside. Sketch:
+All five planned phases are in. Nothing is queued.
 
-- `Building` takes `exterior?: boolean`. In that mode draw all four walls at
-  full height (interior ones end up hidden under the roof, so no special
-  casing) plus a roof slab per indoor room at `WALL_H`, with a parapet lip.
-  Outdoor rooms keep their ground.
-- Hide the interior: people inside are occluded by the roof automatically
-  through depth testing, **but drei's `<Html>` bubbles are DOM overlays and
-  ignore depth** — they would float over the roof. So suppress speech bubbles
-  and the chalkboard word whenever `exterior` is on. People in the courtyard and
-  forecourt then stay visible, which is the nice outcome.
-- Toggle lives in `Room.tsx` next to the palette button, and passes through
-  `SchoolCanvas`.
+### Worth doing next, in rough order of value
+
+- **The assembly hall has no through-lane.** A route from a room behind it cuts
+  corner to corner across its chair rows. Long-standing — `classroomC` has
+  always sat behind it with exactly that route and nothing has ever walked it —
+  and it is why the **study hall is not a roam stop or a commuter destination**.
+  Give `hallProps` the `doorX` treatment reception, the lab and the cafeteria
+  already have and the study hall can join the rota. The staff room, the music
+  room and the head's office are out for the same class of reason; they have
+  their own residents instead, so they are never empty.
+- **Payroll is unproven in the wild.** Every branch is tested against a
+  backdated clock and the numbers mirror the server, but no real player has
+  ever seen the advisor. Watch the first week: `weeklyWage` is
+  `teachers * 8 + rooms * 2`, which is about fourteen quiz passes a week for a
+  finished campus and two for a young one. It is meant to be a nudge. If it
+  reads as a treadmill, that constant is the dial.
+- **The build sheet's stage-up reveal still says "Unlocked".** It fires per room
+  now, which is right, but the copy was written for a stage.
+- **Second floor.** Still the biggest unbuilt idea: rooms get a `level`, stacked
+  flush in the exterior view and EXPLODED apart in the cutaway so no progress is
+  ever hidden behind a floor switcher. The campus is 61-67 tiles wide now, so
+  the alternative to going up is going further sideways than a phone can frame.
 
 ## Odds and ends
 

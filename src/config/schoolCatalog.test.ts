@@ -10,11 +10,25 @@ import {
   DEFAULT_WALLPAPER_ID,
   DEFAULT_FLOOR_ID,
   DEFAULT_VARIANT_ID,
+  LEGACY_STAGE_ROOMS,
+  LEVEL_AT_ROOMS,
   MAX_STAGE,
+  PAYROLL_MAX_WEEKS,
+  PAYROLL_WEEK_MS,
+  moraleFor,
+  payrollDue,
+  weeklyWage,
+  weeksOwed,
+  ROOM_LABELS,
   SchoolRoomRect,
+  buyBlocker,
+  canBuy,
   getStage,
   getVariant,
-  roomsAtStage,
+  levelFor,
+  parentOf,
+  roomsOwned,
+  starterRoomIds,
 } from './schoolCatalog';
 
 import {
@@ -27,15 +41,24 @@ import {
   DEFAULT_WALLPAPER_ID as SERVER_DEFAULT_WALLPAPER,
   DEFAULT_FLOOR_ID as SERVER_DEFAULT_FLOOR,
   DEFAULT_VARIANT_ID as SERVER_DEFAULT_VARIANT,
+  LEGACY_STAGE_ROOMS as SERVER_LEGACY_STAGE_ROOMS,
   STARTER_STAGE as SERVER_STARTER_STAGE,
-  roomsAtStage as serverRoomsAtStage,
+  levelFor as serverLevelFor,
+  moraleFor as serverMoraleFor,
+  payrollDue as serverPayrollDue,
+  weeklyWage as serverWeeklyWage,
+  PAYROLL_MAX_WEEKS as SERVER_PAYROLL_MAX_WEEKS,
+  roomsOwned as serverRoomsOwned,
+  starterRoomIds as serverStarterRoomIds,
   variantForUserId,
 } from '../../backend/src/config/schoolCatalog.js';
 
 import {
   blockers,
+  boardFrameOf,
   buildPlan,
   classroomsOf,
+  commuterSeating,
   deskLayout,
   doorZones,
   footprintOf,
@@ -51,35 +74,94 @@ import {
 
 /**
  * src/config/schoolCatalog.ts is a hand-maintained mirror of the backend
- * catalog, and the upgrade button quotes its prices before the server charges
- * the real ones. Drift is silent and user-facing: the button promises 320
- * BitAward, the server takes 550, and nothing throws anywhere a developer would
- * see it. Same contract the character/shop mirrors are held to in
- * catalogMirror.test.ts.
+ * catalog, and the build sheet quotes its prices before the server charges the
+ * real ones. Drift is silent and user-facing: the sheet promises 320 BitAward,
+ * the server takes 550, and nothing throws anywhere a developer would see it.
+ * Same contract the character/shop mirrors are held to in catalogMirror.test.ts.
  *
- * Everything below sweeps ALL THREE campus variants at ALL TEN stages, because
- * a floorplan bug in the variant nobody has looked at is exactly the kind that
- * reaches a player.
+ * Everything below sweeps ALL THREE campus variants over a SPREAD OF OWNED
+ * SETS, because a floorplan bug in the variant nobody has looked at is exactly
+ * the kind that reaches a player.
  */
 
 const layoutIds = SCHOOL_LAYOUTS.map((l) => l.id);
 const variantIds = SCHOOL_VARIANTS.map((v) => v.id);
+const roomIdsOf = (variantId: string) => getVariant(variantId).rooms.map((r) => r.id);
 
+/**
+ * Buy rooms one at a time, in the order a given chooser picks them, and yield
+ * the owned set after every purchase. Only ever picks a room `canBuy` allows,
+ * so every set it yields is one a real player could actually be holding.
+ */
+function purchaseRun(
+  variantId: string,
+  choose: (options: string[]) => string,
+): string[][] {
+  const owned = starterRoomIds(variantId);
+  const runs: string[][] = [[...owned]];
+  const left = roomIdsOf(variantId).filter((id) => !owned.includes(id));
+  while (left.length) {
+    const options = left.filter((id) => canBuy(variantId, owned, id));
+    if (!options.length) throw new Error(`${variantId}: stranded with ${left.join(', ')} unreachable`);
+    const picked = choose(options);
+    owned.push(picked);
+    left.splice(left.indexOf(picked), 1);
+    runs.push([...owned]);
+  }
+  return runs;
+}
+
+/** Deterministic, so a failure reproduces from the label alone. */
+const lcg = (seed: number) => () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+
+/**
+ * The owned sets every invariant below is checked against.
+ *
+ * Rooms used to be a pure function of one integer, so thirty plans — three
+ * variants at ten stages — was the WHOLE space and the sweep was exhaustive.
+ * Buying rooms one at a time makes the space 2^12 per variant, so this samples
+ * it instead, and the sampling is chosen to cover the shapes that actually
+ * break things:
+ *
+ *   • the CHAIN, buying in catalog order, which is the run almost every real
+ *     player is somewhere along;
+ *   • four SCRAMBLED runs per variant, which reach the lopsided campuses the
+ *     chain never does — a gym and no library, a cafeteria wing with nothing
+ *     east of the corridor — and which are where a room that quietly depended
+ *     on a neighbour existing shows up;
+ *   • the FULL set, the only one with every room in it at once.
+ *
+ * Both run kinds only ever buy what canBuy allows, so nothing here checks a
+ * campus a player could not be holding. Roughly 100 plans against 30 before.
+ */
 const everyPlan = () =>
-  variantIds.flatMap((variantId) =>
-    SCHOOL_STAGES.map((stage) => ({
+  variantIds.flatMap((variantId) => {
+    const runs: { owned: string[]; how: string }[] = [];
+    purchaseRun(variantId, (o) => o[0]).forEach((owned, i) =>
+      runs.push({ owned, how: `chain-${String(i).padStart(2, '0')}` }),
+    );
+    for (let seed = 1; seed <= 4; seed++) {
+      const rnd = lcg(seed * 7919);
+      const run = purchaseRun(variantId, (o) => o[Math.floor(rnd() * o.length)]);
+      // Only the tail of a scrambled run is interesting: its short prefixes are
+      // the same handful of sets the chain already covers.
+      run.slice(Math.floor(run.length / 2)).forEach((owned, i) =>
+        runs.push({ owned, how: `mix${seed}-${i}` }),
+      );
+    }
+    return runs.map(({ owned, how }) => ({
       variantId,
-      stage,
-      label: `${variantId}/${stage.id}`,
-      rooms: roomsAtStage(variantId, stage.index),
-      plan: buildPlan(stage, variantId),
-    })),
-  );
+      owned,
+      stage: getStage(levelFor(owned)),
+      label: `${variantId}/${how} [${owned.join(' ')}]`,
+      rooms: roomsOwned(variantId, owned),
+      plan: buildPlan(owned, variantId),
+    }));
+  });
 
 type AnyStage = {
   index: number;
   id: string;
-  cost: { bitAward: number; bitWord: number; bitPhrase: number };
   desks: number;
   students: number;
   secondaryDesks: number;
@@ -95,7 +177,6 @@ const economics = (stages: readonly AnyStage[]) =>
   stages.map((s) => ({
     index: s.index,
     id: s.id,
-    cost: s.cost,
     desks: s.desks,
     students: s.students,
     secondaryDesks: s.secondaryDesks,
@@ -115,24 +196,53 @@ const shape = (rooms: readonly SchoolRoomRect[]) =>
   }));
 
 describe('school catalog mirrors the server', () => {
-  it('has the same stages, in the same order, at the same prices', () => {
+  it('has the same levels, in the same order, with the same populations', () => {
     expect(economics(SCHOOL_STAGES)).toEqual(economics(SERVER_STAGES));
+  });
+
+  it('charges what it says it charges', () => {
+    // The one that actually costs a player money if it drifts: the sheet quotes
+    // this mirror, the server debits its own copy.
+    const prices = (vs: readonly { id: string; rooms: readonly { id: string; currency: string; price: number }[] }[]) =>
+      vs.map((v) => v.rooms.map((r) => [v.id, r.id, r.currency, r.price]));
+    expect(prices(SCHOOL_VARIANTS)).toEqual(prices(SERVER_VARIANTS));
+  });
+
+  it('starts a new player with the same rooms', () => {
+    for (const variantId of variantIds) {
+      expect(starterRoomIds(variantId), variantId).toEqual(serverStarterRoomIds(variantId));
+    }
+  });
+
+  it('agrees on what each old stage is worth in rooms', () => {
+    expect(LEGACY_STAGE_ROOMS).toEqual(SERVER_LEGACY_STAGE_ROOMS);
+  });
+
+  it('derives the same level from the same rooms', () => {
+    for (const variantId of variantIds) {
+      for (const { owned } of everyPlan().filter((p) => p.variantId === variantId)) {
+        for (const floor of [0, 4, 9]) {
+          expect(levelFor(owned, floor), `${variantId} ${owned.length} rooms floor ${floor}`)
+            .toBe(serverLevelFor(owned, floor));
+        }
+      }
+    }
   });
 
   it('offers the same campus variants', () => {
     expect(variantIds).toEqual(SERVER_VARIANTS.map((v: { id: string }) => v.id));
   });
 
-  it('lays out every variant and stage on the same floorplan', () => {
+  it('lays out every variant and owned set on the same floorplan', () => {
     // The client draws the building from these rectangles; the server stores
-    // only an index and a variant id. They still have to agree, or a visitor
-    // and the owner see different schools.
-    for (const variantId of variantIds) {
-      for (const stage of SCHOOL_STAGES) {
-        expect(shape(roomsAtStage(variantId, stage.index)), `${variantId}/${stage.id}`).toEqual(
-          shape(serverRoomsAtStage(variantId, stage.index)),
-        );
-      }
+    // only a room list and a variant id. They still have to agree, or a visitor
+    // and the owner see different schools. Growth in particular is easy to get
+    // subtly wrong on one side: the corridor's extent depends on which of its
+    // children have been bought.
+    for (const { variantId, owned, label } of everyPlan()) {
+      expect(shape(roomsOwned(variantId, owned)), label).toEqual(
+        shape(serverRoomsOwned(variantId, owned)),
+      );
     }
   });
 
@@ -182,35 +292,55 @@ describe('variant assignment', () => {
   });
 });
 
-describe('stage economy', () => {
-  it('starts free and never gets cheaper', () => {
-    expect(SCHOOL_STAGES[0].cost).toEqual({ bitAward: 0, bitWord: 0, bitPhrase: 0 });
-    for (let i = 1; i < SCHOOL_STAGES.length; i++) {
-      for (const currency of ['bitAward', 'bitWord', 'bitPhrase'] as const) {
-        expect(
-          SCHOOL_STAGES[i].cost[currency],
-          `stage ${i} ${currency} is not more than stage ${i - 1}`,
-        ).toBeGreaterThan(SCHOOL_STAGES[i - 1].cost[currency]);
+describe('room economy', () => {
+  it('prices everything in non-negative whole coins, in one currency', () => {
+    const currencies = ['bitAward', 'bitWord', 'bitPhrase'];
+    for (const variant of SCHOOL_VARIANTS) {
+      for (const spec of variant.rooms) {
+        const where = `${variant.id}/${spec.id}`;
+        expect(currencies, `${where} has an unknown currency`).toContain(spec.currency);
+        expect(Number.isInteger(spec.price), `${where} has a fractional price`).toBe(true);
+        expect(spec.price, `${where} has a negative price`).toBeGreaterThanOrEqual(0);
+        // Only a starter room may be free. A purchasable room at zero would sit
+        // in the sheet forever looking like a bug.
+        if (!spec.starter) expect(spec.price, `${where} is free`).toBeGreaterThan(0);
       }
     }
   });
 
-  it('prices everything in non-negative whole coins', () => {
-    for (const stage of SCHOOL_STAGES) {
-      for (const amount of Object.values(stage.cost)) {
-        expect(Number.isInteger(amount), `${stage.id} has a fractional price`).toBe(true);
-        expect(amount, `${stage.id} has a negative price`).toBeGreaterThanOrEqual(0);
+  it('gives every player exactly one room to begin with', () => {
+    for (const variantId of variantIds) {
+      const starters = starterRoomIds(variantId);
+      expect(starters, variantId).toHaveLength(1);
+      expect(getVariant(variantId).rooms[0].id, `${variantId} starter is not first`).toBe(starters[0]);
+    }
+  });
+
+  it('spends all three currencies on every campus', () => {
+    // The whole point of per-room pricing. A variant that only ever charged
+    // BitAward would compile, pass everything else, and quietly make two
+    // currencies pointless.
+    for (const variant of SCHOOL_VARIANTS) {
+      const used = new Set(variant.rooms.filter((r) => !r.starter).map((r) => r.currency));
+      expect([...used].sort(), variant.id).toEqual(['bitAward', 'bitPhrase', 'bitWord']);
+    }
+  });
+
+  it('names every room it offers to sell', () => {
+    for (const variant of SCHOOL_VARIANTS) {
+      for (const spec of variant.rooms) {
+        expect(ROOM_LABELS[spec.id]?.name, `${variant.id}/${spec.id} has no label`).toBeTruthy();
       }
     }
   });
 
-  it('indexes stages densely from zero', () => {
+  it('indexes levels densely from zero', () => {
     expect(SCHOOL_STAGES.map((s) => s.index)).toEqual(SCHOOL_STAGES.map((_, i) => i));
     expect(MAX_STAGE).toBe(SCHOOL_STAGES.length - 1);
   });
 
   it('leaves the player a desk of their own', () => {
-    // peoplePlan seats the player at one desk and NPCs at the rest, so a stage
+    // peoplePlan seats the player at one desk and NPCs at the rest, so a level
     // with students >= desks would seat somebody on top of the player.
     for (const stage of SCHOOL_STAGES) {
       expect(stage.students, `${stage.id}`).toBeLessThan(stage.desks);
@@ -219,22 +349,129 @@ describe('stage economy', () => {
   });
 
   it('never shrinks a campus', () => {
+    // Growth is a bounding-box union, so this holds by construction — which is
+    // exactly why it is worth asserting: the union is the reason, and a future
+    // edit that replaces it with "last match wins" would silently break it.
     for (const variantId of variantIds) {
-      for (let i = 1; i < SCHOOL_STAGES.length; i++) {
-        const before = roomsAtStage(variantId, i - 1).map((r) => r.id);
-        const after = roomsAtStage(variantId, i).map((r) => r.id);
-        for (const id of before) {
-          expect(after, `${variantId} lost the ${id} at stage ${i}`).toContain(id);
+      const runs = purchaseRun(variantId, (o) => o[0]);
+      for (let i = 1; i < runs.length; i++) {
+        const before = roomsOwned(variantId, runs[i - 1]);
+        const after = roomsOwned(variantId, runs[i]);
+        for (const b of before) {
+          const a = after.find((r) => r.id === b.id);
+          expect(a, `${variantId} lost the ${b.id} after ${runs[i].length} rooms`).toBeDefined();
+          expect(a!.x, `${variantId}/${b.id} moved east`).toBeLessThanOrEqual(b.x);
+          expect(a!.z, `${variantId}/${b.id} moved south`).toBeLessThanOrEqual(b.z);
+          expect(a!.x + a!.w, `${variantId}/${b.id} lost its east edge`).toBeGreaterThanOrEqual(b.x + b.w);
+          expect(a!.z + a!.d, `${variantId}/${b.id} lost its south edge`).toBeGreaterThanOrEqual(b.z + b.d);
         }
       }
     }
   });
 
-  it('gets every variant to three classrooms by the end', () => {
+  it('gets every variant to five classrooms by the end', () => {
     for (const variantId of variantIds) {
-      const classrooms = roomsAtStage(variantId, MAX_STAGE).filter((r) => r.kind === 'classroom');
-      expect(classrooms.length, variantId).toBe(3);
+      const classrooms = roomsOwned(variantId, roomIdsOf(variantId)).filter(
+        (r) => r.kind === 'classroom',
+      );
+      expect(classrooms.length, variantId).toBe(5);
     }
+  });
+
+  it('builds the same set of room kinds on every campus', () => {
+    // Variants differ in SHAPE, never in what you can buy. A room that existed
+    // on one campus and not another would be a different game depending on a
+    // hash of your user id.
+    const kinds = (variantId: string) =>
+      getVariant(variantId).rooms.map((r) => `${r.id}:${r.kind}`).sort();
+    for (const variantId of variantIds) {
+      expect(kinds(variantId), variantId).toEqual(kinds(variantIds[0]));
+    }
+  });
+});
+
+describe('what a player can buy', () => {
+  it('lets every room be reached from the starter set', () => {
+    // purchaseRun throws if it strands anything, so this is really "there is a
+    // legal order that gets you the whole campus" — the thing that stops a room
+    // being priced, drawn, and permanently unreachable.
+    for (const variantId of variantIds) {
+      const runs = purchaseRun(variantId, (o) => o[0]);
+      expect(runs[runs.length - 1].sort(), variantId).toEqual([...roomIdsOf(variantId)].sort());
+    }
+  });
+
+  it('roots every door tree at the corridor with no cycles', () => {
+    for (const variantId of variantIds) {
+      for (const id of roomIdsOf(variantId)) {
+        const seen = new Set<string>([id]);
+        let at: string | null = id;
+        while (at) {
+          const up: string | null = parentOf(variantId, at);
+          if (up === null) break;
+          expect(seen.has(up), `${variantId}: ${id} loops back through ${up}`).toBe(false);
+          seen.add(up);
+          at = up;
+        }
+        // Whatever the chain ends on must be a room with no parent, and the
+        // corridor is the only one of those.
+        expect(at, `${variantId}/${id} does not lead to the corridor`).toBe('corridor');
+      }
+    }
+  });
+
+  it('refuses a room whose way in has not been built', () => {
+    for (const variantId of variantIds) {
+      const starters = starterRoomIds(variantId);
+      for (const id of roomIdsOf(variantId)) {
+        const parent = parentOf(variantId, id);
+        if (!parent || starters.includes(parent) || starters.includes(id)) continue;
+        expect(buyBlocker(variantId, starters, id), `${variantId}/${id}`).toBe('locked');
+      }
+    }
+  });
+
+  it('refuses a room you already own, and one that does not exist', () => {
+    for (const variantId of variantIds) {
+      expect(buyBlocker(variantId, starterRoomIds(variantId), starterRoomIds(variantId)[0])).toBe('owned');
+      expect(buyBlocker(variantId, starterRoomIds(variantId), 'swimming-pool')).toBe('unknown');
+    }
+  });
+
+  it('never lowers a migrated player onto a level below the one they paid for', () => {
+    // The level floor exists for exactly this. Without it a player at old stage
+    // 6 lands on a level whose wallpaper list no longer contains the wallpaper
+    // they had already chosen, and setSchoolLook starts refusing their own save.
+    LEGACY_STAGE_ROOMS.forEach((rooms, stage) => {
+      expect(levelFor(rooms, stage), `old stage ${stage}`).toBeGreaterThanOrEqual(stage);
+    });
+  });
+
+  it('derives a level that only ever goes up', () => {
+    expect(LEVEL_AT_ROOMS).toHaveLength(MAX_STAGE + 1);
+    for (let i = 1; i < LEVEL_AT_ROOMS.length; i++) {
+      expect(LEVEL_AT_ROOMS[i], `level ${i} needs no more rooms than ${i - 1}`)
+        .toBeGreaterThan(LEVEL_AT_ROOMS[i - 1]);
+    }
+    for (const variantId of variantIds) {
+      let last = -1;
+      for (const owned of purchaseRun(variantId, (o) => o[0])) {
+        const level = levelFor(owned);
+        expect(level, `${variantId} at ${owned.length} rooms`).toBeGreaterThanOrEqual(last);
+        last = level;
+      }
+    }
+  });
+
+  it('is total, whatever it is handed', () => {
+    for (const junk of [[], ['nope'], undefined as unknown as string[]]) {
+      const level = levelFor(junk);
+      expect(Number.isInteger(level)).toBe(true);
+      expect(level).toBeGreaterThanOrEqual(0);
+      expect(level).toBeLessThanOrEqual(MAX_STAGE);
+    }
+    expect(levelFor([], NaN)).toBe(0);
+    expect(levelFor([], 99)).toBe(MAX_STAGE);
   });
 });
 
@@ -267,24 +504,79 @@ describe('floorplan geometry', () => {
     }
   });
 
-  it('never places a room directly north of a classroom', () => {
+  it('gives every classroom a wall its board can hang on', () => {
     // Building.tsx drops a wall span to knee height wherever two rooms meet, so
-    // the room behind stays visible. A classroom's board hangs at 1.0-2.35m on
-    // its NORTH wall, so anything built north of a classroom leaves that board
-    // floating over a 0.95m partition. Every floorplan is arranged around this
-    // rule, and breaking it is invisible until you look at the render.
-    for (const { rooms, label } of everyPlan()) {
+    // the room behind stays visible. A board hangs at 1.0-2.35m, so a board on a
+    // partition floats — and the cutaway only ever draws the north and west
+    // walls, so those are the only two a board can go on at all.
+    //
+    // This replaced a flat "never build anything north of a classroom". That
+    // rule was true while the board was nailed to the north wall regardless;
+    // it is the wrong rule now that `boardFrameOf` will take the west wall
+    // instead, and keeping it would have pinned every new classroom to the
+    // campus edge for no reason.
+    for (const { plan, rooms, label } of everyPlan()) {
       for (const c of rooms.filter((r) => r.kind === 'classroom')) {
-        for (const other of rooms) {
-          if (other.id === c.id) continue;
-          const behind = Math.abs(other.z + other.d - c.z) < 0.01;
-          const shares = Math.min(other.x + other.w, c.x + c.w) - Math.max(other.x, c.x) > 0.01;
-          expect(
-            behind && shares,
-            `${label}: ${other.id} sits north of ${c.id}, stranding its board`,
-          ).toBe(false);
+        expect(boardFrameOf(plan, c), `${label}: ${c.id} has no wall to hang a board on`).not.toBeNull();
+      }
+    }
+  });
+
+  it('faces every desk at the board, on whichever wall it is', () => {
+    for (const { plan, rooms, label } of everyPlan()) {
+      for (const c of rooms.filter((r) => r.kind === 'classroom')) {
+        const frame = boardFrameOf(plan, c);
+        if (!frame) continue;
+        for (const layoutId of layoutIds) {
+          for (const desk of deskLayout(plan, layoutId, c.id)) {
+            // A student sits behind their desk and faces back into it, so the
+            // desk's own facing is what points at the board. Whichever wall the
+            // board took, every desk must be on the room side of it.
+            const seat = seatOf(desk);
+            const depth = frame.side === 'north' ? seat.z - c.z : seat.x - c.x;
+            expect(
+              depth,
+              `${label}/${c.id}/${layoutId}: a seat sits behind the ${frame.side} board wall`,
+            ).toBeGreaterThan(0);
+          }
         }
       }
+    }
+  });
+
+  it('lays a classroom out against its west wall when the north one is taken', () => {
+    // The point of the whole frame refactor, and nothing in the shipped catalog
+    // exercises it yet — every current classroom has a free north wall, which is
+    // exactly why the refactor could land without moving a single desk. So the
+    // case is built here: wall the classroom in from the north and check it
+    // turns to face west rather than giving up.
+    for (const variantId of variantIds) {
+      const owned = starterRoomIds(variantId);
+      const plan = buildPlan(owned, variantId);
+      const c = plan.rooms.find((r) => r.kind === 'classroom')!;
+      expect(boardFrameOf(plan, c)!.side, `${variantId} should start facing north`).toBe('north');
+
+      // A room pressed against the classroom's entire north wall.
+      const blocked = {
+        ...plan,
+        rooms: [...plan.rooms, { id: 'blocker', kind: 'hall' as const, x: c.x, z: c.z - 6, w: c.w, d: 6 }],
+      };
+      const frame = boardFrameOf(blocked, c);
+      expect(frame?.side, `${variantId}: a blocked classroom did not turn to its west wall`).toBe('west');
+
+      const desks = deskLayout(blocked, 'rows', c.id);
+      expect(desks.length, `${variantId}: a west-facing classroom lost its desks`).toBeGreaterThan(0);
+      for (const desk of desks) {
+        const seat = seatOf(desk);
+        expect(seat.x, `${variantId}: a west-facing desk left the room`).toBeGreaterThan(c.x);
+        expect(seat.x).toBeLessThan(c.x + c.w);
+        expect(seat.z).toBeGreaterThan(c.z);
+        expect(seat.z).toBeLessThan(c.z + c.d);
+      }
+      // And the board itself moved onto that wall rather than staying north.
+      const board = stageProps(blocked).find((p) => p.key === `${c.id}-board`);
+      expect(board, `${variantId}: a west-facing classroom lost its board`).toBeDefined();
+      expect(Math.abs(board!.x - c.x), `${variantId}: the board did not move to the west wall`).toBeLessThan(0.5);
     }
   });
 });
@@ -296,7 +588,9 @@ describe('doorways', () => {
     // precisely the bug this pins down.
     for (const variantId of variantIds) {
       const variant = getVariant(variantId);
-      const byId = new Map(roomsAtStage(variantId, MAX_STAGE).map((r) => [r.id, r]));
+      const byId = new Map(
+        roomsOwned(variantId, roomIdsOf(variantId)).map((r) => [r.id, r] as const),
+      );
 
       for (const [roomId, door] of Object.entries(variant.doors)) {
         const room = byId.get(roomId);
@@ -323,7 +617,9 @@ describe('doorways', () => {
   it('keeps every door inside the run the two rooms have in common', () => {
     for (const variantId of variantIds) {
       const variant = getVariant(variantId);
-      const byId = new Map(roomsAtStage(variantId, MAX_STAGE).map((r) => [r.id, r]));
+      const byId = new Map(
+        roomsOwned(variantId, roomIdsOf(variantId)).map((r) => [r.id, r] as const),
+      );
       for (const [roomId, door] of Object.entries(variant.doors)) {
         const room = byId.get(roomId);
         const parent = door.parent ? byId.get(door.parent) : undefined;
@@ -500,7 +796,7 @@ describe('roaming students keep out of each other', () => {
       expect(worst, `${label}: two wanderers ${worst.toFixed(2)}m apart at t=${when}s`)
         .toBeGreaterThan(0.7);
     }
-  }, 30000);
+  }, 60_000);
 
   it('spaces them further apart in time than either of them ever stands still', () => {
     // Why the test above passes, stated directly rather than sampled. Two
@@ -534,7 +830,15 @@ describe('roaming students keep out of each other', () => {
     // `spaceOut` splits the loop mid-leg to start each person in a different
     // place. A seam stitched back together wrongly would show up as somebody
     // jumping across the campus once a lap.
-    for (const { plan, label } of everyPlan()) {
+    //
+    // Every FOURTH plan, unlike its neighbours here. What this checks is a
+    // property of spaceOut and walkerAt — that a loop resumes where it was cut —
+    // and a loop is a loop; sampling four hundred seconds of walking for two
+    // people on each of a hundred and sixty campuses spent half a minute
+    // re-proving the same arithmetic, and ran within a second of its own
+    // timeout. The spacing test above is the one that genuinely needs every
+    // campus, and it still gets them.
+    for (const { plan, label } of everyPlan().filter((_, i) => i % 4 === 0)) {
       for (const w of peoplePlan(plan, DEFAULT_LAYOUT_ID).wanderers.slice(0, 2)) {
         let prev = walkerAt(w.path, 0);
         for (let t = 0.2; t < 400; t += 0.2) {
@@ -547,7 +851,7 @@ describe('roaming students keep out of each other', () => {
         }
       }
     }
-  }, 30000);
+  }, 60_000);
 });
 
 describe('nothing hangs in mid-air', () => {
@@ -646,17 +950,25 @@ describe('desk layouts', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('leaves the teacher a clear lane in front of every board', () => {
+    // Measured along the frame's DEPTH axis, not along world z. A classroom
+    // whose board hangs on the west wall has its lane running north-south, and
+    // checking z there asks whether the desks clear a wall the board is not on.
     for (const { plan, label } of everyPlan()) {
       for (const id of layoutIds) {
         for (const c of classroomsOf(plan)) {
+          const frame = boardFrameOf(plan, c);
+          if (!frame) continue;
+          const depth = (s: { x: number; z: number }) =>
+            frame.side === 'north' ? s.z - c.z : s.x - c.x;
           for (const desk of deskLayout(plan, id, c.id)) {
-            expect(desk.z, `${label}/${id}/${c.id}: desk in the lane`).toBeGreaterThan(c.z + 2.0);
-            expect(seatOf(desk).z, `${label}/${id}/${c.id}: student in the lane`).toBeGreaterThan(
-              c.z + 2.2,
-            );
+            expect(depth(desk), `${label}/${id}/${c.id}: desk in the lane`).toBeGreaterThan(2.0);
+            expect(
+              depth(seatOf(desk)),
+              `${label}/${id}/${c.id}: student in the lane`,
+            ).toBeGreaterThan(2.2);
           }
         }
       }
@@ -684,7 +996,7 @@ describe('desk layouts', () => {
         }
       }
     }
-  });
+  }, 30_000);
 });
 
 describe('the cast', () => {
@@ -721,15 +1033,37 @@ describe('the cast', () => {
         }
       }
     }
-  });
+  }, 30_000);
 });
 
 describe('commuters', () => {
-  it('gives every stage the commuters it promises, once a corridor exists', () => {
+  it('gives every level the commuters it promises, or every one it can seat', () => {
+    // Rooms are bought in the player's own order, so a campus can hold seven
+    // rooms and still have only two places worth walking to. Asserting the
+    // level's number flat would demand people the school has nowhere to put;
+    // asserting only "no more than promised" would let them silently vanish.
+    // The ceiling is what commuterSeating can actually hand out, and the plan
+    // has to reach it.
     for (const { plan, stage, label } of everyPlan()) {
       const cast = peoplePlan(plan, DEFAULT_LAYOUT_ID);
       const hasCorridor = plan.rooms.some((r) => r.id === 'corridor');
-      expect(cast.commuters.length, label).toBe(hasCorridor ? stage.commuters : 0);
+      const seatable = commuterSeating(plan, stage.commuters).length;
+      expect(cast.commuters.length, label).toBe(hasCorridor ? seatable : 0);
+      expect(cast.commuters.length, `${label} promises more than the level`)
+        .toBeLessThanOrEqual(stage.commuters);
+    }
+  });
+
+  it('fills a complete campus with every commuter its level promises', () => {
+    // The ceiling above is only honest if it is not always binding. A finished
+    // school has somewhere for all of them, and if it stops having that, the
+    // level table and the seating have drifted apart.
+    for (const variantId of variantIds) {
+      const owned = roomIdsOf(variantId);
+      const plan = buildPlan(owned, variantId);
+      const stage = getStage(levelFor(owned));
+      expect(peoplePlan(plan, DEFAULT_LAYOUT_ID).commuters.length, variantId)
+        .toBe(stage.commuters);
     }
   });
 
@@ -837,11 +1171,18 @@ describe('nobody walks through anything', () => {
       ];
       const seats = new Set(cast.commuters.flatMap((c) => c.seats));
 
+      // Collected rather than asserted leg by leg. This is the innermost loop
+      // in the suite — every route, every leg, against every solid box on the
+      // campus — and an expect() per combination costs several times what the
+      // geometry does. Reporting them together is also simply better: a route
+      // that clips three things now names all three instead of the first.
+      const through: string[] = [];
       for (const route of routes) {
         for (let i = 0; i < route.pts.length - 1; i++) {
           const a = route.pts[i];
           const b = route.pts[i + 1];
           for (const box of solids) {
+            if (!hitsBox(a, b, box)) continue;
             // Sitting down is not walking through. A commuter's route begins
             // and ends ON a chair, a bench or a sofa, so the leg that reaches
             // one is allowed inside that one piece of furniture — and nothing
@@ -851,15 +1192,13 @@ describe('nobody walks through anything', () => {
             if ((seats.has(a as never) || seats.has(b as never)) && (inBox(a, box) || inBox(b, box))) {
               continue;
             }
-            expect(
-              hitsBox(a, b, box),
-              `${label}/${route.key} leg ${i} passes through ${box.key}`,
-            ).toBe(false);
+            through.push(`${label}/${route.key} leg ${i} passes through ${box.key}`);
           }
         }
       }
+      expect(through, 'routes cross furniture').toEqual([]);
     }
-  });
+  }, 60_000);
 
   it('never seats anybody on thin air', () => {
     // Every reported "the characters are floating" bug in one assertion: the
@@ -887,7 +1226,7 @@ describe('nobody walks through anything', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('leaves every doorway clear of furniture', () => {
     for (const { plan, label } of everyPlan()) {
@@ -905,7 +1244,7 @@ describe('nobody walks through anything', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('still keeps the prop that makes each room that room', () => {
     // clearDoorways drops anything blocking a door, so it could in principle
@@ -918,6 +1257,12 @@ describe('nobody walks through anything', () => {
       ['hall', 'stagePlatform'],
       ['library', 'bookshelf'],
       ['lab', 'booth'],
+      ['archive', 'bookshelf'],
+      ['studyHall', 'bookshelf'],
+      ['staffRoom', 'armchair'],
+      ['musicRoom', 'piano'],
+      ['office', 'receptionDesk'],
+      ['garden', 'planter'],
     ];
     for (const { plan, label } of everyPlan()) {
       const props = stageProps(plan);
@@ -929,7 +1274,7 @@ describe('nobody walks through anything', () => {
         ).toBe(true);
       }
     }
-  });
+  }, 30_000);
 });
 
 describe('props', () => {
@@ -944,10 +1289,11 @@ describe('props', () => {
   });
 
   it('puts at least one window in the first classroom', () => {
-    // The window loop skips whatever the board covers; on the narrow stage-0
-    // wall that silently swallowed every window position once already.
+    // The window loop skips whatever the board covers; on the narrow 8x7 wall a
+    // brand-new player starts with, that silently swallowed every window
+    // position once already.
     for (const variantId of variantIds) {
-      const props = stageProps(buildPlan(SCHOOL_STAGES[0], variantId));
+      const props = stageProps(buildPlan(starterRoomIds(variantId), variantId));
       expect(props.filter((x) => x.type === 'window').length, variantId).toBeGreaterThan(0);
     }
   });
@@ -968,6 +1314,82 @@ describe('props', () => {
         expect(prop.z, `${label}: ${prop.key} north of its room`).toBeGreaterThanOrEqual(owner.z - 0.35);
         expect(prop.z, `${label}: ${prop.key} south of its room`).toBeLessThanOrEqual(owner.z + owner.d + 0.35);
       }
+    }
+  }, 30_000);
+});
+
+describe('payroll and morale', () => {
+  it('mirrors the server on every derived number', () => {
+    for (const weeks of [0, 1, 3, 8, 60]) {
+      expect(moraleFor(weeks), `morale at ${weeks} weeks`).toBe(serverMoraleFor(weeks));
+      expect(weeklyWage(4, 20)).toBe(serverWeeklyWage(4, 20));
+      expect(payrollDue(4, 20, weeks)).toBe(serverPayrollDue(4, 20, weeks));
+    }
+    expect(PAYROLL_MAX_WEEKS).toBe(SERVER_PAYROLL_MAX_WEEKS);
+  });
+
+  it('reads a school as paid up until a whole week has passed', () => {
+    const now = Date.UTC(2026, 0, 29);
+    const ago = (ms: number) => new Date(now - ms).toISOString();
+    expect(weeksOwed(ago(0), now)).toBe(0);
+    expect(weeksOwed(ago(PAYROLL_WEEK_MS - 1), now)).toBe(0);
+    expect(weeksOwed(ago(PAYROLL_WEEK_MS), now)).toBe(1);
+    expect(weeksOwed(ago(PAYROLL_WEEK_MS * 3.9), now)).toBe(3);
+  });
+
+  it('never charges for a date it cannot read, and never for the future', () => {
+    // The one failure mode worth ruling out entirely: a field that did not load
+    // must not read as months of arrears.
+    const now = Date.UTC(2026, 0, 29);
+    for (const junk of [null, undefined, '', 'not a date', new Date(now + 99999)]) {
+      expect(weeksOwed(junk as never, now), String(junk)).toBe(0);
+    }
+  });
+
+  it('bottoms morale out exactly where the arrears stop', () => {
+    expect(moraleFor(0)).toBe(100);
+    expect(moraleFor(PAYROLL_MAX_WEEKS)).toBe(0);
+    expect(moraleFor(PAYROLL_MAX_WEEKS + 50)).toBe(0);
+    for (let w = 1; w <= PAYROLL_MAX_WEEKS; w++) {
+      expect(moraleFor(w), `week ${w}`).toBeLessThan(moraleFor(w - 1));
+    }
+  });
+
+  it('thins the school without ever emptying it', () => {
+    // Morale's ONLY effect. A neglected school is quieter, never smaller —
+    // no room closes and nobody is removed, which was an explicit decision.
+    for (const variantId of variantIds) {
+      const owned = roomIdsOf(variantId);
+      const full = peoplePlan(buildPlan(owned, variantId, 0, 100), DEFAULT_LAYOUT_ID);
+      const empty = peoplePlan(buildPlan(owned, variantId, 0, 0), DEFAULT_LAYOUT_ID);
+
+      expect(empty.students.length, variantId).toBeLessThan(full.students.length);
+      expect(empty.wanderers.length, variantId).toBeLessThan(full.wanderers.length);
+      // Still a school, not a ghost town.
+      expect(empty.students.length, variantId).toBeGreaterThan(0);
+      expect(empty.wanderers.length, variantId).toBeGreaterThan(0);
+      // And nothing was taken away. This is the half of the decision that is
+      // easy to break later: it would be very natural to "close" a room at zero
+      // morale, and the whole point is that the school never loses anything.
+      const dark = buildPlan(owned, variantId, 0, 0);
+      expect(dark.rooms.length, variantId).toBe(owned.length);
+      expect(stageProps(dark).length, variantId).toBe(
+        stageProps(buildPlan(owned, variantId, 0, 100)).length,
+      );
+      expect(empty.teachers.length, variantId).toBe(full.teachers.length);
+    }
+  });
+
+  it('leaves a paid-up school exactly as it was', () => {
+    // 0.45 + 0.55 is the identity, which is why morale could be added without
+    // moving a single existing count.
+    for (const variantId of variantIds) {
+      const owned = roomIdsOf(variantId);
+      const plan = buildPlan(owned, variantId, 0, 100);
+      const cast = peoplePlan(plan, DEFAULT_LAYOUT_ID);
+      expect(cast.students.filter((s) => s.pose === 'desk' && s.key.startsWith('s')).length + 1)
+        .toBe(plan.stage.students + 1);
+      expect(cast.wanderers.length, variantId).toBe(plan.stage.wanderers);
     }
   });
 });

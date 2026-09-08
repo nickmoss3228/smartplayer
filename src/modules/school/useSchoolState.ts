@@ -4,7 +4,8 @@ import {
   SchoolLookPatch,
   WalletBalances,
   fetchSchool,
-  upgradeSchool as apiUpgrade,
+  buySchoolRoom as apiBuyRoom,
+  paySchoolPayroll as apiPayPayroll,
   setSchoolLook as apiSetLook,
 } from "../../services/schoolServices";
 import { fetchLearnedWords } from "../../services/vocabProgressServices";
@@ -22,7 +23,8 @@ interface UseSchoolStateResult {
   learnedWords: string[];
   loading: boolean;
   error: string | null;
-  upgrade: () => Promise<SchoolActionResult>;
+  buyRoom: (roomId: string) => Promise<SchoolActionResult>;
+  payPayroll: () => Promise<SchoolActionResult>;
   setLook: (patch: SchoolLookPatch) => Promise<SchoolActionResult>;
 }
 
@@ -81,7 +83,7 @@ export function useSchoolState(): UseSchoolStateResult {
   }, []);
 
   // The server returns the authoritative school and wallet on every mutation,
-  // so nothing is optimistically applied here. A stage that appeared and then
+  // so nothing is optimistically applied here. A room that appeared and then
   // vanished because the purchase was declined would be far worse than the
   // half-second the round-trip costs.
   const run = useCallback(
@@ -109,8 +111,13 @@ export function useSchoolState(): UseSchoolStateResult {
     [setWalletDirect],
   );
 
-  const upgrade = useCallback(
-    () => run((t) => apiUpgrade(t), "Could not upgrade the school"),
+  const buyRoom = useCallback(
+    (roomId: string) => run((t) => apiBuyRoom(t, roomId), "Could not build that room"),
+    [run],
+  );
+
+  const payPayroll = useCallback(
+    () => run((t) => apiPayPayroll(t), "Could not pay the wages"),
     [run],
   );
 
@@ -119,5 +126,5 @@ export function useSchoolState(): UseSchoolStateResult {
     [run],
   );
 
-  return { school, wallet, learnedWords, loading, error, upgrade, setLook };
+  return { school, wallet, learnedWords, loading, error, buyRoom, payPayroll, setLook };
 }

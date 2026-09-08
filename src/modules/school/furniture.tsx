@@ -370,14 +370,33 @@ const Speaker = () => (
   </group>
 );
 
-const StagePlatform = () => (
-  <group>
-    <Box p={[0, 0, 0]} s={[7.2, 0.42, 3.0]} c={PALETTE.woodDark} />
-    <Box p={[0, 0.42, 0]} s={[7.0, 0.05, 2.85]} c={PALETTE.wood} />
-    <Box p={[-3.6, 0.47, 0]} s={[0.5, 2.6, 2.9]} c={PALETTE.curtain} />
-    <Box p={[3.6, 0.47, 0]} s={[0.5, 2.6, 2.9]} c={PALETTE.curtain} />
-  </group>
-);
+/**
+ * The hall's stage, and the music room's riser — the same prop at two sizes.
+ *
+ * It used to be a fixed 7.2m regardless of `len`, which was invisible while
+ * only the hall used it and became a real bug the moment the music room asked
+ * for a shorter one: `footprintOf` believed the 2.8m it was given, so people
+ * walked straight through two and a half metres of visible stage. Anything that
+ * takes a `len` has to be built from it.
+ *
+ * The curtains are a hall feature and go with the size. A 3m riser flanked by
+ * 2.6m drapes reads as a wardrobe, not a stage.
+ */
+const StagePlatform = ({ len = 7.2 }: { len?: number }) => {
+  const wings = len >= 5.5;
+  return (
+    <group>
+      <Box p={[0, 0, 0]} s={[len, 0.42, 3.0]} c={PALETTE.woodDark} />
+      <Box p={[0, 0.42, 0]} s={[len - 0.2, 0.05, 2.85]} c={PALETTE.wood} />
+      {wings && (
+        <>
+          <Box p={[-(len / 2 - 0.25), 0.47, 0]} s={[0.5, 2.6, 2.9]} c={PALETTE.curtain} />
+          <Box p={[len / 2 - 0.25, 0.47, 0]} s={[0.5, 2.6, 2.9]} c={PALETTE.curtain} />
+        </>
+      )}
+    </group>
+  );
+};
 
 const TrophyShelf = () => (
   <group>
@@ -685,6 +704,39 @@ const Bin = () => (
   </group>
 );
 
+// ── The second ring ─────────────────────────────────────────────────────────
+// Two new props, and that is deliberately all: the staff room, the office and
+// the garden are furnished entirely out of what the first twelve rooms already
+// had. A new room earns a new prop only when nothing in the set says what the
+// room is, and "piano" and "raised bed" are the two that did.
+
+const Piano = () => (
+  <group>
+    {/* Upright, back on local +z so it stands against a wall the same way a
+        bookshelf does. */}
+    <Box p={[0, 0, 0.12]} s={[1.5, 1.15, 0.36]} c={PALETTE.woodDark} />
+    <Box p={[0, 0.62, -0.12]} s={[1.5, 0.12, 0.34]} c={PALETTE.wood} />
+    {/* Keys, as one white strip with a few black ones on top — at this size a
+        real keyboard is four pixels of noise. */}
+    <Box p={[0, 0.62, -0.16]} s={[1.28, 0.05, 0.2]} c={PALETTE.paper} />
+    {[-0.42, -0.22, 0.06, 0.26, 0.46].map((x) => (
+      <Box key={x} p={[x, 0.67, -0.21]} s={[0.06, 0.02, 0.11]} c={PALETTE.screen} />
+    ))}
+    <Box p={[-0.6, 0, -0.02]} s={[0.1, 0.62, 0.1]} c={PALETTE.woodDark} />
+    <Box p={[0.6, 0, -0.02]} s={[0.1, 0.62, 0.1]} c={PALETTE.woodDark} />
+  </group>
+);
+
+const Planter = () => (
+  <group>
+    <Box p={[0, 0, 0]} s={[1.8, 0.34, 0.7]} c={PALETTE.wood} />
+    <Box p={[0, 0.34, 0]} s={[1.66, 0.06, 0.58]} c={PALETTE.leafDark} />
+    <Box p={[-0.5, 0.36, 0]} s={[0.42, 0.3, 0.4]} c={PALETTE.leaf} ry={0.4} />
+    <Box p={[0.1, 0.36, 0.04]} s={[0.36, 0.42, 0.36]} c={PALETTE.leaf} />
+    <Box p={[0.58, 0.36, -0.04]} s={[0.34, 0.26, 0.34]} c={PALETTE.leafDark} ry={0.7} />
+  </group>
+);
+
 // ── Cafeteria and gym ───────────────────────────────────────────────────────
 
 const CafeCounter = ({ len = 7 }: { len?: number }) => (
@@ -852,7 +904,7 @@ const PropNode = ({
     case "speaker":
       return <Speaker />;
     case "stagePlatform":
-      return <StagePlatform />;
+      return <StagePlatform len={p.len} />;
     case "trophyShelf":
       return <TrophyShelf />;
     case "plant":
@@ -901,6 +953,10 @@ const PropNode = ({
       return <Mat />;
     case "scoreboard":
       return <Scoreboard />;
+    case "piano":
+      return <Piano />;
+    case "planter":
+      return <Planter />;
     case "vault":
       return <Vault />;
     default:

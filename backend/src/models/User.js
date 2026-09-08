@@ -184,23 +184,48 @@ const userSchema = new mongoose.Schema({
   // `room` is deliberately left in place rather than dropped: it is dead for
   // reading, but removing it would rewrite every existing document.
   //
-  // Four fields, and that is the whole save. The stage index implies the rooms,
-  // the furniture and the people — none of it is stored per player, because
-  // none of it is chosen per player. See docs/room-game-concept.md.
+  // The room list is the whole save. It implies the rectangles, the furniture,
+  // the people and how developed the school is — none of which is stored,
+  // because none of it varies except through which rooms were bought. See
+  // docs/room-game-concept.md.
   //
   // Documents written by the dollhouse still carry unlockedRoomIds /
   // ownedItemIds / ownedActionIds / placed / focusedRoomId. Mongoose simply
   // stops reading them; school.controller.js strips them on first load rather
   // than migrating the collection.
   school: {
-    // 0..MAX_STAGE. The only thing the upgrade button moves.
+    // Every room the player has bought. THE save — the rectangles, the
+    // furniture, the people and the level are all derived from this list.
+    ownedRoomIds: { type: [String], default: [] },
+
+    // 0..MAX_STAGE. Dead as a progress counter since rooms became individually
+    // purchasable, and kept as the LEVEL FLOOR for players migrated off the old
+    // ten-stage economy: their rooms do not always re-earn the level they paid
+    // for, and a level that went down would invalidate a wallpaper they had
+    // already chosen. A player who never saw that economy has 0 here, which
+    // floors nothing.
     stage: { type: Number, default: STARTER_STAGE, min: 0 },
 
-    // Free preferences. Which ones are selectable depends on `stage`, which is
-    // why they are validated against the catalog on write, not just on read.
+    // Free preferences. Which ones are selectable depends on the level, which
+    // is why they are validated against the catalog on write, not just on read.
     layoutId:    { type: String, default: DEFAULT_LAYOUT_ID },
     wallpaperId: { type: String, default: DEFAULT_WALLPAPER_ID },
     floorId:     { type: String, default: DEFAULT_FLOOR_ID },
+
+    // Per-room overrides of those three, keyed by room id and SPARSE: a room
+    // only appears once it has been changed, and only the fields that were
+    // changed appear on it. Twenty rooms times three ids, almost all equal to
+    // the defaults above, would be a save that grows without saying anything.
+    presets:     { type: Object, default: {} },
+
+    // Payroll. ONE date, and that is the whole of it: weeks owed and staff
+    // morale are both derived from it, the same way the level is derived from
+    // the room list. Two stored numbers that have to agree with a third is a
+    // bug waiting to be written. Set on first read so a new player never opens
+    // the game already in arrears.
+    payroll: {
+      lastPaidAt: { type: Date },
+    },
 
     // Which of the three campus shapes this player got. NOT a preference: it
     // is derived from the user id and then persisted, so two players rarely

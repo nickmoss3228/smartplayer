@@ -1,19 +1,28 @@
 // config/schoolCatalog.js
 //
-// The Dream School's entire economy: ten stages, three campus layouts, and two
-// free preferences. See docs/room-game-concept.md.
+// The Dream School's entire economy: a campus of rooms you buy one at a time,
+// three floorplans, and two free preferences. See docs/room-game-concept.md.
 //
-// There is no item shop. A player owns nothing individually — the school is at
-// a stage, and a stage brings its rooms, furniture and people with it. That is
-// why this file has no prices except the ten upgrade costs.
+// A player owns a SET OF ROOMS. That set is the whole save — every rectangle,
+// prop and person on screen is derived from it. There is still no item shop and
+// no per-slot placement: each room has exactly one authored home, and buying it
+// puts it there.
+//
+// Each room is priced in exactly ONE currency, by what the room is for:
+//
+//   bitAward  — the fabric of the school. The corridor, and every classroom.
+//   bitWord   — rooms you go to in order to read and listen: library, listening
+//               lab, assembly hall, reception.
+//   bitPhrase — rooms you go to in order to talk: courtyard, cafeteria, gym,
+//               the forecourt out front.
 //
 // The server is the source of truth for every number here. The frontend keeps a
-// generated mirror at src/config/schoolCatalog.ts so it can draw the building
-// and quote a price without a round-trip; the upgrade endpoint re-reads THIS
-// file when the request lands, so a tampered mirror only ever earns a 400.
+// hand-maintained mirror at src/config/schoolCatalog.ts so it can draw the
+// building and quote a price without a round-trip; the buy endpoint re-reads
+// THIS file when the request lands, so a tampered mirror only ever earns a 400.
 
 // ── Variants ────────────────────────────────────────────────────────────────
-// The economy is shared — every player pays the same for stage 7 — but the
+// The economy is shared — every player pays the same for the gym — but the
 // SHAPE of the campus is not. A player is assigned one of three floorplans for
 // life, so visiting someone else's school shows a different building rather
 // than a recolour of your own.
@@ -32,13 +41,38 @@
 //      directly behind that wall or the board is left floating over a knee-high
 //      partition. In practice: every classroom sits on the campus's north edge.
 //
-// schoolCatalog.test.ts asserts rule 2, plus no-overlap and never-shrinking,
-// for all three variants at all ten stages.
+// schoolCatalog.test.ts asserts rule 2, plus no-overlap and every-door-on-a-
+// shared-edge, for all three variants over a spread of owned sets.
 
-/** A room that appears at stage `from`, optionally changing size later.
- *  `rects` is [stageIndex, rect] pairs; the latest one at or below the current
- *  stage wins. Only the classroom and the corridor actually grow. */
-const room = (id, kind, from, rects, outdoor = false) => ({ id, kind, from, rects, outdoor });
+/**
+ * A room, its price, and where it stands.
+ *
+ * `grows` is how a room reaches a neighbour that did not exist when it was
+ * built. Each entry contributes its rect to a BOUNDING-BOX UNION once any of
+ * its `when` rooms is owned — so growth in two directions composes without the
+ * entries having to know about each other, and a campus can never shrink, by
+ * construction rather than by test.
+ *
+ * The corridor is the reason this exists. Its children open onto x positions
+ * the base corridor does not reach, and keying the growth on THE CHILD THAT
+ * NEEDS IT means a door and the wall it pierces can never disagree — which is
+ * exactly the bug that shipped when growth was keyed on a stage number instead
+ * (classroomB arrived two stages before the corridor reached it).
+ */
+const room = (id, kind, currency, price, rect, opts = {}) => ({
+  id,
+  kind,
+  currency,
+  price,
+  rect,
+  grows: opts.grows ?? [],
+  starter: opts.starter ?? false,
+  outdoor: opts.outdoor ?? false,
+});
+
+/** The classroom reaches south to meet the corridor the moment there IS one.
+ *  Shared by all three variants, which start from the same 8x7 hut. */
+const CLASSROOM_GROWTH = [{ when: ["corridor"], rect: { x: 0, z: 0, w: 12, d: 8 } }];
 
 const VARIANT_COURTYARD = {
   id: "courtyard",
@@ -60,18 +94,35 @@ const VARIANT_COURTYARD = {
   // z=28                   |FORE           |
   // z=30                   |CRT+-----------+
   rooms: [
-    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
-    room("library", "library", 2, [[2, { x: 12, z: 0, w: 7, d: 8 }]]),
-    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 19, d: 3 }], [7, { x: 0, z: 8, w: 28, d: 3 }]]),
-    room("lab", "lab", 3, [[3, { x: 0, z: 11, w: 8, d: 6 }]]),
-    room("courtyard", "courtyard", 4, [[4, { x: 8, z: 11, w: 11, d: 9 }]], true),
-    room("hall", "hall", 5, [[5, { x: -13, z: 0, w: 13, d: 11 }]]),
-    room("lobby", "lobby", 6, [[6, { x: 0, z: 17, w: 8, d: 7 }]]),
-    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 24, w: 8, d: 4 }]], true),
-    room("classroomB", "classroom", 7, [[7, { x: 19, z: 0, w: 9, d: 8 }]]),
-    room("cafeteria", "cafeteria", 8, [[8, { x: -13, z: 11, w: 13, d: 12 }]]),
-    room("classroomC", "classroom", 8, [[8, { x: -24, z: 0, w: 11, d: 11 }]]),
-    room("gym", "gym", 9, [[9, { x: 8, z: 20, w: 11, d: 10 }]]),
+    room("classroom", "classroom", "bitAward", 0, { x: 0, z: 0, w: 8, d: 7 }, { starter: true, grows: CLASSROOM_GROWTH }),
+    room("corridor", "corridor", "bitAward", 60, { x: 0, z: 8, w: 19, d: 3 }, {
+      grows: [
+        { when: ["classroomB", "archive"], rect: { x: 19, z: 8, w: 9, d: 3 } },
+        { when: ["classroomD", "musicRoom"], rect: { x: 28, z: 8, w: 9, d: 3 } },
+      ],
+    }),
+    room("library", "library", "bitWord", 80, { x: 12, z: 0, w: 7, d: 8 }),
+    room("lab", "lab", "bitWord", 400, { x: 0, z: 11, w: 8, d: 6 }),
+    room("courtyard", "courtyard", "bitPhrase", 160, { x: 8, z: 11, w: 11, d: 9 }, { outdoor: true }),
+    room("hall", "hall", "bitWord", 900, { x: -13, z: 0, w: 13, d: 11 }),
+    room("lobby", "lobby", "bitWord", 1900, { x: 0, z: 17, w: 8, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 300, { x: 0, z: 24, w: 8, d: 4 }, { outdoor: true }),
+    room("classroomB", "classroom", "bitAward", 2200, { x: 19, z: 0, w: 9, d: 8 }),
+    room("cafeteria", "cafeteria", "bitPhrase", 600, { x: -13, z: 11, w: 13, d: 12 }),
+    room("classroomC", "classroom", "bitAward", 4300, { x: -24, z: 0, w: 11, d: 11 }),
+    room("gym", "gym", "bitPhrase", 840, { x: 8, z: 20, w: 11, d: 10 }),
+    // The second ring. East of the courtyard and south of the cafeteria, plus
+    // one classroom out past the north row on either side.
+    room("archive", "library", "bitWord", 2400, { x: 19, z: 11, w: 9, d: 7 }),
+    room("staffRoom", "staff", "bitPhrase", 900, { x: 19, z: 18, w: 9, d: 7 }),
+    room("musicRoom", "music", "bitPhrase", 1400, { x: 28, z: 11, w: 9, d: 8 }),
+    room("office", "office", "bitAward", 3000, { x: 28, z: 19, w: 9, d: 6 }),
+    room("studyHall", "library", "bitWord", 4900, { x: -24, z: 11, w: 11, d: 9 }),
+    room("garden", "garden", "bitPhrase", 1900, { x: -13, z: 23, w: 13, d: 8 }, { outdoor: true }),
+    room("classroomD", "classroom", "bitAward", 5200, { x: 28, z: 0, w: 9, d: 8 }),
+    // Its north wall is the study hall, so its board hangs on the WEST wall
+    // instead — the first room in the catalog to need boardFrameOf.
+    room("classroomE", "classroom", "bitAward", 6400, { x: -24, z: 20, w: 11, d: 8 }),
   ],
   doors: {
     classroom: { parent: "corridor", x: 10, z: 8 },
@@ -85,6 +136,18 @@ const VARIANT_COURTYARD = {
     forecourt: { parent: "lobby", x: 4, z: 24 },
     cafeteria: { parent: "hall", x: -6.5, z: 11 },
     gym: { parent: "courtyard", x: 13, z: 20 },
+    // On the aisle, not down the middle. A library-kind room keeps a clear run
+    // down its east side and fills the rest; a door in the centre of one puts
+    // whoever walks through the room straight over the reading table. Same for
+    // the music room, which keeps its east side clear for the same reason.
+    archive: { parent: "corridor", x: 27.1, z: 11 },
+    staffRoom: { parent: "archive", x: 27.1, z: 18 },
+    musicRoom: { parent: "corridor", x: 36, z: 11 },
+    office: { parent: "musicRoom", x: 36, z: 19 },
+    studyHall: { parent: "classroomC", x: -18.5, z: 11 },
+    garden: { parent: "cafeteria", x: -6.5, z: 23 },
+    classroomD: { parent: "corridor", x: 32.5, z: 8 },
+    classroomE: { parent: "studyHall", x: -18.5, z: 20 },
   },
 };
 
@@ -108,21 +171,37 @@ const VARIANT_QUAD = {
   //                | FORECOURT |
   // z=32           +-----------+
   rooms: [
-    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
-    room("library", "library", 2, [[2, { x: 12, z: 0, w: 8, d: 8 }]]),
-    room("corridor", "corridor", 3, [[3, { x: 0, z: 8, w: 20, d: 3 }], [5, { x: -12, z: 8, w: 32, d: 3 }], [7, { x: -12, z: 8, w: 43, d: 3 }]]),
-    // The corridor reaches east at stage 7, NOT stage 9: classroomB arrives
-    // at 7, and until the corridor got there it was an island with its
-    // doorway opening onto nothing.
-    room("lab", "lab", 3, [[3, { x: 12, z: 11, w: 8, d: 7 }]]),
-    room("courtyard", "courtyard", 4, [[4, { x: 0, z: 11, w: 12, d: 10 }]], true),
-    room("hall", "hall", 5, [[5, { x: -12, z: 0, w: 12, d: 8 }]]),
-    room("lobby", "lobby", 6, [[6, { x: 0, z: 21, w: 12, d: 7 }]]),
-    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 28, w: 12, d: 4 }]], true),
-    room("classroomB", "classroom", 7, [[7, { x: 20, z: 0, w: 9, d: 8 }]]),
-    room("cafeteria", "cafeteria", 8, [[8, { x: -12, z: 11, w: 12, d: 10 }]]),
-    room("classroomC", "classroom", 8, [[8, { x: -24, z: 0, w: 12, d: 8 }]]),
-    room("gym", "gym", 9, [[9, { x: 20, z: 11, w: 11, d: 10 }]]),
+    room("classroom", "classroom", "bitAward", 0, { x: 0, z: 0, w: 8, d: 7 }, { starter: true, grows: CLASSROOM_GROWTH }),
+    // Two independent extensions. West is needed by anything hanging off the
+    // corridor at negative x; east by classroomB and the gym.
+    room("corridor", "corridor", "bitAward", 60, { x: 0, z: 8, w: 20, d: 3 }, {
+      grows: [
+        { when: ["hall", "cafeteria"], rect: { x: -12, z: 8, w: 12, d: 3 } },
+        { when: ["classroomB", "gym"], rect: { x: 20, z: 8, w: 11, d: 3 } },
+        { when: ["classroomD"], rect: { x: 31, z: 8, w: 10, d: 3 } },
+      ],
+    }),
+    room("library", "library", "bitWord", 80, { x: 12, z: 0, w: 8, d: 8 }),
+    room("lab", "lab", "bitWord", 400, { x: 12, z: 11, w: 8, d: 7 }),
+    room("courtyard", "courtyard", "bitPhrase", 160, { x: 0, z: 11, w: 12, d: 10 }, { outdoor: true }),
+    room("hall", "hall", "bitWord", 900, { x: -12, z: 0, w: 12, d: 8 }),
+    room("lobby", "lobby", "bitWord", 1900, { x: 0, z: 21, w: 12, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 300, { x: 0, z: 28, w: 12, d: 4 }, { outdoor: true }),
+    room("classroomB", "classroom", "bitAward", 2200, { x: 20, z: 0, w: 9, d: 8 }),
+    room("cafeteria", "cafeteria", "bitPhrase", 600, { x: -12, z: 11, w: 12, d: 10 }),
+    room("classroomC", "classroom", "bitAward", 4300, { x: -24, z: 0, w: 12, d: 8 }),
+    room("gym", "gym", "bitPhrase", 840, { x: 20, z: 11, w: 11, d: 10 }),
+    // The second ring hangs off the row below the corridor, and the west end
+    // steps down past classroomC.
+    room("archive", "library", "bitWord", 2400, { x: 12, z: 18, w: 8, d: 8 }),
+    room("staffRoom", "staff", "bitPhrase", 900, { x: -12, z: 21, w: 12, d: 8 }),
+    room("musicRoom", "music", "bitPhrase", 1400, { x: 20, z: 21, w: 11, d: 8 }),
+    room("office", "office", "bitAward", 3000, { x: 20, z: 29, w: 11, d: 7 }),
+    room("studyHall", "library", "bitWord", 4900, { x: -24, z: 8, w: 12, d: 8 }),
+    room("garden", "garden", "bitPhrase", 1900, { x: 12, z: 28, w: 8, d: 8 }, { outdoor: true }),
+    room("classroomD", "classroom", "bitAward", 5200, { x: 31, z: 0, w: 10, d: 8 }),
+    // Board on the WEST wall: the study hall is pressed against its north side.
+    room("classroomE", "classroom", "bitAward", 6400, { x: -24, z: 16, w: 12, d: 8 }),
   ],
   doors: {
     classroom: { parent: "corridor", x: 6, z: 8 },
@@ -136,6 +215,14 @@ const VARIANT_QUAD = {
     gym: { parent: "corridor", x: 25.5, z: 11 },
     lobby: { parent: "courtyard", x: 6, z: 21 },
     forecourt: { parent: "lobby", x: 6, z: 28 },
+    archive: { parent: "lab", x: 16, z: 18 },
+    staffRoom: { parent: "cafeteria", x: -6, z: 21 },
+    musicRoom: { parent: "gym", x: 30, z: 21 },
+    office: { parent: "musicRoom", x: 30, z: 29 },
+    studyHall: { parent: "classroomC", x: -18, z: 8 },
+    garden: { parent: "forecourt", x: 12, z: 30 },
+    classroomD: { parent: "corridor", x: 36, z: 8 },
+    classroomE: { parent: "studyHall", x: -18, z: 16 },
   },
 };
 
@@ -159,18 +246,30 @@ const VARIANT_TERRACE = {
   //             | FORECOURT|          |
   // z=31        +----------+----------+
   rooms: [
-    room("classroom", "classroom", 0, [[0, { x: 0, z: 0, w: 8, d: 7 }], [1, { x: 0, z: 0, w: 12, d: 8 }]]),
-    room("library", "library", 2, [[2, { x: -9, z: 0, w: 9, d: 8 }]]),
-    room("corridor", "corridor", 3, [[3, { x: -9, z: 8, w: 21, d: 3 }], [5, { x: -9, z: 8, w: 34, d: 3 }]]),
-    room("lab", "lab", 3, [[3, { x: -9, z: 11, w: 9, d: 7 }]]),
-    room("courtyard", "courtyard", 4, [[4, { x: 0, z: 11, w: 12, d: 9 }]], true),
-    room("hall", "hall", 5, [[5, { x: 12, z: 0, w: 13, d: 8 }]]),
-    room("lobby", "lobby", 6, [[6, { x: 0, z: 20, w: 12, d: 7 }]]),
-    room("forecourt", "forecourt", 6, [[6, { x: 0, z: 27, w: 12, d: 4 }]], true),
-    room("classroomB", "classroom", 7, [[7, { x: 25, z: 0, w: 9, d: 8 }]]),
-    room("cafeteria", "cafeteria", 8, [[8, { x: 12, z: 11, w: 13, d: 9 }]]),
-    room("classroomC", "classroom", 8, [[8, { x: -21, z: 0, w: 12, d: 8 }]]),
-    room("gym", "gym", 9, [[9, { x: 12, z: 20, w: 13, d: 10 }]]),
+    room("classroom", "classroom", "bitAward", 0, { x: 0, z: 0, w: 8, d: 7 }, { starter: true, grows: CLASSROOM_GROWTH }),
+    room("corridor", "corridor", "bitAward", 60, { x: -9, z: 8, w: 21, d: 3 }, {
+      grows: [{ when: ["hall", "cafeteria"], rect: { x: 12, z: 8, w: 13, d: 3 } }],
+    }),
+    room("library", "library", "bitWord", 80, { x: -9, z: 0, w: 9, d: 8 }),
+    room("lab", "lab", "bitWord", 400, { x: -9, z: 11, w: 9, d: 7 }),
+    room("courtyard", "courtyard", "bitPhrase", 160, { x: 0, z: 11, w: 12, d: 9 }, { outdoor: true }),
+    room("hall", "hall", "bitWord", 900, { x: 12, z: 0, w: 13, d: 8 }),
+    room("lobby", "lobby", "bitWord", 1900, { x: 0, z: 20, w: 12, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 300, { x: 0, z: 27, w: 12, d: 4 }, { outdoor: true }),
+    room("classroomB", "classroom", "bitAward", 2200, { x: 25, z: 0, w: 9, d: 8 }),
+    room("cafeteria", "cafeteria", "bitPhrase", 600, { x: 12, z: 11, w: 13, d: 9 }),
+    room("classroomC", "classroom", "bitAward", 4300, { x: -21, z: 0, w: 12, d: 8 }),
+    room("gym", "gym", "bitPhrase", 840, { x: 12, z: 20, w: 13, d: 10 }),
+    // The street keeps running east, and the west end steps down past the lab.
+    room("archive", "library", "bitWord", 2400, { x: -9, z: 18, w: 9, d: 8 }),
+    room("staffRoom", "staff", "bitPhrase", 900, { x: 25, z: 11, w: 11, d: 8 }),
+    room("musicRoom", "music", "bitPhrase", 1400, { x: 25, z: 19, w: 11, d: 8 }),
+    room("office", "office", "bitAward", 3000, { x: 25, z: 27, w: 11, d: 7 }),
+    room("studyHall", "library", "bitWord", 4900, { x: -21, z: 8, w: 12, d: 8 }),
+    room("garden", "garden", "bitPhrase", 1900, { x: -9, z: 26, w: 9, d: 8 }, { outdoor: true }),
+    room("classroomD", "classroom", "bitAward", 5200, { x: 34, z: 0, w: 12, d: 8 }),
+    // Board on the WEST wall: the study hall is pressed against its north side.
+    room("classroomE", "classroom", "bitAward", 6400, { x: -21, z: 16, w: 12, d: 8 }),
   ],
   doors: {
     classroom: { parent: "corridor", x: 6, z: 8 },
@@ -184,6 +283,18 @@ const VARIANT_TERRACE = {
     lobby: { parent: "courtyard", x: 6, z: 20 },
     forecourt: { parent: "lobby", x: 6, z: 27 },
     gym: { parent: "cafeteria", x: 18, z: 20 },
+    archive: { parent: "lab", x: -4.5, z: 18 },
+    // North end of the shared edge, not the middle: a doorway carries a 1.9m
+    // clearance zone and clearDoorways deletes whatever stands in it, which
+    // halfway down this wall meant one of the cafeteria's two long tables —
+    // leaving visitSeats offering a bench that was no longer there.
+    staffRoom: { parent: "cafeteria", x: 25, z: 12.5 },
+    musicRoom: { parent: "staffRoom", x: 35, z: 19 },
+    office: { parent: "musicRoom", x: 35, z: 27 },
+    studyHall: { parent: "classroomC", x: -15, z: 8 },
+    garden: { parent: "forecourt", x: 0, z: 29 },
+    classroomD: { parent: "classroomB", x: 34, z: 4 },
+    classroomE: { parent: "studyHall", x: -15, z: 16 },
   },
 };
 
@@ -193,46 +304,80 @@ export const DEFAULT_VARIANT_ID = SCHOOL_VARIANTS[0].id;
 export const getVariant = (id) =>
   SCHOOL_VARIANTS.find((v) => v.id === id) ?? SCHOOL_VARIANTS[0];
 
-/** Which rectangle a room occupies at a given stage — the last override at or
- *  below it. */
-function rectAt(spec, stageIndex) {
-  let chosen = spec.rects[0][1];
-  for (const [from, rect] of spec.rects) {
-    if (from <= stageIndex) chosen = rect;
+export const getRoomSpec = (variantId, roomId) =>
+  getVariant(variantId).rooms.find((r) => r.id === roomId) ?? null;
+
+/** The rooms a brand-new player already has. One classroom, and that is it. */
+export const starterRoomIds = (variantId) =>
+  getVariant(variantId).rooms.filter((r) => r.starter).map((r) => r.id);
+
+/** A room's rectangle given what else is owned: the bounding-box union of its
+ *  base rect and every growth whose trigger has been bought. */
+function rectOf(spec, owned) {
+  let { x, z } = spec.rect;
+  let x1 = x + spec.rect.w;
+  let z1 = z + spec.rect.d;
+  for (const g of spec.grows) {
+    if (!g.when.some((id) => owned.includes(id))) continue;
+    x = Math.min(x, g.rect.x);
+    z = Math.min(z, g.rect.z);
+    x1 = Math.max(x1, g.rect.x + g.rect.w);
+    z1 = Math.max(z1, g.rect.z + g.rect.d);
   }
-  return chosen;
+  return { x, z, w: x1 - x, d: z1 - z };
 }
 
-/** The full floorplan of one variant at one stage. */
-export function roomsAtStage(variantId, stageIndex) {
-  const variant = getVariant(variantId);
-  return variant.rooms
-    .filter((spec) => spec.from <= stageIndex)
+/** The full floorplan for one variant and one set of owned rooms. */
+export function roomsOwned(variantId, ownedIds) {
+  const owned = Array.isArray(ownedIds) ? ownedIds : [];
+  return getVariant(variantId)
+    .rooms.filter((spec) => owned.includes(spec.id))
     .map((spec) => ({
       id: spec.id,
       kind: spec.kind,
-      ...rectAt(spec, stageIndex),
+      ...rectOf(spec, owned),
       ...(spec.outdoor ? { outdoor: true } : {}),
     }));
 }
 
-// ── Stages ──────────────────────────────────────────────────────────────────
-// Shared across every variant: the same price buys the same amount of school,
-// whichever shape yours happens to be.
+/**
+ * Why a room cannot be bought right now, ignoring the wallet. Null means it can.
+ *
+ * The parent rule is what keeps an owned set a CONNECTED SUBTREE rooted at the
+ * corridor: you cannot buy the gym before the courtyard it opens off. Without
+ * it a player could strand a room whose doorway opens onto grass, and every
+ * routing invariant in the test suite would be checking a campus no amount of
+ * walking could cross.
+ */
+export function buyBlocker(variantId, ownedIds, roomId) {
+  const owned = Array.isArray(ownedIds) ? ownedIds : [];
+  if (!getRoomSpec(variantId, roomId)) return "unknown";
+  if (owned.includes(roomId)) return "owned";
+  const parent = getVariant(variantId).doors[roomId]?.parent ?? null;
+  if (parent && !owned.includes(parent)) return "locked";
+  return null;
+}
+
+export const canBuy = (variantId, ownedIds, roomId) =>
+  buyBlocker(variantId, ownedIds, roomId) === null;
+
+// ── Levels ──────────────────────────────────────────────────────────────────
 //
-// `desks` drives the main classroom's layout presets; `students` is how many of
-// those desks are occupied by NPCs, and the two differ by at least one because
-// the player's own avatar always takes a desk. `secondaryDesks`/
-// `secondaryStudents` apply to EVERY other classroom the variant has, so adding
-// a fourth classroom later needs no new fields. `wanderers` roam; `commuters`
-// walk between rooms and sit down at each end.
+// How developed the school is. DERIVED from how many rooms you own rather than
+// stored, so the room set stays the single save. It drives how many people turn
+// up and which free looks are selectable; it is not a price list and nothing
+// charges for it.
+//
+// The names and blurbs are still keyed `school.stages.<id>` in the locale
+// files, and the field is still `stage` everywhere downstream, because renaming
+// a concept the player never sees would churn both catalogs, the badge, the
+// reveal card and two translation files to buy nothing.
 export const SCHOOL_STAGES = [
   {
     index: 0,
     id: "one-room",
     name: "One Room",
     blurb: "A board, four desks, and everyone who showed up.",
-    cost: { bitAward: 0, bitWord: 0, bitPhrase: 0 },
     desks: 4, students: 3, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 1, wanderers: 0, commuters: 0,
   },
@@ -241,7 +386,6 @@ export const SCHOOL_STAGES = [
     id: "full-class",
     name: "Full Class",
     blurb: "The walls move out. Nine desks, and a shelf worth reading.",
-    cost: { bitAward: 40, bitWord: 20, bitPhrase: 10 },
     desks: 9, students: 6, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 1, wanderers: 0, commuters: 0,
   },
@@ -250,7 +394,6 @@ export const SCHOOL_STAGES = [
     id: "reading-corner",
     name: "Reading Corner",
     blurb: "A library wing, a rug, and two people who never leave it.",
-    cost: { bitAward: 90, bitWord: 45, bitPhrase: 25 },
     desks: 9, students: 6, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 1, wanderers: 0, commuters: 0,
   },
@@ -259,7 +402,6 @@ export const SCHOOL_STAGES = [
     id: "listening-lab",
     name: "Listening Lab",
     blurb: "A corridor with footsteps in it, and booths at the end of it.",
-    cost: { bitAward: 180, bitWord: 90, bitPhrase: 50 },
     desks: 12, students: 9, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 1, wanderers: 3, commuters: 1,
   },
@@ -268,7 +410,6 @@ export const SCHOOL_STAGES = [
     id: "courtyard",
     name: "Courtyard",
     blurb: "Open air, one tree, and somewhere to be between lessons.",
-    cost: { bitAward: 320, bitWord: 160, bitPhrase: 90 },
     desks: 12, students: 9, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 1, wanderers: 5, commuters: 2,
   },
@@ -277,7 +418,6 @@ export const SCHOOL_STAGES = [
     id: "assembly-hall",
     name: "Assembly Hall",
     blurb: "A stage, a banner, and a shelf with something to put on it.",
-    cost: { bitAward: 550, bitWord: 275, bitPhrase: 160 },
     desks: 12, students: 10, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 2, wanderers: 6, commuters: 2,
   },
@@ -286,7 +426,6 @@ export const SCHOOL_STAGES = [
     id: "front-desk",
     name: "Front Desk",
     blurb: "A way in, and someone at reception to meet whoever uses it.",
-    cost: { bitAward: 800, bitWord: 400, bitPhrase: 230 },
     desks: 12, students: 10, secondaryDesks: 0, secondaryStudents: 0,
     teachers: 2, wanderers: 7, commuters: 3,
   },
@@ -295,7 +434,6 @@ export const SCHOOL_STAGES = [
     id: "second-classroom",
     name: "Second Classroom",
     blurb: "A second English room — flags, a globe, and the whole alphabet.",
-    cost: { bitAward: 1100, bitWord: 550, bitPhrase: 320 },
     desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 6,
     teachers: 3, wanderers: 8, commuters: 4,
   },
@@ -304,7 +442,6 @@ export const SCHOOL_STAGES = [
     id: "cafeteria",
     name: "Cafeteria",
     blurb: "Trays, long tables, a third classroom, and the loudest room here.",
-    cost: { bitAward: 1500, bitWord: 750, bitPhrase: 430 },
     desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 6,
     teachers: 4, wanderers: 9, commuters: 5,
   },
@@ -313,7 +450,6 @@ export const SCHOOL_STAGES = [
     id: "gymnasium",
     name: "Gymnasium",
     blurb: "Wall bars, a scoreboard, and room to make some noise.",
-    cost: { bitAward: 2000, bitWord: 1000, bitPhrase: 580 },
     desks: 12, students: 10, secondaryDesks: 8, secondaryStudents: 7,
     teachers: 4, wanderers: 10, commuters: 6,
   },
@@ -322,10 +458,65 @@ export const SCHOOL_STAGES = [
 export const STARTER_STAGE = 0;
 export const MAX_STAGE = SCHOOL_STAGES.length - 1;
 
+/** How many rooms it takes to reach each level. Index is the level.
+ *
+ *  Stretched when the campus went from twelve rooms to twenty: a level is how
+ *  developed the school is, and reaching the top on a twelve-room prefix of a
+ *  twenty-room campus would have the last eight rooms arrive with no more
+ *  people in them. Migrated players are held up by their level floor, not by
+ *  this table. */
+export const LEVEL_AT_ROOMS = [1, 2, 3, 4, 6, 8, 10, 12, 15, 18];
+
+/**
+ * The level a room set earns, floored by `levelFloor`.
+ *
+ * The floor exists for players migrated off the old ten-stage economy. Their
+ * rooms do not always re-earn the level they had paid for — the old stage 1
+ * bought the classroom's extension rather than a room at all — and a level that
+ * went DOWN would invalidate a wallpaper they had already chosen, leaving them
+ * unable to reselect their own saved look. Their old stage index is kept as the
+ * floor, so nobody ever moves backwards. A new player's floor is 0.
+ *
+ * Total by construction, like `getStage`: a non-numeric floor or a junk room
+ * list yields level 0, not undefined.
+ */
+export function levelFor(ownedIds, levelFloor = 0) {
+  const count = Array.isArray(ownedIds) ? ownedIds.length : 0;
+  let level = 0;
+  for (let i = 0; i < LEVEL_AT_ROOMS.length; i++) {
+    if (LEVEL_AT_ROOMS[i] <= count) level = i;
+  }
+  const floor = Number.isInteger(levelFloor) ? levelFloor : 0;
+  return Math.min(MAX_STAGE, Math.max(0, level, floor));
+}
+
+/**
+ * Which rooms each of the old ten stages put on screen, frozen as a literal.
+ *
+ * Used once per player, by ensureSchool, to turn a stage index into the room
+ * set they had already paid for. Deliberately NOT derived from the catalog
+ * above: the catalog is free to move from here on, and this table must keep
+ * saying what the game looked like on the day it changed. Identical for all
+ * three variants, because the old `from` stage of a room never differed
+ * between them.
+ */
+export const LEGACY_STAGE_ROOMS = [
+  ["classroom"],
+  ["classroom"],
+  ["classroom", "library"],
+  ["classroom", "library", "corridor", "lab"],
+  ["classroom", "library", "corridor", "lab", "courtyard"],
+  ["classroom", "library", "corridor", "lab", "courtyard", "hall"],
+  ["classroom", "library", "corridor", "lab", "courtyard", "hall", "lobby", "forecourt"],
+  ["classroom", "library", "corridor", "lab", "courtyard", "hall", "lobby", "forecourt", "classroomB"],
+  ["classroom", "library", "corridor", "lab", "courtyard", "hall", "lobby", "forecourt", "classroomB", "cafeteria", "classroomC"],
+  ["classroom", "library", "corridor", "lab", "courtyard", "hall", "lobby", "forecourt", "classroomB", "cafeteria", "classroomC", "gym"],
+];
+
 // ── Free preferences ────────────────────────────────────────────────────────
-// Nothing here costs a coin — the only sink in the game is the upgrade button.
-// They gate on stage instead: a new stage is worth pressing partly because it
-// hands you new ways to redecorate what you already had.
+// Nothing here costs a coin — the coins go on rooms. They gate on level
+// instead: a new room is worth buying partly because it hands you new ways to
+// redecorate what you already had.
 
 export const SCHOOL_LAYOUTS = [
   { id: "rows", name: "Rows", unlocksAtStage: 0 },
@@ -368,11 +559,7 @@ export const DEFAULT_FLOOR_ID = SCHOOL_FLOORS[0].id;
 export const getStage = (index) =>
   SCHOOL_STAGES.find((stage) => stage.index === index);
 
-// What the one button costs right now, or null when the school is fully built.
-export const getNextStage = (currentIndex) =>
-  SCHOOL_STAGES.find((stage) => stage.index === currentIndex + 1) ?? null;
-
-// A look is only selectable once its stage has been reached. Validated on the
+// A look is only selectable once its level has been reached. Validated on the
 // server as well as filtered on the client: the client filter is a courtesy,
 // this is the rule.
 const unlockedAt = (list, id, stage) => {
@@ -383,6 +570,29 @@ const unlockedAt = (list, id, stage) => {
 export const getLayout = (id, stage) => unlockedAt(SCHOOL_LAYOUTS, id, stage);
 export const getWallpaper = (id, stage) => unlockedAt(SCHOOL_WALLPAPERS, id, stage);
 export const getFloor = (id, stage) => unlockedAt(SCHOOL_FLOORS, id, stage);
+
+/** The three free preferences, and the lookup that validates each. Lets
+ *  setSchoolLook handle "the school" and "one room" with the same loop instead
+ *  of two nearly-identical blocks that can drift apart. */
+export const LOOK_FIELDS = [
+  ["layoutId", getLayout],
+  ["wallpaperId", getWallpaper],
+  ["floorId", getFloor],
+];
+
+/**
+ * Which of the three a room kind can actually change.
+ *
+ * A desk layout only means something where there are desks, and an outdoor room
+ * has grass rather than flooring. Enforced here rather than only in the UI that
+ * hides the control: a room with a floor it never renders is a save that lies.
+ */
+export function customisable(kind, outdoor) {
+  if (outdoor) return ["wallpaperId"];
+  return kind === "classroom"
+    ? ["layoutId", "wallpaperId", "floorId"]
+    : ["wallpaperId", "floorId"];
+}
 
 /**
  * Which campus a player gets. Derived from their user id rather than rolled at
@@ -398,3 +608,49 @@ export function variantForUserId(userId) {
   }
   return SCHOOL_VARIANTS[hash % SCHOOL_VARIANTS.length].id;
 }
+
+// ── Payroll ─────────────────────────────────────────────────────────────────
+//
+// The one thing the school asks of you rather than the other way round. Wages
+// come due weekly; you pay them from BitAward, and a school left unpaid gets
+// quieter rather than smaller. NOTHING IS EVER TAKEN AWAY — no room closes, no
+// teacher leaves, no progress is lost. This is a language app whose currency
+// comes from studying, and a fortnight of real life should not be able to
+// dismantle what somebody built.
+//
+// The entire save is ONE DATE. Weeks owed and morale are both derived from it,
+// the same way the level is derived from the room list — two stored numbers
+// that must agree with a third is a bug waiting to be written.
+
+export const PAYROLL_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Nobody comes back from a year away owing fifty-two weeks. The arrears stop
+ *  at a fortnight-and-a-half's worth, which is enough to notice and not enough
+ *  to be a wall. */
+export const PAYROLL_MAX_WEEKS = 8;
+
+/** Whole weeks since the last payment, clamped. Total by construction: a
+ *  missing or unparseable date reads as "paid just now", because charging
+ *  somebody for a field that failed to load is the one outcome worth ruling
+ *  out entirely. */
+export function weeksOwed(lastPaidAt, now = Date.now()) {
+  const then = lastPaidAt ? new Date(lastPaidAt).getTime() : NaN;
+  if (!Number.isFinite(then) || then > now) return 0;
+  return Math.min(PAYROLL_MAX_WEEKS, Math.floor((now - then) / PAYROLL_WEEK_MS));
+}
+
+/** How many BitAward one week costs: the staff, plus the upkeep of the rooms
+ *  they work in. Deliberately gentle — a quiz pass mints 5, so a finished
+ *  twenty-room campus runs to about fourteen quizzes a week and a young school
+ *  to two. */
+export const weeklyWage = (teachers, roomCount) => teachers * 8 + roomCount * 2;
+
+/** Everything owed right now. */
+export const payrollDue = (teachers, roomCount, weeks) => weeklyWage(teachers, roomCount) * weeks;
+
+/** 100 when paid up, 0 at the arrears cap. Derived FROM the cap rather than
+ *  from a step of its own: a fixed 12 a week left morale at 4 when the arrears
+ *  stopped accruing, so the worst a school could feel was very nearly the worst
+ *  but not quite. Two constants that have to land on each other should be one. */
+export const moraleFor = (weeks) =>
+  Math.max(0, Math.min(100, Math.round(100 * (1 - weeks / PAYROLL_MAX_WEEKS))));

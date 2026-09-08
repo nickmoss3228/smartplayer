@@ -16,12 +16,17 @@
 //     board no matter which layout preset is picked.
 
 import {
+  BuyBlocker,
   DoorNode,
   LayoutId,
+  RoomKind,
+  RoomSpec,
   SchoolRoomRect,
   SchoolStage,
+  buildableRooms,
   getVariant,
-  roomsAtStage,
+  roomsOwned,
+  stageFor,
 } from "../../config/schoolCatalog";
 import { PersonRole } from "./bubbles";
 
@@ -32,17 +37,48 @@ import { PersonRole } from "./bubbles";
  * four-argument signatures everywhere.
  */
 export interface SchoolPlan {
+  /**
+   * How developed the school is. DERIVED from `owned` rather than stored — see
+   * levelFor in the catalog. It is kept as a resolved SchoolStage rather than an
+   * index because everything downstream wants `stage.students` and
+   * `stage.index >= 7`, and re-deriving it in each of them would be the same
+   * lookup written eleven times over.
+   */
   stage: SchoolStage;
   variantId: string;
+  /**
+   * Staff morale, 0..100, derived from how many weeks of payroll are owed.
+   *
+   * Its ONLY effect is how many people turn up — see `attend` in peoplePlan. A
+   * neglected school is quieter, never smaller: no room closes and nothing is
+   * taken away, which was an explicit decision rather than an omission.
+   */
+  morale: number;
+  /** Every room the player has bought, in catalog order. The whole save. */
+  owned: readonly string[];
   rooms: SchoolRoomRect[];
   doors: Record<string, DoorNode>;
 }
 
-export function buildPlan(stage: SchoolStage, variantId: string): SchoolPlan {
+/**
+ * The floorplan for one player.
+ *
+ * `levelFloor` is the old stage index of a player migrated off the ten-stage
+ * economy, and only ever raises the level — see levelFor. A new player passes 0,
+ * which is what it defaults to.
+ */
+export function buildPlan(
+  owned: readonly string[],
+  variantId: string,
+  levelFloor = 0,
+  morale = 100,
+): SchoolPlan {
   return {
-    stage,
+    stage: stageFor(owned, levelFloor),
     variantId,
-    rooms: roomsAtStage(variantId, stage.index),
+    morale,
+    owned,
+    rooms: roomsOwned(variantId, owned),
     doors: getVariant(variantId).doors,
   };
 }
@@ -117,7 +153,10 @@ export type PropType =
   | "hoop"
   | "mat"
   | "scoreboard"
-  | "vault";
+  | "vault"
+  // The second ring.
+  | "piano"
+  | "planter";
 
 export interface PropInstance {
   key: string;
@@ -140,19 +179,25 @@ const room = (plan: SchoolPlan, id: string): SchoolRoomRect | undefined =>
 
 // ── Desk layouts ────────────────────────────────────────────────────────────
 // Four presets over the same desk count. Each returns exactly `n` spots so the
-// people plan can zip students onto them without worrying about which preset
-// is active. All of them keep the front strip clear — that is the teacher's
-// patrol lane, and desks in it would have the teacher walk through a chair.
+// people plan can zip students onto them without worrying about which preset is
+// active. All of them keep the front strip clear — that is the teacher's patrol
+// lane, and desks in it would have the teacher walk through a chair.
+//
+// They are all written in BOARD-LOCAL space: `w` runs along the board wall, `d`
+// runs away from it into the room, the origin is the board wall's corner, and
+// ry 0 means facing the board. `frameFor` then maps that onto whichever wall
+// this room's board actually hangs on. Writing them once and rotating is what
+// let classrooms stop being pinned to the campus's north edge.
 
 const TEACHER_LANE = 2.6;
 
-function rowsLayout(r: SchoolRoomRect, n: number): Spot[] {
+function rowsLayout(w: number, d: number, n: number): Spot[] {
   const cols: number = n <= 4 ? 2 : n <= 9 ? 3 : 4;
   const rowCount = Math.ceil(n / cols);
-  const x0 = r.x + 1.6;
-  const x1 = r.x + r.w - 1.6;
-  const z0 = r.z + TEACHER_LANE + 0.4;
-  const z1 = r.z + r.d - 1.4;
+  const x0 = 1.6;
+  const x1 = w - 1.6;
+  const z0 = TEACHER_LANE + 0.4;
+  const z1 = d - 1.4;
 
   const spots: Spot[] = [];
   for (let i = 0; i < n; i++) {
@@ -168,12 +213,12 @@ function rowsLayout(r: SchoolRoomRect, n: number): Spot[] {
 }
 
 // A U opening toward the board: two arms down the side walls with students on
-// the outside facing in, and a back row across the south wall.
-function uShapeLayout(r: SchoolRoomRect, n: number): Spot[] {
+// the outside facing in, and a back row across the far wall.
+function uShapeLayout(w: number, d: number, n: number): Spot[] {
   const perArm = Math.floor(n / 3);
   const back = n - perArm * 2;
-  const zTop = r.z + TEACHER_LANE + 0.6;
-  const zBot = r.z + r.d - 2.2;
+  const zTop = TEACHER_LANE + 0.6;
+  const zBot = d - 2.2;
   const spots: Spot[] = [];
 
   const arm = (x: number, ry: number) => {
@@ -182,14 +227,14 @@ function uShapeLayout(r: SchoolRoomRect, n: number): Spot[] {
       spots.push({ x, z: zTop + (zBot - zTop) * t, ry });
     }
   };
-  arm(r.x + 2.1, -Math.PI / 2);
-  arm(r.x + r.w - 2.1, Math.PI / 2);
+  arm(2.1, -Math.PI / 2);
+  arm(w - 2.1, Math.PI / 2);
 
-  const bx0 = r.x + 2.8;
-  const bx1 = r.x + r.w - 2.8;
+  const bx0 = 2.8;
+  const bx1 = w - 2.8;
   for (let i = 0; i < back; i++) {
     const t = back === 1 ? 0.5 : i / (back - 1);
-    spots.push({ x: bx0 + (bx1 - bx0) * t, z: r.z + r.d - 1.5, ry: 0 });
+    spots.push({ x: bx0 + (bx1 - bx0) * t, z: d - 1.5, ry: 0 });
   }
   return spots;
 }
@@ -199,12 +244,12 @@ function uShapeLayout(r: SchoolRoomRect, n: number): Spot[] {
 // the classroom only has ~5.4m of depth behind the teacher's lane — two rows of
 // pods put the back students inside the front row's desks. Width is the axis
 // with room to spare, so that is the axis pods spread along.
-function clustersLayout(r: SchoolRoomRect, n: number): Spot[] {
+function clustersLayout(w: number, d: number, n: number): Spot[] {
   const pods = Math.max(1, Math.ceil(n / 4));
-  const x0 = r.x + 2.2;
-  const x1 = r.x + r.w - 2.2;
-  const z0 = r.z + TEACHER_LANE + 1.5;
-  const z1 = r.z + r.d - 2.2;
+  const x0 = 2.2;
+  const x1 = w - 2.2;
+  const z0 = TEACHER_LANE + 1.5;
+  const z1 = d - 2.2;
   const cz = (z0 + z1) / 2;
 
   // Balanced rather than greedy: nine desks over three pods is 3/3/3, and
@@ -236,14 +281,14 @@ function clustersLayout(r: SchoolRoomRect, n: number): Spot[] {
 // depth — which packs twelve desks into a 1.3m radius and turns them into a
 // pile. Students sit on the outside, so the ellipse is measured to the desks
 // and the seats fall beyond it.
-function circleLayout(r: SchoolRoomRect, n: number): Spot[] {
-  const cx = r.x + r.w / 2;
-  const cz = r.z + (TEACHER_LANE + r.d) / 2;
-  const rx = Math.max(1.2, r.w / 2 - 2.4);
-  const rz = Math.max(1.0, (r.d - TEACHER_LANE) / 2 - 1.1);
+function circleLayout(w: number, d: number, n: number): Spot[] {
+  const cx = w / 2;
+  const cz = (TEACHER_LANE + d) / 2;
+  const rx = Math.max(1.2, w / 2 - 2.4);
+  const rz = Math.max(1.0, (d - TEACHER_LANE) / 2 - 1.1);
   const spots: Spot[] = [];
   for (let i = 0; i < n; i++) {
-    // Start at the south of the ring so the gap, when n is odd, lands facing
+    // Start at the far side of the ring so the gap, when n is odd, lands facing
     // the board rather than blocking it.
     const a = Math.PI + (i / n) * Math.PI * 2;
     // On an ellipse the outward normal is not the radial direction, and using
@@ -255,21 +300,115 @@ function circleLayout(r: SchoolRoomRect, n: number): Spot[] {
   return spots;
 }
 
-function layoutIn(r: SchoolRoomRect, n: number, layoutId: LayoutId): Spot[] {
+function layoutIn(w: number, d: number, n: number, layoutId: LayoutId): Spot[] {
   switch (layoutId) {
     case "u-shape":
-      return uShapeLayout(r, n);
+      return uShapeLayout(w, d, n);
     case "clusters":
-      return clustersLayout(r, n);
+      return clustersLayout(w, d, n);
     case "circle":
-      return circleLayout(r, n);
+      return circleLayout(w, d, n);
     default:
-      return rowsLayout(r, n);
+      return rowsLayout(w, d, n);
   }
 }
 
-/** Desks in a classroom. Both classrooms use the player's chosen preset, so
- *  changing it visibly rearranges the whole school rather than one room. */
+// ── Which wall the board hangs on ───────────────────────────────────────────
+
+/**
+ * A room laid out relative to the wall its board is on: how big it is in
+ * board-local terms, and how to put a local spot back into the world.
+ *
+ * Only NORTH and WEST are ever offered, and that is not a simplification — the
+ * cutaway draws exactly those two walls (see Building.tsx), so a board on the
+ * south or east wall would hang on nothing and face away from the camera. It is
+ * the same reason `wallRuns` only knows those two sides.
+ */
+export interface BoardFrame {
+  side: "north" | "west";
+  /** Along the board wall. */
+  w: number;
+  /** Away from the board, into the room. */
+  d: number;
+  /**
+   * Where along the board wall the board actually goes, in local terms.
+   *
+   * It lives on the frame because it is `mountOnWall` that decides it — nudged
+   * clear of doorways and of whatever is behind the wall — and the board has to
+   * be drawn where the mounting says, not where the ideal position was. Keeping
+   * only the ideal is how a board ended up 14cm past the end of the run that
+   * was chosen for it.
+   */
+  boardX: number;
+  /** Local -> world. Generic over Spot and PropInstance alike: a rotated
+   *  classroom has to take its bookshelf and its flags round with it, not just
+   *  its desks. */
+  map: <T extends { x: number; z: number; ry: number }>(s: T) => T;
+}
+
+function frameFor(r: SchoolRoomRect, side: "north" | "west", boardX: number): BoardFrame {
+  if (side === "north") {
+    return {
+      side,
+      w: r.w,
+      d: r.d,
+      boardX,
+      map: (s) => ({ ...s, x: r.x + s.x, z: r.z + s.z }),
+    };
+  }
+  // A quarter turn: local +z (into the room) becomes world +x, and local +x
+  // (along the board) becomes world -z. The determinant is +1, so it is a
+  // rotation and nothing comes back mirrored.
+  return {
+    side,
+    w: r.d,
+    d: r.w,
+    boardX,
+    map: (s) => ({ ...s, x: r.x + s.z, z: r.z + r.d - s.x, ry: s.ry + Math.PI / 2 }),
+  };
+}
+
+/** How long a board is on a wall of this length. Capped well short of the wall:
+ *  a board centred on a 5m wall covers every position the window loop would
+ *  pick, and the starting classroom ends up with no windows at all. */
+const boardLength = (along: number) => Math.min(4, along * 0.45);
+
+/** Where along the board wall the board sits — left of centre, not centred. */
+const boardAt = (along: number) => along * 0.32;
+
+/**
+ * Which wall this classroom's board hangs on, and the frame that follows.
+ * North if there is room for it, else west, else null.
+ *
+ * This is what unpinned classrooms from the campus's north edge. The old rule
+ * was "nothing may be built north of a classroom", full stop, because the board
+ * was nailed to the north wall unconditionally; the rule is now the weaker and
+ * truer "a classroom needs one drawn wall with room for a board on it".
+ *
+ * Null is a real answer: a classroom walled in on both drawn sides has nowhere
+ * to put a board, and rendering it without one is more honest than hanging it
+ * in mid-air. No catalog room should be like that, and a test says so.
+ */
+export function boardFrameOf(plan: SchoolPlan, r: SchoolRoomRect): BoardFrame | null {
+  for (const side of ["north", "west"] as const) {
+    const along = side === "north" ? r.w : r.d;
+    // `mountOnWall` works in world coordinates along the wall, so the ideal
+    // local position has to go out and the chosen one has to come back. On the
+    // west wall the axis also runs the other way, which is what the subtraction
+    // is doing.
+    const ideal = side === "north" ? r.x + boardAt(along) : r.z + r.d - boardAt(along);
+    const at = mountOnWall(plan, r, side, ideal, boardLength(along));
+    if (at === null) continue;
+    const local = side === "north" ? at - r.x : r.z + r.d - at;
+    return frameFor(r, side, local);
+  }
+  return null;
+}
+
+/** Desks in a classroom. Every classroom uses the player's chosen preset, so
+ *  changing it visibly rearranges the whole school rather than one room. Laid
+ *  out facing whichever wall this room's board is on, which is why it goes
+ *  through the frame rather than straight into world coordinates. */
 export function deskLayout(
   plan: SchoolPlan,
   layoutId: LayoutId,
@@ -277,11 +416,16 @@ export function deskLayout(
 ): Spot[] {
   const r = room(plan, roomId);
   if (!r || r.kind !== "classroom") return [];
-  // The main classroom gets the stage's headline desk count; every other
+  // The main classroom gets the level's headline desk count; every other
   // classroom gets the secondary count, so a variant can add a fourth without
   // needing a new field in the catalog.
   const n = roomId === "classroom" ? plan.stage.desks : plan.stage.secondaryDesks;
-  return n > 0 ? layoutIn(r, n, layoutId) : [];
+  if (n <= 0) return [];
+  const frame = boardFrameOf(plan, r);
+  // No board wall means no front of the room to face. Desks would be pointing
+  // at brickwork, so there are none.
+  if (!frame) return [];
+  return layoutIn(frame.w, frame.d, n, layoutId).map(frame.map);
 }
 
 /** Where a student sits, given the desk they sit at. */
@@ -310,6 +454,10 @@ export const sitOn = (prop: Spot, along = 0): Spot => ({
 });
 
 // ── Walls you can actually hang something on ────────────────────────────────
+
+/** Stretches of a room's drawn walls that something already occupies, keyed by
+ *  side. Both walls need one now that a board can hang on either. */
+type Reserved = Partial<Record<"north" | "west", [number, number][]>>;
 
 const subtractSpan = (
   runs: [number, number][],
@@ -417,9 +565,12 @@ export function mountOnWall(
   side: "north" | "west",
   prefer: number,
   len: number,
+  avoid: [number, number][] = [],
 ): number | null {
   let best: number | null = null;
-  for (const [s, e] of freeWallRuns(plan, r, side)) {
+  let runs = freeWallRuns(plan, r, side);
+  for (const [a, b] of avoid) runs = subtractSpan(runs, a, b);
+  for (const [s, e] of runs) {
     if (e - s < len + 0.2) continue;
     const at = Math.min(Math.max(prefer, s + len / 2 + 0.1), e - len / 2 - 0.1);
     if (best === null || Math.abs(at - prefer) < Math.abs(best - prefer)) best = at;
@@ -433,14 +584,21 @@ function hang(
   plan: SchoolPlan,
   r: SchoolRoomRect,
   base: Omit<PropInstance, "x" | "z" | "ry">,
-  opts: { len: number; inset: number; north?: number; west?: number },
+  opts: {
+    len: number;
+    inset: number;
+    north?: number;
+    west?: number;
+    /** Spans already taken on each wall — the board, most of the time. */
+    avoid?: Reserved;
+  },
 ): PropInstance | null {
   if (opts.north !== undefined) {
-    const at = mountOnWall(plan, r, "north", opts.north, opts.len);
+    const at = mountOnWall(plan, r, "north", opts.north, opts.len, opts.avoid?.north ?? []);
     if (at !== null) return { ...base, x: at, z: r.z + opts.inset, ry: 0 };
   }
   if (opts.west !== undefined) {
-    const at = mountOnWall(plan, r, "west", opts.west, opts.len);
+    const at = mountOnWall(plan, r, "west", opts.west, opts.len, opts.avoid?.west ?? []);
     if (at !== null) return { ...base, x: r.x + opts.inset, z: at, ry: Math.PI / 2 };
   }
   return null;
@@ -454,22 +612,25 @@ function hang(
  * looked out onto an interior. A run that survives `freeWallRuns` has nothing
  * behind it at all, which is the definition of an outside wall.
  *
- * `reserved` guards spans of the NORTH wall — the only wall anything else in
- * this file hangs on — so a window is never punched through the board.
+ * `reserved` guards spans that are already taken, PER SIDE. It used to guard
+ * the north wall only, because the board was always on it; a classroom whose
+ * board hangs on the west wall needs the same protection there, or the window
+ * loop punches straight through it.
  */
 function windowsOn(
   plan: SchoolPlan,
   r: SchoolRoomRect,
   sides: ("north" | "west")[],
-  reserved: [number, number][] = [],
+  reserved: Reserved = {},
 ): PropInstance[] {
   const out: PropInstance[] = [];
-  const clear = (at: number) => !reserved.some(([s, e]) => at > s && at < e);
 
   for (const side of sides) {
+    const taken = reserved[side] ?? [];
+    const clear = (at: number) => !taken.some(([s, e]) => at > s && at < e);
     for (const [s, e] of freeWallRuns(plan, r, side)) {
       for (let at = s + 1.2; at < e - 1.0; at += 2.2) {
-        if (side === "north" && !clear(at)) continue;
+        if (!clear(at)) continue;
         out.push(
           side === "north"
             ? { key: `win-n${at.toFixed(1)}`, type: "window", x: at, z: r.z + 0.16, ry: 0 }
@@ -486,40 +647,29 @@ function windowsOn(
 // from whichever rooms the stage has, so a stage that lacks a room simply
 // contributes nothing here.
 
-function classroomProps(
-  plan: SchoolPlan,
-  r: SchoolRoomRect,
-  stage: SchoolStage,
-  english: boolean,
-): PropInstance[] {
+/**
+ * A classroom, laid out relative to the wall its board hangs on.
+ *
+ * Almost everything here is authored in BOARD-LOCAL space and mapped out
+ * through the frame, so a classroom whose board is on its west wall takes its
+ * teacher's desk, its bookshelf and its flags round with it instead of leaving
+ * them scattered against the wrong walls. The exceptions are the three props
+ * that have to ask the plan where the real walls are — the clock, the windows
+ * and the door — and those stay in world space.
+ */
+function classroomProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
+  const stage = plan.stage;
+  // Once there is more than one English room they all get the English dressing.
+  // Before that the classroom is the whole school, and a globe plus two flags in
+  // a bare 8x7 box reads as clutter rather than as character.
+  const english = stage.index >= 7;
+
+  const frame = boardFrameOf(plan, r);
   const p: PropInstance[] = [];
-  // The board sits left of centre rather than centred, and is capped well short
-  // of the wall's width. A board centred on a 5m wall covers every position the
-  // window loop below would pick, and stage 0 ends up with no windows at all.
-  //
-  // No floorplan ever puts a room north of a classroom (there is a test), so
-  // this wall is always there to take it.
-  const boardLen = Math.min(4, r.w * 0.45);
-  const boardX = r.x + r.w * 0.32;
-  p.push({ key: "board", type: "board", x: boardX, z: r.z + 0.22, ry: 0, len: boardLen });
-  p.push({ key: "tdesk", type: "teacherDesk", x: r.x + r.w - 2.2, z: r.z + 1.5, ry: Math.PI });
 
-  const reserved: [number, number][] = [[boardX - boardLen / 2 - 0.5, boardX + boardLen / 2 + 0.5]];
-  const clock = hang(plan, r, { key: "clock", type: "clock" }, {
-    len: 0.7,
-    inset: 0.24,
-    north: r.x + r.w - 1.2,
-    west: r.z + 1.6,
-  });
-  if (clock) {
-    p.push(clock);
-    if (clock.ry === 0) reserved.push([clock.x - 0.75, clock.x + 0.75]);
-  }
-
-  // The frame for the west doorway, but only where the wall it pierces is
-  // drawn full height. Set into a knee-high partition, a 2.1m door frame
-  // stands more than a metre proud of the wall it is supposedly part of — the
-  // gap is still cut there, you just see straight over it.
+  // World-space, and placed first because the board has to dodge the doorway:
+  // the GAP is cut whatever the wall is doing, but a 2.1m frame set into a
+  // knee-high partition stands a metre proud of it.
   const westDoor = classroomWestDoor(plan, r);
   if (westDoor !== null && westWallIsFull(plan, r, westDoor)) {
     // Centred on the wall's own plane, half a wall thickness west of the room
@@ -527,33 +677,104 @@ function classroomProps(
     p.push({ key: "door", type: "door", x: r.x - WALL_T / 2, z: westDoor, ry: Math.PI / 2 });
   }
 
-  p.push(...windowsOn(plan, r, ["north"], reserved));
+  // A room with no drawn wall long enough for a board gets no board, and
+  // nothing that depends on knowing where the front of the room is. It still
+  // gets its windows. The catalog should not contain such a room; there is a
+  // test that says so.
+  if (!frame) return [...p, ...windowsOn(plan, r, ["north", "west"])];
+
+  const { w, d, map, boardX } = frame;
+  const len = boardLength(w);
+  const local: PropInstance[] = [
+    { key: "board", type: "board", x: boardX, z: 0.22, ry: 0, len },
+    { key: "tdesk", type: "teacherDesk", x: w - 2.2, z: 1.5, ry: Math.PI },
+  ];
 
   if (stage.index >= 1) {
-    p.push({ key: "shelf1", type: "bookshelf", x: r.x + 0.55, z: r.z + 2.4, ry: Math.PI / 2 });
-    p.push({ key: "plant1", type: "plant", x: r.x + 0.7, z: r.z + r.d - 0.8, ry: 0 });
-    p.push({ key: "plant2", type: "plant", x: r.x + r.w - 0.7, z: r.z + r.d - 0.8, ry: 0 });
+    local.push({ key: "shelf1", type: "bookshelf", x: 0.55, z: Math.min(2.4, d - 1.2), ry: Math.PI / 2 });
+    local.push({ key: "plant1", type: "plant", x: 0.7, z: d - 0.8, ry: 0 });
+    local.push({ key: "plant2", type: "plant", x: w - 0.7, z: d - 0.8, ry: 0 });
   }
   if (stage.index >= 6) {
-    p.push({ key: "cupboard", type: "cupboard", x: r.x + 0.6, z: r.z + 4.8, ry: Math.PI / 2 });
-    p.push({ key: "bin", type: "bin", x: r.x + r.w - 0.8, z: r.z + 2.6, ry: 0 });
+    // Clamped rather than fixed: the depth of a classroom is its width once the
+    // board is on the west wall, and a cupboard 4.8m in overshot the shallow
+    // ones straight through the back wall.
+    local.push({ key: "cupboard", type: "cupboard", x: 0.6, z: Math.min(4.8, d - 1.4), ry: Math.PI / 2 });
+    local.push({ key: "bin", type: "bin", x: w - 0.8, z: Math.min(2.6, d - 1.2), ry: 0 });
   }
 
   // This is an English school, so the dressing says so: flags, the alphabet
   // along the wall, a globe. Deliberately NOT a second subject's room.
   if (english) {
-    p.push({ key: "flagA", type: "flag", x: r.x + 0.9, z: r.z + 0.3, ry: 0, tint: "#2b4c8c" });
-    p.push({ key: "flagB", type: "flag", x: r.x + 1.9, z: r.z + 0.3, ry: 0, tint: "#8c2b3a" });
-    p.push({ key: "alphabet", type: "alphabet", x: r.x + r.w / 2, z: r.z + 0.2, ry: 0, len: r.w - 2.5 });
-    // Tucked against the north wall, north of the teacher's patrol lane —
+    local.push({ key: "flagA", type: "flag", x: 0.9, z: 0.3, ry: 0, tint: "#2b4c8c" });
+    local.push({ key: "flagB", type: "flag", x: 1.9, z: 0.3, ry: 0, tint: "#8c2b3a" });
+    // Tucked against the board wall, in front of the teacher's patrol lane —
     // out in the room it was something the teacher paced straight through.
-    p.push({ key: "globe", type: "globe", x: r.x + r.w - 2.6, z: r.z + 0.8, ry: 0 });
-  } else if (stage.index >= 1) {
-    p.push({ key: "poster1", type: "poster", x: r.x + 1.4, z: r.z + 0.2, ry: 0, tint: "#d98b6a" });
+    local.push({ key: "globe", type: "globe", x: w - 2.6, z: 0.8, ry: 0 });
   }
   if (english && stage.index >= 8) {
-    p.push({ key: "pc1", type: "computer", x: r.x + r.w - 1.9, z: r.z + 1.5, ry: Math.PI });
+    local.push({ key: "pc1", type: "computer", x: w - 1.9, z: 1.5, ry: Math.PI });
   }
+
+  p.push(...local.map(map));
+
+  // The board's span on whichever wall it took, so the clock does not land on
+  // top of it and the window loop does not punch through it.
+  const half = len / 2 + 0.5;
+  const board = p.find((q) => q.key === "board")!;
+  const reserved: Reserved =
+    frame.side === "north"
+      ? { north: [[board.x - half, board.x + half]] }
+      : { west: [[board.z - half, board.z + half]] };
+
+  /** Hangs a prop on a drawn wall, keeping out of everything already up there,
+   *  and books its own span so the next one keeps out of it in turn. */
+  const nail = (base: Omit<PropInstance, "x" | "z" | "ry">, len: number, pad: number) => {
+    const q = hang(plan, r, base, {
+      len,
+      inset: 0.16,
+      north: r.x + r.w / 2,
+      west: r.z + r.d / 2,
+      avoid: reserved,
+    });
+    if (!q) return;
+    p.push(q);
+    const side = q.ry === 0 ? "north" : "west";
+    const at = q.ry === 0 ? q.x : q.z;
+    reserved[side] = [...(reserved[side] ?? []), [at - len / 2 - pad, at + len / 2 + pad]];
+  };
+
+  const clock = hang(plan, r, { key: "clock", type: "clock" }, {
+    len: 0.7,
+    inset: 0.24,
+    north: r.x + r.w - 1.2,
+    west: r.z + 1.6,
+    avoid: reserved,
+  });
+  if (clock) {
+    p.push(clock);
+    const span: [number, number] = clock.ry === 0
+      ? [clock.x - 0.75, clock.x + 0.75]
+      : [clock.z - 0.75, clock.z + 0.75];
+    const side = clock.ry === 0 ? "north" : "west";
+    reserved[side] = [...(reserved[side] ?? []), span];
+  }
+
+  // The frieze and the poster are NAILED UP rather than placed: they are as
+  // wide as a wall run and there is no guarantee the board wall has that much
+  // unbroken length left once the board, the clock and this room's own doorway
+  // have taken their share. Placed blind, the alphabet in a west-facing
+  // classroom ran straight across the doorway.
+  if (english) {
+    const len = Math.min(4.5, w - 2.5);
+    if (len > 1.5) nail({ key: "alphabet", type: "alphabet", len }, len, 0.2);
+  } else if (stage.index >= 1) {
+    nail({ key: "poster1", type: "poster", tint: "#d98b6a" }, 0.9, 0.2);
+  }
+
+  // Both drawn walls, not just the north one: a classroom set back from the
+  // campus edge may have its only outside wall on the west.
+  p.push(...windowsOn(plan, r, ["north", "west"], reserved));
   return p;
 }
 
@@ -574,6 +795,13 @@ export function libraryDesks(r: SchoolRoomRect): Spot[] {
  *  desks without crossing the rug, the armchairs or the reading table. */
 const libraryAisle = (r: SchoolRoomRect) => r.x + r.w - 0.9;
 
+/** The two armchairs in the reading corner, turned to face the table between
+ *  them. Shared with the readers who sit in them. */
+export const libraryArmchairs = (r: SchoolRoomRect): Spot[] => [
+  { x: r.x + r.w / 2 - 1.5, z: r.z + 4.4, ry: -Math.PI / 2 },
+  { x: r.x + r.w / 2 + 1.5, z: r.z + 4.4, ry: Math.PI / 2 },
+];
+
 function libraryProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
   const p: PropInstance[] = [...windowsOn(plan, r, ["north"])];
   for (let i = 0; i < 3; i++) {
@@ -585,8 +813,9 @@ function libraryProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
   // to it, with the reader sitting the wrong way round in the chair — every
   // seat in this game is authored with its backrest on local +z, and whoever
   // sits in it faces the other way.
-  p.push({ key: "larm1", type: "armchair", x: r.x + r.w / 2 - 1.5, z: r.z + 4.4, ry: -Math.PI / 2 });
-  p.push({ key: "larm2", type: "armchair", x: r.x + r.w / 2 + 1.5, z: r.z + 4.4, ry: Math.PI / 2 });
+  libraryArmchairs(r).forEach((a, i) => {
+    p.push({ key: `larm${i + 1}`, type: "armchair", x: a.x, z: a.z, ry: a.ry });
+  });
   p.push({ key: "ltable", type: "readingTable", x: r.x + r.w / 2, z: r.z + 4.5, ry: 0 });
 
   // A study row with real chairs. Visitors used to be sat on the rug at desk
@@ -672,7 +901,7 @@ export function courtyardBenches(r: SchoolRoomRect): Spot[] {
   ];
 }
 
-function courtyardProps(r: SchoolRoomRect): PropInstance[] {
+function courtyardProps(_plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
   const p: PropInstance[] = [];
   // The fountain used to sit in the south-west, which is precisely where the
   // west bench's seat is — anyone sitting there was inside the fountain, and
@@ -742,7 +971,17 @@ function lobbyProps(plan: SchoolPlan, r: SchoolRoomRect, doorX: number): PropIns
   p.push({ key: "sofa2", type: "sofa", x: doorX + 2.9, z: r.z + 4.8, ry: Math.PI });
   p.push({ key: "lplant1", type: "plant", x: r.x + 0.7, z: r.z + 2.4, ry: 0 });
   p.push({ key: "lplant2", type: "plant", x: r.x + r.w - 0.7, z: r.z + 1.4, ry: 0 });
-  p.push({ key: "ltrophy", type: "trophyShelf", x: r.x + 0.6, z: r.z + 6.4, ry: Math.PI / 2 });
+  // EAST wall, not west. On the west it stood squarely across the lane that
+  // reaches the far end of the near sofa — a seat only taken once reception is
+  // busy enough to need all three, which no fixed unlock order ever reached and
+  // a player buying rooms in their own order reaches easily.
+  p.push({
+    key: "ltrophy",
+    type: "trophyShelf",
+    x: r.x + r.w - 0.6,
+    z: r.z + 5.5,
+    ry: -Math.PI / 2,
+  });
 
   // Reception is the room where this mattered most: its north wall is the back
   // of the lab or the courtyard in every campus, so it is a knee-high
@@ -763,7 +1002,7 @@ function lobbyProps(plan: SchoolPlan, r: SchoolRoomRect, doorX: number): PropIns
 
 // The way in. Everything here is outdoors, so it reads as ground rather than a
 // room: a gate you walk under, a sign, lamps and planting either side.
-function forecourtProps(r: SchoolRoomRect): PropInstance[] {
+function forecourtProps(_plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
   const p: PropInstance[] = [];
   // Straddling the boundary wall rather than standing a metre inside it: the
   // forecourt is walled now, and the gate is the gap in that wall.
@@ -868,50 +1107,313 @@ function gymProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
   return p;
 }
 
-export function stageProps(plan: SchoolPlan): PropInstance[] {
-  const out: PropInstance[] = [];
-  const push = (id: string, fn: (r: SchoolRoomRect) => PropInstance[]) => {
-    const r = room(plan, id);
-    if (r) out.push(...fn(r).map((p) => ({ ...p, key: `${id}-${p.key}` })));
-  };
-  /** For rooms that need to know which walls they actually have. */
-  const pushInPlan = (id: string, fn: (plan: SchoolPlan, r: SchoolRoomRect) => PropInstance[]) => {
-    const r = room(plan, id);
-    if (r) out.push(...fn(plan, r).map((p) => ({ ...p, key: `${id}-${p.key}` })));
-  };
-  /** For rooms whose layout has to dodge their own doorway. */
-  const pushWithDoor = (
-    id: string,
-    fn: (plan: SchoolPlan, r: SchoolRoomRect, doorX: number) => PropInstance[],
-  ) => {
-    const r = room(plan, id);
-    if (!r) return;
-    const doorX = plan.doors[id]?.x ?? r.x + r.w / 2;
-    out.push(...fn(plan, r, doorX).map((p) => ({ ...p, key: `${id}-${p.key}` })));
-  };
 
-  // Once there is more than one English room, they all get the English dressing
-  // — before that the classroom is the whole school, and a globe plus two flags
-  // in a bare 8×7 box reads as clutter rather than character.
-  const english = plan.stage.index >= 7;
-  for (const c of classroomsOf(plan)) {
-    out.push(
-      ...classroomProps(plan, c, plan.stage, english).map((p) => ({ ...p, key: `${c.id}-${p.key}` })),
-    );
+// ── The second ring ─────────────────────────────────────────────────────────
+// Four kinds that arrive once the first twelve rooms are built. All of them sit
+// BEHIND something — a corridor to the north, a courtyard to the west — so
+// almost every wall they have is a knee-high partition. Nothing here hangs on a
+// wall without asking `hang` first, and most of them do not hang anything at
+// all.
+
+/** Where the staff room's armchairs stand, shared with the people who sit in
+ *  them so a teacher can never end up beside the chair rather than in it. */
+export function staffSeats(r: SchoolRoomRect): Spot[] {
+  const cx = r.x + r.w / 2;
+  const cz = r.z + r.d / 2;
+  return [
+    { x: cx - 1.6, z: cz, ry: -Math.PI / 2 },
+    { x: cx + 1.6, z: cz, ry: Math.PI / 2 },
+    { x: cx, z: cz + 1.6, ry: 0 },
+  ];
+}
+
+// The teachers' lounge: the one room in the school with nothing to teach in it.
+// Furnished entirely out of props the first twelve rooms already had.
+function staffProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
+  const p: PropInstance[] = [...windowsOn(plan, r, ["north", "west"])];
+  const cx = r.x + r.w / 2;
+  const cz = r.z + r.d / 2;
+
+  // Chairs around a low table, facing in. `sitOn` puts whoever uses them in the
+  // seat rather than beside it; these spots are the props themselves.
+  staffSeats(r).forEach((s, i) => {
+    p.push({ key: `sarm${i}`, type: "armchair", x: s.x, z: s.z, ry: s.ry });
+  });
+  p.push({ key: "stable", type: "readingTable", x: cx, z: cz, ry: 0 });
+
+  p.push({ key: "scup", type: "cupboard", x: r.x + 1.2, z: r.z + 0.6, ry: 0 });
+  p.push({ key: "sshelf", type: "bookshelf", x: r.x + 0.55, z: r.z + r.d / 2, ry: Math.PI / 2, len: 2.0 });
+  p.push({ key: "scooler", type: "waterCooler", x: r.x + r.w - 0.8, z: r.z + 0.9, ry: 0 });
+  p.push({ key: "sbin", type: "bin", x: r.x + r.w - 0.8, z: r.z + r.d - 0.9, ry: 0 });
+  p.push({ key: "splant", type: "plant", x: r.x + 0.8, z: r.z + r.d - 0.9, ry: 0 });
+
+  const notice = hang(plan, r, { key: "snotice", type: "noticeboard", len: 2.2 }, {
+    len: 2.2,
+    inset: 0.14,
+    north: r.x + r.w - 2.4,
+    west: r.z + r.d - 2.4,
+  });
+  if (notice) p.push(notice);
+  return p;
+}
+
+/** The chair behind the head's desk. Its own function because the desk's size
+ *  depends on the room and the chair has to stay behind it. */
+const officeChair = (r: SchoolRoomRect, cx: number): Spot => ({
+  x: cx,
+  z: r.z + 3.35,
+  ry: Math.PI,
+});
+
+/** Where the head actually sits. Exported so peoplePlan puts them on the chair
+ *  officeProps drew rather than on a second guess at the same arithmetic — that
+ *  divergence is what had the receptionist sitting on thin air. */
+export const officeSeat = (r: SchoolRoomRect, doorX: number): Spot => {
+  const [x0, x1] = officeFloor(r, doorX);
+  return officeChair(r, (x0 + x1) / 2);
+};
+
+/** The floor the head's office actually has, once the lane in from its own
+ *  doorway is taken out. The door sits hard against one wall (it is on the
+ *  music room's aisle), so everything goes on the other side of it — a desk
+ *  centred on the room stood in the doorway and clearDoorways deleted it. */
+const officeFloor = (r: SchoolRoomRect, doorX: number): [number, number] => {
+  const lane = DOOR_WIDTH / 2 + 1.2;
+  const west = doorX - lane - (r.x + 0.6);
+  const east = r.x + r.w - 0.6 - (doorX + lane);
+  return west >= east ? [r.x + 0.6, doorX - lane] : [doorX + lane, r.x + r.w - 0.6];
+};
+
+// The head's office. The room the director of the school actually sits in, and
+// the one the advisor will speak from when payroll arrives.
+function officeProps(plan: SchoolPlan, r: SchoolRoomRect, doorX: number): PropInstance[] {
+  const p: PropInstance[] = [...windowsOn(plan, r, ["north", "west"])];
+  const [x0, x1] = officeFloor(r, doorX);
+  const cx = (x0 + x1) / 2;
+  const deskLen = Math.max(1.6, Math.min(3.0, x1 - x0 - 0.6));
+
+  // Front to the north, so whoever comes in is looked at rather than past, and
+  // the chair BEHIND it — which is the other side from the door.
+  p.push({ key: "odesk", type: "receptionDesk", x: cx, z: r.z + 2.6, ry: Math.PI, len: deskLen });
+  const chair = officeChair(r, cx);
+  p.push({ key: "ochair", type: "chair", x: chair.x, z: chair.z, ry: chair.ry });
+  // Facing the desk, for whoever has been asked to come in.
+  p.push({ key: "osofa", type: "sofa", x: cx, z: r.z + r.d - 1.3, ry: 0 });
+  p.push({ key: "orug", type: "rug", x: cx, z: r.z + r.d / 2 + 0.4, ry: 0 });
+
+  p.push({ key: "oshelf", type: "bookshelf", x: x0 - 0.05, z: r.z + 2.2, ry: Math.PI / 2, len: 1.8 });
+  p.push({ key: "otrophy", type: "trophyShelf", x: x0 - 0.05, z: r.z + r.d - 1.4, ry: Math.PI / 2 });
+  p.push({ key: "oglobe", type: "globe", x: x1 - 0.4, z: r.z + r.d - 1.1, ry: 0 });
+  p.push({ key: "oplant", type: "plant", x: x1 - 0.4, z: r.z + 1.0, ry: 0 });
+
+  const poster = hang(plan, r, { key: "oposter", type: "poster", tint: "#7b8fa8" }, {
+    len: 0.9,
+    inset: 0.14,
+    north: r.x + 1.6,
+    west: r.z + 1.6,
+  });
+  if (poster) p.push(poster);
+  return p;
+}
+
+/** Where the music room's chairs stand — an arc facing the piano, and the seats
+ *  a visitor takes. Shared so a listener never lands beside a chair. */
+/** The line the music room's own doorway sits on, down its east side. The
+ *  office hangs off the far side of it, so people walk THROUGH — and a room
+ *  whose chairs reach the east wall is a room they walk through the chairs of. */
+const musicAisle = (r: SchoolRoomRect) => r.x + r.w - 1.0;
+
+/** How far west of that line the furniture has to stop. `insideDoor` puts its
+ *  pair of waypoints a metre either side of a doorway and the walker crosses
+ *  between them, so the clear lane is nearly two metres wide, not one — which
+ *  is exactly how far the stage platform was reaching into it. */
+const MUSIC_LANE = 2.3;
+
+export function musicSeats(r: SchoolRoomRect): Spot[] {
+  // Centred on the floor LEFT of the aisle, not on the room.
+  const cx = (r.x + musicAisle(r) - MUSIC_LANE) / 2 + 0.4;
+  const z = r.z + r.d - 2.4;
+  const n = r.w >= 11 ? 4 : 3;
+  const span = Math.min(3.6, musicAisle(r) - MUSIC_LANE - r.x - 2.4);
+  return [...Array(n)].map((_, i) => ({
+    x: cx - span / 2 + (span * i) / (n - 1),
+    // A shallow arc rather than a straight row: the ends pull back toward the
+    // camera, which is what makes four boxes read as an audience.
+    z: z + Math.abs(i - (n - 1) / 2) * 0.35,
+    ry: Math.PI,
+  }));
+}
+
+// Where the speaking practice happens: a piano, a low platform to stand on, and
+// somewhere for everyone else to sit and listen.
+function musicProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
+  const p: PropInstance[] = [...windowsOn(plan, r, ["north", "west"])];
+
+  // Everything lives WEST of the aisle. A 7.2m stage platform in a 9m room
+  // reaches both walls, so the platform is sized to the floor that is left.
+  const aisle = musicAisle(r);
+  const room0 = r.x + 0.6;
+  const room1 = aisle - MUSIC_LANE;
+  const mid = (room0 + room1) / 2;
+
+  // Against the north wall whether or not it is full height — a piano stands on
+  // the floor, so unlike a noticeboard it does not care what is behind it.
+  p.push({ key: "mpiano", type: "piano", x: room0 + 1.1, z: r.z + 1.0, ry: 0 });
+  p.push({ key: "mstool", type: "chair", x: room0 + 1.1, z: r.z + 1.9, ry: 0 });
+
+  p.push({
+    key: "mstage",
+    type: "stagePlatform",
+    x: mid + 0.8,
+    z: r.z + 2.2,
+    ry: 0,
+    len: Math.max(2.5, room1 - room0 - 2.6),
+  });
+  p.push({ key: "mspk1", type: "speaker", x: room1 - 0.3, z: r.z + 1.0, ry: 0 });
+  p.push({ key: "mspk2", type: "speaker", x: room1 - 0.3, z: r.z + 4.0, ry: 0 });
+
+  musicSeats(r).forEach((s, i) => {
+    p.push({ key: `mchair${i}`, type: "chair", x: s.x, z: s.z, ry: s.ry });
+  });
+
+  p.push({ key: "mplant", type: "plant", x: room0, z: r.z + r.d - 0.9, ry: 0 });
+
+  const banner = hang(plan, r, { key: "mbanner", type: "banner", len: Math.min(5, r.w - 3) }, {
+    len: Math.min(5, r.w - 3),
+    inset: 0.12,
+    north: r.x + r.w / 2,
+    west: r.z + r.d / 2,
+  });
+  if (banner) p.push(banner);
+  return p;
+}
+
+/** The garden's benches, shared with whoever sits on them. */
+export function gardenBenches(r: SchoolRoomRect): Spot[] {
+  const z = r.z + r.d - 2.2;
+  return [r.x + r.w / 2 - 2.6, r.x + r.w / 2 + 2.6].map((x) => ({ x, z, ry: Math.PI }));
+}
+
+// Walled like the courtyard, planted unlike it. Outdoor, so it gets ground
+// rather than flooring and a garden wall rather than a roof.
+function gardenProps(_plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
+  const p: PropInstance[] = [];
+  const cx = r.x + r.w / 2;
+
+  // Raised beds down the middle, as many as the room is wide enough for.
+  const beds = Math.max(2, Math.min(4, Math.floor((r.w - 2) / 2.6)));
+  const span = (beds - 1) * 2.4;
+  for (let i = 0; i < beds; i++) {
+    p.push({
+      key: `gbed${i}`,
+      type: "planter",
+      x: cx - span / 2 + i * 2.4,
+      z: r.z + 2.4,
+      ry: 0,
+    });
   }
 
-  pushInPlan("library", libraryProps);
-  pushInPlan("corridor", corridorProps);
-  pushWithDoor("lab", labProps);
-  push("courtyard", courtyardProps);
-  pushInPlan("hall", hallProps);
-  pushWithDoor("lobby", lobbyProps);
-  push("forecourt", forecourtProps);
-  pushWithDoor("cafeteria", cafeteriaProps);
-  pushInPlan("gym", gymProps);
+  p.push({ key: "gtree", type: "tree", x: r.x + 1.5, z: r.z + r.d - 1.6, ry: 0 });
+  p.push({ key: "gbush1", type: "bush", x: r.x + r.w - 1.3, z: r.z + 1.2, ry: 0 });
+  p.push({ key: "gbush2", type: "bush", x: r.x + r.w - 1.3, z: r.z + r.d - 1.3, ry: 0 });
+  p.push({ key: "glamp", type: "lamppost", x: r.x + 1.3, z: r.z + 1.3, ry: 0 });
+
+  gardenBenches(r).forEach((b, i) => {
+    p.push({ key: `gbench${i}`, type: "bench", x: b.x, z: b.z, ry: b.ry });
+  });
+  return p;
+}
+
+/**
+ * What furnishes a room, keyed by KIND rather than by room id.
+ *
+ * Keyed by id, a second library-kind room rendered as an empty box — which is
+ * the whole reason a campus could only ever have one of each. By kind, every
+ * room of a kind furnishes itself the way classrooms already did, and adding a
+ * room to the catalog costs nothing here at all.
+ *
+ * Every entry takes the same three arguments whether it wants them or not.
+ * `doorX` is the x of the room's own doorway, and matters to the rooms people
+ * walk THROUGH rather than into: reception, the lab and the cafeteria all lay
+ * themselves out around that lane instead of on a fixed grid.
+ */
+type Furnisher = (plan: SchoolPlan, r: SchoolRoomRect, doorX: number) => PropInstance[];
+
+const FURNISHERS: Record<RoomKind, Furnisher> = {
+  classroom: classroomProps,
+  library: libraryProps,
+  corridor: corridorProps,
+  lab: labProps,
+  courtyard: courtyardProps,
+  hall: hallProps,
+  lobby: lobbyProps,
+  forecourt: forecourtProps,
+  cafeteria: cafeteriaProps,
+  gym: gymProps,
+  staff: staffProps,
+  office: officeProps,
+  music: musicProps,
+  garden: gardenProps,
+};
+
+export function stageProps(plan: SchoolPlan): PropInstance[] {
+  const out: PropInstance[] = [];
+  for (const r of plan.rooms) {
+    const furnish = FURNISHERS[r.kind];
+    if (!furnish) continue;
+    const doorX = plan.doors[r.id]?.x ?? r.x + r.w / 2;
+    // Prop keys are prefixed with the room id, not the kind: two libraries have
+    // to produce distinct keys, and the exterior view filters on this prefix.
+    out.push(...furnish(plan, r, doorX).map((p) => ({ ...p, key: `${r.id}-${p.key}` })));
+  }
   return clearDoorways(out, doorZones(plan));
 }
 
+
+// ── What a purchase would look like ─────────────────────────────────────────
+
+/**
+ * Every room not yet owned, with the rectangle it would occupy and whatever
+ * else moves when it arrives.
+ *
+ * `grows` is the interesting half. Buying the second classroom also extends the
+ * corridor east to meet it, and a preview that showed only the new room would
+ * be quietly lying about what the money buys. Both sides come from the same
+ * `roomsOwned` the real plan is built from, so a ghost cannot disagree with
+ * what actually appears.
+ */
+export interface GhostRoom {
+  spec: RoomSpec;
+  blocker: BuyBlocker | null;
+  /** Where it would stand. */
+  rect: SchoolRoomRect;
+  /** Rooms the player already owns that would change shape, with their new
+   *  rectangles — the corridor reaching out to meet it, usually. */
+  grows: SchoolRoomRect[];
+}
+
+export function ghostRooms(variantId: string, owned: readonly string[]): GhostRoom[] {
+  const now = roomsOwned(variantId, owned);
+  const byId = new Map(now.map((r) => [r.id, r]));
+
+  return buildableRooms(variantId, owned).map(({ spec, blocker }) => {
+    const after = roomsOwned(variantId, [...owned, spec.id]);
+    const rect = after.find((r) => r.id === spec.id)!;
+    const grows = after.filter((r) => {
+      const before = byId.get(r.id);
+      return before && (before.x !== r.x || before.z !== r.z || before.w !== r.w || before.d !== r.d);
+    });
+    return { spec, blocker, rect, grows };
+  });
+}
+
+/** The bounding box of everything a build view has to fit on screen: what is
+ *  built, plus every ghost. Without the ghosts the camera frames the campus and
+ *  the rooms you are being offered sit off the edge of it. */
+export const ghostBounds = (rooms: SchoolRoomRect[], ghosts: GhostRoom[]): SchoolRoomRect[] => [
+  ...rooms,
+  ...ghosts.map((g) => g.rect),
+];
 
 // ── Footprints and clearance ────────────────────────────────────────────────
 //
@@ -940,6 +1442,8 @@ const FOOTPRINTS: Record<PropType, { w: number; d: number } | null> = {
   bush: { w: 0.75, d: 0.75 },
   fountain: { w: 2.35, d: 2.35 },
   stagePlatform: { w: 7.2, d: 3.0 },
+  // Sized by the room in the music room, fixed in the hall. footprintOf uses
+  // `len` when a prop carries one, so both work off the same entry.
   chairRow: { w: 7, d: 0.55 },
   trophyShelf: { w: 1.6, d: 0.4 },
   cupboard: { w: 1.5, d: 0.55 },
@@ -955,6 +1459,8 @@ const FOOTPRINTS: Record<PropType, { w: number; d: number } | null> = {
   // counting them as obstacle would put every diner inside one.
   longTable: { w: 8, d: 1.25 },
   wallBars: { w: 5, d: 0.25 },
+  piano: { w: 1.5, d: 0.55 },
+  planter: { w: 1.8, d: 0.7 },
   hoop: { w: 0.3, d: 0.3 },
   vault: { w: 0.8, d: 1.55 },
   // Passable or wall-mounted.
@@ -1128,10 +1634,11 @@ export function seatBoxes(p: PropInstance): Box[] {
 /** Every seat in the school, including the classroom chairs — those are drawn
  *  from the desk layout rather than from `stageProps`, and a student sitting
  *  beside their chair is exactly as wrong as one sitting beside a bench. */
-export function seatSurfaces(plan: SchoolPlan, layoutId: LayoutId): Box[] {
+export function seatSurfaces(plan: SchoolPlan, layout: LayoutChoice): Box[] {
+  const layoutId = asLayoutFn(layout);
   const out = stageProps(plan).flatMap(seatBoxes);
   for (const c of classroomsOf(plan)) {
-    deskLayout(plan, layoutId, c.id).forEach((desk, i) => {
+    deskLayout(plan, layoutId(c.id), c.id).forEach((desk, i) => {
       const seat = seatOf(desk);
       out.push(
         ...seatBoxes({ key: `${c.id}-deskchair${i}`, type: "chair", x: seat.x, z: seat.z, ry: desk.ry }),
@@ -1181,6 +1688,8 @@ export function roleForRoom(roomId: string): PersonRole {
     case "lobby":
       return "visitor";
     case "library":
+    case "archive":
+    case "studyHall":
       return "librarian";
     case "lab":
       return "listener";
@@ -1188,6 +1697,11 @@ export function roleForRoom(roomId: string): PersonRole {
       return "diner";
     case "gym":
       return "athlete";
+    // The staff room and the head's office are where the adults are, and a
+    // teacher in an armchair should still sound like a teacher.
+    case "staffRoom":
+    case "office":
+      return "teacher";
     default:
       return "student";
   }
@@ -1296,11 +1810,14 @@ interface VisitSeat {
 function visitSeats(plan: SchoolPlan, roomId: string): VisitSeat[] {
   const r = room(plan, roomId);
   if (!r) return [];
-  switch (roomId) {
+  // On KIND, not id: the archive and the study hall are libraries and seat a
+  // visitor exactly the way the library does. Keyed on the id, they seated
+  // nobody at all and quietly dropped out of the commuter rota.
+  switch (r.kind) {
     case "lab": {
       // The back-row booths; the front row belongs to the residents. Reached
       // straight down the door's own lane, which is kept clear of booths.
-      const doorX = plan.doors.lab?.x ?? r.x + r.w / 2;
+      const doorX = plan.doors[r.id]?.x ?? r.x + r.w / 2;
       const row = labBoothRow(r, doorX);
       return [row[0], row[3]].map((x) => ({
         spot: { x, z: r.z + 5.3, ry: Math.PI },
@@ -1341,10 +1858,23 @@ function visitSeats(plan: SchoolPlan, roomId: string): VisitSeat[] {
           ],
         })),
       );
+    case "garden":
+      // Two to a bench, along the south edge. The beds are down the middle, so
+      // the way in hugs the west wall and comes along the bottom.
+      return gardenBenches(r).flatMap((bench) =>
+        [-0.45, 0.45].map((along) => ({
+          spot: sitOn(bench, along),
+          via: [
+            { x: r.x + 0.9, z: r.z + 1.0, ry: 0 },
+            { x: r.x + 0.9, z: r.z + r.d - 0.9, ry: 0 },
+            { x: bench.x, z: r.z + r.d - 0.9, ry: 0 },
+          ],
+        })),
+      );
     case "lobby": {
       // ON the two sofas, which sit either side of the through-lane. The seats
       // used to be a metre south of them, facing them.
-      const doorX = plan.doors.lobby?.x ?? r.x + r.w / 2;
+      const doorX = plan.doors[r.id]?.x ?? r.x + r.w / 2;
       const sofas: Spot[] = [
         { x: doorX - 2.9, z: r.z + 4.8, ry: Math.PI },
         { x: doorX + 2.9, z: r.z + 4.8, ry: Math.PI },
@@ -1615,11 +2145,58 @@ function spaceOut(loop: Spot[], distance: number): Spot[] {
 }
 
 /** Public rooms a wanderer will drift through, in the order they unlock. */
-const ROAM_STOPS = ["courtyard", "library", "forecourt", "cafeteria", "gym"];
+/**
+ * Public rooms a wanderer will drift through, in the order they unlock.
+ *
+ * The big open spaces, deliberately — NOT every room. A roam stop is somewhere
+ * on a circuit, and the second ring is made of leaves: the music room hangs off
+ * the gym, the garden off the forecourt, so a lap that took them in had to come
+ * straight back out the way it went, retracing its own approach. Two walkers on
+ * opposite sides of that retrace end up half a metre apart, which is the one
+ * thing the roaming invariants exist to stop.
+ *
+ * The second ring gets commuters and its own residents instead. That is also
+ * the truer reading of those rooms: they are places you go TO, not corridors
+ * with something at the end.
+ */
+const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 100);
 
-// Which pairs of rooms are worth walking between, in the order they unlock.
-// Every entry is skipped until both its rooms exist, so this list doubles as a
-// progression: the campus does not just get bigger, it gets busier.
+const ROAM_STOPS = ["courtyard", "library", "forecourt", "cafeteria", "gym", "garden"];
+
+/**
+ * Rooms a commuter will walk to and sit down in — the ones `visitSeats` knows
+ * how to put somebody in.
+ *
+ * The study hall is deliberately NOT here, and neither is it a roam stop. In
+ * the Courtyard campus it sits behind the assembly hall, and a route to it
+ * crosses that hall's chair rows corner to corner — a long-standing property of
+ * the hall (classroomC has always been behind it and has always had the same
+ * route; nothing has ever walked it). Making the study hall a destination would
+ * be the first thing to actually walk that line. It gets its own readers
+ * instead, which is what a study hall wants anyway.
+ */
+const DESTINATIONS = [
+  "library",
+  "lab",
+  "courtyard",
+  "lobby",
+  "cafeteria",
+  "gym",
+  // The archive is a library and seats visitors the same way. The garden has
+  // benches. The staff room, the music room and the head's office are left out
+  // on purpose: a commuter route to any of them crosses another room's
+  // furniture on the way in, and they get their own residents instead.
+  "archive",
+  "garden",
+];
+
+// Which pairs of rooms are worth walking between, best first. Curated, because
+// a young campus has only two or three destinations and which pair you get
+// decides whether the school reads as busy or as empty.
+//
+// It is a PREFERENCE, not the whole list: rooms are bought in the player's own
+// order, so a campus can easily hold six destinations and not one of these
+// pairs. journeyPairs falls through to everything else once these are spent.
 const JOURNEY_PAIRS: [string, string][] = [
   ["library", "lab"],
   ["lab", "courtyard"],
@@ -1633,9 +2210,107 @@ const JOURNEY_PAIRS: [string, string][] = [
   ["cafeteria", "library"],
 ];
 
-export function peoplePlan(plan: SchoolPlan, layoutId: LayoutId): PeoplePlan {
+/** One commuter's assignment: which two rooms, and the seat taken at each end. */
+interface Journey {
+  a: string;
+  b: string;
+  from: VisitSeat;
+  to: VisitSeat;
+}
+
+/**
+ * Every commuter this campus can seat, in the order they are handed out, up to
+ * `limit`.
+ *
+ * Walked in ROUNDS rather than one pass down the pair list. Rooms are bought in
+ * the player's own order, so a campus can hold seven rooms and still only two
+ * places worth walking to, and a single pass would leave that school with one
+ * commuter where the level promises three. Two students both walking the
+ * library-to-cafeteria run is exactly what a small school looks like; two
+ * students in the same chair is not, and the seat ledger below forbids it.
+ *
+ * Separate from peoplePlan, and exported, because "how many could it seat" is
+ * the honest ceiling on how many the level gets — a campus with two
+ * destinations and four chairs between them cannot produce six commuters, and
+ * the test suite has to be able to ask that rather than assume.
+ */
+export function commuterSeating(plan: SchoolPlan, limit: number): Journey[] {
+  const out: Journey[] = [];
+  if (!room(plan, "corridor")) return out;
+
+  const used = new Map<string, number>();
+  const pairs = journeyPairs(plan).filter(
+    // Drop a pair where one room is simply on the way to the other.
+    ([a, b]) => !isOnPathTo(plan, a, b) && !isOnPathTo(plan, b, a),
+  );
+
+  let seated = true;
+  while (seated && out.length < limit) {
+    seated = false;
+    for (const [a, b] of pairs) {
+      if (out.length >= limit) break;
+      const seatsA = visitSeats(plan, a);
+      const seatsB = visitSeats(plan, b);
+      const ia = used.get(a) ?? 0;
+      const ib = used.get(b) ?? 0;
+      if (ia >= seatsA.length || ib >= seatsB.length) continue;
+      used.set(a, ia + 1);
+      used.set(b, ib + 1);
+      out.push({ a, b, from: seatsA[ia], to: seatsB[ib] });
+      seated = true;
+    }
+  }
+  return out;
+}
+
+/** The curated pairs that this campus actually has both ends of, then every
+ *  other pairing of what it has, deduplicated and in a fixed order. */
+function journeyPairs(plan: SchoolPlan): [string, string][] {
+  const here = DESTINATIONS.filter((id) => room(plan, id));
+  const out: [string, string][] = [];
+  const seen = new Set<string>();
+  const add = (a: string, b: string) => {
+    const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push([a, b]);
+  };
+  for (const [a, b] of JOURNEY_PAIRS) {
+    if (here.includes(a) && here.includes(b)) add(a, b);
+  }
+  for (let i = 0; i < here.length; i++) {
+    for (let j = i + 1; j < here.length; j++) add(here[i], here[j]);
+  }
+  return out;
+}
+
+/**
+ * A desk preset per classroom. Accepts a bare LayoutId as well, because most
+ * callers — every test in the suite, which sweeps all four presets — want the
+ * whole school arranged one way, and making them all write `() => id` would buy
+ * nothing.
+ */
+export type LayoutChoice = LayoutId | ((roomId: string) => LayoutId);
+
+const asLayoutFn = (choice: LayoutChoice): ((roomId: string) => LayoutId) =>
+  typeof choice === "function" ? choice : () => choice;
+
+export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
   const stage = plan.stage;
-  const desks = deskLayout(plan, layoutId);
+  const layoutId = asLayoutFn(layout);
+
+  /**
+   * How many of a group actually show up. Full at morale 100, a little under
+   * half at 0 — never none, because an empty school is a broken-looking one and
+   * the point is that it is quieter, not that it has stopped.
+   *
+   * At 100 this is exactly the identity (0.45 + 0.55 = 1), which is why every
+   * existing count and every test that asserts one is unaffected.
+   */
+  const attend = (n: number) =>
+    n <= 0 ? 0 : Math.max(1, Math.round(n * (0.45 + (0.55 * clamp01(plan.morale)) / 100)));
+
+  const desks = deskLayout(plan, layoutId("classroom"));
   const seats = desks.map(seatOf);
 
   // The player takes the desk nearest the camera — largest x + z under the
@@ -1649,49 +2324,89 @@ export function peoplePlan(plan: SchoolPlan, layoutId: LayoutId): PeoplePlan {
   const playerSeat = seats.length ? seats[playerIdx] : null;
   const students: SeatedPerson[] = seats
     .filter((_, i) => i !== playerIdx)
-    .slice(0, stage.students)
+    .slice(0, attend(stage.students))
     .map((spot, i) => ({ key: `s${i}`, spot, pose: "desk" as const, role: "student" as const }));
 
   // Every other classroom fills the same way, minus the player.
   for (const c of classroomsOf(plan)) {
     if (c.id === "classroom") continue;
-    deskLayout(plan, layoutId, c.id)
+    deskLayout(plan, layoutId(c.id), c.id)
       .map(seatOf)
-      .slice(0, stage.secondaryStudents)
+      .slice(0, attend(stage.secondaryStudents))
       .forEach((spot, i) =>
         students.push({ key: `${c.id}-s${i}`, spot, pose: "desk", role: "student" }),
       );
   }
 
-  // Readers and lab users are tied to the props they sit in, so they appear
-  // and vanish with the room rather than needing their own stage counter.
-  const lib = room(plan, "library");
-  if (lib) {
+  // Residents are tied to the props they sit in, so they appear and vanish with
+  // the room rather than needing their own counter in the level table.
+  //
+  // Looped over every room of a KIND, not looked up by id. A campus can hold
+  // three libraries now, and keying this on "library" furnished all three and
+  // then put readers in only the first.
+  const inKind = (kind: RoomKind) => plan.rooms.filter((r) => r.kind === kind);
+
+  for (const lib of inKind("library")) {
     // In the armchairs, not beside them and not facing into the backrest.
     // `sitOn` is the whole rule: a seat's back is on its local +z.
-    students.push({
-      key: "r0",
-      spot: sitOn({ x: lib.x + lib.w / 2 - 1.5, z: lib.z + 4.4, ry: -Math.PI / 2 }),
-      pose: "armchair",
-      role: "librarian",
-    });
-    students.push({
-      key: "r1",
-      spot: sitOn({ x: lib.x + lib.w / 2 + 1.5, z: lib.z + 4.4, ry: Math.PI / 2 }),
-      pose: "armchair",
-      role: "librarian",
+    libraryArmchairs(lib).forEach((chair, i) => {
+      students.push({
+        key: `${lib.id}-r${i}`,
+        spot: sitOn(chair),
+        pose: "armchair",
+        role: roleForRoom(lib.id),
+      });
     });
   }
-  const lab = room(plan, "lab");
-  if (lab) {
-    labBoothRow(lab, plan.doors.lab?.x ?? lab.x + lab.w / 2).forEach((x, i) => {
+  for (const lab of inKind("lab")) {
+    labBoothRow(lab, plan.doors[lab.id]?.x ?? lab.x + lab.w / 2).forEach((x, i) => {
       students.push({
         // On the booth's stool, which is BOOTH_STOOL behind its worktop.
         spot: sitOn({ x, z: lab.z + 2.2 + BOOTH_STOOL, ry: 0 }),
-        key: `b${i}`,
+        key: `${lab.id}-b${i}`,
         pose: "booth",
         role: "listener",
       });
+    });
+  }
+  // The staff room is the one place in the school with adults sitting down in
+  // it, and an empty staff room reads as a school nobody works at.
+  for (const staff of inKind("staff")) {
+    staffSeats(staff).forEach((chair, i) => {
+      students.push({
+        key: `${staff.id}-t${i}`,
+        spot: sitOn(chair),
+        pose: "armchair",
+        role: "teacher",
+      });
+    });
+  }
+  for (const music of inKind("music")) {
+    const seats = musicSeats(music);
+    students.push({
+      key: `${music.id}-play`,
+      // On the piano stool, which musicProps puts 0.9 south of the piano.
+      spot: sitOn({ x: music.x + 1.7, z: music.z + 1.9, ry: 0 }),
+      pose: "desk",
+      role: "student",
+    });
+    // Two of the chairs, never all of them — a full house every time you look
+    // is a diorama, not a room.
+    seats.slice(0, 2).forEach((chair, i) => {
+      students.push({
+        key: `${music.id}-l${i}`,
+        spot: sitOn(chair),
+        pose: "desk",
+        role: "student",
+      });
+    });
+  }
+  for (const office of inKind("office")) {
+    students.push({
+      key: `${office.id}-head`,
+      spot: sitOn(officeSeat(office, plan.doors[office.id]?.x ?? office.x + office.w / 2)),
+      pose: "desk",
+      role: "teacher",
     });
   }
   // Somebody has to be behind the front desk, or reception reads as abandoned.
@@ -1802,42 +2517,29 @@ export function peoplePlan(plan: SchoolPlan, layoutId: LayoutId): PeoplePlan {
     // there and they end up merged. Early on the loop is short and there are
     // already five of them, so they barely stop at all — which is the honest
     // answer: a small school with a lot of people in it is a busy one.
-    const apart = span / Math.max(1, stage.wanderers) / WALK_SPEED;
+    // Spaced by how many there ACTUALLY are, not by how many the level
+    // promises: computing the gap from the full count and then walking fewer
+    // would leave them bunched at one end of the loop.
+    const roaming = attend(stage.wanderers);
+    const apart = span / Math.max(1, roaming) / WALK_SPEED;
     const paced = route.map((s) => ({
       ...s,
       hold: Math.min(s.hold ?? 0, Math.max(0, apart - 1.4)),
     }));
 
-    for (let i = 0; i < stage.wanderers; i++) {
+    for (let i = 0; i < roaming; i++) {
       wanderers.push({
         key: `w${i}`,
         role: "student",
-        path: spaceOut(paced, (i * span) / Math.max(1, stage.wanderers)),
+        path: spaceOut(paced, (i * span) / Math.max(1, roaming)),
       });
     }
   }
 
-  // Commuters need a corridor to cross; before stage 3 there is nowhere to go.
-  // Seats are handed out at most once each, so two commuters can never be
-  // routed into the same chair.
-  const commuters: CommuterPerson[] = [];
-  if (corridor) {
-    const used = new Map<string, number>();
-    for (const [a, b] of JOURNEY_PAIRS) {
-      if (commuters.length >= stage.commuters) break;
-      // Skip a pair where one room is simply on the way to the other.
-      if (isOnPathTo(plan, a, b) || isOnPathTo(plan, b, a)) continue;
-      const seatsA = visitSeats(plan, a);
-      const seatsB = visitSeats(plan, b);
-      const ia = used.get(a) ?? 0;
-      const ib = used.get(b) ?? 0;
-      if (ia >= seatsA.length || ib >= seatsB.length) continue;
-      used.set(a, ia + 1);
-      used.set(b, ib + 1);
-      const from = seatsA[ia];
-      const to = seatsB[ib];
-      commuters.push({
-        key: `c${commuters.length}`,
+  // As many as the level asks for, or as many as the campus can seat.
+  const commuters: CommuterPerson[] = corridor
+    ? commuterSeating(plan, stage.commuters).map(({ a, b, from, to }, i) => ({
+        key: `c${i}`,
         seats: [from.spot, to.spot],
         role: roleForRoom(b),
         // Out along one room's aisle, across the campus, in along the other's.
@@ -1846,9 +2548,8 @@ export function peoplePlan(plan: SchoolPlan, layoutId: LayoutId): PeoplePlan {
           ...routeBetween(plan, a, b, corridor),
           ...to.via,
         ],
-      });
-    }
-  }
+      }))
+    : [];
 
   return { playerSeat, students, teachers, wanderers, commuters };
 }
