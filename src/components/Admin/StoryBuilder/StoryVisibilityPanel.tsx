@@ -20,6 +20,14 @@ import { getStoryGroups, DifficultySlug } from "../../../types/storyGroups";
  * Hiding is stored per (difficulty, storyId) and applies to built-in and
  * DB-backed stories alike, so this panel is the single answer to "what is on
  * the shelves".
+ *
+ * It is called UNLIST in the UI, because that is what it does. `hidden` is
+ * consulted in exactly one place on the server — listPublishedStories — and
+ * never by getPublishedStory, which is what actually serves parts and audio.
+ * So it takes a story off the shelf without revoking anything: anyone who
+ * bought it keeps it, and playback keeps working. The catch, and the reason the
+ * button says so, is that it unlists for EVERYONE including owners, so a buyer
+ * would still have access and no way to reach it.
  */
 const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
 
@@ -104,9 +112,12 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
     <div className="mb-6 bg-gray-50 rounded-lg border border-gray-200 p-3">
       <h3 className="text-sm font-semibold text-black mb-1">Shown in the app</h3>
       <p className="text-xs text-gray-500 mb-3">
-        Hiding takes a story off the students' list immediately. Deleting a story here does{" "}
-        <strong>not</strong> do that — the built-in stories ship with the app and come back when
-        their draft is removed, so this is the switch that controls the shelves.
+        Unlisting takes a story off the students' list immediately. It does{" "}
+        <strong>not</strong> revoke anything — anyone who bought it keeps access and playback
+        keeps working — but it disappears from their list too, so it is a way to retire a
+        story rather than a way to take one down for repairs. Deleting a story here does not
+        remove it either: the built-in stories ship with the app and come back when their
+        draft is gone, so this is the switch that controls the shelves.
       </p>
       {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
       {!loaded && <p className="text-xs text-gray-400">Loading…</p>}
@@ -138,13 +149,18 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                       type="button"
                       onClick={() => toggle(difficulty, item.slug, !isHidden)}
                       disabled={busy === key}
+                      title={
+                        isHidden
+                          ? "Put this back on the shelf"
+                          : "Take this off the shelf. Anyone who already owns it keeps access, but it disappears from their list too."
+                      }
                       className={`ml-auto text-xs rounded-lg px-3 py-1 disabled:opacity-50 ${
                         isHidden
                           ? "bg-black text-white hover:bg-gray-800"
                           : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      {busy === key ? "…" : isHidden ? "Show" : "Hide"}
+                      {busy === key ? "…" : isHidden ? "List" : "Unlist"}
                     </button>
                   </div>
                 );

@@ -86,6 +86,8 @@ const AdminPanel = () => {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        {/* See the note on the same tag in the authenticated return below. */}
+        <meta name="robots" content="noindex, nofollow" />
         <form
           onSubmit={handleLogin}
           className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm"
@@ -118,7 +120,17 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10">
-      <div className="max-w-4xl mx-auto">
+      {/* /admin is listed as a public route in App.tsx, so it is reachable and
+          therefore indexable. robots.txt disallows it, but Disallow only stops
+          crawling — a URL linked from anywhere else can still be indexed
+          without ever being fetched, and the resulting result line advertises
+          that an admin panel exists here. This tag is what actually keeps it
+          out of an index. React 19 hoists it into <head> on its own. */}
+      <meta name="robots" content="noindex, nofollow" />
+      {/* Wide on purpose. max-w-4xl is right for a settings page and wrong for
+          a tool: the Story Builder is a two-pane workspace with a waveform in
+          it, and 896px squeezed that into a third of a desktop screen. */}
+      <div className="max-w-[1500px] mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-black">Admin Panel</h1>

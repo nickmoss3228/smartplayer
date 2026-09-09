@@ -180,6 +180,32 @@ export function resolveStory(
   return dbStory ? resolveFromDb(dbStory, difficulty) : resolveFromStatic(difficulty, slug);
 }
 
+/**
+ * The comic page the BUILT-IN version of this story would show for a part.
+ *
+ * The static and DB branches get their artwork from different places: the
+ * static branch reads comicsData's manifest (keyed by difficulty, so only that
+ * level's original character story owns those pages), while the DB branch
+ * reads `part.comicUrl` and nothing else. That is by design — but it means a
+ * story imported before the importer learned about the manifest carries no
+ * comic URLs, and publishing it swaps a story that HAD comics for one that
+ * does not.
+ *
+ * This is exported so the Story Builder can offer the built-in page rather than
+ * making someone re-upload artwork that already ships with the app, and so the
+ * offer uses this file's rule instead of a fourth copy of it.
+ */
+export function builtInComicFor(
+  difficulty: string,
+  slug: string,
+  partNumber: number,
+): string | null {
+  const track = resolveFromStatic(difficulty, slug).tracks.find(
+    (t) => Number(t.id) === partNumber,
+  );
+  return track?.comicUrl ?? null;
+}
+
 export const findResolvedTrack = (
   story: ResolvedStory,
   trackId: string,

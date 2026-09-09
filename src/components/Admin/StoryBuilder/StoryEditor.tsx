@@ -7,6 +7,8 @@ import {
   addPart,
   updateStoryMeta,
 } from "../../../services/adminStoryServices";
+import PartMatrix from "./PartMatrix";
+import { ELEMENTS, ElementId, storyReadiness } from "./partStatus";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
 import StoryCoverEditor from "./StoryCoverEditor";
@@ -22,25 +24,31 @@ interface StoryEditorProps {
   onBack: () => void;
 }
 
-type Step = "audio" | "comics" | "vocabulary" | "phrasal" | "quiz";
-
 const MAX_PARTS = 20;
 
-const STEPS: { id: Step; label: string }[] = [
-  { id: "audio", label: "Audio & Markers" },
-  // Next to the audio, not at the end: a part's comic is the same scene as its
-  // audio, so the two are set together.
-  { id: "comics", label: "Comics" },
-  { id: "vocabulary", label: "Vocabulary" },
-  { id: "phrasal", label: "Phrasal Verbs" },
-  { id: "quiz", label: "Quiz" },
-];
+// Part 1 of a paid story is what a non-owner hears before deciding to buy
+// (PAID_PREVIEW_PARTS in backend/src/config/priceCatalog.js). The builder marks
+// it so the shop window gets made deliberately rather than by accident.
+const PREVIEW_PART = 1;
+
+/** Audio and markers are edited in one place, so two grid columns open the same
+ *  panel. Everything else is one column, one editor. */
+const PANEL_FOR: Record<ElementId, "audio" | "comics" | "vocabulary" | "phrasal" | "quiz"> = {
+  audio: "audio",
+  markers: "audio",
+  comic: "comics",
+  vocab: "vocabulary",
+  phrasal: "phrasal",
+  quiz: "quiz",
+};
 
 // Per-part tabs within one "editing story X" view — the admin can jump
 // between parts/steps freely rather than following a forced linear wizard.
 const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryEditorProps) => {
   const [partNumber, setPartNumber] = useState(1);
-  const [step, setStep] = useState<Step>("audio");
+  // Which CELL is open, not which tab — the grid is the navigation now.
+  const [element, setElement] = useState<ElementId>("audio");
+  const step = PANEL_FOR[element];
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [addingPart, setAddingPart] = useState(false);
@@ -62,9 +70,31 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
     });
   };
 
-  const partsReady = story.parts.filter((p) => p.audioUrl && p.timeMarkers.length > 0).length;
+  // One rule for "done", shared with the grid and the publish gate — see
+  // partStatus.ts. A story is something people buy, so a part is finished when
+  // it has every required element, not when it has audio.
+  const readiness = storyReadiness(story);
 
   const handleTogglePublish = async () => {
+    // Publishing an incomplete story puts a half-made product on the shelf, and
+    // for a paid story that means selling someone a part with no quiz. Asking
+    // once is cheap; finding out from a customer is not. Unpublishing is never
+    // gated — taking something down is always allowed.
+    if (!story.published && !readiness.complete) {
+      const owed = readiness.gaps
+        .map((g) => `${g.parts.length} × ${g.element.label.toLowerCase()}`)
+        .join(", ");
+      const ok = confirm(
+        `Only ${readiness.sellableCount} of ${readiness.total} parts are ready to sell.
+
+` +
+          `Still missing: ${owed}.
+
+` +
+          `Publish anyway? Students will see the story with those gaps in it.`,
+      );
+      if (!ok) return;
+    }
     setPublishing(true);
     setError("");
     try {
@@ -153,13 +183,28 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           <button
             onClick={handleTogglePublish}
             disabled={publishing}
+            title={
+              story.published
+                ? "Take this story off the shelves"
+                : readiness.complete
+                  ? "Put this story on the shelves"
+                  : `${readiness.total - readiness.sellableCount} parts are not ready to sell`
+            }
             className={`text-sm rounded-lg px-4 py-2 disabled:opacity-50 ${
               story.published
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                : "bg-amber-500 text-white hover:bg-amber-600"
+                : readiness.complete
+                  ? "bg-amber-500 text-white hover:bg-amber-600"
+                  : "bg-white text-amber-700 border border-amber-400 hover:bg-amber-50"
             }`}
           >
-            {publishing ? "..." : story.published ? "Unpublish" : "Publish"}
+            {publishing
+              ? "…"
+              : story.published
+                ? "Unpublish"
+                : readiness.complete
+                  ? "Publish"
+                  : `Publish ${readiness.sellableCount}/${readiness.total}`}
           </button>
         </div>
       </div>
@@ -233,71 +278,107 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
             </button>
           </div>
         )}
-        <p className="text-sm text-gray-500">
-          {story.difficulty} · {partsReady}/{story.totalParts} parts have audio + markers ·{" "}
-          {story.published ? "Published" : "Draft"}
+        <p className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2">
+          <span>{story.difficulty}</span>
+          <span aria-hidden="true">·</span>
+          <span
+            className={
+              readiness.complete
+                ? "text-emerald-700 font-medium"
+                : "text-amber-700 font-medium"
+            }
+          >
+            {readiness.sellableCount}/{readiness.total} parts sellable
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>{story.published ? "Published" : "Draft"}</span>
         </p>
 
-        {/* Story-level, so it sits with the name rather than in the per-part
-            tabs below — a story has one card whatever its part count. */}
-        <div className="mt-3 bg-gray-50 rounded-lg border border-gray-200 p-3">
-          <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
-        </div>
+        {/* What is outstanding across the whole story, read down the columns
+            rather than along the rows. "I never did the quizzes" is the thing
+            the old part chips could not say. */}
+        {readiness.gaps.length > 0 && (
+          <p className="mt-1.5 text-xs text-gray-500">
+            Still needed:{" "}
+            {readiness.gaps.map(({ element, parts }, i) => (
+              <span key={element.id}>
+                {i > 0 && <span className="text-gray-300"> · </span>}
+                <span className="text-amber-700 font-medium">{element.label.toLowerCase()}</span>
+                <span className="text-gray-400"> on {parts.length === 1 ? "part" : "parts"} {parts.join(", ")}</span>
+              </span>
+            ))}
+          </p>
+        )}
+
+        {/* Story-level, so it sits with the name rather than in the grid below —
+            a story has one card whatever its part count. Collapsed, because it is
+            set once and the grid is what the page is for. */}
+        <details className="mt-3 group">
+          <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black select-none inline-flex items-center gap-1">
+            <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
+            Card image{story.coverUrl ? "" : " — none set"}
+          </summary>
+          <div className="mt-2 bg-gray-50 rounded-lg border border-gray-200 p-3">
+            <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
+          </div>
+        </details>
       </div>
 
       {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
 
-      <div className="flex flex-wrap gap-1 mb-4">
-        {story.parts.map((p) => (
-          <button
-            key={p.partNumber}
-            onClick={() => setPartNumber(p.partNumber)}
-            className={`text-xs rounded-full px-3 py-1.5 ${
-              p.partNumber === partNumber
-                ? "bg-black text-white"
-                : p.audioUrl && p.timeMarkers.length > 0
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            Part {p.partNumber}
-          </button>
-        ))}
-        <button
-          onClick={handleAddPart}
-          disabled={addingPart || story.parts.length >= MAX_PARTS}
-          title={
-            story.parts.length >= MAX_PARTS
-              ? `A story can have at most ${MAX_PARTS} parts.`
-              : "Add another part to this story"
-          }
-          className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-full px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
-        >
-          {addingPart ? "Adding..." : "+ Add part"}
-        </button>
+      {/* Parts down, elements across. Replaces both the part row and the step
+          row: one click lands on a cell, and the same grid is the report on
+          what the story still owes. */}
+      <div className="mb-4 bg-white rounded-lg border border-gray-200 p-3">
+        <PartMatrix
+          readiness={readiness}
+          activePart={partNumber}
+          activeElement={element}
+          previewPart={PREVIEW_PART}
+          onPick={(nextPart, nextElement) => {
+            setPartNumber(nextPart);
+            setElement(nextElement);
+          }}
+          onAddPart={handleAddPart}
+          addingPart={addingPart}
+          canAddPart={story.parts.length < MAX_PARTS}
+          maxParts={MAX_PARTS}
+        />
       </div>
 
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
-        {STEPS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setStep(s.id)}
-            className={`px-3 py-2 text-sm font-semibold rounded-t-lg ${
-              step === s.id
-                ? "bg-white text-black border border-b-0 border-gray-200"
-                : "text-gray-500 hover:text-black"
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
+      {/* Which cell is open, said in words — the grid shows where you are, this
+          says what you are looking at. */}
+      <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-gray-200">
+        <h3 className="text-sm font-bold text-black">Part {partNumber}</h3>
+        <span className="text-xs text-gray-500">
+          {ELEMENTS.find((e) => e.id === element)?.label}
+        </span>
+        {element === "markers" && (
+          <span className="text-xs text-gray-400">— set on the waveform below</span>
+        )}
       </div>
 
       {part && step === "audio" && (
-        <PartAudioMarkerEditor token={token} story={story} part={part} onPartUpdated={handlePartUpdated} />
+        // Keyed per part so switching parts remounts it. The marker editor
+        // holds real local state — an undo stack, a debounced save, a decoded
+        // waveform — and a reset effect that tried to keep that in step with
+        // the prop would fight its own autosave every time one landed.
+        <PartAudioMarkerEditor
+          key={`${story._id}:${part.partNumber}`}
+          token={token}
+          story={story}
+          part={part}
+          onPartUpdated={handlePartUpdated}
+        />
       )}
       {part && step === "comics" && (
-        <PartComicEditor token={token} story={story} part={part} onPartUpdated={handlePartUpdated} />
+        <PartComicEditor
+          token={token}
+          story={story}
+          part={part}
+          onPartUpdated={handlePartUpdated}
+          onStoryUpdated={onStoryUpdated}
+        />
       )}
       {part && step === "vocabulary" && (
         <PartVocabWordsEditor

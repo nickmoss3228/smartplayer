@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import {
   AdminStory,
   AdminStoryListItem,
@@ -11,9 +12,12 @@ import { getStoryGroups, DifficultySlug, StoryGroup } from "../../../types/story
 import { assembleImportPayload } from "./assembleImportPayload";
 import NewStoryForm from "./NewStoryForm";
 import StoryEditor from "./StoryEditor";
+import StoryRail from "./StoryRail";
 import StoryVisibilityPanel from "./StoryVisibilityPanel";
 
 const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
+
+const RAIL_KEY = "story_builder_rail_open";
 
 const StoryBuilderTab = ({ token }: { token: string }) => {
   const { t } = useTranslation();
@@ -25,7 +29,16 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const [importingSlug, setImportingSlug] = useState<string | null>(null);
   const [importError, setImportError] = useState("");
   const [importNotice, setImportNotice] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState<DifficultySlug | "all">("all");
+  // Whole-catalogue visibility, behind a toggle — see the note where it renders.
+  const [showShelves, setShowShelves] = useState(false);
+  // Collapsing the rail gives the whole width to the part you are building,
+  // which matters most on the waveform. Remembered, because it is a working
+  // preference rather than a per-story one.
+  const [railOpen, setRailOpen] = useState(() => localStorage.getItem(RAIL_KEY) !== "0");
+
+  useEffect(() => {
+    localStorage.setItem(RAIL_KEY, railOpen ? "1" : "0");
+  }, [railOpen]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,14 +67,6 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     );
   }, [stories, t]);
 
-  const visibleStories = useMemo(
-    () =>
-      difficultyFilter === "all"
-        ? stories
-        : stories.filter((s) => s.difficulty === difficultyFilter),
-    [stories, difficultyFilter]
-  );
-
   const openStory = async (id: string) => {
     try {
       setActiveStory(await getStory(token, id));
@@ -79,6 +84,15 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   const handleBack = () => {
     setActiveStory(null);
     load();
+  };
+
+  // A story edited in the pane must not go stale in the rail beside it — the
+  // name, the part count and the published pip all live in the list row.
+  const handleStoryUpdated = (updated: AdminStory) => {
+    setActiveStory(updated);
+    const { parts: _parts, ...row } = updated;
+    void _parts;
+    setStories((prev) => prev.map((s) => (s._id === updated._id ? row : s)));
   };
 
   const handleImport = async (difficulty: DifficultySlug, group: StoryGroup) => {
@@ -104,30 +118,61 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     }
   };
 
-  if (activeStory) {
-    return (
-      <StoryEditor
-        token={token}
-        story={activeStory}
-        onStoryUpdated={setActiveStory}
-        onDeleted={handleBack}
-        onBack={handleBack}
-      />
-    );
-  }
+  // The import affordance, folded into the foot of the rail. It used to sit
+  // above the story list, always expanded, pushing the thing you came for below
+  // the fold — it is setup, not daily work.
+  const importPanel = importable.length > 0 && (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black px-2 py-1 select-none">
+        <span className="group-open:hidden">Import {importable.length} built-in stories</span>
+        <span className="hidden group-open:inline">Import built-in stories</span>
+      </summary>
+      <div className="px-2 pt-2 pb-1">
+        <p className="text-[11px] text-gray-400 mb-2 leading-snug">
+          Brings a story's audio, markers, vocabulary and quiz in as a <strong>draft</strong>.
+          Nothing changes for students until you publish it.
+        </p>
+        {importError && <p className="text-red-600 text-xs mb-2">{importError}</p>}
+        {importNotice && <p className="text-green-700 text-xs mb-2">{importNotice}</p>}
+        <div className="flex flex-col gap-1">
+          {importable.map(({ difficulty, group }) => (
+            <button
+              key={`${difficulty}:${group.slug}`}
+              onClick={() => handleImport(difficulty, group)}
+              disabled={importingSlug === group.slug}
+              className="flex items-center gap-1.5 text-xs text-left text-gray-700 rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-50"
+            >
+              <span>{group.coverEmoji}</span>
+              <span className="flex-1 truncate">{group.title}</span>
+              <span className="text-[10px] text-gray-400">{difficulty}</span>
+              {importingSlug === group.slug && <span className="text-[10px]">…</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-black">Story Builder</h2>
-        {!showNewForm && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowNewForm(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg px-4 py-2"
+            onClick={() => setShowShelves((v) => !v)}
+            className="text-sm rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-200"
           >
-            New story
+            {showShelves ? "Hide shelves" : "Shelves"}
           </button>
-        )}
+          {!showNewForm && (
+            <button
+              onClick={() => setShowNewForm(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg px-4 py-2"
+            >
+              New story
+            </button>
+          )}
+        </div>
       </div>
 
       {showNewForm && (
@@ -136,102 +181,90 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
         </div>
       )}
 
-      <StoryVisibilityPanel token={token} stories={stories} />
+      {/* Shelves — which stories students can actually see, built-ins included.
+          Behind a toggle because it is a rare, whole-catalogue decision, and it
+          used to render every built-in across three difficulties above the list
+          you came for. */}
+      {showShelves && (
+        <div className="mb-4">
+          <StoryVisibilityPanel token={token} stories={stories} />
+        </div>
+      )}
 
-      {importable.length > 0 && (
-        <div className="mb-6 bg-gray-50 rounded-lg border border-gray-200 p-3">
-          <h3 className="text-sm font-semibold text-black mb-1">Import built-in stories</h3>
-          <p className="text-xs text-gray-500 mb-3">
-            Brings a story's audio, markers, vocabulary, and quiz into the builder as a{" "}
-            <strong>draft</strong> — nothing changes for players until you review it and hit
-            Publish. Deleting an imported draft/story reverts to the built-in version.
-          </p>
-          {importError && <p className="text-red-600 text-sm mb-2">{importError}</p>}
-          {importNotice && <p className="text-green-700 text-sm mb-2">{importNotice}</p>}
-          <div className="flex flex-wrap gap-2">
-            {importable.map(({ difficulty, group }) => (
-              <button
-                key={`${difficulty}:${group.slug}`}
-                onClick={() => handleImport(difficulty, group)}
-                disabled={importingSlug === group.slug}
-                className="flex items-center gap-2 text-sm text-black bg-white border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-100 disabled:opacity-50"
+      {error && <p className="text-red-600 mb-3">{error}</p>}
+      {loading && <p className="text-gray-500">Loading…</p>}
+
+      {!loading && (
+        <div className="flex gap-4 items-start">
+          {/* The rail stays put. Opening a story used to replace this whole
+              view, so there was no way to check a second story without throwing
+              away where you were. */}
+          <aside
+            className={`shrink-0 bg-white rounded-lg border border-gray-200 sticky top-4 max-h-[calc(100vh-8rem)] flex flex-col transition-[width] ${
+              railOpen ? "w-64" : "w-10"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => setRailOpen((open) => !open)}
+              title={railOpen ? "Collapse the story list" : "Show the story list"}
+              aria-expanded={railOpen}
+              className={`flex items-center gap-1 text-gray-400 hover:text-black hover:bg-gray-50 shrink-0 ${
+                railOpen
+                  ? "self-end px-2 py-1.5 rounded-tr-lg"
+                  : "flex-col py-2 rounded-t-lg"
+              }`}
+            >
+              {railOpen ? (
+                <IoChevronBack aria-hidden="true" />
+              ) : (
+                <IoChevronForward aria-hidden="true" />
+              )}
+              <span className={railOpen ? "sr-only" : "text-[10px] tabular-nums"}>
+                {railOpen ? "Collapse the story list" : stories.length}
+              </span>
+            </button>
+
+            {railOpen ? (
+              <StoryRail
+                stories={stories}
+                activeId={activeStory?._id ?? null}
+                onOpen={openStory}
+                footer={importPanel}
+              />
+            ) : (
+              <span
+                className="text-[10px] uppercase tracking-widest text-gray-400 select-none mx-auto mt-2"
+                style={{ writingMode: "vertical-rl" }}
               >
-                <span>{group.coverEmoji}</span>
-                {group.title}
-                <span className="text-xs text-gray-400">({difficulty})</span>
-                {importingSlug === group.slug && <span className="text-xs">Importing...</span>}
-              </button>
-            ))}
+                Stories
+              </span>
+            )}
+          </aside>
+
+          <div className="flex-1 min-w-0">
+            {activeStory ? (
+              <StoryEditor
+                token={token}
+                story={activeStory}
+                onStoryUpdated={handleStoryUpdated}
+                onDeleted={handleBack}
+                onBack={handleBack}
+              />
+            ) : (
+              <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+                <p className="text-gray-500">
+                  {stories.length === 0
+                    ? "No stories yet — create one, or import a built-in from the list."
+                    : "Pick a story on the left."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
-
-      {loading && <p className="text-gray-500">Loading...</p>}
-      {error && <p className="text-red-600">{error}</p>}
-      {!loading && stories.length === 0 && !error && (
-        <p className="text-gray-500">No stories yet — create or import one above.</p>
-      )}
-
-      {!loading && stories.length > 0 && (
-        <div className="flex gap-2 mb-3">
-          {(["all", ...DIFFICULTIES] as const).map((option) => (
-            <button
-              key={option}
-              onClick={() => setDifficultyFilter(option)}
-              className={`text-xs font-semibold rounded-full px-3 py-1 capitalize transition-colors ${
-                difficultyFilter === option
-                  ? "bg-black text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {option === "all"
-                ? `All (${stories.length})`
-                : `${option} (${stories.filter((s) => s.difficulty === option).length})`}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!loading && visibleStories.length === 0 && stories.length > 0 && (
-        <p className="text-gray-500">No stories at this difficulty.</p>
-      )}
-
-      <StoryList stories={visibleStories} onOpen={openStory} />
     </div>
   );
 };
-
-const StoryList = ({
-  stories,
-  onOpen,
-}: {
-  stories: AdminStoryListItem[];
-  onOpen: (id: string) => void;
-}) => (
-  <div className="space-y-2">
-    {stories.map((story) => (
-      <button
-        key={story._id}
-        onClick={() => onOpen(story._id)}
-        className="w-full flex items-center gap-3 bg-white rounded-lg shadow p-3 border border-gray-200 hover:bg-gray-50 text-left"
-      >
-        <span className="text-xl">{story.characterIcon}</span>
-        <div className="flex-1">
-          <div className="font-semibold text-black">{story.storyName}</div>
-          <div className="text-xs text-gray-500">
-            {story.difficulty} · {story.totalParts} parts
-          </div>
-        </div>
-        <span
-          className={`text-xs rounded-full px-2 py-0.5 ${
-            story.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {story.published ? "Published" : "Draft"}
-        </span>
-      </button>
-    ))}
-  </div>
-);
 
 export default StoryBuilderTab;
