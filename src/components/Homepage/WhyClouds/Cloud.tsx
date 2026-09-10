@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { BLOB_COLORS } from './whyCloudsData';
 
 interface CloudProps {
   label: string;
@@ -7,21 +8,6 @@ interface CloudProps {
   isPaused?: boolean;
 }
 
-// Blob color pairs, one per cloud, cycling through a soft pastel set.
-// Rendered as radial-gradient fades rather than a solid shape + `blur()` —
-// `filter: blur()` forces a per-frame GPU blur pass on the element (and is
-// especially costly on mobile Safari), whereas a gradient with a transparent
-// edge is just a paint, no filter, so it composites for free alongside the
-// bob animation below. Confirmed via user report: original blur-based
-// version was smooth on desktop but choppy on an iPhone 12.
-const BLOB_COLORS: [string, string][] = [
-  ['#bae6fd', '#c7d2fe'], // sky -> indigo
-  ['#fecdd3', '#fed7aa'], // rose -> orange
-  ['#a7f3d0', '#a5f3fc'], // emerald -> cyan
-  ['#ddd6fe', '#bfdbfe'], // violet -> blue
-  ['#fde68a', '#fbcfe8'], // amber -> pink
-  ['#bbf7d0', '#fef08a'], // green -> yellow
-];
 
 const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
   const shouldReduceMotion = useReducedMotion();

@@ -143,25 +143,28 @@ test.xn--80aa4acdq.xn--p1ai {
 		redir * / 302
 	}
 
-	# The payment webhook, BEFORE the cookie gate.
+	# The payment webhook, exempt from the cookie gate below.
 	#
-	# ЮKassa calls this server-to-server. There is no browser, so there is no
-	# cookie, so the gate below would 404 every notification — and ЮKassa
-	# retries a failed delivery for 24 hours before giving up. The purchase
-	# would still eventually settle (the reconciliation job asks the provider
-	# about stale pending payments), but the webhook path would be untestable
-	# on staging, which is the whole reason staging exists.
+	# Three details, each learned the hard way:
 	#
-	# `path` is an EXACT match, not a prefix. A prefix here would punch a
-	# cookie-gate hole through everything under /api/payments/.
+	#   * A driver calls this server-to-server. There is no browser, so no
+	#     cookie, so the gate below would 404 every notification.
+	#   * `path` is an EXACT match, and it ignores the query string — which is
+	#     where the per-payment auth token rides, so it passes through untouched.
+	#     A prefix matcher would punch a cookie-gate hole through everything
+	#     under /api/payments/, which is not what is wanted.
+	#   * Route it through frontend-staging (nginx), NOT straight to
+	#     backend-staging. That keeps the chain at exactly the two proxy hops
+	#     `app.set("trust proxy", 2)` documents, so req.ip is the real client
+	#     address. Going direct makes it one hop and quietly breaks any check
+	#     that reads the source address.
 	#
-	# Routed through frontend-staging (nginx) rather than straight to
-	# backend-staging on purpose: that keeps the chain at exactly the two
-	# proxy hops `app.set("trust proxy", 2)` documents, so req.ip is the real
-	# client address and the ЮKassa IP allowlist works. Going direct would
-	# make it one hop and quietly break the allowlist.
-	@yookassa path /api/payments/yookassa/webhook
-	handle @yookassa {
+	# The path segment is the driver's name, so changing PAYMENTS_PROVIDER means
+	# changing this line too — deliberately: the server 404s a webhook addressed
+	# to a driver that is not the live one, and a matching pair here makes that
+	# visible rather than mysterious.
+	@webhook path /api/payments/fake/webhook
+	handle @webhook {
 		reverse_proxy frontend-staging:80
 	}
 

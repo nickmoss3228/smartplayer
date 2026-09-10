@@ -14,13 +14,14 @@ interface Props {
   theme: Theme;
   isGuest: boolean;
   getLevelData: (level: number, lastListened: number | null) => { status: string };
+  previewParts?: number;
   isTrialLocked: (level: number) => boolean;
   onLevelClick: (level: number) => void;
 }
 
 export const LevelGrid: React.FC<Props> = ({
   totalLevels, completedLevels, lastListenedLevel,
-  audioTracks, comics, theme, isGuest,
+  audioTracks, comics, theme, isGuest, previewParts,
   getLevelData, isTrialLocked, onLevelClick,
 }) => {
   const { t } = useTranslation();
@@ -43,6 +44,7 @@ export const LevelGrid: React.FC<Props> = ({
             isCompleted={completedLevels.includes(level)}
             isLocked={isTrialLocked(level)}
             isGuest={isGuest}
+            previewParts={previewParts}
             trackTitle={trackTitle}
             comicSrc={comics[level - 1]}
             theme={theme}

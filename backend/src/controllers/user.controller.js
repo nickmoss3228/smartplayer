@@ -11,6 +11,11 @@
 // controllers/user.controller.js
 import { User } from "../models/User.js";
 import { escapeRegex } from "../helpers/regex.js";
+import { ownedStoryKeys, resolveAccess } from "../config/entitlements.js";
+import { PAID_PREVIEW_PARTS, PRODUCTS, CURRENCY } from "../config/priceCatalog.js";
+import { isPurchasable } from "../config/basketPricing.js";
+import { config } from "../config/env.js";
+import { FREE_TRIAL_STORIES } from "../config/trial.js";
 
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 const SEARCH_MIN_LENGTH = 2;
@@ -117,6 +122,52 @@ export async function searchPlayers(req, res) {
     });
   } catch (error) {
     console.error("Search players error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+
+// ── GET /user/entitlements ─────────────────────────────────────────────────
+// What this account owns, already resolved. The client does NOT re-implement
+// config/entitlements.js — it is told the answer and does a Set lookup. One
+// copy of the rule, on the side that enforces it.
+export async function getEntitlements(req, res) {
+  try {
+    const rows = req.user.entitlements ?? [];
+    const now = Date.now();
+    const { allAccess, allAccessExpiresAt } = resolveAccess(rows, now);
+
+    res.json({
+      // The raw rows, for the Library's "bought on / expires on" list. Expired
+      // ones are included on purpose: "your pass ran out" is information the
+      // Library has to be able to show, and hiding it would make a lapsed pass
+      // look like it was never bought.
+      entitlements: rows.map((row) => ({
+        sku: row.sku,
+        grantedAt: row.grantedAt,
+        expiresAt: row.expiresAt ?? null,
+        source: row.source,
+      })),
+      // The resolved answer — this is what the UI actually gates on.
+      ownedStories: ownedStoryKeys(rows, now),
+      hasAllAccess: allAccess,
+      allAccessExpiresAt: allAccessExpiresAt ?? null,
+      // Sent rather than mirrored so a client build older than the server
+      // cannot disagree with it about how much of a story is free.
+      freeTrialParts: FREE_TRIAL_STORIES,
+      paidPreviewParts: PAID_PREVIEW_PARTS,
+      currency: CURRENCY,
+      // Which SKUs the server will actually price right now. MUST go through
+      // isPurchasable(): reading `p.purchasable` alone ignores the
+      // PURCHASABLE_SKUS environment override, so staging reported one
+      // sellable SKU while /api/payments/config reported thirteen — and the
+      // paywall modal showed "coming soon" on packs it would happily sell.
+      purchasableSkus: PRODUCTS.filter((p) =>
+        isPurchasable(p.sku, config.payments.purchasableSkus)
+      ).map((p) => p.sku),
+    });
+  } catch (error) {
+    console.error("Get entitlements error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

@@ -1,6 +1,5 @@
 import { Link } from 'react-router';
-import { useState, useEffect, useRef } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import '../App.css';
 import { useTranslation } from 'react-i18next';
 import WhyCloudsSection from '../components/Homepage/WhyClouds/WhyCloudsSection';
@@ -10,45 +9,10 @@ import Slogan from '../components/Brand/Slogan';
 const Homepage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const { t } = useTranslation();
-  const shouldReduceMotion = useReducedMotion();
-  const guideRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
-
-  const scrollToGuide = () => {
-    guideRef.current?.scrollIntoView({
-      // A user who asked the OS for less motion gets a jump, not a glide.
-      behavior: shouldReduceMotion ? 'auto' : 'smooth',
-      block: 'start',
-    });
-  };
-
-  // Three steps, not the four this section used to carry. The two that were
-  // dropped ("no subtitles", "use only your ears") explained *why* the app
-  // works the way it does — a job the WhyClouds section directly above now
-  // owns interactively, and that /how-to-use owns at full length. What's left
-  // is the only thing neither of those covers: the loop a student actually
-  // moves through. Keeping the redundant pair here made the page argue with
-  // itself twice on one screen.
-  const steps = [
-    {
-      num: '01',
-      title: t('homepage.step1Title'),
-      desc: t('homepage.step1Desc'),
-    },
-    {
-      num: '02',
-      title: t('homepage.step2Title'),
-      desc: t('homepage.step2Desc'),
-    },
-    {
-      num: '03',
-      title: t('homepage.step3Title'),
-      desc: t('homepage.step3Desc'),
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-white relative overflow-x-hidden">
@@ -99,9 +63,8 @@ const Homepage = () => {
                 for a sharp mark — the two numbers move together.
 
                 Scoped to this section rather than the whole page: it centers on
-                its containing block, so leaving it on the page wrapper would park
-                it on the seam between the hero and the guide once the page grew
-                past one screen. */}
+                its containing block, so it stays centred on the hero even if a
+                second section is ever added below. */}
           <div
             className="absolute inset-0 -z-10 flex items-center justify-center
               pointer-events-none select-none"
@@ -163,7 +126,9 @@ const Homepage = () => {
           </div>
 
           {/* ── CALL TO ACTION ── */}
-          <div className="flex flex-col items-center px-8 sm:px-12 md:px-16 pb-4">
+          {/* pb absorbs the space the scroll cue used to hold: the hero is the
+              whole page now, so this row sits directly on the bottom edge. */}
+          <div className="flex flex-col items-center px-8 sm:px-12 md:px-16 pb-10 sm:pb-12">
             <div className="flex flex-col gap-2 w-full max-w-xs md:gap-3">
               <Link to="/levels">
                 <button
@@ -194,106 +159,6 @@ const Homepage = () => {
               </Link>
             </div>
           </div>
-
-          {/* ── SCROLL CUE ──
-                Load-bearing, not decoration. A section sized to exactly one
-                screen gives the browser no clipped content peeking over the
-                fold, which is the usual signal that scrolling is worthwhile —
-                without a cue here the guide below is effectively invisible.
-                It's a real button so it works by keyboard and tap, not only
-                by scroll gesture. */}
-          <div className="flex justify-center pb-5 sm:pb-6">
-            <button
-              type="button"
-              onClick={scrollToGuide}
-              className="group flex flex-col items-center gap-1.5
-                text-gray-400 hover:text-black transition-colors cursor-pointer
-                focus-visible:outline-none focus-visible:ring-2
-                focus-visible:ring-gray-400 focus-visible:ring-offset-4 rounded"
-            >
-              <span className="text-[9px] tracking-[0.4em] uppercase font-bold">
-                {t('homepage.howItWorks')}
-              </span>
-              <motion.svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                animate={shouldReduceMotion ? { y: 0 } : { y: [0, 4, 0] }}
-                transition={
-                  shouldReduceMotion
-                    ? { duration: 0 }
-                    : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
-                }
-              >
-                <path d="M6 9l6 6 6-6" />
-              </motion.svg>
-            </button>
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            SECTION 2 — the guide. Deliberately below the fold.
-
-            This is the short version on purpose. The clouds above answer
-            "why does it work like this", /how-to-use answers "show me
-            everything", and this row answers only "what happens when I
-            press start" — then hands off to the full page rather than
-            competing with it.
-           ══════════════════════════════════════════════════════════════════ */}
-        <section
-          ref={guideRef}
-          id="how-it-works"
-          // scroll-mt-13 matches the navbar height for the same reason the
-          // hero needs pt-13: scrollIntoView({block:'start'}) aligns this
-          // section's top with the *viewport* top, which sits behind the
-          // fixed navbar. Without it the scroll cue parks the section label
-          // partly underneath the bar.
-          className="relative flex flex-col items-center scroll-mt-13
-            px-8 sm:px-12 md:px-16 py-16 sm:py-20"
-        >
-          <p className="text-center text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-8 sm:mb-10">
-            {t('homepage.howItWorks')}
-          </p>
-
-          <div className="w-full max-w-4xl">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
-              {steps.map((s, i) => (
-                <div
-                  key={i}
-                  className="text-center sm:text-left sm:border-l sm:border-gray-100 sm:pl-5 sm:first:border-l-0 sm:first:pl-0"
-                >
-                  <span className="text-[9px] tracking-[0.3em] text-gray-300 font-bold">
-                    {s.num}
-                  </span>
-                  <h3 className="font-bold text-black text-sm mt-1 mb-1">{s.title}</h3>
-                  <p className="text-xs text-gray-500 leading-snug">{s.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* "No subtitles" badge */}
-          <div className="mt-12 sm:mt-14 flex items-center gap-3 border border-gray-200 px-4 py-1.5">
-            <div className="w-2 h-2 bg-black rounded-full flex-shrink-0" />
-            <p className="text-[9px] tracking-[0.3em] uppercase text-gray-500 font-bold">
-              {t('homepage.badge')}
-            </p>
-          </div>
-
-          {/* Hand-off to the long version, so the two never duplicate. */}
-          <Link
-            to="/how-to-use"
-            className="mt-6 text-sm text-gray-400 underline underline-offset-4
-              hover:text-black transition-colors"
-          >
-            {t('homepage.guideMore')}
-          </Link>
         </section>
       </div>
     </div>

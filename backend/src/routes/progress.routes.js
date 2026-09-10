@@ -1,6 +1,6 @@
 // routes/progress.routes.js
 import { Router } from "express";
-import { authenticateToken } from "../middleware/auth.js";
+import { authenticateToken, optionalAuth } from "../middleware/auth.js";
 import {
   publicQuizLimiter,
   phraseRepeatLimiter,
@@ -42,10 +42,14 @@ import {
 
 const router = Router();
 
-// Public — no auth. Guests take quizzes before ever signing up, and these
-// never expose the answer key (see controller comments).
-router.get("/progress/quiz/:difficulty/:storyId/:partNumber",              publicQuizLimiter, getQuiz);
-router.post("/progress/quiz/:difficulty/:storyId/:partNumber/check-answer", publicQuizLimiter, checkQuizAnswer);
+// Open to guests, but NOT anonymous. Guests take quizzes before ever signing
+// up and these never expose the answer key (see controller comments), so they
+// stay outside authenticateToken — but they serve per-part content for any
+// story, which makes them the back door around the paywall on
+// GET /api/stories/:difficulty/:storyId. optionalAuth identifies the caller
+// when a token is present so the controller can refuse a locked part.
+router.get("/progress/quiz/:difficulty/:storyId/:partNumber",              optionalAuth, publicQuizLimiter, getQuiz);
+router.post("/progress/quiz/:difficulty/:storyId/:partNumber/check-answer", optionalAuth, publicQuizLimiter, checkQuizAnswer);
 
 router.get("/progress/overview",                   authenticateToken, getOverview);
 router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);

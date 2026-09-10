@@ -10,6 +10,13 @@ interface Props {
   isCompleted: boolean;
   isLocked: boolean;
   isGuest: boolean;
+  /**
+   * How many parts are playable without owning the story. Drives the FREE
+   * badge, which used to be guest-only — but a signed-in visitor looking at a
+   * story they have not bought is exactly the person the free preview is meant
+   * to convert, and hiding the badge from them wasted it.
+   */
+  previewParts?: number;
   trackTitle: string;
   comicSrc: string | undefined;
   theme: Theme;
@@ -26,7 +33,7 @@ const getStatusRingClass = (status: string) => {
 
 export const LevelCard: React.FC<Props> = ({
   level, index, status, isCompleted, isLocked,
-  isGuest, trackTitle, comicSrc, theme, onClick,
+  isGuest, previewParts, trackTitle, comicSrc, theme, onClick,
 }) => {
   const { t } = useTranslation();
 
@@ -125,7 +132,7 @@ export const LevelCard: React.FC<Props> = ({
         )}
 
         {/* FREE badge */}
-        {isGuest && level <= FREE_TRIAL_STORIES && (
+        {level <= (previewParts ?? (isGuest ? FREE_TRIAL_STORIES : 0)) && (
           <div className="absolute top-2 right-2 z-10 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow tracking-wide uppercase">
             {t('trial.free')}
           </div>

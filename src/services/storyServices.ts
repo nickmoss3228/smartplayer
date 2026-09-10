@@ -2,9 +2,14 @@
 // Read side of DB-backed stories authored via the admin Story Builder.
 // Static-file stories (leo, leo-additional, maya, daniel) never call this —
 // these are purely additive fallbacks for stories that only exist in Mongo.
-import axios from "axios";
+//
+// These go through the shared `api` instance rather than bare axios BECAUSE of
+// the paywall: the server decides how much of a story to hand back from the
+// caller's entitlements, and a request with no Authorization header looks
+// anonymous. Called with bare axios (as this file used to), a paying customer
+// would be served the locked, audio-stripped version of a story they own.
+import { api } from "./apiClient";
 import { AudioTrack } from "../types";
-import { API_BASE } from "./apiClient";
 
 
 export interface PublishedVocabEntry {
@@ -33,6 +38,13 @@ export interface PublishedStoryPart {
   vocabulary: PublishedVocabEntry[];
   phrasalVerbs: PublishedVocabEntry[];
   quiz: PublishedQuizQuestion[];
+  /**
+   * The caller has not paid for this part. The server sends the part number
+   * and title and nothing else — no audio, no comic, no vocabulary, no quiz.
+   * Parts are never dropped, only emptied, so numbering stays honest (the same
+   * reasoning as adaptPublishedStoryToTracks below).
+   */
+  locked?: boolean;
 }
 
 export interface LocalizedText {
@@ -49,6 +61,10 @@ export interface PublishedStory {
   localized?: { title: LocalizedText; description: LocalizedText } | null;
   totalParts: number;
   parts: PublishedStoryPart[];
+  /** True when the caller owns none of this story beyond its free preview. */
+  locked?: boolean;
+  /** Any one of these SKUs unlocks it — what the paywall modal offers to sell. */
+  requiredSkus?: string[];
 }
 
 export interface PublishedStoryListItem {
@@ -63,6 +79,13 @@ export interface PublishedStoryListItem {
   /** Per-locale display text; empty strings fall back to storyName. */
   localized?: { title: LocalizedText; description: LocalizedText } | null;
   totalParts: number;
+  /**
+   * Paywall state, decided by the server from the caller's entitlements — the
+   * list is the one place that knows about stories the caller does NOT own, so
+   * it has to carry the lock rather than the client inferring it.
+   */
+  locked?: boolean;
+  requiredSkus?: string[];
 }
 
 // Returns null if the story doesn't exist (isn't published, or was never a
@@ -72,7 +95,7 @@ export const fetchPublishedStory = async (
   storyId: string
 ): Promise<PublishedStory | null> => {
   try {
-    const res = await axios.get(`${API_BASE}/api/stories/${difficulty}/${storyId}`);
+    const res = await api.get(`/api/stories/${difficulty}/${storyId}`);
     return res.data;
   } catch {
     return null;
@@ -93,7 +116,7 @@ export const fetchPublishedStoriesList = async (
   difficulty: string
 ): Promise<{ stories: PublishedStoryListItem[]; hidden: string[] }> => {
   try {
-    const res = await axios.get(`${API_BASE}/api/stories/${difficulty}`);
+    const res = await api.get(`/api/stories/${difficulty}`);
     return { stories: res.data.stories ?? [], hidden: res.data.hidden ?? [] };
   } catch {
     return { stories: [], hidden: [] };

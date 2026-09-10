@@ -13,6 +13,8 @@ import {
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { getQuizPartsForImport, resolveQuizAudioPath } from "../config/quizData.js";
+import { accessFor, isPartVisible, isPaidStory, storyKey } from "../config/entitlements.js";
+import { skusGranting } from "../config/priceCatalog.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
@@ -653,12 +655,65 @@ export async function setStoryPublished(req, res) {
 
 // ─── Public: fetch a published story for playback ──────────────────────────
 
+/**
+ * A part the caller has not paid for. Emptied, NOT dropped.
+ *
+ * Numbering is load-bearing: adaptPublishedStoryToTracks (services/storyServices.ts)
+ * says so in its own comment — filtering a part out renumbers every part after
+ * it, so requesting part 5 silently plays a different one while the vocabulary
+ * panel still shows part 5. A locked part therefore keeps its number and its
+ * title (the level grid needs both to draw a padlocked card) and loses
+ * everything that costs money to produce.
+ */
+const lockPart = (part) => ({
+  partNumber: part.partNumber,
+  title: part.title ?? "",
+  locked: true,
+  audioUrl: null,
+  helpAudio: [],
+  timeMarkers: [],
+  comicUrl: null,
+  vocabulary: [],
+  phrasalVerbs: [],
+  quiz: [],
+});
+
+const openPart = (part) => ({
+  partNumber: part.partNumber,
+  title: part.title ?? "",
+  locked: false,
+  audioUrl: part.audioUrl,
+  helpAudio: part.helpAudio ?? [],
+  timeMarkers: part.timeMarkers,
+  comicUrl: part.comicUrl ?? null,
+  vocabulary: part.vocabulary,
+  phrasalVerbs: part.phrasalVerbs,
+  // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
+  // Stored bucket-relative; resolved for THIS environment on the way out.
+  quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
+    ...rest,
+    audio: {
+      fast: resolveQuizAudioPath(rest.audio?.fast),
+      slow: resolveQuizAudioPath(rest.audio?.slow),
+    },
+  })),
+});
+
 // GET /api/stories/:difficulty/:storyId
+//
+// Mounted behind optionalAuth, not authenticateToken: this URL serves guests
+// and members alike, and WHO is asking decides how much comes back. This is
+// the only endpoint that ever hands out a paid audioUrl, which is what makes
+// the paywall enforceable at all — see config/entitlements.js.
 export async function getPublishedStory(req, res) {
   try {
     const { difficulty, storyId } = req.params;
     const story = await Story.findOne({ difficulty, storyId, published: true }).lean();
     if (!story) return res.status(404).json({ message: "Story not found." });
+
+    const access = accessFor(req.user?.entitlements, difficulty, storyId, {
+      authenticated: Boolean(req.user),
+    });
 
     res.json({
       storyId: story.storyId,
@@ -669,25 +724,16 @@ export async function getPublishedStory(req, res) {
       coverUrl: story.coverUrl ?? null,
       localized: story.localized ?? null,
       totalParts: story.totalParts,
-      parts: story.parts.map((part) => ({
-        partNumber: part.partNumber,
-        title: part.title ?? "",
-        audioUrl: part.audioUrl,
-        helpAudio: part.helpAudio ?? [],
-        timeMarkers: part.timeMarkers,
-        comicUrl: part.comicUrl ?? null,
-        vocabulary: part.vocabulary,
-        phrasalVerbs: part.phrasalVerbs,
-        // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
-        // Stored bucket-relative; resolved for THIS environment on the way out.
-        quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
-          ...rest,
-          audio: {
-            fast: resolveQuizAudioPath(rest.audio?.fast),
-            slow: resolveQuizAudioPath(rest.audio?.slow),
-          },
-        })),
-      })),
+      // The client locks its grid from these rather than recomputing the rule.
+      owned: access.owned,
+      locked: !access.owned,
+      // Infinity does not survive JSON.stringify (it becomes null), so send a
+      // number the client can compare against.
+      freeParts: access.owned ? story.totalParts : access.freeParts,
+      requiredSkus: access.owned ? [] : skusGranting(storyKey(difficulty, storyId)),
+      parts: story.parts.map((part) =>
+        isPartVisible(access, part.partNumber) ? openPart(part) : lockPart(part),
+      ),
     });
   } catch (error) {
     console.error("getPublishedStory error:", error);
@@ -701,12 +747,31 @@ export async function getPublishedStory(req, res) {
 export async function listPublishedStories(req, res) {
   try {
     const { difficulty } = req.params;
-    const [stories, hidden] = await Promise.all([
+    const [rows, hidden] = await Promise.all([
       Story.find({ difficulty, published: true })
         .select("storyId storyName description characterIcon category coverUrl localized totalParts")
         .lean(),
       hiddenStoryIds(difficulty),
     ]);
+
+    // The list is the ONE place that knows about stories the caller does not
+    // own, so it carries the lock rather than letting the client infer it.
+    // No part data is exposed here (and never was), so this is presentation
+    // only — the real gate is getPublishedStory above.
+    const authenticated = Boolean(req.user);
+    const stories = rows.map((story) => {
+      const key = storyKey(difficulty, story.storyId);
+      const access = accessFor(req.user?.entitlements, difficulty, story.storyId, {
+        authenticated,
+      });
+      return {
+        ...story,
+        // A guest sees a padlock only on genuinely paid stories. Free stories
+        // keep their existing two-part trial, which is a trial and not a lock.
+        locked: isPaidStory(key) && !access.owned,
+        requiredSkus: access.owned ? [] : skusGranting(key),
+      };
+    });
     // `hidden` covers the BUILT-IN stories too, which is the point: they are
     // declared in the frontend's static config and rendered regardless of what
     // the database holds, so this list is the only way the admin panel can

@@ -424,12 +424,13 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 {t("player.vocabulary")}
               </p>
               <div className="flex flex-wrap gap-2">
-                {currentVocabulary.map(({ word, audioKey }) => (
+                {currentVocabulary.map(({ word, audioKey, audioUrl }) => (
                   <VocabChip
                     key={word}
                     word={word}
                     audioKey={audioKey}
-                    onPlay={playVocabWord}
+                    audioUrl={audioUrl}
+                    onPlay={(_key, url) => playVocabWord(url)}
                     volume={isMuted ? 0 : volume}
                     isLearned={learnedWords?.has((audioKey ?? word).toLowerCase())}
                   />

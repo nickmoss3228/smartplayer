@@ -437,6 +437,16 @@ const Room = () => {
     return () => window.clearTimeout(id);
   }, [toast]);
 
+  // Buying the last room empties the offer, which used to take the build bar —
+  // and with it the only way back to play mode — off the screen while the
+  // top-right controls were still hidden. Leave the mode instead.
+  useEffect(() => {
+    if (mode !== "build" || !school) return;
+    if (buildableRooms(school.variantId, school.ownedRoomIds).length) return;
+    setMode("play");
+    setPicked(null);
+  }, [mode, school]);
+
   useEffect(() => {
     if (!school) return;
     const owned = school.ownedRoomIds;
@@ -532,6 +542,15 @@ const Room = () => {
     run(() => buyRoom(spec.id));
   };
 
+  // Both build and customize are played from above with the roof off: the
+  // exterior view puts it back over the very ghosts and room picks you are
+  // being asked to tap.
+  const enterMode = (next: SchoolMode) => {
+    setExterior(false);
+    setPicked(null);
+    setMode(next);
+  };
+
   const leaveMode = () => {
     setMode("play");
     setPicked(null);
@@ -623,10 +642,7 @@ const Room = () => {
             picking a room before you could change anything at all. */}
         <button
           type="button"
-          onClick={() => {
-            setMode("customize");
-            setPicked(null);
-          }}
+          onClick={() => enterMode("customize")}
           aria-label={t("school.customizeOpen")}
           title={t("school.customizeOpen")}
           className="h-11 w-11 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-black/60 active:scale-95 transition-transform"
@@ -637,12 +653,10 @@ const Room = () => {
 
       {/* ── Build ────────────────────────────────────────────────────── */}
       <div className="absolute inset-x-0 bottom-5 flex justify-center px-4 pointer-events-none">
-        {!offer.length ? (
-          <div className="pointer-events-none flex items-center gap-2 rounded-2xl bg-white/90 backdrop-blur px-5 py-3 shadow-lg">
-            <IoSparkles size={18} className="text-amber-500" />
-            <span className="text-sm font-bold text-black/70">{t("school.complete")}</span>
-          </div>
-        ) : mode === "customize" ? (
+        {/* Mode first, then the state of the offer. The other way round, a
+            finished school ate the customize sheet — the one screen that is
+            MORE useful once there is nothing left to build. */}
+        {mode === "customize" ? (
           <CustomizeSheet
             room={focused}
             look={focusedLook}
@@ -675,10 +689,15 @@ const Room = () => {
             onBuy={handleBuy}
             onClose={leaveMode}
           />
+        ) : !offer.length ? (
+          <div className="pointer-events-none flex items-center gap-2 rounded-2xl bg-white/90 backdrop-blur px-5 py-3 shadow-lg">
+            <IoSparkles size={18} className="text-amber-500" />
+            <span className="text-sm font-bold text-black/70">{t("school.complete")}</span>
+          </div>
         ) : (
           <button
             type="button"
-            onClick={() => setMode("build")}
+            onClick={() => enterMode("build")}
             disabled={busy}
             className={`pointer-events-auto relative flex items-center gap-2 rounded-2xl px-6 py-3.5 shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
               canBuildSomething
@@ -710,7 +729,7 @@ const Room = () => {
               buildLabel={t("school.buildOpen")}
               dismissLabel={t("school.look.close")}
               onPay={() => run(payPayroll)}
-              onBuild={() => setMode("build")}
+              onBuild={() => enterMode("build")}
               onDismiss={() => setDismissed(advice.text)}
             />
           )}

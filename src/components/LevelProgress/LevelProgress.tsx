@@ -9,6 +9,8 @@ import { CongratsModal } from '../../modules/levelprogress/congratsModule';
 import { LevelProgressSkeleton } from '../../modules/levelprogress/LevelProgressSkeleton';
 import { StoryPreviewModal } from '../../modules/storypreview/StoryPreviewModal';
 import type { LevelProgressProps } from '../../types/LevelProgress';
+import { PaywallModal } from '../Paywall/PaywallModal';
+import { skusGranting, storyKey } from '../../config/priceCatalog';
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const {
@@ -20,6 +22,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     handleLevelCardClick, handleStartListening,
     handleClosePreview, handleCloseCongrats,
     handleNextDifficulty, handleCloseRegisterPrompt,
+    showPaywall,
+    setShowPaywall,
+    storyOwned,
+    previewParts,
   } = useLevelProgressPage(props);
 
   if (isLoading) return <LevelProgressSkeleton />;
@@ -45,6 +51,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           comics={comics}
           theme={theme}
           isGuest={!user}
+          previewParts={storyOwned ? 0 : previewParts}
           getLevelData={getLevelData}
           isTrialLocked={isTrialLocked}
           onLevelClick={handleLevelCardClick}
@@ -74,6 +81,17 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         isOpen={showRegisterPrompt}
         theme={theme}
         onClose={handleCloseRegisterPrompt}
+      />
+
+      {/* The signed-in half of the same gate. A visitor without an account is
+          asked to make one (TrialGateModal above); an account holder who has
+          not bought this story is shown what would unlock it. */}
+      <PaywallModal
+        isOpen={showPaywall && !storyOwned}
+        theme={theme}
+        storyTitle={storyTitle}
+        requiredSkus={skusGranting(storyKey(difficulty, props.storySlug ?? 'leo'))}
+        onClose={() => setShowPaywall(false)}
       />
     </div>
   );

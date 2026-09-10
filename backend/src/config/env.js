@@ -76,9 +76,23 @@ function parseAdminCodes(raw, legacyCode) {
 
 export const config = {
     port: process.env.PORT || 3000,
+    nodeEnv: process.env.NODE_ENV || 'development',
     mongoUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
+    sms: {
+        // 'console' prints the OTP to the server log instead of sending it, so
+        // signup and login are walkable without a paid SMS account. It is
+        // refused outright when NODE_ENV=production (services/sms.service.js) —
+        // there it would mean every verification code in the app is sitting in
+        // plaintext in the container logs.
+        provider: process.env.SMS_PROVIDER || 'smsaero',
+        smsaero: {
+            email: process.env.SMSAERO_EMAIL,
+            apiKey: process.env.SMSAERO_API_KEY,
+            sign: process.env.SMSAERO_SIGN || 'malako',
+        },
+    },
     adminCode: process.env.ADMIN_CODE,
     adminCodes: parseAdminCodes(process.env.ADMIN_CODES, process.env.ADMIN_CODE),
     // Audit rows self-expire via a TTL index (see models/AdminAuditLog.js).
@@ -92,4 +106,73 @@ export const config = {
         endpoint: process.env.YANDEX_ENDPOINT,
         baseUrl: process.env.YANDEX_BASE_URL, // public read URL prefix, matches frontend's VITE_YOS_BASE_URL
     },
+
+    // Where the browser lives. Read straight from process.env in
+    // controllers/password.controller.js and services/email.service.js for
+    // historical reasons; surfaced here because the payment return URL needs
+    // it too and a fourth direct read is one too many.
+    frontendUrl: process.env.FRONTEND_URL,
+
+    // Real-money payments. See config/priceCatalog.js for what is sold.
+    payments: {
+        // The kill switch. Absent or not exactly "true" means the shop refuses
+        // to CREATE orders — production runs dark until this is deliberately
+        // set. It does NOT stop settlement: if a provider notification arrives
+        // while this is off, somebody paid, and they get what they bought.
+        // Taking money and honouring money are separate decisions.
+        enabled: process.env.PAYMENTS_ENABLED === 'true',
+        // Which driver takes the money. "fake" is a working payment system with
+        // the money removed (services/payments/fake.js): it redirects, calls
+        // back over real HTTP, retries, and can be told to lose a notification.
+        // Every driver declares realMoney, and server.js refuses to run one
+        // that does not in production — see assertPaymentsSafeForEnvironment().
+        provider: process.env.PAYMENTS_PROVIDER || 'fake',
+        // Lets staging sell placeholder packs that production refuses.
+        // Comma-separated SKUs, or "*" for everything in the catalog. It only
+        // ever ADDS to the purchasable set — it cannot un-sell something.
+        purchasableSkus: (process.env.PURCHASABLE_SKUS ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        // Signs the per-payment token planted in every callback URL. Neutral by
+        // design rather than living in a driver: we always choose the
+        // callbackUrl, so this authenticates a notification identically for an
+        // acquirer that signs its own and one that offers nothing at all.
+        // Rotating it strands the callbacks of payments already in flight.
+        callbackSecret: process.env.PAYMENTS_CALLBACK_SECRET,
+        // Where a driver reaches US. NOT frontendUrl: locally that is :5173
+        // while the API is :5000, and on staging it must be the public
+        // hostname, because a callback that never crosses the real proxy chain
+        // has not tested the thing staging exists to test.
+        publicApiBase: process.env.PUBLIC_API_BASE,
+        // How long the fake acquirer "takes" before calling back. Long enough
+        // that the return page visibly polls, short enough not to be a nuisance.
+        fakeDelayMs: Number(process.env.FAKE_CALLBACK_DELAY_MS ?? 2000),
+    },
 };
+
+// Payments fail CLOSED. A shop that says "not yet" is recoverable; one that
+// throws mid-checkout is a support ticket. Following the Yandex-keys precedent
+// above: warn loudly at boot, keep running.
+//
+// Note what is NOT checked here: whether the selected driver can actually charge
+// anyone. That answer lives on the driver itself (realMoney), and importing the
+// driver registry from this file would be a cycle — env.js is what the registry
+// reads its configuration from. server.js calls
+// assertPaymentsSafeForEnvironment() at boot instead, which is the same check
+// with the dependency pointing the right way.
+if (config.payments.enabled) {
+    const missingPayments = [];
+    if (!config.payments.callbackSecret) missingPayments.push('PAYMENTS_CALLBACK_SECRET');
+    if (!config.payments.publicApiBase) missingPayments.push('PUBLIC_API_BASE');
+
+    if (missingPayments.length) {
+        console.error(
+            `[env] PAYMENTS_ENABLED=true but payments are unconfigured (missing: ${missingPayments.join(', ')}).\n` +
+            '[env] Payments have been DISABLED: without these a callback cannot be built or\n' +
+            '[env] verified, so orders would be created that could never be settled.\n' +
+            '[env] Generate a secret with `openssl rand -hex 32`.'
+        );
+        config.payments.enabled = false;
+    }
+}

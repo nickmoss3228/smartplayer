@@ -141,7 +141,8 @@
         "title": "Your eyes did the work, not the ears",
         "eyeLabel": "Eyes",
         "earLabel": "Ears",
-        "takeaway": "If you could read it, you didn't have to listen."
+        "takeaway": "If you could read it, you didn't have to listen.",
+        "offLabel": "Subtitles off"
       },
       "earsOnly": {
         "cloud": "Why only my ears?",
@@ -621,6 +622,67 @@
         "title": "Emotional Coloring",
         "text": "Voiced by a neural network, every story must include breaths, clicking sounds, tone changes, and sarcastic expressions — everything found in real human speech. Emotional context is just as important as the words. Without it, the audio sounds unnatural."
       }
+    },
+    "nav": {
+      "title": "Guide",
+      "doIt": "What you'll do",
+      "then": "Then"
+    },
+    "intro": {
+      "eyebrow": "How malako works",
+      "title1": "You listen.",
+      "title2": "That's the whole method.",
+      "text": "Everything else on this page exists to explain one decision: we give you the audio and take away every way of avoiding it. Here is what you actually do, and the six questions students ask once they realise we mean it.",
+      "readTime": "Two minutes to read"
+    },
+    "loop": {
+      "label": "Your loop, every story",
+      "title": "Five things you do. The player handles the rest.",
+      "s1": {
+        "title": "Pick your milk",
+        "text": "1%, 2,5% or 6%. Difficulty is sold the way milk is — by fat."
+      },
+      "s2": {
+        "title": "Meet the words",
+        "text": "A short list before the story. Tap any word to hear it — never to read it in English."
+      },
+      "s3": {
+        "title": "Listen",
+        "text": "Each line comes back up to three times, each pass faster than the last. No text, no captions."
+      },
+      "s4": {
+        "title": "Hunt the comic",
+        "text": "Every story ships with its own comic. Heard a new word? Go find it in the panels."
+      },
+      "s5": {
+        "title": "Answer, then advance",
+        "text": "A spoken quiz — every question in a normal and a slow version. Pass it and the next story unlocks."
+      }
+    },
+    "groups": {
+      "player": {
+        "label": "In the player",
+        "title": "What happens to one sentence.",
+        "text": "Two settings do all the work, and they are the two things students notice first."
+      },
+      "taken": {
+        "label": "What we take away",
+        "title": "Three crutches, removed on purpose.",
+        "text": "Each of these is something other apps hand you. Each one lets you finish a lesson without ever having listened. That is the whole reason they are gone."
+      },
+      "given": {
+        "label": "What you get back",
+        "title": "One crutch we hand you gladly.",
+        "text": "Pictures are not a shortcut around listening — you still have to hear the word before you can go looking for it."
+      }
+    },
+    "pick": {
+      "navLabel": "Pick your level",
+      "label": "Then",
+      "title": "Pick a fat percentage and start.",
+      "text": "How full the glass sits is how hard the stories are. Change it whenever you like — nothing is locked behind the choice.",
+      "cta": "Choose your level",
+      "note": "You can switch levels at any time."
     }
   },
   "notFound": {
@@ -1562,7 +1624,16 @@
     "success": "Payment complete",
     "failed": "Payment did not go through",
     "backToLibrary": "Go to my library",
-    "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again."
+    "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again.",
+    "canceled": "Payment canceled",
+    "canceledBody": "Nothing was charged.",
+    "successBody": "Everything you bought is unlocked and waiting in your library.",
+    "failedBody": "Nothing was charged. You can try again from the shop whenever you like.",
+    "unlocked": "Unlocked",
+    "startListening": "Start listening",
+    "itemPass": "Full access · {{days}} days",
+    "itemPack": "Level pack",
+    "itemStory": "Single story"
   },
   "shelf": {
     "title": "Stories",

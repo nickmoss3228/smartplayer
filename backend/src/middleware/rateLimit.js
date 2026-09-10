@@ -66,6 +66,7 @@ const make = (label, windowMs, max, extra = {}) =>
 export const adminLoginLimiter = make("admin-login", 15 * MINUTE, 10, {
   skipSuccessfulRequests: true,
 });
+
 // Costs real money and IO per call (a Resend send plus a user lookup), so
 // unlike the login tiers this counts successes too — the cost is incurred
 // either way, and it doubles as anti-mailbomb protection for the recipient.
@@ -76,6 +77,15 @@ export const loginLimiter = make("login", 15 * MINUTE, 10, {
   skipSuccessfulRequests: true,
 });
 export const signupLimiter = make("signup", 60 * MINUTE, 5);
+export const phoneVerificationLimiter = make("phone-verification", 15 * MINUTE, 10);
+
+// POST /api/sessions/evict is the only unauthenticated route that can remove
+// something. Its ticket is unguessable and expires in five minutes, so this is
+// not the primary defence — it is a ceiling on how fast a stolen ticket could
+// be used to clear an account's devices before it expires. Successes count:
+// legitimately freeing more than a handful of slots in an hour is not a thing
+// a real user does.
+export const evictLimiter = make("session-evict", 60 * MINUTE, 10);
 
 // ── Currency-minting endpoints ─────────────────────────────────────────────
 // These two are keyed by USER, not IP. Both sit behind authenticateToken and
@@ -101,6 +111,16 @@ export const phraseRepeatLimiter = make("phrase-repeat", 60 * MINUTE, 200, {
 // One submission carries a whole vocab round (capped at MAX_WORDS_PER_SUBMISSION
 // in the controller), so a legitimate student needs very few of these per hour.
 export const vocabCompleteLimiter = make("vocab-complete", 60 * MINUTE, 60, {
+  keyGenerator: byUser,
+});
+
+// Creating an order is cheap for us but calls out to the payment provider, and
+// each one leaves a `pending` row for the reconciler to chase. Keyed by USER
+// like the two above: the thing worth capping is how many orders one account
+// can open, and an IP key would lump a whole school computer lab into one
+// bucket. Generous, because abandoning a checkout and starting again is normal
+// behaviour, not abuse.
+export const orderLimiter = make("payment-order", 60 * MINUTE, 30, {
   keyGenerator: byUser,
 });
 

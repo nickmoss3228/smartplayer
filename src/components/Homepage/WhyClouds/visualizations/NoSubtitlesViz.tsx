@@ -1,11 +1,20 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { IoEyeOutline, IoEarOutline, IoCheckmarkCircle } from 'react-icons/io5';
+import { IoEyeOutline, IoEarOutline, IoChatbubbleEllipsesOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
-const BAR_HEIGHTS = [6, 14, 22, 14, 8, 18, 10];
 const BEATS_MS = [1100, 900];
 
+/**
+ * Eyes → ears, told as a caption strip emptying out.
+ *
+ * This used to sit an animated bar meter between the two icons. The bars were
+ * the only waveform anywhere in the product and they were doing the wrong job:
+ * the point of this explanation is the *text leaving*, not what audio looks
+ * like — and a bouncing meter reads as "sound is playing", which is true in
+ * every mode, subtitles or not. A player frame whose caption line drains to
+ * "subtitles off" says the actual thing.
+ */
 const NoSubtitlesViz = () => {
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
@@ -22,84 +31,81 @@ const NoSubtitlesViz = () => {
   }, [shouldReduceMotion]);
 
   return (
-    <div className="flex flex-col items-center gap-6 text-center w-full">
-      <div className="flex items-center justify-center gap-8 sm:gap-10">
+    <div className="flex flex-col items-center gap-5 text-center w-full">
+      {/* The player frame. Deliberately plain: it is a stand-in for the
+          story you are listening to, and the only thing that changes on it
+          is the caption line at the bottom. */}
+      <div className="w-full max-w-[19rem] rounded-xl overflow-hidden border border-gray-200">
+        <div className="h-20 flex items-center justify-center bg-gray-50">
+          <motion.span
+            animate={{
+              color: stage === 2 ? '#059669' : '#d1d5db',
+              scale: stage === 2 ? 1.1 : 1,
+            }}
+            transition={{ duration: 0.4 }}
+          >
+            <IoChatbubbleEllipsesOutline size={30} />
+          </motion.span>
+        </div>
+
+        <div className="relative border-t border-gray-200 bg-white min-h-10 flex items-center justify-center px-3 py-2">
+          <AnimatePresence mode="wait">
+            {stage < 2 ? (
+              <motion.span
+                key="caption"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: stage === 1 ? 0.3 : 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45 }}
+                className="text-sm italic text-orange-500"
+              >
+                &ldquo;...the words on the screen...&rdquo;
+              </motion.span>
+            ) : (
+              <motion.span
+                key="off"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.45, delay: 0.15 }}
+                className="text-[10px] uppercase tracking-widest font-bold text-gray-400"
+              >
+                {t('homepage.why.noSubtitles.offLabel')}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Which channel is doing the work. */}
+      <div className="flex items-center justify-center gap-10 sm:gap-12">
         <motion.div
           animate={{
-            opacity: stage < 2 ? 1 : 0.25,
-            scale: stage === 0 ? 1.15 : 1,
-            color: stage < 2 ? '#111827' : '#9ca3af',
+            opacity: stage < 2 ? 1 : 0.3,
+            color: stage < 2 ? '#ea580c' : '#9ca3af',
           }}
           transition={{ duration: 0.4 }}
           className="flex flex-col items-center gap-1"
         >
-          <IoEyeOutline size={32} />
+          <IoEyeOutline size={30} />
           <span className="text-[10px] uppercase tracking-widest">
             {t('homepage.why.noSubtitles.eyeLabel')}
           </span>
         </motion.div>
 
-        <div className="flex items-end gap-1 h-10">
-          {BAR_HEIGHTS.map((h, i) => (
-            <motion.span
-              key={i}
-              className="w-1.5 rounded-full"
-              animate={
-                stage === 2
-                  ? { height: [h, h * 1.6, h], backgroundColor: '#10b981' }
-                  : { height: h, backgroundColor: '#d1d5db' }
-              }
-              transition={
-                stage === 2
-                  ? { duration: 0.8, repeat: Infinity, delay: i * 0.05 }
-                  : { duration: 0.3 }
-              }
-            />
-          ))}
-        </div>
-
         <motion.div
           animate={{
-            opacity: stage === 2 ? 1 : 0.25,
-            scale: stage === 2 ? 1.15 : 1,
+            opacity: stage === 2 ? 1 : 0.3,
+            scale: stage === 2 ? 1.12 : 1,
             color: stage === 2 ? '#059669' : '#9ca3af',
           }}
           transition={{ duration: 0.4 }}
           className="flex flex-col items-center gap-1"
         >
-          <IoEarOutline size={32} />
+          <IoEarOutline size={30} />
           <span className="text-[10px] uppercase tracking-widest">
             {t('homepage.why.noSubtitles.earLabel')}
           </span>
         </motion.div>
-      </div>
-
-      <div className="h-8 flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          {stage === 0 && (
-            <motion.p
-              key="subtitle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.5 }}
-              className="text-sm text-gray-500 italic border-b border-dashed border-gray-300 pb-1"
-            >
-              &ldquo;...the words on the screen...&rdquo;
-            </motion.p>
-          )}
-          {stage === 2 && (
-            <motion.div
-              key="check"
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-              className="text-emerald-600"
-            >
-              <IoCheckmarkCircle size={22} />
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {stage === 2 && (

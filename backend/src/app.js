@@ -4,6 +4,7 @@ import { corsMiddleware } from "./middleware/cors.js";
 import { apiLimiter } from "./middleware/rateLimit.js";
 import { auditAdminAction } from "./middleware/auditLog.js";
 import routes from "./routes/index.js";
+import { webhookRoutes } from "./routes/payments.routes.js";
 
 const app = express();
 
@@ -66,6 +67,33 @@ app.use((req, res, next) => {
 // attempts" at all. Its OPTIONS short-circuit also means preflights never
 // consume rate-limit quota — that's intended, don't "fix" it.
 app.use(corsMiddleware);
+
+// ── The payment webhook, mounted BEFORE everything below it ────────────────
+//
+// One mount, three problems solved, and the position is not a style choice:
+//
+//   above apiLimiter    — acquirers retry webhooks in bursts, and a 429 reads
+//                         to them as a failed delivery. A throttled webhook
+//                         eventually strands a payment the customer has made.
+//   above express.json  — express.raw keeps the exact bytes. An acquirer that
+//                         signs its notifications needs them to verify an HMAC,
+//                         and they settle an argument with one either way.
+//   above auditAdminAction — it is not an admin action.
+//
+// It carries NO JWT: this is server-to-server, and requiring one would mean the
+// acquirer gets a 401 while the buyer never receives what they paid for.
+// Authentication is the driver's job — see parseCallback in
+// services/payments/index.js, and the per-payment token in
+// helpers/callbackToken.js that every driver gets for free.
+//
+// :driver is in the path so a stale URL from a previously configured acquirer
+// 404s instead of being fed to the current one's parser, which would report it
+// as a forgery and bury the real cause.
+app.use(
+  "/api/payments/:driver/webhook",
+  express.raw({ type: "*/*", limit: "64kb" }),
+  webhookRoutes
+);
 
 // Broad per-IP ceiling for the whole API. Per-endpoint limits live in the
 // route files. Sits above express.json() so a flood is rejected before any

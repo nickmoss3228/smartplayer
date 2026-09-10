@@ -26,6 +26,15 @@ export interface StoryGroup {
   cover?: string;
   /** Which heading/section this story is grouped under in List.tsx. Defaults to 'general'. */
   category: StoryCategory;
+  /**
+   * Paywall state, decided by the SERVER (config/entitlements.js) and carried
+   * on the list response. Undefined means "the server had no opinion" — a
+   * static story the DB has never heard of — which is treated as unlocked,
+   * because the static catalogue is exactly the free starter pack.
+   */
+  locked?: boolean;
+  /** Any one of these SKUs unlocks it. Drives the paywall modal's CTAs. */
+  requiredSkus?: string[];
 }
 
 export type DifficultySlug = 'easy' | 'medium' | 'hard';
@@ -57,6 +66,33 @@ const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
     { slug: 'daniel', character: 'Daniel', totalTracks: 10, coverEmoji: '👨', cover: '/assets/covers/daniel.jpg' },
   ],
 };
+
+/**
+ * Each level's character art, used when a story has no cover of its own.
+ *
+ * Every story on a level stars the same character, so their own comic is the
+ * honest stand-in — far better than the halftone placeholder, and it means the
+ * nine extension-pack stories can ship without waiting on nine new comics to be
+ * drawn. StoryCard crops each card differently (deterministically, from the
+ * slug), so four Leo stories do not render as four identical cards.
+ *
+ * News stories are deliberately excluded below: they are not about the
+ * character, and giving them his portrait would say something untrue about
+ * what is inside. They keep the halftone + newspaper icon.
+ */
+export const CHARACTER_COVER: Record<DifficultySlug, string> = {
+  easy: '/assets/covers/leo.jpg',
+  medium: '/assets/covers/maya.jpg',
+  hard: '/assets/covers/daniel.jpg',
+};
+
+/** A story's cover, falling back to its level's character art. */
+export const coverFor = (
+  difficulty: DifficultySlug,
+  category: StoryCategory,
+  ownCover?: string,
+): string | undefined =>
+  ownCover ?? (category === 'news' ? undefined : CHARACTER_COVER[difficulty]);
 
 export const getStoryGroups = (diff: DifficultySlug, t: TFunction): StoryGroup[] =>
   storyGroupsRaw[diff].map(story => ({
@@ -115,6 +151,8 @@ function dbStoryToGroup(
     category?: StoryCategory | null;
     coverUrl?: string | null;
     totalParts: number;
+    locked?: boolean;
+    requiredSkus?: string[];
   },
   fallbackCategory: StoryCategory = 'general',
   fallbackCover?: string,
@@ -134,6 +172,8 @@ function dbStoryToGroup(
     // the static entry, so without this the card loses its art and drops back
     // to the halftone + emoji placeholder.
     cover: story.coverUrl ?? fallbackCover,
+    locked: story.locked ?? false,
+    requiredSkus: story.requiredSkus ?? [],
   };
 }
 
@@ -163,7 +203,13 @@ export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryG
   const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
   const dbGroups = dbStories.map((s) => {
     const fallback = staticBySlug.get(s.storyId);
-    return dbStoryToGroup(s, fallback?.category ?? 'general', fallback?.cover, locale);
+    const category = s.category ?? fallback?.category ?? 'general';
+    return dbStoryToGroup(
+      s,
+      fallback?.category ?? 'general',
+      coverFor(difficulty, category, fallback?.cover),
+      locale,
+    );
   });
 
   return mergeStoryGroups(staticGroups, dbGroups, hidden);
@@ -224,7 +270,12 @@ export function useStoryGroup(
         if (cancelled) return;
         setDbGroup(
           story
-            ? dbStoryToGroup(story, staticGroup?.category ?? 'general', staticGroup?.cover, locale)
+            ? dbStoryToGroup(
+                story,
+                staticGroup?.category ?? 'general',
+                coverFor(difficulty, staticGroup?.category ?? 'general', staticGroup?.cover),
+                locale,
+              )
             : undefined,
         );
         setHidden(new Set(list.hidden));

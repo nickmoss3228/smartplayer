@@ -11,6 +11,7 @@
 // page load re-ran the one-time /validate-token check.
 
 import axios, { AxiosError } from "axios";
+import { getDeviceId } from "./deviceId";
 
 /**
  * The one place the API origin is decided. Every module imports this rather
@@ -55,7 +56,7 @@ declare module "axios" {
  */
 export const AUTH_UNAUTHORIZED_EVENT = "auth:unauthorized";
 
-export type UnauthorizedReason = "expired" | "banned";
+export type UnauthorizedReason = "expired" | "banned" | "device_revoked";
 
 export interface AuthUnauthorizedDetail {
   reason: UnauthorizedReason;
@@ -67,6 +68,13 @@ export const SIGNED_OUT_REASON_KEY = "auth:signedOutReason";
 export const api = axios.create({ baseURL: API_BASE, timeout: 20000 });
 
 api.interceptors.request.use((config) => {
+  // Sent on EVERY request, including skipAuth ones — deliberately above the
+  // early return. /api/login is the single most important caller: it is
+  // unauthenticated by nature, and it is the request that decides which device
+  // slot this browser gets. Without the header there, every sign-in would look
+  // like a brand-new device and burn a slot.
+  config.headers["X-Device-Id"] = getDeviceId();
+
   if (config.skipAuth) return config;
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -108,6 +116,20 @@ api.interceptors.response.use(
         data?.code === "ACCOUNT_BANNED" ||
         data?.message === "This account has been banned.";
 
+      // The session row behind this token is gone: signed out from another
+      // device, evicted to make room for a new one, or cleared by an admin.
+      // Worth distinguishing from a plain expiry — "your session expired" when
+      // someone else actually kicked you off is actively misleading, and it is
+      // the message a user needs in order to notice their password is being
+      // used elsewhere.
+      const revoked = data?.code === "SESSION_REVOKED";
+
+      const reason: UnauthorizedReason = banned
+        ? "banned"
+        : revoked
+          ? "device_revoked"
+          : "expired";
+
       if (!dispatching) {
         dispatching = true;
         setTimeout(() => {
@@ -116,7 +138,7 @@ api.interceptors.response.use(
 
         window.dispatchEvent(
           new CustomEvent<AuthUnauthorizedDetail>(AUTH_UNAUTHORIZED_EVENT, {
-            detail: { reason: banned ? "banned" : "expired" },
+            detail: { reason },
           })
         );
       }

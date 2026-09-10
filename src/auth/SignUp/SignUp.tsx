@@ -4,34 +4,46 @@ import { useTranslation, Trans } from 'react-i18next'
 import {
   IoPersonAddOutline,
   IoPersonOutline,
-  IoMailOutline,
+  IoCallOutline,
   IoLockClosedOutline,
   IoEyeOutline,
   IoEyeOffOutline,
   IoAlertCircleOutline,
   IoSyncOutline,
+  IoArrowBackOutline,
+  IoCheckmarkCircleOutline,
 } from 'react-icons/io5'
 import { useAuth } from '../../context/AuthContext'
-import { LEGAL_VERSION, legalPath } from '../../config/legal'
+import { formatPhoneInput, isValidPhoneNumber } from '../../utils/phone'
+import { legalPath } from '../../config/legal'
 
 const SignUp = () => {
   const { t } = useTranslation()
   const [username, setUsername] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [email, setEmail] = useState('')
+  const [verificationTicket, setVerificationTicket] = useState<string | null>(null)
+  const [verificationCode, setVerificationCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   // Two boxes, not one. 152-ФЗ treats consent to processing personal data as a
-  // separate, knowing act of the subject, so folding it into "I accept the
-  // terms" would not be consent at all. Both start unticked — a pre-ticked
-  // consent box is exactly what the law does not count.
+  // separate act that has to be given knowingly and specifically, so bundling
+  // it into "I accept the terms" would not be consent at all. Both start
+  // unticked — a pre-ticked consent box is exactly what the law does not count.
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [acceptedDataConsent, setAcceptedDataConsent] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  // Server-masked ("+7 *** *** 67") — enough to confirm the right number was
+  // used, without the page holding the full one.
+  const [maskedPhone, setMaskedPhone] = useState('')
+  // "Resend" succeeding without sending anything is the common case, and it is
+  // not an error — kept apart from `error` so it can be worded as reassurance.
+  const [resendNotice, setResendNotice] = useState('')
 
-  const { signUp, user } = useAuth()
+  const { signUp, verifyPhone, resendPhoneCode, user } = useAuth()
   const location = useLocation()
 
   const from = location.state?.from?.pathname || '/levels'
@@ -44,6 +56,13 @@ const SignUp = () => {
     e.preventDefault()
     setError('')
 
+    // Checked before anything else is looked at: nothing else about this form
+    // matters if the person has not agreed to what happens with it.
+    if (!acceptedTerms || !acceptedDataConsent) {
+      setError(t('signup.errors.agreementsRequired'))
+      return
+    }
+
     if (password !== confirmPassword) {
       setError(t('signup.errors.passwordMismatch'))
       return
@@ -54,24 +73,29 @@ const SignUp = () => {
       return
     }
 
-    if (!email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
-      setError(t('signup.errors.invalidEmail'))
-      return
-    }
-
-    if (!acceptedTerms || !acceptedDataConsent) {
-      setError(t('signup.errors.agreementsRequired'))
+    // The shared normalizer, not a raw-input regex. The old check ran against
+    // the unformatted string, so "+7 999 123-45-67" — the field's own
+    // placeholder — was rejected here despite the server accepting it happily.
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setError(t('signup.errors.invalidPhone'))
       return
     }
 
     setIsLoading(true)
 
-    const result = await signUp(username, email, password, {
+    // The server records the acceptance against the account; a tick the
+    // backend never hears about proves nothing after the fact.
+    const result = await signUp(username, phoneNumber, email, password, {
       acceptedTerms,
       acceptedDataConsent,
-      legalVersion: LEGAL_VERSION,
     })
-    if (result.error) {
+    // Checked first: signUp reports the verification step as an "error" too, so
+    // testing result.error before this would show a bogus failure on the happy
+    // path.
+    if (result.phoneVerification) {
+      setVerificationTicket(result.phoneVerification.ticket)
+      setMaskedPhone(result.phoneVerification.phoneNumber)
+    } else if (result.error) {
       // A 429 from the signup throttle carries how long to wait — localize it
       // rather than showing the server's English string.
       setError(
@@ -84,6 +108,109 @@ const SignUp = () => {
     }
 
     setIsLoading(false)
+  }
+
+  const handleVerify = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!verificationTicket) return
+    setError('')
+    setResendNotice('')
+    setIsLoading(true)
+    const result = await verifyPhone(verificationTicket, verificationCode)
+    if (result.error) setError(result.error.message)
+    // No navigate() on success: verifyPhone sets the user in AuthContext, and
+    // the <Navigate to={from}> guard at the top of this component takes it from
+    // there on the very next render.
+    setIsLoading(false)
+  }
+
+  const handleResend = async () => {
+    if (!verificationTicket) return
+    setError('')
+    setResendNotice('')
+    const { error: resendError, cooldown } = await resendPhoneCode(verificationTicket)
+    if (resendError) setError(resendError.message)
+    else setResendNotice(t(cooldown ? 'signup.phoneVerification.alreadySent' : 'signup.phoneVerification.sent'))
+  }
+
+  // Back to the details form. The username and password are still in state, so
+  // a mistyped number costs one correction rather than a whole re-entry.
+  const backToDetails = () => {
+    setVerificationTicket(null)
+    setVerificationCode('')
+    setError('')
+    setResendNotice('')
+  }
+
+  if (verificationTicket) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow border border-black/5">
+          <h1 className="text-2xl font-bold mb-2">{t('signup.phoneVerification.title')}</h1>
+          <p className="text-sm text-black/60 mb-6">
+            {maskedPhone
+              ? t('signup.phoneVerification.descriptionTo', { phone: maskedPhone })
+              : t('signup.phoneVerification.description')}
+          </p>
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
+              <IoAlertCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+          {resendNotice && (
+            <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-sm flex items-start gap-2">
+              <IoCheckmarkCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
+              <span>{resendNotice}</span>
+            </div>
+          )}
+          <form onSubmit={handleVerify} className="space-y-4">
+            <input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+              placeholder={t('signup.phoneVerification.codePlaceholder')}
+              className="w-full px-4 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
+              required
+            />
+            <button
+              type="submit"
+              disabled={isLoading || verificationCode.length < 6}
+              className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <IoSyncOutline size={18} className="animate-spin" />
+                  {t('signup.submitting')}
+                </>
+              ) : (
+                t('signup.phoneVerification.verify')
+              )}
+            </button>
+          </form>
+          <div className="mt-5 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={backToDetails}
+              className="text-sm text-black/50 hover:text-black/80 font-medium flex items-center gap-1"
+            >
+              <IoArrowBackOutline size={16} />
+              {t('signup.phoneVerification.back')}
+            </button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={isLoading}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+            >
+              {t('signup.phoneVerification.resend')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -128,21 +255,27 @@ const SignUp = () => {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
-              {t('signup.email')}
+            <label htmlFor="phoneNumber" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
+              {t('signup.phoneNumber')}
             </label>
             <div className="relative">
-              <IoMailOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
+              <IoCallOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="phoneNumber"
+                type="tel"
+                autoComplete="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(formatPhoneInput(e.target.value))}
                 required
                 className="w-full pl-11 pr-4 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
-                placeholder={t('signup.emailPlaceholder')}
+                placeholder={t('signup.phonePlaceholder')}
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">{t('signup.emailOptional')}</label>
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-black/[0.03] border border-black/10 rounded-2xl" placeholder={t('signup.emailPlaceholder')} />
           </div>
 
           <div>

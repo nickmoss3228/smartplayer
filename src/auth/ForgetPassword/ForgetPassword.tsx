@@ -333,6 +333,17 @@ const ForgotPassword = () => {
         </button>
       </form>
 
+      {/*
+        Email is optional at signup now that phone is the verified identity, so
+        an account can genuinely have no address for this form to reach. Say so
+        here rather than letting those users submit a phone number into an email
+        field and read the deliberately vague "if an account exists…" reply as
+        confirmation that a link is coming.
+      */}
+      <p className="mt-5 text-xs text-black/40 leading-relaxed">
+        {t('forgotPassword.noEmailHint')}
+      </p>
+
       <div className="mt-7 text-center">
         <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
           {t('forgotPassword.backToLogin')}

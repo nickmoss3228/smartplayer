@@ -19,6 +19,26 @@ export interface WhyQuestion {
   Viz: ComponentType;
 }
 
+/**
+ * Blob colour pairs, one per cloud, cycling through a soft pastel set.
+ *
+ * Lives here rather than in Cloud.tsx because two surfaces now paint from it:
+ * the hero clouds, and the /how-to-use guide, where each question's section is
+ * washed in the same pair as the cloud that opens it. A student who taps a
+ * cloud on the homepage lands on a block tinted like the cloud they tapped.
+ *
+ * Indexed by position in ALL_WHY_QUESTIONS, so a cloud keeps its colour even
+ * when the hero shows only a subset.
+ */
+export const BLOB_COLORS: [string, string][] = [
+  ['#bae6fd', '#c7d2fe'], // sky -> indigo
+  ['#fecdd3', '#fed7aa'], // rose -> orange
+  ['#a7f3d0', '#a5f3fc'], // emerald -> cyan
+  ['#ddd6fe', '#bfdbfe'], // violet -> blue
+  ['#fde68a', '#fbcfe8'], // amber -> pink
+  ['#bbf7d0', '#fef08a'], // green -> yellow
+];
+
 // Every cloud that has ever existed, with its modal visualization. Nothing is
 // deleted from here — the hero only *shows* a subset (ACTIVE_WHY_IDS below),
 // and the three that are currently parked keep their viz, their translations

@@ -27,6 +27,7 @@ import {
   wallOverlaps,
 } from "../config/roomLayout.js";
 import { FREE_TRIAL_STORIES } from "../config/trial.js";
+import { accessFor, isPartVisible } from "../config/entitlements.js";
 import { User } from "../models/User.js";
 
 const difficulties = ["easy", "medium", "hard"];
@@ -241,10 +242,39 @@ async function countUniqueCompletedStories(userId) {
   return uniqueStories.size;
 }
 
+/**
+ * Shared gate for the two public quiz endpoints.
+ *
+ * These are the sibling leak to getPublishedStory: they take the same
+ * (difficulty, storyId, partNumber) and hand back question text and a
+ * right/wrong oracle for ANY part of ANY story, with no auth at all. Gating
+ * the story endpoint while leaving these open would mean a locked part's quiz
+ * still played — and, through completeLevel, still paid out BitAward.
+ *
+ * Returns null when the caller may proceed, or a {status, body} to send.
+ */
+function refuseIfLocked(req, difficulty, storyId, partNumber) {
+  const access = accessFor(req.user?.entitlements, difficulty, storyId, {
+    authenticated: Boolean(req.user),
+  });
+  if (isPartVisible(access, partNumber)) return null;
+  return {
+    status: 403,
+    body: {
+      message: "This part has not been unlocked.",
+      // Distinct from ACCOUNT_BANNED so the client shows a paywall rather than
+      // signing the user out — services/apiClient.ts branches on `code`.
+      code: "PART_LOCKED",
+    },
+  };
+}
+
 // ── GET /progress/quiz/:difficulty/:storyId/:partNumber ────────────────────
-// Public (no auth) — serves quiz questions with `correctAnswer` stripped out,
-// so the answer key never reaches the client. Guests need this too (they take
-// quizzes before ever signing up), which is why this isn't behind auth.
+// Public, behind optionalAuth — serves quiz questions with `correctAnswer`
+// stripped out, so the answer key never reaches the client. Guests need this
+// too (they take quizzes before ever signing up), which is why it is not
+// behind authenticateToken; but the caller is identified when possible so a
+// locked part's quiz can be refused. See refuseIfLocked above.
 export async function getQuiz(req, res) {
   try {
     const { difficulty, storyId, partNumber } = req.params;
@@ -255,6 +285,9 @@ export async function getQuiz(req, res) {
     const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
+
+    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    if (refusal) return res.status(refusal.status).json(refusal.body);
 
     const questions = await getPublicQuizAsync(difficulty, storyId, partNumber);
     if (!questions)
@@ -268,7 +301,7 @@ export async function getQuiz(req, res) {
 }
 
 // ── POST /progress/quiz/:difficulty/:storyId/:partNumber/check-answer ──────
-// Public (no auth), same reasoning as getQuiz above. This only ever answers
+// Public behind optionalAuth, same reasoning as getQuiz above. This only ever answers
 // "was that one option right or wrong" — it never reveals the full answer
 // key, and it doesn't touch progress/rewards on its own. The authoritative,
 // reward-granting grading still happens in completeLevel below, which
@@ -284,6 +317,9 @@ export async function checkQuizAnswer(req, res) {
 
     if (typeof questionIndex !== "number" || typeof selectedOption !== "number")
       return res.status(400).json({ message: "Missing required fields" });
+
+    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    if (refusal) return res.status(refusal.status).json(refusal.body);
 
     const answerKey = await getQuizAnswerKeyAsync(difficulty, storyId, partNumber);
     if (!answerKey || questionIndex < 0 || questionIndex >= answerKey.length)
@@ -312,6 +348,14 @@ export async function completeLevel(req, res) {
     const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
+
+    // Completing a part marks progress AND mints BitAward, so it has to honour
+    // the paywall too. Without this, the quiz endpoints could be locked down
+    // and a direct POST here would still pay out for a part the user never
+    // unlocked — the answer key is fetched server-side, so it does not even
+    // need the quiz endpoints to succeed first.
+    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    if (refusal) return res.status(refusal.status).json(refusal.body);
 
     // Grade against the server-held answer key — never trust a client-reported
     // score, since a direct API call could otherwise forge a passing result.

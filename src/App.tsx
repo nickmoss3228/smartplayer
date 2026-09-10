@@ -8,8 +8,8 @@ import {
   useParams,
 } from "react-router-dom";
 import Homepage from "./pages/Homepage";
-// Eager, unlike the lazy routes below. It is a handful of elements, and a 404
-// that has to fetch its own chunk before it can say it is a 404 spends a
+// Eager, unlike the routes below. It is a handful of elements, and a 404 that
+// has to fetch its own chunk before it can tell you it is a 404 spends a
 // network round-trip to display an error.
 import NotFound from "./pages/NotFound";
 import { Provider } from "react-redux";
@@ -19,6 +19,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProgressProvider } from "./context/ProgressContext";
 import { ProfileProvider } from './context/ProfileContext';
 import { WalletProvider } from './context/WalletContext';
+import { EntitlementsProvider } from './context/EntitlementsContext';
+import { CartProvider } from './context/CartContext';
 import { CharacterProvider } from './context/CharacterContext';
 import { FREE_TRIAL_STORIES } from './constants/trial';
 import { Layout } from "./Layout"
@@ -39,8 +41,14 @@ const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
 const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
+
+const Stories = lazy(() => import("./pages/Stories"));
 // Public and unauthenticated on purpose — see the note in Legal.tsx.
 const Legal = lazy(() => import("./pages/Legal"));
+const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
+const FakeCheckout = lazy(() =>
+  import("./pages/CheckoutReturn").then((m) => ({ default: m.FakeCheckout })),
+);
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -75,6 +83,8 @@ function App() {
     <AuthProvider>
       <ProfileProvider>
         <WalletProvider>
+        <EntitlementsProvider>
+        <CartProvider>
         <CharacterProvider>
         <ProgressProvider>
           <Provider store={store}>
@@ -87,6 +97,23 @@ function App() {
                 <Route path="/"                element={<Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
                 <Route path="/legal/:docId" element={<Legal />} />
+                {/* One shelf: every story, owned and unowned together. /shop
+                    and /library are kept as entrances into the same page —
+                    /library simply arrives with the filter already set — so
+                    existing links and the navbar keep working while there is
+                    only one surface to maintain. Public, because a visitor can
+                    browse and fill a basket before signing up; checkout is what
+                    requires an account. */}
+                <Route path="/stories" element={<Stories />} />
+                <Route path="/shop" element={<Stories />} />
+                <Route path="/library" element={<Stories initialFilter="mine" />} />
+                {/* Where the payment provider sends the buyer back to. Grants
+                    nothing: it polls the server, and the WEBHOOK is what
+                    actually settles the purchase. */}
+                <Route path="/checkout/return" element={<CheckoutReturn />} />
+                {/* The fake acquirer's page; every endpoint it calls 404s under a driver
+                    that moves real money. */}
+                <Route path="/checkout/fake" element={<FakeCheckout />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/login"           element={<Login />} />
                 <Route path="/signup"          element={<SignUp />} />
@@ -110,6 +137,7 @@ function App() {
                   element={<ProtectedRoute><PlayerRoom /></ProtectedRoute>}
                 />
 
+
                 {/* ── Trial-accessible (open to guests) ── */}
                 <Route path="/levels"                        element={<Levels />} />
                 <Route path="/levels/:difficulty"            element={<List />} />
@@ -131,12 +159,14 @@ function App() {
                   element={<ProtectedRoute><Player /></ProtectedRoute>}
                 />
 
-                {/* ── Catch-all ── */}
-                {/* A real NotFound page, not <Navigate to="/">. The redirect
-                    made every wrong URL answer 200 with the homepage, which is
-                    a soft 404: crawlers see an infinite space of "real" pages
-                    with duplicate content. nginx.conf now returns a genuine 404
-                    status for unknown paths and serves this shell as the body. */}
+                {/* ── Catch-all ──
+                    A real 404 page, NOT `<Navigate to="/" />`. The redirect
+                    that used to live here made every mistyped URL render the
+                    homepage, which hid the error from users and — together
+                    with nginx answering 200 for those paths — presented search
+                    engines with an unbounded set of duplicate pages. nginx.conf
+                    now returns a 404 status for anything outside the route list
+                    above; this renders the body that goes with it. */}
                 <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
@@ -145,6 +175,8 @@ function App() {
           </Provider>
         </ProgressProvider>
         </CharacterProvider>
+        </CartProvider>
+        </EntitlementsProvider>
         </WalletProvider>
       </ProfileProvider>
     </AuthProvider>

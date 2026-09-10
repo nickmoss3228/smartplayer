@@ -67,6 +67,27 @@ export const deleteFeedback = async (
   await parseOrThrow(res);
 };
 
+/**
+ * Account-sharing heuristic from the backend's sharingScore().
+ *
+ * A ranking aid for a human, never a verdict — nothing acts on it
+ * automatically. Read the weighting note in backend config/sessions.js before
+ * treating a high score as evidence: this app's audience is school computer
+ * labs, where many students legitimately share one network.
+ */
+export interface AdminPlayerSharing {
+  /** 0-100. Driven mostly by concurrent sessions on different networks. */
+  score: number;
+  /** Networks seen recently (coarse prefixes only, never full IPs). */
+  distinctNetworks: number;
+  /** Sessions with a heartbeat inside the concurrency window. */
+  activeNow: number;
+  /** How many of those active sessions are on different networks. */
+  concurrentNetworks: number;
+  /** Times a login was refused for hitting the device cap. */
+  blockedLogins: number;
+}
+
 export interface AdminPlayer {
   id: string;
   username: string;
@@ -77,6 +98,7 @@ export interface AdminPlayer {
   wallet: { bitAward: number; bitWord: number; bitPhrase: number };
   createdAt: string;
   lastActiveAt: string;
+  sharing: AdminPlayerSharing;
 }
 
 interface AdminPlayersResponse {
@@ -109,6 +131,25 @@ export const setPlayerBanned = async (
   });
   const data = await parseOrThrow(res);
   return data.user;
+};
+
+/**
+ * Revoke every session on an account, without banning it.
+ *
+ * The measured response to a password that has clearly been passed around:
+ * everyone is signed out and only whoever knows the password can get back in,
+ * while the account itself keeps working. Also worth firing alongside a ban,
+ * so existing sessions end immediately rather than on their next request.
+ */
+export const logoutAllPlayerSessions = async (
+  token: string,
+  userId: string
+): Promise<void> => {
+  const res = await fetch(`${API_URL}/api/admin/players/${userId}/logout-all`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  await parseOrThrow(res);
 };
 
 export const grantCurrency = async (

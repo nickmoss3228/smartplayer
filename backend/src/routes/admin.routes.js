@@ -2,8 +2,11 @@ import { Router } from "express";
 import {
   adminLogin,
   grantCurrency,
+  grantEntitlement,
+  revokeEntitlement,
   listPlayers,
   setPlayerBanned,
+  logoutAllPlayerSessions,
   getPlayerProgress,
   listAuditLog,
 } from "../controllers/admin.controller.js";
@@ -25,9 +28,13 @@ const router = Router();
 // does not get removed a second time: with skipSuccessfulRequests the only
 // thing that burns quota is a wrong code, so 10 absorbs a run of typos while
 // still leaving brute force nowhere to go.
-router.post("/login", adminLoginLimiter, adminLogin);router.post("/grant-currency", adminAuth, asyncHandler(grantCurrency));
+router.post("/login", adminLoginLimiter, adminLogin);
+router.post("/grant-currency", adminAuth, asyncHandler(grantCurrency));
+router.post("/grant-entitlement", adminAuth, asyncHandler(grantEntitlement));
+router.delete("/entitlement", adminAuth, asyncHandler(revokeEntitlement));
 router.get("/players", adminAuth, asyncHandler(listPlayers));
 router.patch("/players/:userId/ban", adminAuth, asyncHandler(setPlayerBanned));
+router.post("/players/:userId/logout-all", adminAuth, asyncHandler(logoutAllPlayerSessions));
 router.get("/players/:userId/progress", adminAuth, asyncHandler(getPlayerProgress));
 router.get("/audit", adminAuth, asyncHandler(listAuditLog));
 

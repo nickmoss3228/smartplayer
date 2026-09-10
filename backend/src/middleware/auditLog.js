@@ -59,6 +59,7 @@ const ROUTES = [
   { m: "POST",   re: /^\/api\/admin\/login$/,                                        action: "admin.login" },
   { m: "POST",   re: /^\/api\/admin\/grant-currency$/,                               action: "player.grantCurrency", target: (_m, b) => ({ type: "User", id: b?.userId ?? b?.email ?? null }) },
   { m: "PATCH",  re: /^\/api\/admin\/players\/([^/]+)\/ban$/,                        action: "player.setBanned",       target: (m) => ({ type: "User", id: m[1] }) },
+  { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/logout-all$/,                 action: "player.logoutAll",       target: (m) => ({ type: "User", id: m[1] }) },
   { m: "POST",   re: /^\/api\/admin\/stories$/,                                      action: "story.create" },
   { m: "POST",   re: /^\/api\/admin\/stories\/import$/,                              action: "story.import" },
   { m: "PATCH",  re: /^\/api\/admin\/stories\/([^/]+)\/publish$/,                    action: "story.setPublished",     target: (m) => ({ type: "Story", id: m[1] }) },
