@@ -9,122 +9,102 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { priceBasket, isPurchasable, BasketError, MAX_BASKET_ITEMS } from "./basketPricing.js";
-import { getProduct, PACK_STORIES } from "./priceCatalog.js";
+import {
+  BUILT_IN_CATALOG,
+  levelSku,
+  setSku,
+  storySku,
+  SET_TRACK_PRICE_MINOR,
+  TRACK_PRICE_MINOR,
+} from "./priceCatalog.js";
 
-const PASS = "all-access-90d";
-const PACK = "pack-easy";
-const STORY = `story-${PACK_STORIES["pack-easy"][0].replace("/", "-")}`;
+const { getProduct, getCatalogStory } = BUILT_IN_CATALOG;
+
+const LEO = storySku("easy/leo");
+const LEO_EXTRA = storySku("easy/leo-additional");
+const PLACEHOLDER = storySku("easy/leo-new-job");
+const SET = setSku("leo");
+const LEVEL = levelSku("easy");
 const ALL = ["*"];
 
 const perpetual = (sku) => ({ sku, grantedAt: new Date(), expiresAt: null });
 
 test("prices from the catalog, not from anything the caller supplies", () => {
-  const { amountMinor, items } = priceBasket([PACK], [], ALL);
-  assert.equal(amountMinor, getProduct(PACK).amountMinor);
-  assert.equal(items[0].sku, PACK);
-  // The returned item carries only fields the SERVER decided.
+  const { amountMinor, items } = priceBasket([LEO], [], []);
+  assert.equal(amountMinor, getProduct(LEO).amountMinor);
+  assert.equal(amountMinor, 10 * TRACK_PRICE_MINOR, "a 10-track story is 290 ₽");
   assert.deepEqual(Object.keys(items[0]).sort(), ["amountMinor", "durationDays", "sku"]);
 });
 
 test("extra properties on the input cannot influence the price", () => {
-  // priceBasket takes strings. Anything object-shaped is refused outright
-  // rather than being read for a price field.
   assert.throws(
-    () => priceBasket([{ sku: PACK, amountMinor: 1 }], [], ALL),
+    () => priceBasket([{ sku: LEO, amountMinor: 1 }], [], ALL),
     (e) => e instanceof BasketError && e.code === "INVALID_SKU",
   );
 });
 
 test("an unknown SKU is refused, never priced as zero", () => {
-  // The failure this prevents: a typo silently becoming a free order.
-  assert.throws(
-    () => priceBasket(["pack-atlantis"], [], ALL),
-    (e) => e instanceof BasketError && e.code === "UNKNOWN_SKU",
-  );
+  for (const gone of ["pack-atlantis", "all-access-90d"]) {
+    assert.throws(
+      () => priceBasket([gone], [], ALL),
+      (e) => e instanceof BasketError && e.code === "UNKNOWN_SKU",
+    );
+  }
 });
 
-test("a SKU that is not purchasable in this environment is refused", () => {
-  // No PURCHASABLE_SKUS: the placeholder packs are purchasable:false in the
-  // catalog, which is what stops them being sold before their audio exists.
-  assert.equal(getProduct(PACK).purchasable, false, "fixture assumption");
+test("a placeholder story is refused until its audio exists, unless the env opens it", () => {
+  assert.equal(getProduct(PLACEHOLDER).purchasable, false, "fixture assumption");
   assert.throws(
-    () => priceBasket([PACK], [], []),
+    () => priceBasket([PLACEHOLDER], [], []),
     (e) => e instanceof BasketError && e.code === "NOT_PURCHASABLE",
   );
-  // Staging opens them without a different build.
-  assert.doesNotThrow(() => priceBasket([PACK], [], [PACK]));
-  assert.doesNotThrow(() => priceBasket([PACK], [], ALL));
+  assert.doesNotThrow(() => priceBasket([PLACEHOLDER], [], [PLACEHOLDER]));
+  assert.doesNotThrow(() => priceBasket([PLACEHOLDER], [], ALL));
 });
 
-test("the pass is sellable out of the box; the starter pack is not sellable at all", () => {
-  assert.equal(isPurchasable(PASS, []), true);
-  assert.equal(isPurchasable("starter", ALL), false, "starter is not a product");
+test("a recorded story sells out of the box; the level bundle does not", () => {
+  assert.equal(isPurchasable(LEO, []), true);
+  assert.equal(isPurchasable(LEVEL, []), false);
 });
 
 test("a duplicated SKU is charged once", () => {
-  const { amountMinor, items } = priceBasket([PACK, PACK, PACK], [], ALL);
+  const { amountMinor, items } = priceBasket([LEO, LEO, LEO], [], ALL);
   assert.equal(items.length, 1);
-  assert.equal(amountMinor, getProduct(PACK).amountMinor);
+  assert.equal(amountMinor, getProduct(LEO).amountMinor);
 });
 
-test("a basket containing the pass is normalized down to just the pass", () => {
-  // Charging for a pack alongside an all-access pass that already covers it is
-  // the overcharge that ends in a chargeback.
-  const { items, amountMinor, dropped } = priceBasket([PACK, STORY, PASS], [], ALL);
-  assert.deepEqual(items.map((i) => i.sku), [PASS]);
-  assert.equal(amountMinor, getProduct(PASS).amountMinor);
-  assert.deepEqual(dropped.sort(), [PACK, STORY].sort());
+test("a story next to its set is dropped; a set next to its level is dropped", () => {
+  const withSet = priceBasket([LEO, LEO_EXTRA, SET], [], ALL);
+  assert.deepEqual(withSet.items.map((i) => i.sku), [SET]);
+  assert.deepEqual(withSet.dropped.sort(), [LEO, LEO_EXTRA].sort());
+
+  const withLevel = priceBasket([SET, LEVEL], [], ALL);
+  assert.deepEqual(withLevel.items.map((i) => i.sku), [LEVEL]);
 });
 
-test("owning a pack drops both the pack and the single stories inside it", () => {
-  // Ownership is resolved through what a SKU GRANTS, not by matching sku
-  // strings — so someone who owns pack-easy cannot be sold one of its stories
-  // a second time. Here that empties the basket entirely, which is refused.
+test("a set is 19 ₽ per track, and charges only for tracks not already owned", () => {
+  const fresh = priceBasket([SET], [], ALL);
+  assert.equal(fresh.amountMinor, getProduct(SET).parts * SET_TRACK_PRICE_MINOR);
+
+  const leoParts = getCatalogStory("easy/leo").parts;
+  const partial = priceBasket([SET], [perpetual(LEO)], ALL);
+  assert.equal(partial.amountMinor, (getProduct(SET).parts - leoParts) * SET_TRACK_PRICE_MINOR);
+});
+
+test("owning a set drops the stories inside it", () => {
   assert.throws(
-    () => priceBasket([PACK, STORY], [perpetual(PACK)], ALL),
+    () => priceBasket([LEO, LEO_EXTRA], [perpetual(SET)], ALL),
     (e) => e instanceof BasketError && e.code === "ALREADY_OWNED",
   );
 
-  // With one un-owned item alongside, the owned ones are dropped and the rest
-  // is priced normally.
-  const otherStory = `story-${PACK_STORIES["pack-medium"][0].replace("/", "-")}`;
-  const { items, dropped } = priceBasket([PACK, STORY, otherStory], [perpetual(PACK)], ALL);
-  assert.deepEqual(items.map((i) => i.sku), [otherStory]);
-  assert.ok(dropped.includes(PACK), "the owned pack should be dropped");
-  assert.ok(dropped.includes(STORY), "a story inside the owned pack should be dropped");
-});
-
-test("a wholly-owned basket is refused rather than creating a zero-value order", () => {
-  assert.throws(
-    () => priceBasket([PACK], [perpetual(PACK)], ALL),
-    (e) => e instanceof BasketError && e.code === "ALREADY_OWNED",
-  );
-});
-
-test("the pass can be re-bought while active, because buying it extends it", () => {
-  // The opposite of the rule above, and deliberately so: a perpetual SKU is
-  // pointless to re-buy, a dated one is a renewal.
-  const active = { sku: PASS, grantedAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000) };
-  const { items } = priceBasket([PASS], [active], ALL);
-  assert.deepEqual(items.map((i) => i.sku), [PASS]);
-});
-
-test("an active pass drops perpetual items from the basket", () => {
-  const active = { sku: PASS, grantedAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000) };
-  assert.throws(
-    () => priceBasket([PACK], [active], ALL),
-    (e) => e instanceof BasketError && e.code === "ALREADY_OWNED",
-  );
-});
-
-test("an EXPIRED pass does not drop anything", () => {
-  const lapsed = { sku: PASS, grantedAt: new Date(0), expiresAt: new Date(Date.now() - 1) };
-  const { items } = priceBasket([PACK], [lapsed], ALL);
-  assert.deepEqual(items.map((i) => i.sku), [PACK]);
+  const news = storySku("easy/news-roland-garros");
+  const { items, dropped } = priceBasket([LEO, news], [perpetual(SET)], ALL);
+  assert.deepEqual(items.map((i) => i.sku), [news]);
+  assert.ok(dropped.includes(LEO));
 });
 
 test("empty and oversized baskets are refused", () => {
-  for (const bad of [[], null, undefined, "pack-easy"]) {
+  for (const bad of [[], null, undefined, LEO]) {
     assert.throws(
       () => priceBasket(bad, [], ALL),
       (e) => e instanceof BasketError,
@@ -132,15 +112,17 @@ test("empty and oversized baskets are refused", () => {
     );
   }
   assert.throws(
-    () => priceBasket(Array(MAX_BASKET_ITEMS + 1).fill(PASS), [], ALL),
+    () => priceBasket(Array(MAX_BASKET_ITEMS + 1).fill(LEO), [], ALL),
     (e) => e instanceof BasketError && e.code === "BASKET_TOO_LARGE",
   );
 });
 
 test("the total is the exact integer sum of its parts", () => {
-  // Floats would round here. Kopecks are integers precisely so they cannot.
-  const skus = PACK_STORIES["pack-easy"].map((k) => `story-${k.replace("/", "-")}`);
-  const { amountMinor, items } = priceBasket(skus, [], ALL);
+  const { amountMinor, items } = priceBasket(
+    [LEO, storySku("medium/maya"), storySku("easy/news-grazing-board")],
+    [],
+    ALL,
+  );
   assert.equal(amountMinor, items.reduce((n, i) => n + i.amountMinor, 0));
   assert.ok(Number.isInteger(amountMinor));
 });

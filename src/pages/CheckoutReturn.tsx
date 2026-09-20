@@ -24,7 +24,8 @@ import {
 } from '../services/paymentServices';
 import { useEntitlements } from '../context/EntitlementsContext';
 import { useCart } from '../context/CartContext';
-import { formatPrice, getProduct } from '../config/priceCatalog';
+import { formatPrice } from '../config/priceCatalog';
+import { useCatalog } from '../context/CatalogContext';
 
 /**
  * Where the acquirer sends the buyer back to.
@@ -50,19 +51,21 @@ const MAX_POLLS = 12; // ~18s, then hand over to the reconciler and say so
 /** Names an order line without inventing per-SKU copy the catalog does not have. */
 const useItemLabel = () => {
   const { t } = useTranslation();
+  const { getProduct } = useCatalog();
   return (item: OrderItem) => {
     const product = getProduct(item.sku);
-    if (product?.kind === 'pass') {
-      return t('payment.itemPass', { days: item.durationDays ?? product.durationDays ?? 90 });
-    }
-    if (product?.kind === 'pack') return t('payment.itemPack');
+    if (product?.kind === 'set') return t('payment.itemSet');
+    if (product?.kind === 'level') return t('payment.itemLevel');
     if (product?.kind === 'story') return t('payment.itemStory');
     return item.sku;
   };
 };
 
 /** Deep link to something the buyer just unlocked, when we can name one. */
-const firstStoryPath = (items: OrderItem[]): string | null => {
+const firstStoryPath = (
+  items: OrderItem[],
+  getProduct: (sku: string) => { storyKey?: string } | null,
+): string | null => {
   for (const item of items) {
     const key = getProduct(item.sku)?.storyKey;
     if (key) return `/levels/${key}`;
@@ -71,6 +74,7 @@ const firstStoryPath = (items: OrderItem[]): string | null => {
 };
 
 const CheckoutReturn = () => {
+  const { getProduct } = useCatalog();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -162,7 +166,7 @@ const CheckoutReturn = () => {
         ? t('payment.failed')
         : t('payment.pending');
 
-  const storyPath = order ? firstStoryPath(order.items) : null;
+  const storyPath = order ? firstStoryPath(order.items, getProduct) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">

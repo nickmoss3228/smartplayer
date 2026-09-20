@@ -7,13 +7,14 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { getProduct } from "../config/priceCatalog";
+import { useCatalog } from "./CatalogContext";
 import { useEntitlements } from "./EntitlementsContext";
 
 const STORAGE_KEY = "malako:cart:v1";
 
 interface CartContextValue {
   skus: string[];
+  /** Items that will actually be charged — a story next to its set counts once. */
   count: number;
   /** Client-side total, for display only. The server re-prices every order. */
   totalMinor: number;
@@ -39,22 +40,29 @@ const CartContext = createContext<CartContextValue>({
  *
  * Why not server-side: the basket grants nothing and holds no money. The server
  * re-prices every order from config/priceCatalog.js, so a tampered basket buys
- * exactly nothing — it can only make the shopper's own screen wrong. Persisting
- * at most a dozen SKU strings would otherwise cost a collection, endpoints, TTL
- * cleanup and a merge-on-login story. And a guest has to be able to fill a
- * basket BEFORE signing up, which a server cart cannot do without an anonymous
- * session concept this app does not have.
+ * exactly nothing — it can only make the shopper's own screen wrong. And a
+ * guest has to be able to fill a basket BEFORE signing up, which a server cart
+ * cannot do without an anonymous session concept this app does not have.
  *
  * Only SKU strings are stored. Never prices — a price in localStorage is a
  * price a user can edit, and it would go stale against the catalog anyway.
  */
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { ownedStories, hasAllAccess } = useEntitlements();
+  const { ownedStories } = useEntitlements();
+  const { getProduct, collapseBasket, priceFor, catalogLoading } = useCatalog();
   const [skus, setSkus] = useState<string[]>([]);
+  const [restored, setRestored] = useState(false);
 
-  // Load once. Anything the catalog no longer knows is dropped here rather than
-  // erroring at checkout: a SKU can disappear between sessions.
+  // Load once, but NOT before the catalog has arrived.
+  //
+  // Anything the catalog no longer knows is dropped here rather than erroring
+  // at checkout: a SKU can disappear between sessions (the old 90-day pass and
+  // level packs did). That filter is only meaningful against a real catalog —
+  // running it while the catalog is still empty would call every SKU unknown
+  // and silently empty the basket of anyone who had one saved.
   useEffect(() => {
+    if (catalogLoading || restored) return;
+    setRestored(true);
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
@@ -65,7 +73,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // A corrupt basket is not worth surfacing — start empty.
       setSkus([]);
     }
-  }, []);
+  }, [catalogLoading, restored, getProduct]);
 
   useEffect(() => {
     try {
@@ -75,30 +83,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [skus]);
 
-  // Prune anything the shopper has since come to own — after a purchase, and
-  // after an admin grant. Without this the basket would still offer to sell
-  // them what they just bought.
+  // Prune anything the shopper has since come to own outright — after a
+  // purchase, and after an admin grant. Without this the basket would still
+  // offer to sell them what they just bought.
+  //
+  // Gated on the catalog, for the same reason the restore above is: every
+  // getProduct returns null before it lands, which reads as "you own all of
+  // this" and would empty the basket.
   useEffect(() => {
-    if (!hasAllAccess && ownedStories.length === 0) return;
+    if (catalogLoading || ownedStories.length === 0) return;
+    const owned = new Set(ownedStories);
     setSkus((current) =>
       current.filter((sku) => {
         const product = getProduct(sku);
-        if (!product) return false;
-        // The pass is dated: re-buying it extends it, so it is never pruned.
-        if (product.durationDays !== null) return true;
-        if (hasAllAccess) return false;
-        if (product.kind === "story" && product.storyKey) {
-          return !ownedStories.includes(product.storyKey);
-        }
-        return true;
+        return product !== null && !product.storyKeys.every((key) => owned.has(key));
       }),
     );
-  }, [ownedStories, hasAllAccess]);
+  }, [ownedStories, catalogLoading, getProduct]);
 
-  const add = useCallback((sku: string) => {
-    if (!getProduct(sku)) return;
-    setSkus((current) => (current.includes(sku) ? current : [...current, sku]));
-  }, []);
+  const add = useCallback(
+    (sku: string) => {
+      if (!getProduct(sku)) return;
+      setSkus((current) => (current.includes(sku) ? current : [...current, sku]));
+    },
+    [getProduct],
+  );
 
   const remove = useCallback((sku: string) => {
     setSkus((current) => current.filter((s) => s !== sku));
@@ -108,18 +117,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = useMemo<CartContextValue>(() => {
     // Mirrors the server's normalization so the displayed total matches what
-    // will actually be charged: an all-access pass subsumes everything else.
-    const effective = skus.includes("all-access-90d") ? ["all-access-90d"] : skus;
+    // will actually be charged: covered items drop out, and a set costs only
+    // the tracks the shopper does not own yet.
+    const { kept } = collapseBasket(skus);
     return {
       skus,
-      count: skus.length,
-      totalMinor: effective.reduce((sum, sku) => sum + (getProduct(sku)?.amountMinor ?? 0), 0),
+      count: kept.length,
+      totalMinor: kept.reduce((sum, sku) => sum + priceFor(getProduct(sku), ownedStories), 0),
       has: (sku: string) => skus.includes(sku),
       add,
       remove,
       clear,
     };
-  }, [skus, add, remove, clear]);
+  }, [skus, ownedStories, add, remove, clear, collapseBasket, priceFor, getProduct]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

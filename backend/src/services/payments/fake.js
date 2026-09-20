@@ -33,7 +33,7 @@
 
 import crypto from "crypto";
 import { config } from "../../config/env.js";
-import { FakePayment } from "../../models/FakePayment.js";
+import { fakePayments } from "../../db/index.js";
 import { CallbackRejected, CallbackUnparseable } from "./errors.js";
 import { verifyOrder } from "../../helpers/callbackToken.js";
 
@@ -79,8 +79,8 @@ export const normalizeStatus = (value) =>
 export async function createPayment({ orderId, amountMinor, currency = "RUB", callbackUrl }) {
   const id = `fake_${crypto.randomUUID()}`;
 
-  await FakePayment.create({
-    _id: id,
+  await fakePayments.create({
+    id,
     orderId: String(orderId),
     amountMinor,
     currency,
@@ -89,7 +89,7 @@ export async function createPayment({ orderId, amountMinor, currency = "RUB", ca
     // PUBLIC_API_BASE must not retarget callbacks for payments already in
     // flight.
     callbackUrl,
-    sim: { delayMs: config.payments.fakeDelayMs },
+    simDelayMs: Math.max(0, Math.round(Number(config.payments.fakeDelayMs) || 0)),
   });
 
   // Stands in for the bank's hosted page. Deliberately on the frontend origin,
@@ -115,7 +115,7 @@ export async function createPayment({ orderId, amountMinor, currency = "RUB", ca
  * against a copy of this driver with the optional methods stripped off.
  */
 export async function getPayment(providerPaymentId) {
-  const row = await FakePayment.findById(providerPaymentId);
+  const row = await fakePayments.findById(providerPaymentId);
   if (!row) {
     // Report unknown as pending rather than inventing an outcome. It mirrors
     // what a real acquirer does for an id it is still processing, and the
@@ -125,7 +125,7 @@ export async function getPayment(providerPaymentId) {
   return {
     status: normalizeStatus(row.status),
     amountMinor: row.amountMinor,
-    raw: row.toObject(),
+    raw: { ...row },
   };
 }
 
@@ -185,7 +185,7 @@ const ACTION_STATUS = { pay: "PAID", decline: "FAILED", cancel: "CANCELED" };
 
 /** What the fake checkout page renders. */
 export async function describe(id) {
-  const row = await FakePayment.findById(id);
+  const row = await fakePayments.findById(id);
   if (!row) return null;
   return {
     id: row._id,
@@ -211,23 +211,33 @@ export async function act(id, { action, sim = {} } = {}) {
   const status = ACTION_STATUS[action];
   if (!status) return null;
 
-  const row = await FakePayment.findById(id);
+  const row = await fakePayments.findById(id);
   if (!row) return null;
   // A completed payment is final on the acquirer's side; its page would show an
   // outcome rather than buttons.
   if (row.status !== "PENDING" && row.status !== "NEW") return { alreadyDecided: true, row };
 
-  row.status = status;
-  row.paidAt = status === "PAID" ? new Date() : null;
-  row.sim = {
-    delayMs: Number.isFinite(Number(sim.delayMs)) ? Number(sim.delayMs) : row.sim.delayMs,
-    deliver: sim.deliver ?? row.sim.deliver,
-    amount: sim.amount ?? row.sim.amount,
-  };
-  await row.save();
+  // Unknown simulation values keep the stored ones. Mongoose's enum validator
+  // used to reject them with a thrown save; the table's CHECK constraints would
+  // do the same, so they are filtered here instead of failing the press.
+  const decided = await fakePayments.decide(id, {
+    status,
+    paidAt: status === "PAID" ? new Date() : null,
+    sim: {
+      delayMs: Number.isFinite(Number(sim.delayMs))
+        ? Math.max(0, Math.round(Number(sim.delayMs)))
+        : row.sim.delayMs,
+      deliver: ["once", "twice", "never"].includes(sim.deliver) ? sim.deliver : row.sim.deliver,
+      amount: ["correct", "wrong"].includes(sim.amount) ? sim.amount : row.sim.amount,
+    },
+  });
 
-  scheduleDelivery(row._id, row.sim.delayMs);
-  return { alreadyDecided: false, row };
+  // Two presses racing each other: the decision is a conditional write, so the
+  // loser matched nothing and reports the payment as already decided.
+  if (!decided) return { alreadyDecided: true, row };
+
+  scheduleDelivery(decided.id, decided.sim.delayMs);
+  return { alreadyDecided: false, row: decided };
 }
 
 const timers = new Map();
@@ -258,7 +268,7 @@ const REQUEST_TIMEOUT_MS = 5000;
  * second until it gives up — at which point a real payment is stranded.
  */
 export async function deliverNow(id) {
-  const row = await FakePayment.findById(id);
+  const row = await fakePayments.findById(id);
   if (!row) return { skipped: "unknown" };
 
   if (row.sim.deliver === "never") {
@@ -304,10 +314,7 @@ async function deliverOnce(row) {
       });
       code = res.status;
       if (res.ok) {
-        await FakePayment.updateOne(
-          { _id: row._id },
-          { $set: { delivered: true }, $push: { deliveries: { attempt, code } } }
-        );
+        await fakePayments.recordDelivery(row.id, { attempt, code, error: null }, true);
         console.log(`[fake] delivered ${row._id} (${row.status}) -> ${code} on attempt ${attempt}`);
         return { ok: true, code, attempt };
       }
@@ -315,10 +322,7 @@ async function deliverOnce(row) {
       error = err.message;
     }
 
-    await FakePayment.updateOne(
-      { _id: row._id },
-      { $push: { deliveries: { attempt, code, error } } }
-    );
+    await fakePayments.recordDelivery(row.id, { attempt, code, error }, false);
     console.warn(
       `[fake] delivery ${attempt}/${RETRIES} for ${row._id} failed (${code ?? error})`
     );
@@ -340,13 +344,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * impossible to test, and exactly the one worth testing.
  */
 export async function resumePendingDeliveries() {
-  const stranded = await FakePayment.find({
-    delivered: false,
-    status: { $in: ["PAID", "FAILED", "CANCELED"] },
-    "sim.deliver": { $ne: "never" },
-  }).select("_id");
+  const stranded = await fakePayments.findStranded();
 
-  for (const row of stranded) scheduleDelivery(row._id, 0);
+  for (const row of stranded) scheduleDelivery(row.id, 0);
 
   if (stranded.length) {
     console.log(`[fake] re-scheduled ${stranded.length} undelivered callback(s) after restart`);

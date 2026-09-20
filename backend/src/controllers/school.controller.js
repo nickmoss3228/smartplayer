@@ -10,8 +10,8 @@
 // looks up what that room costs at the moment the request lands. A client
 // cannot name a price, a currency or a discount, because it never sends one.
 
-import { User } from "../models/User.js";
-import { spendFrom, grantFrom } from "../helpers/spendCurrency.js";
+import { db, userDocs } from "../db/index.js";
+import { spendFrom } from "../helpers/spendCurrency.js";
 import {
   SCHOOL_STAGES,
   SCHOOL_LAYOUTS,
@@ -27,9 +27,6 @@ import {
   LEGACY_STAGE_ROOMS,
   buyBlocker,
   getRoomSpec,
-  getLayout,
-  getWallpaper,
-  getFloor,
   customisable,
   levelFor,
   moraleFor,
@@ -45,11 +42,9 @@ import {
 //
 // `levelFloor` is the player's old ten-stage index, and it goes over the wire
 // because the client derives the level with the same levelFor the server does
-// and would otherwise compute a lower one for a migrated player. Documents
-// written by the previous dollhouse still carry unlockedRoomIds / ownedItemIds
-// / placed / focusedRoomId alongside these; picking fields explicitly is what
-// keeps that debris off the wire without a migration over the collection.
-function serializeSchool(school) {
+// and would otherwise compute a lower one for a migrated player. Picking fields
+// explicitly keeps anything else on the save off the wire.
+export function serializeSchool(school) {
   return {
     ownedRoomIds: knownRooms(school?.variantId, school?.ownedRoomIds),
     levelFloor: clampStage(school?.stage),
@@ -113,7 +108,7 @@ function knownVariant(id) {
 // A room id the catalog no longer has would be counted toward the level and
 // then never drawn, so it is dropped on the way out rather than trusted. The
 // starter rooms are unioned in because a player must always have somewhere to
-// stand, even if their document predates them.
+// stand, even if their save predates them.
 function knownRooms(variantId, ids) {
   const variant = knownVariant(variantId);
   const list = Array.isArray(ids) ? ids : [];
@@ -123,82 +118,104 @@ function knownRooms(variantId, ids) {
 }
 
 // A level floor out of range would unlock looks that do not exist, so it is
-// pinned rather than trusted. This also covers documents from before the field
-// existed, where `stage` is undefined.
+// pinned rather than trusted.
 function clampStage(value) {
   if (!Number.isInteger(value)) return STARTER_STAGE;
   return Math.min(MAX_STAGE, Math.max(STARTER_STAGE, value));
 }
 
 /**
- * Normalises a player's school on read, lazily, in up to three conditional
- * writes. Anyone who played the dollhouse has a `school` subtree of the wrong
- * shape, anyone older has none at all, and anyone who played the ten-stage
- * version has a stage index but no rooms.
+ * Normalises a player's school on read.
  *
- * These write to the DOCUMENT rather than checking the hydrated model, and that
- * distinction is the whole point. Mongoose applies schema defaults on
- * hydration, so a user who has never stored `school.stage` still reads back as
- * stage 0 — the missing field is invisible from here, but extremely visible to
- * MongoDB, where a filter on {"school.stage": 0} does NOT match a document that
- * lacks the field. That mismatch made the old upgrade endpoint's concurrency
- * guard fail for every player on their very first upgrade: charged, then
- * refunded, then 409. A conditional $set costs one round-trip and closes it.
+ * In Postgres most of what the Mongo version had to back-fill cannot be missing:
+ * stage and the three look ids are NOT NULL, and the campus variant is assigned
+ * from the user id when the account is created (db/repos/users.repo create).
+ * Two things still start empty and are settled here, once:
  *
- * The order is forced. The room migration needs a variantId to look rooms up
- * in, and the variantId is itself assigned lazily by the write above it, so it
- * cannot be folded into the same update and cannot run before it.
+ *   - the payroll clock starts on first read rather than at signup, so an
+ *     account created a year ago and opened today is not weeks in arrears for a
+ *     school it has never seen;
+ *   - an empty room list is granted the rooms its stage was already putting on
+ *     screen (LEGACY_STAGE_ROOMS, a frozen literal, so the catalog can move
+ *     without silently changing what a player is handed) — for a new player,
+ *     just the starter classroom.
+ *
+ * Done under the user's row lock. Without it, two first requests racing could
+ * both see an empty room list, and the late one's write of the starter rooms
+ * could land on top of a room the other had just paid for.
  */
 async function ensureSchool(userId) {
-  await User.updateOne(
-    { _id: userId, "school.stage": { $exists: false } },
-    {
-      $set: {
-        "school.stage": STARTER_STAGE,
-        "school.layoutId": DEFAULT_LAYOUT_ID,
-        "school.wallpaperId": DEFAULT_WALLPAPER_ID,
-        "school.floorId": DEFAULT_FLOOR_ID,
-      },
-    },
-  );
-  // Assigned once, from the id, so it is stable without a migration and the
-  // same on every device. A separate conditional write from the one above
-  // because a player who already had a school still needs a variant.
-  await User.updateOne(
-    { _id: userId, "school.variantId": { $exists: false } },
-    { $set: { "school.variantId": variantForUserId(userId) } },
-  );
-  // The payroll clock starts on first read rather than at signup, so an account
-  // created a year ago and opened today is not eight weeks in arrears for a
-  // school it has never seen.
-  await User.updateOne(
-    { _id: userId, "school.payroll.lastPaidAt": { $exists: false } },
-    { $set: { "school.payroll.lastPaidAt": new Date() } },
-  );
+  return db().transaction(async (tx) => {
+    const user = await userDocs.loadUser(userId, { lock: true }, tx);
+    if (!user) return null;
 
-  const user = await User.findById(userId).select("school wallet");
-  if (!user) return null;
-  if (Array.isArray(user.school?.ownedRoomIds) && user.school.ownedRoomIds.length) {
+    let changed = false;
+
+    if (!user.school.payroll?.lastPaidAt) {
+      user.school.payroll = { lastPaidAt: new Date() };
+      changed = true;
+    }
+
+    if (!Array.isArray(user.school.ownedRoomIds) || user.school.ownedRoomIds.length === 0) {
+      const stage = clampStage(user.school.stage);
+      user.school.ownedRoomIds = LEGACY_STAGE_ROOMS[stage] ?? starterRoomIds(user.school.variantId);
+      changed = true;
+    }
+
+    if (changed) await user.save(tx);
     return user;
-  }
+  });
+}
 
-  // The one-off migration off the ten-stage economy: grant exactly the rooms
-  // the player's old stage was already putting on screen. LEGACY_STAGE_ROOMS is
-  // a frozen literal rather than a call into the live catalog, so the catalog
-  // can move without silently changing what a migrating player is handed.
-  //
-  // `school.stage` is deliberately left in place, and keeps being read, as the
-  // level floor: a migrated player's rooms do not always re-earn the level they
-  // paid for, and a level that went down would invalidate a wallpaper they had
-  // already chosen.
-  const stage = clampStage(user.school?.stage);
-  const granted = LEGACY_STAGE_ROOMS[stage] ?? starterRoomIds(user.school?.variantId);
-  const migrated = await User.findOneAndUpdate(
-    { _id: userId, "school.ownedRoomIds": { $in: [null, []] } },
-    { $set: { "school.ownedRoomIds": granted } },
-    { new: true, select: "school wallet" },
-  );
-  return migrated ?? User.findById(userId).select("school wallet");
+/**
+ * Put a player's school back to where a brand-new account starts.
+ *
+ * A testing tool, and the reason it lives HERE rather than in
+ * admin.controller.js is that it has to stay in step with ensureSchool above:
+ * between them they are the only two places that state what a fresh school
+ * looks like, and a field added to the save without being added to both would
+ * leave a "reset" school carrying the previous player's data in that field.
+ * Keep them adjacent so that is hard to miss.
+ *
+ * Two things are deliberately NOT cleared:
+ *
+ *   wallet    — currency is earned by listening, not by playing the school, so
+ *               wiping it would destroy real progress in a different game and
+ *               leave nothing to re-buy rooms with. Re-testing a purchase
+ *               needs money in hand; the Players tab grants it separately.
+ *   variantId — the campus shape is an assignment, not progress. It is
+ *               normally derived from the user id, but it is stored
+ *               specifically so it can be reassigned by hand, and a reset must
+ *               not quietly undo that.
+ *
+ * Returns the reloaded user, or null if there is no such id.
+ */
+export async function resetSchool(userId) {
+  return db().transaction(async (tx) => {
+    const user = await userDocs.loadUser(userId, { lock: true }, tx);
+    if (!user) return null;
+
+    const variantId = user.school?.variantId
+      ? knownVariant(user.school.variantId)
+      : variantForUserId(userId);
+
+    // lastPaidAt is set to now rather than cleared: an unset clock reads as "has
+    // never paid", and weeksOwed would put the freshly reset school straight
+    // into arrears — the exact thing ensureSchool sets it on first read to avoid.
+    user.school = {
+      ...user.school,
+      ownedRoomIds: starterRoomIds(variantId),
+      stage: STARTER_STAGE,
+      layoutId: DEFAULT_LAYOUT_ID,
+      wallpaperId: DEFAULT_WALLPAPER_ID,
+      floorId: DEFAULT_FLOOR_ID,
+      presets: {},
+      variantId,
+      payroll: { lastPaidAt: new Date() },
+    };
+    await user.save(tx);
+    return user;
+  });
 }
 
 // GET /progress/school
@@ -218,7 +235,7 @@ export async function getSchool(req, res) {
 // none of your business, and the old room-visit endpoint set that precedent.
 export async function getPlayerSchool(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select("school nickname");
+    const user = await userDocs.loadUser(req.params.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({
       school: serializeSchool(user.school),
@@ -241,50 +258,50 @@ export async function buyRoom(req, res) {
     const roomId = typeof req.body?.roomId === "string" ? req.body.roomId : null;
     if (!roomId) return res.status(400).json({ message: "No room named" });
 
-    const user = await ensureSchool(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const variantId = knownVariant(user.school?.variantId);
-    const owned = knownRooms(variantId, user.school?.ownedRoomIds);
-    const spec = getRoomSpec(variantId, roomId);
-    if (!spec) return res.status(404).json({ message: "No such room" });
-
-    // The parent rule, checked here rather than only in the UI that greys the
-    // button out: it is what keeps an owned set a connected subtree, and a
-    // stranded room would open its doorway onto grass.
-    const blocker = buyBlocker(variantId, owned, roomId);
-    if (blocker === "owned") {
-      return res.status(409).json({ message: "You already have that room" });
-    }
-    if (blocker === "locked") {
-      return res.status(400).json({ message: "Build the room it opens off first" });
+    if (!(await ensureSchool(userId))) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const wallet = await spendFrom(userId, spec.currency, spec.price);
-    if (!wallet) {
-      return res.status(400).json({ message: "Not enough coins yet" });
-    }
+    // Check, charge and record in ONE transaction holding the user's row.
+    //
+    // The Mongo version had to charge first and then record the room with a
+    // conditional write, refunding by hand when two taps raced and the record
+    // lost. Here the second tap waits for the first to commit, then finds the
+    // room already owned and is refused before anything is charged — so there
+    // is no refund path, because there is nothing to undo.
+    const { status, body } = await db().transaction(async (tx) => {
+      const user = await userDocs.loadUser(userId, { lock: true }, tx);
+      if (!user) return { status: 404, body: { message: "User not found" } };
 
-    // Conditional on the room not already being there: two taps racing each
-    // other have both been charged by spendFrom, but only one may record the
-    // room. The loser's write matches nothing and it is refunded below rather
-    // than paying twice for one room. $addToSet alone would not do — it is
-    // idempotent, so it would report success for both.
-    const updated = await User.findOneAndUpdate(
-      { _id: userId, "school.ownedRoomIds": { $ne: roomId } },
-      { $addToSet: { "school.ownedRoomIds": roomId } },
-      { new: true, select: "school" },
-    );
+      const variantId = knownVariant(user.school?.variantId);
+      const owned = knownRooms(variantId, user.school?.ownedRoomIds);
+      const spec = getRoomSpec(variantId, roomId);
+      if (!spec) return { status: 404, body: { message: "No such room" } };
 
-    if (!updated) {
-      const refunded = await grantFrom(userId, spec.currency, spec.price);
-      return res.status(409).json({
-        message: "You already have that room",
-        wallet: refunded ?? wallet,
-      });
-    }
+      // The parent rule, checked here rather than only in the UI that greys the
+      // button out: it is what keeps an owned set a connected subtree, and a
+      // stranded room would open its doorway onto grass.
+      const blocker = buyBlocker(variantId, owned, roomId);
+      if (blocker === "owned") {
+        return { status: 409, body: { message: "You already have that room" } };
+      }
+      if (blocker === "locked") {
+        return { status: 400, body: { message: "Build the room it opens off first" } };
+      }
 
-    res.json({ school: serializeSchool(updated.school), wallet });
+      const wallet = await spendFrom(userId, spec.currency, spec.price, tx);
+      if (!wallet) {
+        return { status: 400, body: { message: "Not enough coins yet" } };
+      }
+
+      const stored = Array.isArray(user.school.ownedRoomIds) ? user.school.ownedRoomIds : [];
+      user.school.ownedRoomIds = stored.includes(roomId) ? stored : [...stored, roomId];
+      await user.save(tx);
+
+      return { status: 200, body: { school: serializeSchool(user.school), wallet } };
+    });
+
+    res.status(status).json(body);
   } catch (error) {
     console.error("buyRoom error:", error);
     res.status(500).json({ message: "Server error" });
@@ -302,46 +319,39 @@ export async function buyRoom(req, res) {
 export async function paySchoolPayroll(req, res) {
   try {
     const userId = req.user._id;
-    const user = await ensureSchool(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const variantId = knownVariant(user.school?.variantId);
-    const rooms = knownRooms(variantId, user.school?.ownedRoomIds);
-    const level = levelFor(rooms, clampStage(user.school?.stage));
-    const paidAt = user.school?.payroll?.lastPaidAt;
-    const weeks = weeksOwed(paidAt);
-
-    if (weeks <= 0) {
-      return res.status(400).json({ message: "Nothing is owed yet" });
+    if (!(await ensureSchool(userId))) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const due = payrollDue(getStage(level).teachers, rooms.length, weeks);
-    const wallet = await spendFrom(userId, "bitAward", due);
-    if (!wallet) {
-      return res.status(400).json({ message: "Not enough coins yet" });
-    }
+    // Same shape as buyRoom: under the row lock a second tap waits, then sees
+    // nothing owed. The old conditional-on-the-old-date write and its refund
+    // are no longer needed.
+    const { status, body } = await db().transaction(async (tx) => {
+      const user = await userDocs.loadUser(userId, { lock: true }, tx);
+      if (!user) return { status: 404, body: { message: "User not found" } };
 
-    // Conditional on the clock not having moved. Two taps racing each other
-    // have both been charged, and only one may reset the date; the loser is
-    // refunded rather than paying the same wages twice.
-    //
-    // Filtered on the OLD date rather than on weeks owed, because "owes three
-    // weeks" is true for a whole week and would let the second tap through.
-    const updated = await User.findOneAndUpdate(
-      { _id: userId, "school.payroll.lastPaidAt": paidAt },
-      { $set: { "school.payroll.lastPaidAt": new Date() } },
-      { new: true, select: "school" },
-    );
+      const variantId = knownVariant(user.school?.variantId);
+      const rooms = knownRooms(variantId, user.school?.ownedRoomIds);
+      const level = levelFor(rooms, clampStage(user.school?.stage));
+      const weeks = weeksOwed(user.school?.payroll?.lastPaidAt);
 
-    if (!updated) {
-      const refunded = await grantFrom(userId, "bitAward", due);
-      return res.status(409).json({
-        message: "Payroll has already gone out",
-        wallet: refunded ?? wallet,
-      });
-    }
+      if (weeks <= 0) {
+        return { status: 400, body: { message: "Nothing is owed yet" } };
+      }
 
-    res.json({ school: serializeSchool(updated.school), wallet });
+      const due = payrollDue(getStage(level).teachers, rooms.length, weeks);
+      const wallet = await spendFrom(userId, "bitAward", due, tx);
+      if (!wallet) {
+        return { status: 400, body: { message: "Not enough coins yet" } };
+      }
+
+      user.school.payroll = { lastPaidAt: new Date() };
+      await user.save(tx);
+
+      return { status: 200, body: { school: serializeSchool(user.school), wallet } };
+    });
+
+    res.status(status).json(body);
   } catch (error) {
     console.error("paySchoolPayroll error:", error);
     res.status(500).json({ message: "Server error" });
@@ -363,67 +373,79 @@ export async function setSchoolLook(req, res) {
     const userId = req.user._id;
     const { roomId } = req.body ?? {};
 
-    const user = await ensureSchool(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    const variantId = knownVariant(user.school?.variantId);
-    const level = levelFor(
-      knownRooms(variantId, user.school?.ownedRoomIds),
-      clampStage(user.school?.stage),
-    );
-
-    // Which fields this write may touch. For the school default that is all
-    // three; for one room it is whatever that KIND can actually show.
-    let allowed = LOOK_FIELDS.map(([field]) => field);
-    let prefix = "school.";
-    if (roomId !== undefined) {
-      if (typeof roomId !== "string") {
-        return res.status(400).json({ message: "No room named" });
-      }
-      const spec = getRoomSpec(variantId, roomId);
-      if (!spec) return res.status(404).json({ message: "No such room" });
-      if (!knownRooms(variantId, user.school?.ownedRoomIds).includes(roomId)) {
-        return res.status(400).json({ message: "You have not built that room" });
-      }
-      allowed = customisable(spec.kind, spec.outdoor);
-      prefix = `school.presets.${roomId}.`;
+    if (!(await ensureSchool(userId))) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const set = {};
-    const unset = {};
-    for (const [field, lookup] of LOOK_FIELDS) {
-      const value = req.body?.[field];
-      if (value === undefined) continue;
-      if (!allowed.includes(field)) {
-        return res.status(400).json({ message: "That room cannot change that" });
-      }
-      // Only a room may be reset; the school itself always has all three.
-      if (value === null) {
-        if (roomId === undefined) {
-          return res.status(400).json({ message: "The school always has a look" });
+    const { status, body } = await db().transaction(async (tx) => {
+      const user = await userDocs.loadUser(userId, { lock: true }, tx);
+      if (!user) return { status: 404, body: { message: "User not found" } };
+
+      const variantId = knownVariant(user.school?.variantId);
+      const level = levelFor(
+        knownRooms(variantId, user.school?.ownedRoomIds),
+        clampStage(user.school?.stage),
+      );
+
+      // Which fields this write may touch. For the school default that is all
+      // three; for one room it is whatever that KIND can actually show.
+      let allowed = LOOK_FIELDS.map(([field]) => field);
+      if (roomId !== undefined) {
+        if (typeof roomId !== "string") {
+          return { status: 400, body: { message: "No room named" } };
         }
-        unset[`${prefix}${field}`] = "";
-        continue;
+        const spec = getRoomSpec(variantId, roomId);
+        if (!spec) return { status: 404, body: { message: "No such room" } };
+        if (!knownRooms(variantId, user.school?.ownedRoomIds).includes(roomId)) {
+          return { status: 400, body: { message: "You have not built that room" } };
+        }
+        allowed = customisable(spec.kind, spec.outdoor);
       }
-      if (!lookup(value, level)) {
-        return res.status(400).json({ message: "That look is not available yet" });
+
+      const set = {};
+      const clear = [];
+      for (const [field, lookup] of LOOK_FIELDS) {
+        const value = req.body?.[field];
+        if (value === undefined) continue;
+        if (!allowed.includes(field)) {
+          return { status: 400, body: { message: "That room cannot change that" } };
+        }
+        // Only a room may be reset; the school itself always has all three.
+        if (value === null) {
+          if (roomId === undefined) {
+            return { status: 400, body: { message: "The school always has a look" } };
+          }
+          clear.push(field);
+          continue;
+        }
+        if (!lookup(value, level)) {
+          return { status: 400, body: { message: "That look is not available yet" } };
+        }
+        set[field] = value;
       }
-      set[`${prefix}${field}`] = value;
-    }
 
-    if (!Object.keys(set).length && !Object.keys(unset).length) {
-      return res.status(400).json({ message: "Nothing to change" });
-    }
+      if (!Object.keys(set).length && !clear.length) {
+        return { status: 400, body: { message: "Nothing to change" } };
+      }
 
-    const update = {};
-    if (Object.keys(set).length) update.$set = set;
-    if (Object.keys(unset).length) update.$unset = unset;
+      if (roomId === undefined) {
+        user.school = { ...user.school, ...set };
+      } else {
+        // Presets stay SPARSE: a field cleared is removed, and a room left
+        // with nothing overridden is removed entirely rather than stored as {}.
+        const presets = { ...(user.school.presets ?? {}) };
+        const preset = { ...(presets[roomId] ?? {}), ...set };
+        for (const field of clear) delete preset[field];
+        if (Object.keys(preset).length) presets[roomId] = preset;
+        else delete presets[roomId];
+        user.school = { ...user.school, presets };
+      }
 
-    const updated = await User.findByIdAndUpdate(userId, update, {
-      new: true,
-      select: "school",
+      await user.save(tx);
+      return { status: 200, body: { school: serializeSchool(user.school) } };
     });
 
-    res.json({ school: serializeSchool(updated.school) });
+    res.status(status).json(body);
   } catch (error) {
     console.error("setSchoolLook error:", error);
     res.status(500).json({ message: "Server error" });

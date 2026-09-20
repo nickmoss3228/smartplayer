@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { IoBookOutline, IoNewspaperOutline, IoLockClosed, IoCheckmark, IoPlay } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import type { StoryGroup, DifficultySlug } from '../../types/storyGroups';
-import { formatPrice, getProduct } from '../../config/priceCatalog';
+import { formatPrice } from '../../config/priceCatalog';
+import { useCatalog } from '../../context/CatalogContext';
 
 /**
  * One story on the shelf.
@@ -81,7 +82,7 @@ function useRevealOnScroll<T extends HTMLElement>() {
   return ref;
 }
 
-interface Props {
+interface BaseProps {
   story: StoryGroup;
   difficulty: DifficultySlug;
   /** Level accent, as a var(--color-*) reference from themes.levelprogress. */
@@ -89,9 +90,30 @@ interface Props {
   completed: number;
   /** Entrance stagger only — capped by the caller. */
   index: number;
-  inCart: boolean;
   onOpen: () => void;
-  onBuy: () => void;
+}
+
+/**
+ * Every locked card shows what it is and what it costs underneath — parts,
+ * price, and a buy button when the caller passes `onBuy`. Once owned, that row
+ * turns into a green "available".
+ *
+ * 'shop'   — the shelf at /stories · /shop · /library. The buy button toggles
+ *            the basket, so it reflects `inCart`.
+ * 'browse' — the level shelf at /levels/:difficulty, i.e. the learner's own
+ *            library. It never sells: List.tsx passes no `onBuy`, and a
+ *            story that is locked but has free parts is drawn as an open
+ *            one — no padlock, no dimmed art — because it CAN be heard. A
+ *            padlock on a card that plays was reading as "you can't open
+ *            this". The free allowance is named under the card instead.
+ */
+interface Props extends BaseProps {
+  variant?: 'browse' | 'shop';
+  inCart?: boolean;
+  /** Omit to show the price without a button (e.g. not sellable here). */
+  onBuy?: () => void;
+  /** Opens the "what's inside" preview. */
+  onPreview?: () => void;
 }
 
 export const StoryCard = ({
@@ -99,9 +121,11 @@ export const StoryCard = ({
   accent,
   completed,
   index,
-  inCart,
+  variant = 'browse',
+  inCart = false,
   onOpen,
   onBuy,
+  onPreview,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -113,9 +137,20 @@ export const StoryCard = ({
 
   // Decided by the server and carried on the list response — the client never
   // works out entitlement for itself.
+  const { getProduct } = useCatalog();
   const isLocked = story.locked === true;
-  // The smallest sufficient purchase, which is what the sticker quotes.
-  const cheapest = isLocked ? getProduct(story.requiredSkus?.[0] ?? '') : null;
+  const isShop = variant === 'shop';
+  // Locked, but its first parts play — in the library that is not a lock.
+  const showLock = isLocked && !(!isShop && (story.freeParts ?? 0) > 0);
+  // The story on its own — the smallest purchase that unlocks it.
+  const product = isLocked ? getProduct(story.requiredSkus?.[0] ?? '') : null;
+  const freeHint = !isLocked
+    ? null
+    : story.previewSeconds
+      ? t('shelf.freePreview', { seconds: story.previewSeconds })
+      : (story.freeParts ?? 0) > 0
+        ? t('shelf.freeParts', { count: story.freeParts })
+        : null;
 
   const FallbackIcon = story.category === 'news' ? IoNewspaperOutline : IoBookOutline;
 
@@ -133,18 +168,6 @@ export const StoryCard = ({
       }
       data-list-reveal="out"
     >
-      {/* The price sticker. Sits outside the panel's overflow so it can hang
-          off the corner the way a sticker actually would, and is aria-hidden
-          because the buy button below already names the price. */}
-      {isLocked && cheapest && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-1.5 -top-1.5 z-20 rotate-6 border-[1.5px] border-gray-900 bg-[#FFE24A] px-1.5 py-0.5 text-[11px] font-black leading-none tracking-tight text-gray-900 tabular-nums shadow-sm"
-        >
-          {formatPrice(cheapest.amountMinor)}
-        </span>
-      )}
-
       <button
         type="button"
         onClick={onOpen}
@@ -162,7 +185,7 @@ export const StoryCard = ({
             // Locked art is desaturated and dimmed: it reads as "not yours yet"
             // without hiding what you would be buying.
             className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out sm:group-hover:scale-105 ${
-              isLocked ? 'opacity-45 grayscale' : ''
+              showLock ? 'opacity-45 grayscale' : ''
             }`}
           />
         ) : (
@@ -183,7 +206,7 @@ export const StoryCard = ({
 
         {/* Top-left chip: a padlock, or where you got to. The two can never
             both apply — a locked story has no progress to report. */}
-        {isLocked ? (
+        {showLock ? (
           <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-sm bg-gray-900/90 p-1 text-white">
             <IoLockClosed size={11} aria-hidden="true" />
           </span>
@@ -223,7 +246,7 @@ export const StoryCard = ({
 
         {/* Progress lives in the panel's bottom gutter. Hidden while locked — a
             0% bar under a padlock reads as failure rather than as not-bought. */}
-        {!isLocked && (
+        {!showLock && (
           <span className="absolute inset-x-0 bottom-0 z-10 block h-1 bg-black/40">
             <span
               className="list-card__fill block h-full bg-[var(--level-accent)]"
@@ -233,29 +256,65 @@ export const StoryCard = ({
         )}
       </button>
 
-      {/* Below the panel: ownership, or the way out of it. Kept outside the
-          card button so "open" and "buy" are two separate targets — nesting
-          them would make the whole card ambiguous to a keyboard. */}
+      {/* Below the panel: "available", or parts · price · buy. Kept outside
+          the card button so "open" and "buy" are two separate targets —
+          nesting them would make the whole card ambiguous to a keyboard. */}
       <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider">
-        {isLocked ? (
-          <button
-            type="button"
-            onClick={onBuy}
-            className={`rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-              inCart
-                ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
-                : 'bg-gray-900 text-white hover:bg-gray-700'
-            }`}
-          >
-            {inCart ? t('shop.inCart') : t('shop.addToCart')}
-          </button>
+        {!isShop && isLocked ? (
+          <>
+            <span className="min-w-0 truncate font-semibold text-green-600">{freeHint}</span>
+            <span className="shrink-0 tabular-nums text-gray-400">
+              {t('shelf.parts', { count: total })}
+            </span>
+          </>
+        ) : !isLocked ? (
+          <>
+            <span className="font-semibold text-green-600">{t('shelf.yours')}</span>
+            <span className="shrink-0 tabular-nums text-gray-400">
+              {t('shelf.parts', { count: total })}
+            </span>
+          </>
         ) : (
-          <span className="font-semibold text-[var(--level-accent)]">{t('shelf.yours')}</span>
+          <>
+            <span className="min-w-0 truncate tabular-nums text-gray-500">
+              {t('shelf.parts', { count: total })}
+              {product && (
+                <>
+                  <span className="mx-1 text-gray-300">·</span>
+                  <span className="font-bold text-gray-900">{formatPrice(product.amountMinor)}</span>
+                </>
+              )}
+            </span>
+            {onBuy && product && (
+              <button
+                type="button"
+                onClick={onBuy}
+                className={`shrink-0 cursor-pointer rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                  isShop && inCart
+                    ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
+                    : 'bg-gray-900 text-white hover:bg-gray-700'
+                }`}
+              >
+                {isShop && inCart ? t('shop.inCart') : t('shop.buy')}
+              </button>
+            )}
+          </>
         )}
-        <span className="shrink-0 tabular-nums text-gray-400">
-          {t('shelf.parts', { count: total })}
-        </span>
       </div>
+      {isLocked && isShop && (freeHint || onPreview) && (
+        <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-400">
+          <span className="min-w-0 truncate">{freeHint}</span>
+          {onPreview && (
+            <button
+              type="button"
+              onClick={onPreview}
+              className="shrink-0 cursor-pointer font-semibold text-gray-600 underline underline-offset-2 transition-colors hover:text-gray-900"
+            >
+              {t('shop.whatsInside')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -90,8 +90,8 @@ const DIFFICULTIES = ["easy", "medium", "hard"];
 //
 // The per-track player route (/levels/:difficulty/:storySlug/:trackNumber) is
 // deliberately absent. Those are the audio player itself: no indexable text,
-// and everything past FREE_TRIAL_STORIES bounces guests to /signup. Submitting
-// them would mostly be submitting redirects.
+// and every part past a story's free allowance bounces back to the paywall.
+// Submitting them would mostly be submitting redirects.
 const urls = [
   "/",
   "/how-to-use",

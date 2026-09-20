@@ -45,6 +45,8 @@ export interface PublishedStoryPart {
    * reasoning as adaptPublishedStoryToTracks below).
    */
   locked?: boolean;
+  /** Audible, but only for the story's previewSeconds; no quiz is sent. */
+  preview?: boolean;
 }
 
 export interface LocalizedText {
@@ -65,6 +67,8 @@ export interface PublishedStory {
   locked?: boolean;
   /** Any one of these SKUs unlocks it — what the paywall modal offers to sell. */
   requiredSkus?: string[];
+  freeParts?: number;
+  previewSeconds?: number | null;
 }
 
 export interface PublishedStoryListItem {
@@ -86,6 +90,8 @@ export interface PublishedStoryListItem {
    */
   locked?: boolean;
   requiredSkus?: string[];
+  freeParts?: number;
+  previewSeconds?: number | null;
 }
 
 // Returns null if the story doesn't exist (isn't published, or was never a
@@ -111,15 +117,18 @@ export const fetchPublishedStory = async (
  * On failure both come back empty, so a backend outage shows the full built-in
  * catalogue rather than an empty app. Failing open is the right way round here:
  * hiding is an editorial choice, not a security boundary.
+ *
+ * `ok` says which of the two happened. An empty failure is not an answer, and a
+ * caller that already holds a real list must not replace it with one.
  */
 export const fetchPublishedStoriesList = async (
   difficulty: string
-): Promise<{ stories: PublishedStoryListItem[]; hidden: string[] }> => {
+): Promise<{ stories: PublishedStoryListItem[]; hidden: string[]; ok: boolean }> => {
   try {
     const res = await api.get(`/api/stories/${difficulty}`);
-    return { stories: res.data.stories ?? [], hidden: res.data.hidden ?? [] };
+    return { stories: res.data.stories ?? [], hidden: res.data.hidden ?? [], ok: true };
   } catch {
-    return { stories: [], hidden: [] };
+    return { stories: [], hidden: [], ok: false };
   }
 };
 

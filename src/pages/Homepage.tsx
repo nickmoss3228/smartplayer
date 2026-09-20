@@ -139,7 +139,7 @@ const Homepage = () => {
                   {t('homepage.startFree')}
                 </button>
               </Link>
-              <Link to="/how-to-use">
+              {/* <Link to="/how-to-use">
                 <button
                   className="w-full py-3 border border-gray-300 text-black
                     font-bold text-sm tracking-[0.2em] uppercase
@@ -147,7 +147,7 @@ const Homepage = () => {
                 >
                   {t('homepage.button3')}
                 </button>
-              </Link>
+              </Link> */}
               <Link to="/login">
                 <p
                   className="text-center text-sm text-gray-400 mt-1

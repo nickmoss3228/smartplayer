@@ -1,6 +1,11 @@
 // controllers/progress.controller.js
-import { Progress } from "../models/Progress.js";
-import { StoryProgress } from "../models/StoryProgress.js";
+import {
+  db,
+  progress as progressRepo,
+  userDocs,
+  users as usersRepo,
+  wallet as walletRepo,
+} from "../db/index.js";
 import { updateAchievements } from "../helpers/updateAchievements.js";
 import { applyLevelCompletion } from "../helpers/applyLevelCompletion.js";
 import {
@@ -26,9 +31,9 @@ import {
   floorOverlaps,
   wallOverlaps,
 } from "../config/roomLayout.js";
-import { FREE_TRIAL_STORIES } from "../config/trial.js";
-import { accessFor, isPartVisible } from "../config/entitlements.js";
-import { User } from "../models/User.js";
+import { accessFor, isPartVisible, isPreviewPart } from "../config/entitlements.js";
+import { getCatalog } from "../helpers/catalogStore.js";
+import { config } from "../config/env.js";
 
 const difficulties = ["easy", "medium", "hard"];
 
@@ -41,21 +46,13 @@ export async function getProgress(req, res) {
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
 
-    let progress = await Progress.findOne({ userId, difficulty });
-    if (!progress) {
-      progress = await Progress.create({
-        userId,
-        difficulty,
-        completedLevels: [],
-        currentLevel: 1,
-        levelResults: new Map(),
-      });
-    }
+    // Created on first read, as before.
+    const progress = await progressRepo.ensure(userId, difficulty);
 
     res.json({
       completedLevels: progress.completedLevels,
       currentLevel: progress.currentLevel,
-      levelResults: Object.fromEntries(progress.levelResults),
+      levelResults: await progressRepo.levelResultsMap(progress.id),
       totalLevels: progress.completedLevels.length,
     });
   } catch (error) {
@@ -63,104 +60,6 @@ export async function getProgress(req, res) {
     res.status(500).json({ message: "Server error" });
   }
 }
-
-// POST /progress/complete  — now handles story parts
-// export async function completeLevel(req, res) {
-//   try {
-//     const { difficulty, storyId, partNumber, correctAnswers, totalQuestions } =
-//       req.body;
-//     const userId = req.user._id;
-
-//     if (!difficulties.includes(difficulty))
-//       return res.status(400).json({ message: "Invalid difficulty level" });
-
-//     if (!storyId || partNumber === undefined || correctAnswers === undefined || !totalQuestions)
-//       return res.status(400).json({ message: "Missing required fields" });
-
-//     if (correctAnswers > totalQuestions)
-//       return res.status(400).json({
-//         message: "Invalid quiz results: correct answers cannot exceed total questions",
-//       });
-
-//     // Validate storyId exists in registry
-//     const stories = storyRegistry[difficulty] ?? [];
-//     const storyMeta = stories.find((s) => s.storyId === storyId);
-//     if (!storyMeta)
-//       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
-
-//     const minCorrect = Math.ceil(totalQuestions * 0.7);
-//     const isCompleted = correctAnswers >= minCorrect;
-
-//     // Update StoryProgress
-//     let storyProgress = await StoryProgress.findOne({ userId, difficulty, storyId });
-//     if (!storyProgress) {
-//       storyProgress = new StoryProgress({
-//         userId,
-//         difficulty,
-//         storyId,
-//         completedParts: [],
-//         currentPart: 1,
-//       });
-//     }
-
-//     if (isCompleted) {
-//       if (!storyProgress.completedParts.includes(partNumber)) {
-//         storyProgress.completedParts.push(partNumber);
-//         storyProgress.completedParts.sort((a, b) => a - b);
-//       }
-//       if (
-//         partNumber === storyProgress.currentPart &&
-//         partNumber < storyMeta.totalParts
-//       ) {
-//         storyProgress.currentPart = partNumber + 1;
-//       }
-//     }
-
-//     await storyProgress.save();
-
-//     // Keep legacy Progress document in sync (total completed parts across all stories)
-//     const allStoryProgress = await StoryProgress.find({ userId, difficulty });
-//     const totalCompletedParts = allStoryProgress.reduce(
-//       (sum, sp) => sum + sp.completedParts.length,
-//       0
-//     );
-
-//     let progress = await Progress.findOne({ userId, difficulty });
-//     if (!progress) {
-//       progress = new Progress({
-//         userId,
-//         difficulty,
-//         completedLevels: [],
-//         currentLevel: 1,
-//         levelResults: new Map(),
-//       });
-//     }
-//     // Store completed part keys as "storyId:partNumber" strings mapped to results
-//     progress.levelResults.set(`${storyId}:${partNumber}`, {
-//       completed: isCompleted,
-//       correctAnswers,
-//       totalQuestions,
-//       completedAt: new Date(),
-//     });
-//     await progress.save();
-
-//     res.json({
-//       message: isCompleted
-//         ? "Part completed successfully"
-//         : "Part not completed. Try again!",
-//       completed: isCompleted,
-//       storyProgress: {
-//         completedParts: storyProgress.completedParts,
-//         currentPart: storyProgress.currentPart,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Complete level error:", error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// }
-
-// Add to controllers/progress.controller.js
 
 // GET /progress/story/:difficulty/:storyId
 export async function getStoryProgress(req, res) {
@@ -175,9 +74,9 @@ export async function getStoryProgress(req, res) {
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId" });
 
-    let doc = await StoryProgress.findOne({ userId, difficulty, storyId });
+    const doc = await progressRepo.storyProgressFor(userId, difficulty, storyId);
     if (!doc) {
-      // Return empty progress — don't create a doc yet
+      // Return empty progress — don't create a row yet
       return res.json({
         storyId,
         difficulty,
@@ -212,34 +111,34 @@ function yesterdayUTC() {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * Reads all Progress docs for a user across all difficulties and returns
- * the total number of questions from uniquely-completed parts.
- */
-async function countCompletedQuestions(userId) {
-  const docs = await Progress.find({ userId });
-  let total = 0;
-  for (const doc of docs) {
-    for (const [, result] of doc.levelResults) {
-      if (result.completed) total += result.totalQuestions;
-    }
-  }
-  return total;
+/** The achievement tiers of a users row, in the shape the API returns. */
+function achievementsOf(row) {
+  return {
+    listeningTime: row.achievementListeningTime,
+    questionsAnswered: row.achievementQuestionsAnswered,
+    studyStreak: row.achievementStudyStreak,
+    storiesListened: row.achievementStoriesListened,
+    wordsLearned: row.achievementWordsLearned,
+  };
 }
 
 /**
- * Counts unique story IDs across all difficulties where at least
- * one part has been completed.
+ * Run `fn` in a transaction holding the user's row lock.
+ *
+ * Every shop handler below is read-check-write: "is this owned? no — charge,
+ * then record it". Mongo ran those as separate writes, so two taps could both
+ * pass the check and both be charged. Holding the row makes the second tap
+ * wait for the first to commit, and then it sees the item as owned.
+ *
+ * `fn` returns { status, body }; the transaction commits either way, and a
+ * refusal has simply written nothing.
  */
-async function countUniqueCompletedStories(userId) {
-  const docs = await StoryProgress.find({ userId });
-  const uniqueStories = new Set();
-  for (const doc of docs) {
-    if (doc.completedParts.length > 0) {
-      uniqueStories.add(`${doc.difficulty}:${doc.storyId}`);
-    }
-  }
-  return uniqueStories.size;
+function withLockedUser(userId, fn) {
+  return db().transaction(async (tx) => {
+    const user = await userDocs.loadUser(userId, { lock: true }, tx);
+    if (!user) return { status: 404, body: { message: "User not found" } };
+    return fn(user, tx);
+  });
 }
 
 /**
@@ -253,11 +152,15 @@ async function countUniqueCompletedStories(userId) {
  *
  * Returns null when the caller may proceed, or a {status, body} to send.
  */
-function refuseIfLocked(req, difficulty, storyId, partNumber) {
+async function refuseIfLocked(req, difficulty, storyId, partNumber) {
   const access = accessFor(req.user?.entitlements, difficulty, storyId, {
     authenticated: Boolean(req.user),
+    catalog: await getCatalog(),
+    paywallEnabled: config.payments.paywallEnabled,
   });
-  if (isPartVisible(access, partNumber)) return null;
+  // A preview part is audible for 30 seconds, which is not enough to be quizzed
+  // on — and a pass would pay out BitAward for a part nobody has bought.
+  if (isPartVisible(access, partNumber) && !isPreviewPart(access, partNumber)) return null;
   return {
     status: 403,
     body: {
@@ -286,7 +189,7 @@ export async function getQuiz(req, res) {
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
 
-    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    const refusal = await refuseIfLocked(req, difficulty, storyId, partNumber);
     if (refusal) return res.status(refusal.status).json(refusal.body);
 
     const questions = await getPublicQuizAsync(difficulty, storyId, partNumber);
@@ -318,7 +221,7 @@ export async function checkQuizAnswer(req, res) {
     if (typeof questionIndex !== "number" || typeof selectedOption !== "number")
       return res.status(400).json({ message: "Missing required fields" });
 
-    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    const refusal = await refuseIfLocked(req, difficulty, storyId, partNumber);
     if (refusal) return res.status(refusal.status).json(refusal.body);
 
     const answerKey = await getQuizAnswerKeyAsync(difficulty, storyId, partNumber);
@@ -345,6 +248,11 @@ export async function completeLevel(req, res) {
     if (!storyId || partNumber === undefined || !Array.isArray(answers))
       return res.status(400).json({ message: "Missing required fields" });
 
+    // The part number lands in integer columns and an array of integers, where
+    // "2" or 2.5 would be a query error rather than a 400.
+    if (!Number.isInteger(partNumber) || partNumber < 1)
+      return res.status(400).json({ message: "Missing required fields" });
+
     const storyMeta = await getStoryMeta(difficulty, storyId);
     if (!storyMeta)
       return res.status(400).json({ message: "Unknown storyId for this difficulty" });
@@ -354,7 +262,7 @@ export async function completeLevel(req, res) {
     // and a direct POST here would still pay out for a part the user never
     // unlocked — the answer key is fetched server-side, so it does not even
     // need the quiz endpoints to succeed first.
-    const refusal = refuseIfLocked(req, difficulty, storyId, partNumber);
+    const refusal = await refuseIfLocked(req, difficulty, storyId, partNumber);
     if (refusal) return res.status(refusal.status).json(refusal.body);
 
     // Grade against the server-held answer key — never trust a client-reported
@@ -375,20 +283,18 @@ export async function completeLevel(req, res) {
     });
 
     // ── Streak update (only on completed submissions) ─────────────────────
-    let newStreak = 0;
     let wallet = null;
     if (isCompleted) {
-      const user = await User.findById(userId).select("streak totalListeningSeconds");
+      const user = await usersRepo.findById(userId);
       const today = todayUTC();
       const yesterday = yesterdayUTC();
-      const last = user.streak?.lastSubmittedDate;
+      const last = user.streakLastSubmittedDate;
 
-      let current = user.streak?.current ?? 0;
-      let longest = user.streak?.longest ?? 0;
+      let current = user.streakCurrent ?? 0;
+      let longest = user.streakLongest ?? 0;
 
       if (last === today) {
         // Already counted today — no change
-        current = current;
       } else if (last === yesterday) {
         // Consecutive day
         current += 1;
@@ -398,20 +304,17 @@ export async function completeLevel(req, res) {
       }
 
       longest = Math.max(longest, current);
-      newStreak = current;
 
-      await User.findByIdAndUpdate(userId, {
-        $set: {
-          "streak.current": current,
-          "streak.longest": longest,
-          "streak.lastSubmittedDate": today,
-        },
+      await usersRepo.update(userId, {
+        streakCurrent: current,
+        streakLongest: longest,
+        streakLastSubmittedDate: today,
       });
 
       // ── Achievement check ───────────────────────────────────────────────
       const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
-        countCompletedQuestions(userId),
-        countUniqueCompletedStories(userId),
+        progressRepo.questionsAnsweredTotal(userId),
+        progressRepo.uniqueCompletedStoriesCount(userId),
       ]);
 
       await updateAchievements(userId, {
@@ -447,8 +350,8 @@ export async function completeLevel(req, res) {
 // an account) into their freshly created/logged-in account. Never trusts
 // the client's claims blindly — every entry is re-validated the same way a
 // real-time /progress/complete submission would be, plus a hard bound on
-// partNumber, since a guest could only ever have legitimately unlocked
-// levels 1..FREE_TRIAL_STORIES.
+// partNumber: a guest could only ever have taken the quiz on parts the
+// paywall gives away in full (see accessFor in config/entitlements.js).
 
 export async function migrateGuestProgress(req, res) {
   try {
@@ -471,15 +374,21 @@ export async function migrateGuestProgress(req, res) {
       if (!storyMeta) continue;
       if (!Array.isArray(results)) continue;
 
+      const guestAccess = accessFor(null, difficulty, storyId, {
+        authenticated: false,
+        catalog: await getCatalog(),
+      });
+
       for (const r of results) {
         const { partNumber, correctAnswers, totalQuestions } = r ?? {};
         const isValid =
-          typeof partNumber === "number" &&
+          Number.isInteger(partNumber) &&
           partNumber >= 1 &&
-          partNumber <= FREE_TRIAL_STORIES &&
+          isPartVisible(guestAccess, partNumber) &&
+          !isPreviewPart(guestAccess, partNumber) &&
           partNumber <= storyMeta.totalParts &&
-          typeof correctAnswers === "number" &&
-          typeof totalQuestions === "number" &&
+          Number.isInteger(correctAnswers) &&
+          Number.isInteger(totalQuestions) &&
           totalQuestions > 0 &&
           correctAnswers >= 0 &&
           correctAnswers <= totalQuestions;
@@ -498,30 +407,23 @@ export async function migrateGuestProgress(req, res) {
       }
     }
 
-    let updatedUser;
     if (learnedWords && learnedWords.length > 0) {
-      updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { $addToSet: { learnedWords: { $each: learnedWords } } },
-        { new: true, select: "learnedWords totalListeningSeconds streak" }
-      );
-    } else {
-      updatedUser = await User.findById(userId).select(
-        "learnedWords totalListeningSeconds streak"
-      );
+      await progressRepo.addLearnedWords(userId, learnedWords);
     }
 
-    const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
-      countCompletedQuestions(userId),
-      countUniqueCompletedStories(userId),
+    const [user, wordsLearned, questionsAnswered, uniqueStoriesCount] = await Promise.all([
+      usersRepo.findById(userId),
+      progressRepo.learnedWordCount(userId),
+      progressRepo.questionsAnsweredTotal(userId),
+      progressRepo.uniqueCompletedStoriesCount(userId),
     ]);
 
     await updateAchievements(userId, {
-      listeningSeconds: updatedUser?.totalListeningSeconds ?? 0,
+      listeningSeconds: user?.totalListeningSeconds ?? 0,
       questionsAnswered,
-      currentStreak: updatedUser?.streak?.current ?? 0,
+      currentStreak: user?.streakCurrent ?? 0,
       uniqueStoriesCount,
-      wordsLearned: updatedUser?.learnedWords?.length ?? 0,
+      wordsLearned,
     });
 
     res.json({ migrated: true });
@@ -539,39 +441,34 @@ export async function syncListeningTime(req, res) {
     const { totalSeconds } = req.body;
     const userId = req.user._id;
 
-    if (typeof totalSeconds !== "number" || totalSeconds < 0)
+    if (typeof totalSeconds !== "number" || !Number.isFinite(totalSeconds) || totalSeconds < 0)
       return res.status(400).json({ message: "Invalid totalSeconds value" });
 
-    // Only ever increase — never allow the value to go backwards.
-    const user = await User.findById(userId).select(
-      "totalListeningSeconds achievements"
-    );
-    if (!user) return res.status(404).json({ message: "User not found" });
+    const before = await usersRepo.findById(userId);
+    if (!before) return res.status(404).json({ message: "User not found" });
 
-    if (totalSeconds <= (user.totalListeningSeconds ?? 0)) {
+    if (Math.floor(totalSeconds) <= (before.totalListeningSeconds ?? 0)) {
       // Nothing to update, but still return current value so frontend is in sync
-      return res.json({ totalListeningSeconds: user.totalListeningSeconds });
+      return res.json({ totalListeningSeconds: before.totalListeningSeconds });
     }
 
-    await User.findByIdAndUpdate(userId, {
-      $set: { totalListeningSeconds: totalSeconds },
-    });
+    // Only ever increases — enforced inside the UPDATE, not by the check above.
+    const stored = await usersRepo.raiseListeningSeconds(userId, totalSeconds);
 
     // Check listening achievement with updated value
     const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
-      countCompletedQuestions(userId),
-      countUniqueCompletedStories(userId),
+      progressRepo.questionsAnsweredTotal(userId),
+      progressRepo.uniqueCompletedStoriesCount(userId),
     ]);
 
-    const streakDoc = await User.findById(userId).select("streak");
     await updateAchievements(userId, {
-      listeningSeconds: totalSeconds,
+      listeningSeconds: stored ?? 0,
       questionsAnswered,
-      currentStreak: streakDoc.streak?.current ?? 0,
+      currentStreak: before.streakCurrent ?? 0,
       uniqueStoriesCount,
     });
 
-    res.json({ totalListeningSeconds: totalSeconds });
+    res.json({ totalListeningSeconds: stored });
   } catch (error) {
     console.error("Sync listening time error:", error);
     res.status(500).json({ message: "Server error" });
@@ -584,25 +481,24 @@ export async function getAchievements(req, res) {
   try {
     const userId = req.user._id;
 
-    const [user, questionsAnswered, uniqueStoriesCount] = await Promise.all([
-      User.findById(userId).select(
-        "achievements streak totalListeningSeconds learnedWords"
-      ),
-      countCompletedQuestions(userId),
-      countUniqueCompletedStories(userId),
+    const [user, wordsLearned, questionsAnswered, uniqueStoriesCount] = await Promise.all([
+      usersRepo.findById(userId),
+      progressRepo.learnedWordCount(userId),
+      progressRepo.questionsAnsweredTotal(userId),
+      progressRepo.uniqueCompletedStoriesCount(userId),
     ]);
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
-      achievements: user.achievements,
+      achievements: achievementsOf(user),
       stats: {
         listeningSeconds:  user.totalListeningSeconds ?? 0,
         questionsAnswered,
-        currentStreak:     user.streak?.current ?? 0,
-        longestStreak:     user.streak?.longest ?? 0,
+        currentStreak:     user.streakCurrent ?? 0,
+        longestStreak:     user.streakLongest ?? 0,
         uniqueStoriesCount,
-        wordsLearned:      user.learnedWords?.length ?? 0,
+        wordsLearned,
       },
     });
   } catch (error) {
@@ -617,10 +513,7 @@ export async function getAchievements(req, res) {
 
 export async function getLearnedWords(req, res) {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId).select("learnedWords");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ learnedWords: user.learnedWords ?? [] });
+    res.json({ learnedWords: await progressRepo.learnedWords(req.user._id) });
   } catch (error) {
     console.error("Get learned words error:", error);
     res.status(500).json({ message: "Server error" });
@@ -684,30 +577,33 @@ export async function completeVocabQuiz(req, res) {
     }
 
     if (known.length === 0) {
-      const current = await User.findById(userId).select("learnedWords wallet");
-      if (!current) return res.status(404).json({ message: "User not found" });
-      return res.json({ learnedWords: current.learnedWords, wallet: current.wallet ?? null });
+      const [learnedWords, wallet] = await Promise.all([
+        progressRepo.learnedWords(userId),
+        walletRepo.get(userId),
+      ]);
+      return res.json({ learnedWords, wallet });
     }
 
-    // Snapshot before the merge so we can tell which words are genuinely new —
-    // $addToSet silently no-ops on repeats, so it can't tell us the diff itself,
-    // and re-answering already-learned words must not mint more BitWord.
-    const existingUser = await User.findById(userId).select("learnedWords");
-    if (!existingUser) return res.status(404).json({ message: "User not found" });
-    const alreadyLearned = new Set(existingUser.learnedWords ?? []);
-    const newlyLearnedCount = known.filter((w) => !alreadyLearned.has(w)).length;
+    // The merge and the payout are one transaction, and the payout is sized by
+    // what the INSERT actually added — not by a snapshot diffed in JavaScript.
+    // The Mongo version read the set, counted "new" words, then $addToSet-ed,
+    // so two racing submissions both counted the same word as new and it was
+    // paid for twice. ON CONFLICT DO NOTHING RETURNING cannot be fooled that way.
+    const wallet = await db().transaction(async (tx) => {
+      const added = await progressRepo.addLearnedWords(userId, known, tx);
+      // awardCurrency returns null for a zero award, which is what a re-sent
+      // round of already-learned words produces. The response still owes the
+      // client its balance, as the known.length === 0 branch above gives it.
+      return (
+        (await awardCurrency(userId, { bitWord: added.length }, tx)) ??
+        walletRepo.get(userId, tx)
+      );
+    });
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $addToSet: { learnedWords: { $each: known } } },
-      { new: true, select: "learnedWords" }
-    );
+    const learnedWords = await progressRepo.learnedWords(userId);
+    await updateAchievements(userId, { wordsLearned: learnedWords.length });
 
-    await updateAchievements(userId, { wordsLearned: user.learnedWords.length });
-
-    const wallet = await awardCurrency(userId, { bitWord: newlyLearnedCount });
-
-    res.json({ learnedWords: user.learnedWords, wallet });
+    res.json({ learnedWords, wallet });
   } catch (error) {
     console.error("Complete vocab quiz error:", error);
     res.status(500).json({ message: "Server error" });
@@ -732,7 +628,7 @@ export async function recordPhraseRepeat(req, res) {
     const bitPhrase = PHRASE_REPEAT_BITPHRASE[repeatCount] ?? 0;
     const wallet = bitPhrase > 0
       ? await awardCurrency(userId, { bitPhrase })
-      : (await User.findById(userId).select("wallet"))?.wallet ?? null;
+      : await walletRepo.get(userId);
 
     res.json({ wallet });
   } catch (error) {
@@ -745,10 +641,9 @@ export async function recordPhraseRepeat(req, res) {
 
 export async function getWallet(req, res) {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId).select("wallet");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ wallet: user.wallet });
+    const wallet = await walletRepo.get(req.user._id);
+    if (!wallet) return res.status(404).json({ message: "User not found" });
+    res.json({ wallet });
   } catch (error) {
     console.error("Get wallet error:", error);
     res.status(500).json({ message: "Server error" });
@@ -758,8 +653,7 @@ export async function getWallet(req, res) {
 // GET /progress/room
 export async function getRoom(req, res) {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId).select("room wallet.bitAward");
+    const user = await userDocs.loadUser(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ room: user.room, bitAward: user.wallet.bitAward });
   } catch (error) {
@@ -774,9 +668,7 @@ export async function getRoom(req, res) {
 // identity for the header (portrait is derived client-side from `character`).
 export async function getPlayerRoom(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select(
-      "username nickname room character"
-    );
+    const user = await userDocs.loadUser(req.params.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({
       username: user.username,
@@ -799,27 +691,27 @@ export async function purchaseItem(req, res) {
     const item = getShopItem(itemId);
     if (!item) return res.status(400).json({ message: "Unknown item" });
 
-    const existing = await User.findById(userId).select("room");
-    if (!existing) return res.status(404).json({ message: "User not found" });
-    if (existing.room.ownedItemIds.includes(itemId)) {
-      return res.status(400).json({ message: "Item already owned" });
-    }
+    const { status, body } = await withLockedUser(userId, async (user, tx) => {
+      if (user.room.ownedItemIds.includes(itemId)) {
+        return { status: 400, body: { message: "Item already owned" } };
+      }
 
-    const wallet = await spendCurrency(userId, item.priceBitAward);
-    if (!wallet) {
-      return res.status(400).json({ message: "Insufficient BitAward balance" });
-    }
+      const wallet = await spendCurrency(userId, item.priceBitAward, tx);
+      if (!wallet) {
+        return { status: 400, body: { message: "Insufficient BitAward balance" } };
+      }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $addToSet: { "room.ownedItemIds": itemId },
-        $set: { [`room.placedItems.${item.slot}`]: itemId },
-      },
-      { new: true, select: "room" },
-    );
+      user.room = {
+        ...user.room,
+        ownedItemIds: [...user.room.ownedItemIds, itemId],
+        placedItems: { ...user.room.placedItems, [item.slot]: itemId },
+      };
+      await user.save(tx);
 
-    res.json({ room: user.room, bitAward: wallet.bitAward });
+      return { status: 200, body: { room: user.room, bitAward: wallet.bitAward } };
+    });
+
+    res.status(status).json(body);
   } catch (error) {
     console.error("Purchase item error:", error);
     res.status(500).json({ message: "Server error" });
@@ -838,19 +730,16 @@ export async function equipItem(req, res) {
     const item = getShopItem(itemId);
     if (!item) return res.status(400).json({ message: "Unknown item" });
 
-    const existing = await User.findById(userId).select("room");
-    if (!existing) return res.status(404).json({ message: "User not found" });
-    if (!existing.room.ownedItemIds.includes(itemId)) {
-      return res.status(400).json({ message: "Item not owned" });
-    }
+    const { status, body } = await withLockedUser(userId, async (user, tx) => {
+      if (!user.room.ownedItemIds.includes(itemId)) {
+        return { status: 400, body: { message: "Item not owned" } };
+      }
+      user.room = { ...user.room, placedItems: { ...user.room.placedItems, [item.slot]: itemId } };
+      await user.save(tx);
+      return { status: 200, body: { room: user.room } };
+    });
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: { [`room.placedItems.${item.slot}`]: itemId } },
-      { new: true, select: "room" },
-    );
-
-    res.json({ room: user.room });
+    res.status(status).json(body);
   } catch (error) {
     console.error("Equip item error:", error);
     res.status(500).json({ message: "Server error" });
@@ -858,20 +747,17 @@ export async function equipItem(req, res) {
 }
 
 // PATCH /progress/room/lights — flips the room's lights on/off. Free
-// preference toggle, not a purchase, so no currency/ownership check.
+// preference toggle, not a purchase, so no currency/ownership check. Under the
+// row lock, two quick taps flip twice rather than both reading "on".
 export async function toggleRoomLights(req, res) {
   try {
-    const userId = req.user._id;
-    const existing = await User.findById(userId).select("room.lightsOn");
-    if (!existing) return res.status(404).json({ message: "User not found" });
+    const { status, body } = await withLockedUser(req.user._id, async (user, tx) => {
+      user.room = { ...user.room, lightsOn: !user.room.lightsOn };
+      await user.save(tx);
+      return { status: 200, body: { room: user.room } };
+    });
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: { "room.lightsOn": !existing.room.lightsOn } },
-      { new: true, select: "room" },
-    );
-
-    res.json({ room: user.room });
+    res.status(status).json(body);
   } catch (error) {
     console.error("Toggle room lights error:", error);
     res.status(500).json({ message: "Server error" });
@@ -895,48 +781,46 @@ export async function updateRoomPlacement(req, res) {
       return res.status(400).json({ message: "This item can't be repositioned." });
     }
 
-    const user = await User.findById(userId).select("room");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (!user.room.placedItems[slot]) {
-      return res.status(400).json({ message: "Nothing is placed in this slot." });
-    }
-
-    let placement;
-
-    if (isFloor) {
-      const { x, z, rotation } = req.body;
-      if (typeof x !== "number" || typeof z !== "number") {
-        return res.status(400).json({ message: "Invalid placement." });
+    const { status, body } = await withLockedUser(userId, async (user, tx) => {
+      if (!user.room.placedItems[slot]) {
+        return { status: 400, body: { message: "Nothing is placed in this slot." } };
       }
-      placement = clampFloorPlacement(slot, x, z, rotation);
-      const occupied = FLOOR_SLOTS
-        .filter((s) => s !== slot && user.room.placedItems[s])
-        .map((s) => ({ slot: s, placement: user.room.placement[s] }));
-      if (floorOverlaps(slot, placement, occupied)) {
-        return res.status(409).json({ message: "That spot overlaps another item." });
-      }
-    } else {
-      const { along, height } = req.body;
-      if (typeof along !== "number" || typeof height !== "number") {
-        return res.status(400).json({ message: "Invalid placement." });
-      }
-      placement = clampWallPlacement(slot, along, height);
-      const wallGroup = BACK_WALL_SLOTS.includes(slot) ? BACK_WALL_SLOTS : SIDE_WALL_SLOTS;
-      const occupied = wallGroup
-        .filter((s) => s !== slot && user.room.placedItems[s])
-        .map((s) => ({ slot: s, placement: user.room.placement[s] }));
-      if (wallOverlaps(slot, placement, occupied)) {
-        return res.status(409).json({ message: "That spot overlaps another item." });
-      }
-    }
 
-    const updated = await User.findByIdAndUpdate(
-      userId,
-      { $set: { [`room.placement.${slot}`]: placement } },
-      { new: true, select: "room" },
-    );
+      let placement;
 
-    res.json({ room: updated.room });
+      if (isFloor) {
+        const { x, z, rotation } = req.body;
+        if (typeof x !== "number" || typeof z !== "number") {
+          return { status: 400, body: { message: "Invalid placement." } };
+        }
+        placement = clampFloorPlacement(slot, x, z, rotation);
+        const occupied = FLOOR_SLOTS
+          .filter((s) => s !== slot && user.room.placedItems[s])
+          .map((s) => ({ slot: s, placement: user.room.placement[s] }));
+        if (floorOverlaps(slot, placement, occupied)) {
+          return { status: 409, body: { message: "That spot overlaps another item." } };
+        }
+      } else {
+        const { along, height } = req.body;
+        if (typeof along !== "number" || typeof height !== "number") {
+          return { status: 400, body: { message: "Invalid placement." } };
+        }
+        placement = clampWallPlacement(slot, along, height);
+        const wallGroup = BACK_WALL_SLOTS.includes(slot) ? BACK_WALL_SLOTS : SIDE_WALL_SLOTS;
+        const occupied = wallGroup
+          .filter((s) => s !== slot && user.room.placedItems[s])
+          .map((s) => ({ slot: s, placement: user.room.placement[s] }));
+        if (wallOverlaps(slot, placement, occupied)) {
+          return { status: 409, body: { message: "That spot overlaps another item." } };
+        }
+      }
+
+      user.room = { ...user.room, placement: { ...user.room.placement, [slot]: placement } };
+      await user.save(tx);
+      return { status: 200, body: { room: user.room } };
+    });
+
+    res.status(status).json(body);
   } catch (error) {
     console.error("Update room placement error:", error);
     res.status(500).json({ message: "Server error" });
@@ -944,13 +828,12 @@ export async function updateRoomPlacement(req, res) {
 }
 
 // ── Character customization — sibling to the room shop above, same pattern,
-// separate catalog/doc path (see config/characterCatalog.js, User.character). ──
+// separate catalog (see config/characterCatalog.js, user.character). ──
 
 // GET /progress/character
 export async function getCharacter(req, res) {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId).select("character wallet.bitAward");
+    const user = await userDocs.loadUser(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ character: user.character, bitAward: user.wallet.bitAward });
   } catch (error) {
@@ -968,27 +851,27 @@ export async function purchaseCharacterItem(req, res) {
     const item = getCharacterItem(itemId);
     if (!item) return res.status(400).json({ message: "Unknown item" });
 
-    const existing = await User.findById(userId).select("character");
-    if (!existing) return res.status(404).json({ message: "User not found" });
-    if (existing.character.ownedItemIds.includes(itemId)) {
-      return res.status(400).json({ message: "Item already owned" });
-    }
+    const { status, body } = await withLockedUser(userId, async (user, tx) => {
+      if (user.character.ownedItemIds.includes(itemId)) {
+        return { status: 400, body: { message: "Item already owned" } };
+      }
 
-    const wallet = await spendCurrency(userId, item.priceBitAward);
-    if (!wallet) {
-      return res.status(400).json({ message: "Insufficient BitAward balance" });
-    }
+      const wallet = await spendCurrency(userId, item.priceBitAward, tx);
+      if (!wallet) {
+        return { status: 400, body: { message: "Insufficient BitAward balance" } };
+      }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $addToSet: { "character.ownedItemIds": itemId },
-        $set: { [`character.equipped.${item.slot}`]: itemId },
-      },
-      { new: true, select: "character" },
-    );
+      user.character = {
+        ...user.character,
+        ownedItemIds: [...user.character.ownedItemIds, itemId],
+        equipped: { ...user.character.equipped, [item.slot]: itemId },
+      };
+      await user.save(tx);
 
-    res.json({ character: user.character, bitAward: wallet.bitAward });
+      return { status: 200, body: { character: user.character, bitAward: wallet.bitAward } };
+    });
+
+    res.status(status).json(body);
   } catch (error) {
     console.error("Purchase character item error:", error);
     res.status(500).json({ message: "Server error" });
@@ -1004,19 +887,19 @@ export async function equipCharacterItem(req, res) {
     const item = getCharacterItem(itemId);
     if (!item) return res.status(400).json({ message: "Unknown item" });
 
-    const existing = await User.findById(userId).select("character");
-    if (!existing) return res.status(404).json({ message: "User not found" });
-    if (!existing.character.ownedItemIds.includes(itemId)) {
-      return res.status(400).json({ message: "Item not owned" });
-    }
+    const { status, body } = await withLockedUser(userId, async (user, tx) => {
+      if (!user.character.ownedItemIds.includes(itemId)) {
+        return { status: 400, body: { message: "Item not owned" } };
+      }
+      user.character = {
+        ...user.character,
+        equipped: { ...user.character.equipped, [item.slot]: itemId },
+      };
+      await user.save(tx);
+      return { status: 200, body: { character: user.character } };
+    });
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: { [`character.equipped.${item.slot}`]: itemId } },
-      { new: true, select: "character" },
-    );
-
-    res.json({ character: user.character });
+    res.status(status).json(body);
   } catch (error) {
     console.error("Equip character item error:", error);
     res.status(500).json({ message: "Server error" });
@@ -1027,18 +910,14 @@ export async function equipCharacterItem(req, res) {
 // Free personalization (identity, not a purchasable cosmetic) — no currency involved.
 export async function setSkinTone(req, res) {
   try {
-    const userId = req.user._id;
     const { skinTone } = req.body;
 
     if (typeof skinTone !== "string" || !/^#[0-9a-fA-F]{6}$/.test(skinTone)) {
       return res.status(400).json({ message: "skinTone must be a hex color string" });
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: { "character.skinTone": skinTone } },
-      { new: true, select: "character" },
-    );
+    await usersRepo.update(req.user._id, { characterSkinTone: skinTone });
+    const user = await userDocs.loadUser(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({ character: user.character });
@@ -1053,15 +932,18 @@ export async function getOverview(req, res) {
   try {
     const userId = req.user._id;
 
+    // One read for every difficulty, rather than one per difficulty.
+    const allStoryDocs = await progressRepo.allStoryProgressFor(userId);
+
     const overview = {};
 
     for (const difficulty of difficulties) {
       const stories = await getAllStoryMeta(difficulty);
 
-      // Fetch all story progress docs for this user + difficulty at once
-      const allStoryDocs = await StoryProgress.find({ userId, difficulty });
       const storyDocMap = Object.fromEntries(
-        allStoryDocs.map((doc) => [doc.storyId, doc])
+        allStoryDocs
+          .filter((doc) => doc.difficulty === difficulty)
+          .map((doc) => [doc.storyId, doc])
       );
 
       let totalCompleted = 0;

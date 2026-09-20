@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
+import { SHOP_ENABLED } from "../../config/features";
 import {
   ChevronDownIcon,
   GlobeAltIcon,
   UserCircleIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
-  UsersIcon,
+  // UsersIcon,
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,10 +19,14 @@ import { useCharacterPortrait } from "../../modules/character/useCharacterPortra
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
 import { useCart } from "../../context/CartContext";
+import gbFlag from "../../assets/flags/gb.svg";
+import ruFlag from "../../assets/flags/ru.svg";
 
+// Bundled rather than hotlinked: flagcdn.com being slow or blocked used to
+// leave the language switcher with broken images.
 const FLAG_URLS: Record<string, string> = {
-  EN: "https://flagcdn.com/w40/gb.png",
-  RU: "https://flagcdn.com/w40/ru.png",
+  EN: gbFlag,
+  RU: ruFlag,
 };
 
 const FlagImg = ({ lang }: { lang: string }) => (
@@ -121,7 +126,7 @@ const Navbar = () => {
                 </button>
               )}
 
-              {user && (
+              {/* {user && (
                 <button
                   onClick={() => navigate("/players")}
                   title={t("navbar.players")}
@@ -129,7 +134,7 @@ const Navbar = () => {
                 >
                   <UsersIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 </button>
-              )}
+              )} */}
 
               {/* One entry, because there is now one surface. Shop and
                   library were merged into /stories — ownership is a state on
@@ -143,6 +148,7 @@ const Navbar = () => {
                   BitWord / BitPhrase, earned by studying; this leads to stories
                   bought with rubles. Adjacency is most of what makes two
                   balances read as one. */}
+              {SHOP_ENABLED && (
               <button
                 onClick={() => navigate("/stories")}
                 title={t("navbar.stories")}
@@ -166,6 +172,7 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
+              )}
 
               <button
                 onClick={() => navigate("/dashboard")}

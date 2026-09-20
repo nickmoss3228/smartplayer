@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
-import { isPaidStory, storyKey } from '../../config/priceCatalog';
+import { storyKey } from '../../config/priceCatalog';
+import { useCatalog } from '../../context/CatalogContext';
 import { useProgress } from '../../context/ProgressContext';
 import { useLevelProgress } from '../../hooks/useLevelProgress';
 import { usePreloadStoryAssets } from '../../hooks/usePreloadStoryAssets';
@@ -17,7 +18,6 @@ import {
   StoryPreview,
 } from '../../modules/storypreview/storyPreviewData';
 import { preloadImages } from '../../services/preload';
-import { FREE_TRIAL_STORIES } from '../../constants/trial';
 import type { LevelProgressProps } from '../../types/LevelProgress';
 import type { Difficulty } from '../../types/Player';
 import { resolveStory } from '../../modules/story/resolveStory';
@@ -31,18 +31,29 @@ const markCongratsShown = (diff: string) =>
 
 export function useLevelProgressPage(props: LevelProgressProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { owns, paidPreviewParts } = useEntitlements();
+  const { owns } = useEntitlements();
 
   // ── Modal state ───────────────────────────────────────────────────────
   const [showCongrats, setShowCongrats] = useState(false);
   const [previewLevel, setPreviewLevel] = useState<number | null>(null);
   const [previewData, setPreviewData] = useState<StoryPreview | null>(null);
-  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
+  // Opens on arrival when the player or a sign-in round trip sent the learner
+  // back here to buy — that is the whole point of the trip.
+  const [showPaywall, setShowPaywall] = useState(
+    () => Boolean((location.state as { openPaywall?: boolean } | null)?.openPaywall),
+  );
   const [lastListenedLevel, setLastListenedLevel] = useState<number | null>(
     () => loadLastListened(props.difficulty ?? 'easy'),
   );
+
+  // Consume the flag, so a reload or a back-navigation does not re-open it.
+  useEffect(() => {
+    if ((location.state as { openPaywall?: boolean } | null)?.openPaywall) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     setLastListenedLevel(loadLastListened(props.difficulty ?? 'easy'));
@@ -123,54 +134,55 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     }
   }, [isAllCompleted, difficulty]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────
+  // ── Access ────────────────────────────────────────────────────────────
   /**
-   * Why a part is closed, or null if it is open. Two different locks that used
-   * to be one boolean:
-   *
-   *   'trial'   — a signed-out visitor past the free preview. Ask them to make
-   *               an account; the starter pack really is free, so it is both
-   *               the cheaper ask and the honest one.
-   *   'paywall' — signed in, but has not bought this story. Show a price.
-   *
    * Mirrors accessFor() in backend/src/config/entitlements.js. The server is
    * still the authority — it returns locked parts stripped of audio whatever
    * this says — but the grid has to draw a padlock before any request is made.
+   *
+   * A story nobody sells is open; an unowned long story opens its first parts;
+   * an unowned short story opens a timed preview of part 1.
+   *
+   * While the paywall is off there IS a "sign up to continue" gate, and it is
+   * the only one: a guest keeps the taster, and an account opens the rest.
    */
-  // Mirrors accessFor() branch for branch, and the order matters.
-  //
-  // A story nobody sells is free to anyone signed in — including a story the
-  // catalog has never heard of, which is what the Story Builder produces until
-  // someone prices it. Asking `owns()` first would padlock exactly those,
-  // because ownedStories only ever lists the starter pack and real purchases.
-  const paid = isPaidStory(storyKey(difficulty, storySlug));
-  const storyOwned = paid ? owns(difficulty, storySlug) : Boolean(user);
+  const { getCatalogStory, paywallEnabled } = useCatalog();
+  const catalogEntry = getCatalogStory(storyKey(difficulty, storySlug));
+  // A story the catalog does not list is NOT open. This read `!catalogEntry ||
+  // owns(...)`, which called every unlisted story owned — the client half of
+  // the same fail-open bug the server had, and what let Story Builder stories
+  // play their whole grid for a guest. While the catalog is still loading
+  // nothing is known, so nothing is unlocked.
+  const storyOwned = catalogEntry
+    ? !catalogEntry.paid ||
+      owns(difficulty, storySlug) ||
+      // Nothing is sold: an account is what opens the catalogue. Without this
+      // the grid padlocks a signed-in user out of parts the server will serve,
+      // because owns() is false for everyone — nobody has bought anything.
+      (!paywallEnabled && Boolean(user))
+    : false;
+  // The row's own allowance, which may override the length-derived default.
+  const allowance =
+    catalogEntry && !storyOwned
+      ? { freeParts: catalogEntry.freeParts, previewSeconds: catalogEntry.previewSeconds }
+      : null;
+  const freeParts = allowance ? allowance.freeParts : storyOwned ? Infinity : 0;
+  const previewSeconds = allowance ? allowance.previewSeconds : null;
 
-  // And a guest's preview depends on WHICH story: two parts of a free one (the
-  // trial that predates the paywall), but only the paid preview of one that is
-  // for sale. Collapsing these to a single number silently shortened the guest
-  // trial on every free story.
-  const previewParts = storyOwned
-    ? Infinity
-    : paid
-      ? paidPreviewParts
-      : FREE_TRIAL_STORIES;
-
-  const lockReasonFor = (level: number): 'trial' | 'paywall' | null => {
-    if (storyOwned || level <= previewParts) return null;
-    return user ? 'paywall' : 'trial';
-  };
-
-  const isTrialLocked = (level: number): boolean => lockReasonFor(level) !== null;
+  const isPartLocked = (level: number): boolean =>
+    !(level <= freeParts || (previewSeconds !== null && level === 1));
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleLevelCardClick = (level: number) => {
-    const reason = lockReasonFor(level);
-    if (reason === 'trial') {
-      setShowRegisterPrompt(true);
-      return;
-    }
-    if (reason === 'paywall') {
+    if (isPartLocked(level)) {
+      // While nothing is sold, the only thing standing between this learner and
+      // the rest of the story is an account — so ask for one, rather than
+      // opening an offer for something that is not for sale. `returnTo` brings
+      // them back to this exact grid once they are in.
+      if (!paywallEnabled) {
+        if (!user) navigate('/login', { state: { returnTo: location.pathname } });
+        return;
+      }
       setShowPaywall(true);
       return;
     }
@@ -211,23 +223,21 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     navigationState,
     isLoading,
     getLevelData,
-    isTrialLocked,
-    lockReasonFor,
+    isPartLocked,
     storyOwned,
-    previewParts,
+    freeParts,
+    previewSeconds,
     showPaywall,
     setShowPaywall,
     // modal state
     showCongrats,
     previewLevel,
     previewData,
-    showRegisterPrompt,
     // handlers
     handleLevelCardClick,
     handleStartListening,
     handleClosePreview: () => { setPreviewLevel(null); setPreviewData(null); },
     handleCloseCongrats: () => setShowCongrats(false),
     handleNextDifficulty,
-    handleCloseRegisterPrompt: () => setShowRegisterPrompt(false),
   };
 }

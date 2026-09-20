@@ -55,3 +55,8 @@ monitoring/grafana_admin_password
 # diff that can also be forgotten, leaving a sitemap in git that disagrees with
 # the one the build emits. Run `npm run sitemap` if you want it locally.
 public/sitemap.xml
+
+# Dev-only SMS codes written by SMS_PROVIDER=console (services/sms.service.js).
+# Live OTPs in plaintext — never commit.
+dev-sms.log
+backend/dev-sms.log

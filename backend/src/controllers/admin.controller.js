@@ -1,16 +1,21 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { config } from "../config/env.js";
-import { User } from "../models/User.js";
-import { Progress } from "../models/Progress.js";
-import { StoryProgress } from "../models/StoryProgress.js";
-import { AdminAuditLog } from "../models/AdminAuditLog.js";
+import {
+  audit,
+  entitlements as entitlementsRepo,
+  isId,
+  progress as progressRepo,
+  sessions as sessionsRepo,
+  userDocs,
+  users as usersRepo,
+} from "../db/index.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
-import { escapeRegex } from "../helpers/regex.js";
 import { safeEqual } from "../helpers/safeEqual.js";
 import { sharingScore } from "../config/sessions.js";
-import { getProduct, PASS_DURATION_DAYS } from "../config/priceCatalog.js";
-import { resolveAccess, ownedStoryKeys } from "../config/entitlements.js";
+import { getCatalog } from "../helpers/catalogStore.js";
+import { ownedStoryKeys } from "../config/entitlements.js";
+import { resetSchool, serializeSchool } from "./school.controller.js";
 
 const PLAYERS_PAGE_LIMIT = 25;
 const AUDIT_PAGE_LIMIT = 50;
@@ -22,6 +27,22 @@ const AUDIT_PAGE_LIMIT = 50;
 // that would invalidate every live 7-day session and force a mass re-login.
 export const ADMIN_AUDIENCE = "smartplayer-admin";
 export const ADMIN_ISSUER = "smartplayer";
+
+/** The target of a support action: by id (Players tab) or by email (the standalone forms). */
+function findTarget({ userId, email }) {
+  return userId
+    ? userDocs.loadUser(userId)
+    : userDocs.loadUserBy("email", typeof email === "string" ? email : "");
+}
+
+/** Entitlement rows as the admin UI has always received them. */
+const entitlementJson = (row) => ({
+  sku: row.sku,
+  grantedAt: row.grantedAt,
+  expiresAt: row.expiresAt ?? null,
+  source: row.source,
+  paymentId: row.paymentId ?? null,
+});
 
 export const adminLogin = (req, res) => {
   const { code } = req.body;
@@ -72,10 +93,14 @@ export const grantCurrency = async (req, res) => {
   if (!amounts.bitAward && !amounts.bitWord && !amounts.bitPhrase) {
     return res.status(400).json({ error: "At least one currency amount is required." });
   }
+  // Grants only. Mongo would happily $inc a balance below zero; the wallet
+  // columns now carry CHECK (>= 0), so a deduction would either be refused by
+  // the database or silently clamp. Refusing it here says so plainly.
+  if (amounts.bitAward < 0 || amounts.bitWord < 0 || amounts.bitPhrase < 0) {
+    return res.status(400).json({ error: "Amounts must be positive — this tool grants, it does not deduct." });
+  }
 
-  const user = userId
-    ? await User.findById(userId).select("_id")
-    : await User.findOne({ email: email.toLowerCase().trim() }).select("_id");
+  const user = await findTarget({ userId, email });
   if (!user) {
     return res.status(404).json({ error: "No matching user." });
   }
@@ -100,7 +125,7 @@ export const grantEntitlement = async (req, res) => {
     return res.status(400).json({ error: "userId or email is required." });
   }
 
-  const product = getProduct(sku);
+  const product = (await getCatalog()).getProduct(sku);
   if (!product) {
     return res.status(400).json({ error: `Unknown SKU "${sku}".` });
   }
@@ -109,60 +134,44 @@ export const grantEntitlement = async (req, res) => {
   // CUSTOMER may buy, and an admin granting a not-yet-sellable pack to a
   // reviewer or a tester is exactly the use this endpoint exists for.
 
-  const user = userId
-    ? await User.findById(userId).select("_id entitlements")
-    : await User.findOne({ email: email.toLowerCase().trim() }).select("_id entitlements");
+  const user = await findTarget({ userId, email });
   if (!user) {
     return res.status(404).json({ error: "No matching user." });
   }
 
-  // A dated SKU defaults to its catalog duration; `days` overrides it so a
-  // support case can hand out a week rather than a full quarter.
-  const duration = days === undefined ? product.durationDays : Number(days);
-  const dated = duration !== null && duration !== undefined && Number.isFinite(duration);
+  // Every catalog SKU is perpetual; `days` turns a grant into a trial, so
+  // support can hand out a week of a set rather than the set itself.
+  //
+  // Validated BEFORE deciding whether the grant is dated. `Number("abc")` is
+  // NaN, which is not finite, so a mistyped trial length used to fall through
+  // to the perpetual branch — a one-week comp silently became a permanent one.
+  const daysGiven = days !== undefined && days !== null && days !== "";
+  if (daysGiven && !(Number.isInteger(Number(days)) && Number(days) > 0)) {
+    return res.status(400).json({ error: "days must be a positive whole number." });
+  }
+  const duration = daysGiven ? Number(days) : product.durationDays;
+  const dated = duration !== null && duration !== undefined;
 
   const existing = (user.entitlements ?? []).find((row) => row.sku === sku);
-  const now = Date.now();
 
   if (dated) {
-    // Extend rather than append, matching what a repeat purchase does: two
-    // overlapping rows for one SKU are a reconciliation problem nobody wants,
-    // and extending from max(now, current expiry) means granting time to a
-    // live pass adds to it instead of cutting it short.
-    const from = existing?.expiresAt ? Math.max(now, +new Date(existing.expiresAt)) : now;
-    const expiresAt = new Date(from + duration * 24 * 60 * 60 * 1000);
-
-    if (existing) {
-      await User.updateOne(
-        { _id: user._id, "entitlements.sku": sku },
-        { $set: { "entitlements.$.expiresAt": expiresAt, "entitlements.$.source": "admin" } },
-      );
-    } else {
-      await User.updateOne(
-        { _id: user._id },
-        { $push: { entitlements: { sku, expiresAt, source: "admin", grantedAt: new Date() } } },
-      );
-    }
+    // Extend rather than append, matching what a repeat purchase does. The
+    // arithmetic — from max(now, current expiry) — happens inside the write,
+    // so granting time to a live pass adds to it instead of cutting it short.
+    // The existing row's paymentId is carried, not cleared: extending a paid
+    // entitlement must not erase which payment bought it.
+    await entitlementsRepo.grantOrExtend(user._id, sku, duration, existing?.paymentId ?? null, "admin");
   } else if (!existing) {
-    // Perpetual and already held — nothing to do, and re-pushing would
-    // duplicate the row.
-    await User.updateOne(
-      { _id: user._id },
-      { $push: { entitlements: { sku, expiresAt: null, source: "admin", grantedAt: new Date() } } },
-    );
+    // Perpetual and already held — nothing to do.
+    await entitlementsRepo.grantPerpetual(user._id, sku, null, "admin");
   }
 
-  const fresh = await User.findById(user._id).select("entitlements");
-  const { allAccess, allAccessExpiresAt } = resolveAccess(fresh.entitlements);
+  const fresh = (await entitlementsRepo.listFor(user._id)).map(entitlementJson);
   res.json({
     success: true,
-    entitlements: fresh.entitlements,
-    ownedStories: ownedStoryKeys(fresh.entitlements),
-    hasAllAccess: allAccess,
-    allAccessExpiresAt,
-    // Echoed so a caller who omitted `days` can see what the catalog default was.
+    entitlements: fresh,
+    ownedStories: ownedStoryKeys(fresh),
     grantedDays: dated ? duration : null,
-    passDurationDays: PASS_DURATION_DAYS,
   });
 };
 
@@ -176,23 +185,18 @@ export const revokeEntitlement = async (req, res) => {
   }
   if (!sku) return res.status(400).json({ error: "sku is required." });
 
-  const user = userId
-    ? await User.findById(userId).select("_id")
-    : await User.findOne({ email: email.toLowerCase().trim() }).select("_id");
+  const user = await findTarget({ userId, email });
   if (!user) return res.status(404).json({ error: "No matching user." });
 
-  const result = await User.updateOne(
-    { _id: user._id },
-    { $pull: { entitlements: { sku } } },
-  );
+  const removed = await entitlementsRepo.revoke(user._id, sku);
 
-  const fresh = await User.findById(user._id).select("entitlements");
+  const fresh = (await entitlementsRepo.listFor(user._id)).map(entitlementJson);
   res.json({
     success: true,
     // 0 means the user never had it — worth surfacing rather than reporting a
     // cheerful success for a no-op.
-    removed: result.modifiedCount,
-    entitlements: fresh.entitlements,
+    removed,
+    entitlements: fresh,
   });
 };
 
@@ -201,30 +205,11 @@ export const revokeEntitlement = async (req, res) => {
 // search (/api/user/search), admins can browse everyone, not just look up a
 // known identifier.
 export const listPlayers = async (req, res) => {
-  const q = (req.query.q ?? "").trim();
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = PLAYERS_PAGE_LIMIT;
 
-  const filter = q
-    ? {
-        $or: [
-          { username: new RegExp(escapeRegex(q), "i") },
-          { email: new RegExp(escapeRegex(q), "i") },
-          { nickname: new RegExp(escapeRegex(q), "i") },
-        ],
-      }
-    : {};
-
-  const [users, total] = await Promise.all([
-    User.find(filter)
-      .select(
-        "username email nickname avatar banned wallet createdAt lastActiveAt sessions loginSignals"
-      )
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
-    User.countDocuments(filter),
-  ]);
+  const { docs: users, total } = await userDocs.pageUserDocs(q, (page - 1) * limit, limit);
 
   res.json({
     players: users.map((user) => ({
@@ -255,14 +240,12 @@ export const listPlayers = async (req, res) => {
 // alongside a ban to end sessions the moment they are cut off rather than on
 // their next request.
 export const logoutAllPlayerSessions = async (req, res) => {
-  const user = await User.findByIdAndUpdate(
-    req.params.userId,
-    { $set: { sessions: [] } },
-    { new: true, select: "username email" }
-  );
+  const user = await userDocs.loadUser(req.params.userId);
   if (!user) return res.status(404).json({ error: "No user with that id." });
 
-  res.json({ success: true, user });
+  await sessionsRepo.removeAll(user._id);
+
+  res.json({ success: true, user: { _id: user._id, username: user.username, email: user.email } });
 };
 
 // PATCH /api/admin/players/:userId/ban  { banned: boolean }
@@ -272,30 +255,27 @@ export const setPlayerBanned = async (req, res) => {
     return res.status(400).json({ error: "banned must be a boolean." });
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.params.userId,
-    { banned },
-    { new: true, select: "username email banned" }
-  );
+  const user = isId(req.params.userId)
+    ? await usersRepo.update(req.params.userId, { banned })
+    : null;
   if (!user) return res.status(404).json({ error: "No user with that id." });
 
-  res.json({ success: true, user });
+  res.json({
+    success: true,
+    user: { _id: user.id, username: user.username, email: user.email ?? undefined, banned: user.banned },
+  });
 };
 
 // GET /api/admin/players/:userId/progress — a consolidated read-only view for
-// the "review progress" action, fanning out across the existing per-concern
-// models instead of introducing a new aggregate schema.
+// the "review progress" action, fanning out across the per-concern tables
+// instead of introducing a new aggregate.
 export const getPlayerProgress = async (req, res) => {
-  const { userId } = req.params;
-
-  const user = await User.findById(userId).select(
-    "username email nickname wallet streak achievements totalListeningSeconds learnedWords room"
-  );
+  const user = await userDocs.loadUser(req.params.userId, { learnedWords: true });
   if (!user) return res.status(404).json({ error: "No user with that id." });
 
   const [levelProgress, storyProgress] = await Promise.all([
-    Progress.find({ userId }).select("difficulty completedLevels currentLevel"),
-    StoryProgress.find({ userId }).select("difficulty storyId completedParts currentPart"),
+    progressRepo.allFor(user._id),
+    progressRepo.allStoryProgressFor(user._id),
   ]);
 
   res.json({
@@ -322,6 +302,51 @@ export const getPlayerProgress = async (req, res) => {
   });
 };
 
+// POST /api/admin/players/:userId/reset-school
+//
+// Wipe one player's Dream School back to its starting state so the game can be
+// played through again from the top. Built for testing: the school is bought
+// one room at a time and there is no in-game way to un-buy anything, so
+// without this the only way to see an early room again is a fresh account.
+//
+// Admin-gated and audited like every other mutation here. The wallet is left
+// alone on purpose — see resetSchool in school.controller.js for why, and for
+// what else it deliberately preserves.
+export const resetPlayerSchool = async (req, res) => {
+  const { userId } = req.params;
+
+  const user = await resetSchool(userId);
+  if (!user) return res.status(404).json({ error: "No user with that id." });
+
+  // Echoed back in the same shape the game itself reads, so the caller can see
+  // what the player will now load rather than assuming the write did what it
+  // said.
+  res.json({ success: true, school: serializeSchool(user.school) });
+};
+
+// Audit rows in the shape the audit tab has always read: `_id`, and `actor`
+// as a nested object rather than the table's flat columns.
+const auditEntryJson = (row) => ({
+  _id: row.id,
+  actor: { name: row.actorName, sessionId: row.actorSessionId, tokenIssuedAt: row.actorTokenIssuedAt },
+  ip: row.ip,
+  userAgent: row.userAgent,
+  action: row.action,
+  method: row.method,
+  path: row.path,
+  targetType: row.targetType,
+  targetId: row.targetId,
+  statusCode: row.statusCode,
+  outcome: row.outcome,
+  durationMs: row.durationMs,
+  summary: row.summary,
+  createdAt: row.createdAt,
+});
+
+// Query-string values can arrive as arrays (?actor=a&actor=b). Only a single
+// string is a filter; anything else is ignored rather than sent to the query.
+const stringParam = (value) => (typeof value === "string" && value ? value : undefined);
+
 // GET /api/admin/audit?page=&actor=&action=&targetId=
 // A GET on purpose: the audit middleware only records mutating methods, so
 // reading the log never pollutes it.
@@ -329,26 +354,24 @@ export const listAuditLog = async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page, 10) || 1);
   const limit = AUDIT_PAGE_LIMIT;
 
-  const filter = {};
-  if (req.query.actor) filter["actor.name"] = req.query.actor;
-  if (req.query.action) filter.action = req.query.action;
-  if (req.query.targetId) filter.targetId = req.query.targetId;
-
-  const [entries, total] = await Promise.all([
-    AdminAuditLog.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    AdminAuditLog.countDocuments(filter),
+  const [{ rows, total }, actions] = await Promise.all([
+    audit.page(
+      {
+        actorName: stringParam(req.query.actor),
+        action: stringParam(req.query.action),
+        targetId: stringParam(req.query.targetId),
+      },
+      (page - 1) * limit,
+      limit,
+    ),
+    // Powers the filter dropdown without a second round trip from the client.
+    audit.distinctActions(),
   ]);
 
   res.json({
-    entries,
+    entries: rows.map(auditEntryJson),
     page,
     hasMore: page * limit < total,
-    // Powers the filter dropdown without a second round trip. distinct() over
-    // an indexed field on a TTL-bounded collection is cheap enough here.
-    actions: await AdminAuditLog.distinct("action"),
+    actions,
   });
 };

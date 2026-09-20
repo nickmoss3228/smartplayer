@@ -40,6 +40,18 @@ const limitHandler = (label) => (req, res, _next, options) => {
   });
 };
 
+// RATE_LIMITS_DISABLED=true turns every limiter below into a pass-through, for
+// clicking through signup/login repeatedly on a dev or preview backend. It is
+// IGNORED when NODE_ENV=production, so a copied env file cannot switch off
+// brute-force protection on the live site. Read per request rather than at
+// import, so it never depends on the order dotenv and this module load in.
+const limitsDisabled = () =>
+  process.env.RATE_LIMITS_DISABLED === "true" && process.env.NODE_ENV !== "production";
+
+if (limitsDisabled()) {
+  console.warn("[ratelimit] RATE_LIMITS_DISABLED=true — every rate limiter is OFF");
+}
+
 const make = (label, windowMs, max, extra = {}) =>
   rateLimit({
     windowMs,
@@ -47,6 +59,7 @@ const make = (label, windowMs, max, extra = {}) =>
     standardHeaders: "draft-7", // RateLimit + RateLimit-Policy
     legacyHeaders: false, // drop the deprecated X-RateLimit-* set
     handler: limitHandler(label),
+    skip: limitsDisabled,
     ...extra,
   });
 

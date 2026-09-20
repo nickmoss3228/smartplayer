@@ -12,17 +12,19 @@ interface Props {
   audioTracks: AudioTrack[];
   comics: any[];
   theme: Theme;
-  isGuest: boolean;
   getLevelData: (level: number, lastListened: number | null) => { status: string };
-  previewParts?: number;
-  isTrialLocked: (level: number) => boolean;
+  /** Parts that play in full without owning the story. 0 when owned. */
+  freeParts: number;
+  /** When set, part 1 is a timed preview of this many seconds. */
+  previewSeconds: number | null;
+  isPartLocked: (level: number) => boolean;
   onLevelClick: (level: number) => void;
 }
 
 export const LevelGrid: React.FC<Props> = ({
   totalLevels, completedLevels, lastListenedLevel,
-  audioTracks, comics, theme, isGuest, previewParts,
-  getLevelData, isTrialLocked, onLevelClick,
+  audioTracks, comics, theme, freeParts, previewSeconds,
+  getLevelData, isPartLocked, onLevelClick,
 }) => {
   const { t } = useTranslation();
 
@@ -42,9 +44,9 @@ export const LevelGrid: React.FC<Props> = ({
             index={index}
             status={levelData.status}
             isCompleted={completedLevels.includes(level)}
-            isLocked={isTrialLocked(level)}
-            isGuest={isGuest}
-            previewParts={previewParts}
+            isLocked={isPartLocked(level)}
+            freeParts={freeParts}
+            previewSeconds={previewSeconds}
             trackTitle={trackTitle}
             comicSrc={comics[level - 1]}
             theme={theme}

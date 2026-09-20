@@ -4,6 +4,7 @@ import {
   setPlayerBanned,
   logoutAllPlayerSessions,
   grantCurrency,
+  resetPlayerSchool,
   AdminPlayer,
   AdminPlayerSharing,
 } from "../../services/adminServices";
@@ -160,6 +161,12 @@ const PlayersTab = ({ token }: { token: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [progressUserId, setProgressUserId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  // The row shows no school state, so a successful reset would otherwise look
+  // exactly like a click that did nothing. Sticky rather than on a timer: a
+  // tester wants to be able to glance back and see which accounts they have
+  // already wiped during this sitting.
+  const [resetDoneId, setResetDoneId] = useState<string | null>(null);
 
   const load = useCallback(
     async (nextPage: number, q: string) => {
@@ -217,6 +224,38 @@ const PlayersTab = ({ token }: { token: string }) => {
     } catch (err) {
       console.error(err);
       setError("Could not sign out that player's devices.");
+    }
+  };
+
+  // Reset one player's Dream School to its starting state.
+  //
+  // Confirmed, and worded with the player's name in it, because this row sits
+  // in a list of near-identical rows and the action is irreversible: the rooms
+  // they bought are gone and the currency they paid is NOT refunded, so a
+  // misfire costs that player everything they spent. Nothing on screen shows
+  // school state, so there would also be no visible sign it had happened to
+  // the wrong person.
+  const handleResetSchool = async (player: AdminPlayer) => {
+    if (
+      !window.confirm(
+        `Reset ${player.nickname}'s school to the starting room?\n\n` +
+          `Every room they bought is removed and their wallpaper, floor, layout ` +
+          `and per-room presets go back to the defaults. Currency is not ` +
+          `refunded, and this cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setError("");
+    setResettingId(player.id);
+    try {
+      await resetPlayerSchool(token, player.id);
+      setResetDoneId(player.id);
+    } catch (err) {
+      console.error(err);
+      setError(`Could not reset ${player.nickname}'s school.`);
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -283,6 +322,19 @@ const PlayersTab = ({ token }: { token: string }) => {
               className="text-xs text-gray-600 hover:text-black"
             >
               View progress
+            </button>
+
+            <button
+              onClick={() => handleResetSchool(player)}
+              disabled={resettingId === player.id}
+              title="Remove every room bought in the Dream School and restore the defaults"
+              className="text-xs text-gray-600 hover:text-black whitespace-nowrap disabled:opacity-50"
+            >
+              {resettingId === player.id
+                ? "Resetting..."
+                : resetDoneId === player.id
+                  ? "School reset \u2713"
+                  : "Reset school"}
             </button>
 
             <button

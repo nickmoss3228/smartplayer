@@ -141,6 +141,13 @@ app.use((err, req, res, next) => {
   // status — hand back to Express's default handler to close the socket.
   if (res.headersSent) return next(err);
 
+  // body-parser's own refusals — malformed JSON, a body over the 100kb limit —
+  // carry a 4xx `status` and an `expose` flag. They are the client's fault, so
+  // answering them with a 500 would page someone about a typo in a curl call.
+  if (err.expose && Number.isInteger(err.status) && err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({ error: err.message, message: err.message });
+  }
+
   res.status(500).json({
     error: "Something went wrong on our end.",
     message: "Something went wrong on our end.",

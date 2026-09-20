@@ -46,6 +46,8 @@ jobs:
               | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
             echo "$TOKEN" | docker login --username iam --password-stdin cr.yandex
             docker compose --profile staging pull backend-staging
+            # Schema first, from the new image — see deploy-backend.yml.
+            docker compose --profile staging run --rm --no-deps --no-build backend-staging node --import tsx src/db/migrate.ts
             docker compose --profile staging up -d --no-build backend-staging
             docker image prune -f
             for i in $(seq 1 12); do

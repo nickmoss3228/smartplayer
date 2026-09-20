@@ -48,6 +48,10 @@ jobs:
               | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
             echo "$TOKEN" | docker login --username iam --password-stdin cr.yandex
             docker compose pull backend
+            # Schema first, from the NEW image, before the old container is
+            # replaced. Idempotent (Drizzle skips applied files), and `set -e`
+            # stops the deploy here if it fails, leaving the old container up.
+            docker compose run --rm --no-deps --no-build backend node --import tsx src/db/migrate.ts
             # --no-build: the VM has no backend source, only the pulled image
             docker compose up -d --no-build backend
             docker image prune -f

@@ -1,0 +1,49 @@
+{
+  // Backend TypeScript. Scoped DELIBERATELY NARROW for now.
+  //
+  // `include` covers only src/**/*.ts, which today means the new Postgres data
+  // layer and nothing else. The rest of the backend is still plain .js and is
+  // neither compiled nor type-checked here — that is the point: this build can
+  // go green and stay green while the running app is untouched.
+  //
+  // PHASE 3 of the migration widens this: add "allowJs": true and let tsc copy
+  // the .js tree through to dist/ alongside the compiled .ts, then switch the
+  // Dockerfile CMD to dist/server.js. Do NOT do that until the data layer is
+  // finished — a half-migrated tree that only builds through tsc is a much
+  // worse place to debug from than this one.
+  //
+  // Pinned to the frontend's TypeScript (~5.7) on purpose. Two major TS
+  // versions in one repo produces failures that look like code bugs.
+  "compilerOptions": {
+    // NodeNext is required, not stylistic: package.json says "type": "module",
+    // so emitted files must be real ESM with explicit extensions. Under
+    // NodeNext a .ts file imports its sibling as "./thing.js" — the extension
+    // names the EMITTED file, not the source. That looks wrong and is correct.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+
+    "rootDir": "src",
+    "outDir": "dist",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+
+    // The .js half of the backend is not compiled yet (see above), so anything
+    // importing it would resolve to `any`. Left off so that stays visible.
+    "allowJs": false,
+    "checkJs": false,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "sourceMap": true,
+    "noEmitOnError": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "drizzle.config.ts"]
+}

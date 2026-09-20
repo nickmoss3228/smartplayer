@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { IoCartOutline, IoInfiniteOutline } from 'react-icons/io5';
+import { IoCartOutline } from 'react-icons/io5';
 import LevelShelf, { type ShelfFilter } from '../components/Stories/LevelShelf';
+import ShopStoryPreview from '../components/Stories/ShopStoryPreview';
 import { useCart } from '../context/CartContext';
 import { useEntitlements } from '../context/EntitlementsContext';
 import { useAuth } from '../context/AuthContext';
-import { formatPrice, getProduct, type DifficultySlug } from '../config/priceCatalog';
+import { formatPrice } from '../config/priceCatalog';
+import type { DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { fetchPaymentConfig, createOrder, type PaymentConfig } from '../services/paymentServices';
 
 /**
@@ -14,10 +16,8 @@ import { fetchPaymentConfig, createOrder, type PaymentConfig } from '../services
  *
  * This replaces the separate /shop and /library pages. They were the same
  * catalogue seen from two sides — one showing what you lack, the other what you
- * have — which meant a learner who finished a story had to leave the page they
- * were on, remember a second page existed, and find the same story there. Here
- * ownership is a state on the card, and "my library" is a filter rather than a
- * destination.
+ * have. Here ownership is a state on the card, and "my library" is a filter
+ * rather than a destination.
  *
  * /library still routes here with the filter preset, so the navbar entry and
  * any existing link keep working.
@@ -34,13 +34,31 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { skus, count, totalMinor, clear, has, add, remove } = useCart();
-  const { hasAllAccess, passExpiresAt, canBuy, refreshEntitlements } = useEntitlements();
+  const { skus, count, totalMinor, clear } = useCart();
+  const { refreshEntitlements } = useEntitlements();
 
   const [filter, setFilter] = useState<ShelfFilter>(initialFilter);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<{
+    difficulty: DifficultySlug;
+    story: StoryGroup;
+  } | null>(null);
+
+  // The paywall sends the learner here pointing at what they chose.
+  const highlightSku = (location.state as { highlightSku?: string } | null)?.highlightSku ?? null;
+
+  useEffect(() => {
+    if (!highlightSku) return;
+    // After the shelves have had a moment to render their cards.
+    const timer = window.setTimeout(() => {
+      document
+        .getElementById(`sku-${highlightSku}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [highlightSku]);
 
   useEffect(() => {
     fetchPaymentConfig()
@@ -51,9 +69,6 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
         setPaymentConfig({ enabled: false, currency: 'RUB', purchasableSkus: [], fake: false }),
       );
   }, []);
-
-  const pass = getProduct('all-access-90d');
-  const passSellable = pass !== null && canBuy('all-access-90d') && !hasAllAccess;
 
   const filters: { id: ShelfFilter; label: string }[] = useMemo(
     () => [
@@ -88,21 +103,15 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
     }
   };
 
-  const formatDate = (date: Date) =>
-    new Intl.DateTimeFormat(t('locale') === 'ru' ? 'ru-RU' : 'en-GB', {
-      day: 'numeric',
-      month: 'long',
-    }).format(date);
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="mx-auto max-w-5xl px-4 pb-40 pt-20 sm:px-6">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-gray-900">
               {t('shelf.title')}
             </h1>
-            <p className="mt-0.5 text-sm text-gray-400">{t('shelf.subtitle')}</p>
+            <p className="mt-0.5 text-sm text-gray-400">{t('shop.subtitle')}</p>
           </div>
 
           {/* Filter, not navigation. "My library" is a view of this page. */}
@@ -125,46 +134,26 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
           </div>
         </div>
 
-        {/* The pass sits above the shelves because it covers all of them. Once
-            held, it becomes a statement of what you have rather than an offer. */}
-        {hasAllAccess ? (
-          <div className="mb-6 flex items-center gap-2.5 border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-700">
-            <IoInfiniteOutline size={17} aria-hidden="true" className="shrink-0 text-gray-400" />
-            <span>
-              {passExpiresAt
-                ? t('library.passActive', { date: formatDate(passExpiresAt) })
-                : t('library.perpetual')}
-            </span>
-          </div>
-        ) : (
-          passSellable &&
-          pass &&
-          filter !== 'mine' && (
-            <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 bg-gray-900 px-3.5 py-3 text-white">
-              <span className="text-base font-black uppercase tracking-tight">
-                {t('shelf.allAccessTitle')}
-              </span>
-              <span className="text-xs text-white/60">{t('shop.allAccessBlurb')}</span>
-              <span className="ml-auto text-sm font-bold tabular-nums">
-                {formatPrice(pass.amountMinor)}
-              </span>
-              <button
-                type="button"
-                onClick={() => (has(pass.sku) ? remove(pass.sku) : add(pass.sku))}
-                className="rounded-sm bg-white px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-900 transition-opacity hover:opacity-90"
-              >
-                {has(pass.sku) ? t('shop.inCart') : t('shop.addToCart')}
-              </button>
-            </div>
-          )
-        )}
-
         <div className="flex flex-col gap-9">
           {LEVELS.map((difficulty) => (
-            <LevelShelf key={difficulty} difficulty={difficulty} filter={filter} />
+            <LevelShelf
+              key={difficulty}
+              difficulty={difficulty}
+              filter={filter}
+              highlightSku={highlightSku}
+              onPreview={(story) => setPreviewing({ difficulty, story })}
+            />
           ))}
         </div>
       </div>
+
+      {previewing && (
+        <ShopStoryPreview
+          difficulty={previewing.difficulty}
+          story={previewing.story}
+          onClose={() => setPreviewing(null)}
+        />
+      )}
 
       {/* Basket bar. A sticky strip rather than a drawer, so the running total
           stays visible while browsing instead of hiding behind a button. */}

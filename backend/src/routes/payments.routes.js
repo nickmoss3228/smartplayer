@@ -27,7 +27,7 @@ import {
 const router = Router();
 
 // Public: the shop needs to know whether checkout is live before anyone logs in.
-router.get("/config", getPaymentConfig);
+router.get("/config", asyncHandler(getPaymentConfig));
 
 router.post("/orders", authenticateToken, orderLimiter, asyncHandler(createOrder));
 router.get("/orders", authenticateToken, asyncHandler(listOrders));

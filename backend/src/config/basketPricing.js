@@ -9,7 +9,7 @@
 // catalog. A request body carrying `amount` is not "helpfully pre-computed",
 // it is an attack, and the route rejects it outright.
 
-import { getProduct, PACK_STORIES, CURRENCY } from "./priceCatalog.js";
+import { BUILT_IN_CATALOG, CURRENCY } from "./priceCatalog.js";
 import { resolveAccess } from "./entitlements.js";
 
 /** Nobody legitimately buys twenty things at once; this is an abuse ceiling. */
@@ -28,12 +28,12 @@ export class BasketError extends Error {
  *
  * `purchasable` in the catalog is the PRODUCTION default. `extraSkus` comes
  * from PURCHASABLE_SKUS in the env and only ever widens the set, so staging can
- * offer placeholder packs that production refuses — without shipping a
+ * offer placeholder stories that production refuses — without shipping a
  * different build. "*" opens everything, which is a staging convenience and
  * must never appear in a production env file.
  */
-export function isPurchasable(sku, extraSkus = []) {
-  const product = getProduct(sku);
+export function isPurchasable(sku, extraSkus = [], catalog = BUILT_IN_CATALOG) {
+  const product = catalog.getProduct(sku);
   if (!product) return false;
   if (product.purchasable) return true;
   return extraSkus.includes("*") || extraSkus.includes(sku);
@@ -45,9 +45,20 @@ export function isPurchasable(sku, extraSkus = []) {
  * @param {string[]} skus         ids only, straight off the request
  * @param {object[]} entitlements the buyer's current rows, to drop what they own
  * @param {string[]} extraSkus    PURCHASABLE_SKUS from the environment
+ * @param {number}   now
+ * @param {object}   catalog      from helpers/catalogStore.js — the story table's
+ *                                rows. Defaults to the built-in rows so scripts
+ *                                and unit tests need not load one.
  * @returns {{items: {sku, amountMinor, durationDays}[], amountMinor: number, currency: string, dropped: string[]}}
  */
-export function priceBasket(skus, entitlements = [], extraSkus = [], now = Date.now()) {
+export function priceBasket(
+  skus,
+  entitlements = [],
+  extraSkus = [],
+  now = Date.now(),
+  catalog = BUILT_IN_CATALOG,
+) {
+  const getProduct = (sku) => catalog.getProduct(sku);
   if (!Array.isArray(skus) || skus.length === 0) {
     throw new BasketError("EMPTY_BASKET", "Nothing to buy.");
   }
@@ -58,59 +69,43 @@ export function priceBasket(skus, entitlements = [], extraSkus = [], now = Date.
     throw new BasketError("INVALID_SKU", "Basket items must be SKU strings.");
   }
 
-  // Charge once for a SKU listed twice, rather than rejecting the order. A
-  // duplicate is a UI slip, and refusing the whole basket over it is a worse
-  // experience than quietly doing the right thing.
-  let unique = [...new Set(skus)];
-
-  for (const sku of unique) {
+  for (const sku of new Set(skus)) {
     if (!getProduct(sku)) {
       // Never price an unknown SKU as 0 — that is how a typo becomes a
       // free order.
       throw new BasketError("UNKNOWN_SKU", `Unknown item: ${sku}`, sku);
     }
-    if (!isPurchasable(sku, extraSkus)) {
-      // This is what stops anyone buying the placeholder packs before their
-      // audio exists, and what stops "starter" being purchasable at all.
+    if (!isPurchasable(sku, extraSkus, catalog)) {
+      // What stops anyone buying a placeholder before its audio exists.
       throw new BasketError("NOT_PURCHASABLE", `Not for sale yet: ${sku}`, sku);
     }
   }
 
-  // The pass subsumes everything else, so a basket containing it is normalized
-  // down to just the pass. Charging for a pack alongside an all-access pass
-  // that already covers it is the kind of overcharge that ends in a chargeback.
-  const dropped = [];
-  if (unique.includes("all-access-90d") && unique.length > 1) {
-    dropped.push(...unique.filter((s) => s !== "all-access-90d"));
-    unique = ["all-access-90d"];
-  }
+  // A duplicate is charged once, and an item another item already covers (a
+  // story next to its set, a set next to its level) is not charged at all.
+  const { kept, dropped } = catalog.collapseBasket(skus);
 
-  // Drop what they already own. A perpetual SKU is pointless to re-buy; a
-  // DATED one is not — re-buying the pass extends it, so it is kept.
-  const { stories, allAccess } = resolveAccess(entitlements, now);
-  unique = unique.filter((sku) => {
+  // Drop what they already own outright. A partly owned set stays, and is
+  // priced below for only the tracks still missing.
+  const { stories } = resolveAccess(entitlements, now, catalog);
+  const owned = [...stories];
+  const buying = kept.filter((sku) => {
     const product = getProduct(sku);
     if (product.durationDays !== null && product.durationDays !== undefined) return true;
-    if (allAccess) {
-      dropped.push(sku);
-      return false;
-    }
-    const grants =
-      product.kind === "story" ? [product.storyKey] : (PACK_STORIES[sku] ?? []);
-    const ownsAll = grants.length > 0 && grants.every((k) => stories.has(k));
+    const ownsAll = product.storyKeys.length > 0 && product.storyKeys.every((k) => stories.has(k));
     if (ownsAll) dropped.push(sku);
     return !ownsAll;
   });
 
-  if (unique.length === 0) {
+  if (buying.length === 0) {
     throw new BasketError("ALREADY_OWNED", "You already own everything in this basket.");
   }
 
-  const items = unique.map((sku) => {
+  const items = buying.map((sku) => {
     const product = getProduct(sku);
     return {
       sku,
-      amountMinor: product.amountMinor,
+      amountMinor: catalog.priceFor(product, owned),
       durationDays: product.durationDays ?? null,
     };
   });

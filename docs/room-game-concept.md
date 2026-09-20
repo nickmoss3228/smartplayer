@@ -72,30 +72,30 @@ you walk in through, and you cannot buy a room before it.
 | Room             | Price       | Needs      | What it brings                                                            |
 | ---------------- | ----------- | ---------- | ------------------------------------------------------------------------- |
 | Classroom        | — (you start here) | —   | 4 desks, board, teacher, 3 students. Grows to 12 desks with the corridor   |
-| Corridor         | 60 Award    | —          | the spine, and corridor walkers. Every other room opens off it             |
-| Library          | 80 Word     | corridor   | shelves, rug, armchairs, 2 readers                                        |
-| Listening Lab    | 400 Word    | corridor   | booths, lockers, headphones                                               |
-| Courtyard        | 160 Phrase  | corridor   | open-air yard: tree, fountain, benches, lamppost                          |
-| Assembly Hall    | 900 Word    | corridor   | stage, banner, chair rows, trophy shelf, a second teacher                 |
-| Reception        | 1900 Word   | varies     | front desk, sofas, receptionist, cupboards                                |
-| Forecourt        | 300 Phrase  | reception  | the way in off the street: gate, sign, lamps                              |
-| Second Classroom | 2200 Award  | varies     | another English room — flags, globe, alphabet frieze                      |
-| Cafeteria        | 600 Phrase  | varies     | servery, long tables, the loudest room here                               |
-| Third Classroom  | 4300 Award  | varies     | a third English room, out past the hall                                   |
-| Gymnasium        | 840 Phrase  | varies     | wall bars, hoops, vaulting horse, mats, a scoreboard that keeps score      |
+| Corridor         | 20 Award    | —          | the spine, and corridor walkers. Every other room opens off it             |
+| Library          | 30 Word     | corridor   | shelves, rug, armchairs, 2 readers                                        |
+| Listening Lab    | 120 Word    | corridor   | booths, lockers, headphones                                               |
+| Courtyard        | 60 Phrase  | corridor   | open-air yard: tree, fountain, benches, lamppost                          |
+| Assembly Hall    | 220 Word    | corridor   | stage, banner, chair rows, trophy shelf, a second teacher                 |
+| Reception        | 380 Word    | varies     | front desk, sofas, receptionist, cupboards                                |
+| Forecourt        | 90 Phrase  | reception  | the way in off the street: gate, sign, lamps                              |
+| Second Classroom | 420 Award  | varies     | another English room — flags, globe, alphabet frieze                      |
+| Cafeteria        | 160 Phrase  | varies     | servery, long tables, the loudest room here                               |
+| Third Classroom  | 700 Award  | varies     | a third English room, out past the hall                                   |
+| Gymnasium        | 200 Phrase  | varies     | wall bars, hoops, vaulting horse, mats, a scoreboard that keeps score      |
 
 And the second ring, which arrives once the first twelve are up:
 
 | Room             | Price       | Needs      | What it brings                                                            |
 | ---------------- | ----------- | ---------- | ------------------------------------------------------------------------- |
-| Staff Room       | 900 Phrase  | varies     | armchairs round a low table, and three teachers off duty in them          |
-| Music Room       | 1400 Phrase | varies     | a piano, a riser, speakers, and an audience of three                      |
-| Garden           | 1900 Phrase | varies     | walled and planted: raised beds, a tree, two benches                      |
-| Archive          | 2400 Word   | varies     | a second library — stacks, a reading corner, study desks                  |
-| Head's Office    | 3000 Award  | varies     | a desk, a trophy shelf, and whoever is running the place                  |
-| Study Hall       | 4900 Word   | varies     | a third library, quieter than either                                      |
-| Fourth Classroom | 5200 Award  | varies     | another English room, out at the east end                                 |
-| Fifth Classroom  | 6400 Award  | varies     | the far corner — the first room whose board hangs on its WEST wall        |
+| Staff Room       | 220 Phrase  | varies     | armchairs round a low table, and three teachers off duty in them          |
+| Music Room       | 300 Phrase | varies     | a piano, a riser, speakers, and an audience of three                      |
+| Garden           | 380 Phrase  | varies     | walled and planted: raised beds, a tree, two benches                      |
+| Archive          | 450 Word    | varies     | a second library — stacks, a reading corner, study desks                  |
+| Head's Office    | 550 Award  | varies     | a desk, a trophy shelf, and whoever is running the place                  |
+| Study Hall       | 800 Word    | varies     | a third library, quieter than either                                      |
+| Fourth Classroom | 850 Award  | varies     | another English room, out at the east end                                 |
+| Fifth Classroom  | 1000 Award  | varies     | the far corner — the first room whose board hangs on its WEST wall        |
 
 "Varies" means the parent differs by campus — the Terrace hangs its second
 classroom off the hall, the Quad off the corridor. The tree is in each variant's

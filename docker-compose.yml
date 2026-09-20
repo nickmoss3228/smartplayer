@@ -71,6 +71,10 @@ services:
     restart: unless-stopped
     # Secrets live only in this file on the VM — never in the image, never in git.
     env_file: ./backend/.env.production
+    # server.js pings the database before listening and exits if it cannot.
+    depends_on:
+      db:
+        condition: service_healthy
     # `expose`, not `ports`: reachable from other containers on smartplayer-net
     # (and via Caddy) but NOT published to the public internet. The API is only
     # ever reached through the reverse proxy over HTTPS.
@@ -150,6 +154,9 @@ services:
     env_file:
       - path: ./backend/.env.staging
         required: false
+    depends_on:
+      db:
+        condition: service_healthy
     expose:
       - "3000"
     networks: [smartplayer-net]
@@ -409,6 +416,108 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
 
+  # ── Database (production + staging) ─────────────────────────────────────────
+  #
+  # One Postgres server for both environments, each with its own database and
+  # login role (postgres/init/01-create-databases.sh). Self-hosted on this VM
+  # while the app is pre-launch, because Yandex Managed PostgreSQL's smallest
+  # host costs ~3,350 ₽/month. Move to the managed service once there are real
+  # users to protect: `pg_dump` from here, `pg_restore` there, change
+  # DATABASE_URL in the two backend env files.
+  #
+  # What the managed service did that is now OUR job:
+  #   - backups: postgres/backup.sh, nightly from the deploy user's crontab,
+  #     to the private smartplayer-pg-backups bucket;
+  #   - audit-log retention: the same script (no pg_cron in this image);
+  #   - minor-version updates: bump the image tag and `docker compose up -d db`.
+  #
+  # Tuned for a 2 GB VM that also runs the app and monitoring: small buffers,
+  # few connections (each backend pool is PGPOOL_MAX=5), and a hard mem_limit
+  # so Postgres cannot take the whole box down with it.
+  #
+  # Port published on the VM's LOOPBACK only — for backup.sh and for SSH
+  # tunnels (`ssh -N -L 16432:localhost:5432 smartplayer`), never the internet.
+  db:
+    image: postgres:16-alpine
+    container_name: smartplayer-db
+    restart: unless-stopped
+    # POSTGRES_PASSWORD, PG_PROD_PASSWORD, PG_STAGING_PASSWORD. VM only, chmod 600.
+    env_file: ./postgres/.env
+    environment:
+      POSTGRES_USER: postgres
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - effective_cache_size=256MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - max_connections=40
+      - -c
+      - max_wal_size=256MB
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    networks: [smartplayer-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 384m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # ── Local development Postgres ──────────────────────────────────────────────
+  #
+  # Behind the `localdb` profile, so it NEVER starts as part of a normal
+  # `docker compose up` and cannot appear on the production VM by accident:
+  #
+  #   docker compose --profile localdb up -d postgres
+  #
+  # This is a DEVELOPER CONVENIENCE ONLY, with throwaway credentials. The VM
+  # runs the `db` service above instead.
+  #
+  # The port IS published, unlike every other service here, because the tooling
+  # that needs it (drizzle-kit, the ETL, psql) runs on the host rather than in
+  # the compose network. Bound to 127.0.0.1 so it is not reachable off the
+  # machine.
+  postgres:
+    profiles: [localdb]
+    image: postgres:16-alpine
+    container_name: smartplayer-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smartplayer
+      POSTGRES_PASSWORD: smartplayer
+      POSTGRES_DB: smartplayer_dev
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [smartplayer-net]
+    # pg_isready, not a TCP probe: Postgres accepts connections for a while
+    # before it is actually ready to answer queries, and a migration fired into
+    # that window fails in a way that looks like a schema bug.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartplayer -d smartplayer_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
 networks:
   smartplayer-net:
     driver: bridge
@@ -423,3 +532,8 @@ volumes:
   promtail_positions:
   prometheus_data:
   grafana_data:
+  # Production + staging databases (the `db` service). Losing this volume loses
+  # both — backups are in the smartplayer-pg-backups bucket, see backup.sh.
+  db_data:
+  # Local development Postgres only (the `localdb` profile).
+  postgres_data:

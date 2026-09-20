@@ -1,146 +1,89 @@
 // scripts/migratePhoneAuth.js
 //
-// One-off migration for the switch from email-identified accounts to
-// phone-verified ones (models/User.js).
+// Check for the switch from email-identified accounts to phone-verified ones.
 //
-// It exists because of one thing Mongoose cannot do for you. `email` used to be
-// `required: true, unique: true` and its index was built accordingly — unique,
-// NOT sparse. Making the field optional in the schema does not touch that index:
-// autoIndex issues createIndex with the new options, Mongo answers
-// IndexOptionsConflict for an existing index of the same name, and Mongoose
-// swallows it. The old index survives, and because a missing field indexes as
-// null under a non-sparse unique index, the SECOND account created without an
-// email dies with `E11000 dup key: { email: null }` — surfacing to the user as
-// a generic 500 on signup, with nothing in the schema to explain it.
+// On MongoDB this was a real migration. `email` had been `required, unique`
+// with a unique but NOT sparse index, so once the field became optional the
+// second account without an email died with `E11000 dup key: { email: null }`.
+// The fix was to drop and rebuild the index as sparse, unset explicit nulls,
+// and clear the dead isEmailVerified / emailVerificationToken fields.
 //
-// Dropping and recreating is the only route: Mongo has no "alter index".
+// On PostgreSQL none of that can happen, which is why this is now a read-only
+// check rather than a migration:
+//   - a unique index treats NULLs as distinct, so any number of accounts can
+//     have no email or no phone — the "sparse" behaviour is the default;
+//   - there are no legacy email-verification columns in the schema at all, so
+//     there is nothing to clear.
 //
-// Safe to re-run. Every step checks the current state first and skips if the
-// world already looks the way it should, so a partially-applied run finishes
-// cleanly rather than erroring on the parts that already succeeded.
+// What it still verifies is the part that matters: that the three identity
+// indexes exist and are unique in THIS database, and that no two accounts
+// share an email or a phone number (which would mean an index was dropped by
+// hand at some point). Exits 1 if anything is wrong.
 //
 // Usage:
-//   node src/scripts/migratePhoneAuth.js --dry-run
-//   node src/scripts/migratePhoneAuth.js
+//   node --import tsx src/scripts/migratePhoneAuth.js
 
-import mongoose from "mongoose";
-import { config } from "../config/env.js";
+import { sql } from "drizzle-orm";
 
-const dryRun = process.argv.includes("--dry-run");
+import { closeDb, db, ping } from "../db/index.js";
 
-await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 15000 });
-console.log(`Connected to "${mongoose.connection.name}"${dryRun ? "  (DRY RUN)" : ""}\n`);
+const EXPECTED = ["users_username_key", "users_email_key", "users_phone_number_key"];
 
-const users = mongoose.connection.db.collection("users");
-const indexes = await users.indexes();
-const byName = new Map(indexes.map((index) => [index.name, index]));
+try {
+  const { database } = await ping();
+  console.log(`Connected to "${database}"  (read-only check)\n`);
+  let problems = 0;
 
-// ── 1. email_1: unique, and sparse so absent emails stop colliding ──────────
-const email = byName.get("email_1");
-if (!email) {
-  console.log("email_1: missing entirely — creating it as unique + sparse");
-  if (!dryRun) await users.createIndex({ email: 1 }, { unique: true, sparse: true });
-} else if (email.unique && email.sparse) {
-  console.log("email_1: already unique + sparse — nothing to do");
-} else {
-  // Guard the window between drop and recreate. If duplicates exist the
-  // recreate fails and the collection is left with NO unique index on email,
-  // which is worse than what we started with — so refuse before touching it.
-  const duplicates = await users
-    .aggregate([
-      { $match: { email: { $type: "string" } } },
-      { $group: { _id: "$email", n: { $sum: 1 } } },
-      { $match: { n: { $gt: 1 } } },
-    ])
-    .toArray();
+  const { rows: indexes } = await db().execute(sql`
+    SELECT i.relname AS name, ix.indisunique AS unique
+    FROM pg_index ix
+    JOIN pg_class i ON i.oid = ix.indexrelid
+    JOIN pg_class t ON t.oid = ix.indrelid
+    WHERE t.relname = 'users'
+  `);
+  const byName = new Map(indexes.map((row) => [row.name, row]));
 
-  if (duplicates.length) {
-    console.error(
-      `email_1: ABORTED — ${duplicates.length} duplicate email(s) would make the\n` +
-        "unique index un-rebuildable. Resolve these by hand first:\n" +
-        duplicates.map((d) => `  ${d._id} (${d.n} accounts)`).join("\n")
-    );
-    await mongoose.disconnect();
-    process.exit(1);
+  for (const name of EXPECTED) {
+    const index = byName.get(name);
+    if (!index) {
+      problems++;
+      console.log(`${name}: MISSING — run \`npm run db:migrate\``);
+    } else if (!index.unique) {
+      problems++;
+      console.log(`${name}: present but NOT unique`);
+    } else {
+      console.log(`${name}: unique — ok`);
+    }
   }
 
+  for (const column of ["email", "phone_number"]) {
+    const { rows } = await db().execute(sql`
+      SELECT ${sql.identifier(column)} AS value, count(*)::int AS n
+      FROM users
+      WHERE ${sql.identifier(column)} IS NOT NULL
+      GROUP BY 1
+      HAVING count(*) > 1
+    `);
+    if (rows.length) {
+      problems++;
+      console.log(`${column}: ${rows.length} value(s) shared by more than one account`);
+    } else {
+      console.log(`${column}: no duplicates — ok`);
+    }
+  }
+
+  const { rows: [counts] } = await db().execute(sql`
+    SELECT count(*)::int AS total,
+           count(*) FILTER (WHERE email IS NULL)::int AS without_email,
+           count(*) FILTER (WHERE phone_number IS NULL)::int AS without_phone
+    FROM users
+  `);
   console.log(
-    `email_1: unique=${!!email.unique} sparse=${!!email.sparse} — rebuilding as unique + sparse`
+    `\naccounts: ${counts.total}  (without email: ${counts.without_email}, without phone: ${counts.without_phone})`,
   );
-  if (!dryRun) {
-    await users.dropIndex("email_1");
-    await users.createIndex({ email: 1 }, { unique: true, sparse: true });
-  }
-}
 
-// ── 2. phoneNumber_1: unique + sparse ──────────────────────────────────────
-// Sparse for the same reason as above, and doubly so during rollout: every
-// pre-existing account has no phone yet.
-const phone = byName.get("phoneNumber_1");
-if (phone?.unique && phone?.sparse) {
-  console.log("phoneNumber_1: already unique + sparse — nothing to do");
-} else if (phone) {
-  console.log("phoneNumber_1: wrong options — rebuilding as unique + sparse");
-  if (!dryRun) {
-    await users.dropIndex("phoneNumber_1");
-    await users.createIndex({ phoneNumber: 1 }, { unique: true, sparse: true });
-  }
-} else {
-  console.log("phoneNumber_1: creating as unique + sparse");
-  if (!dryRun) await users.createIndex({ phoneNumber: 1 }, { unique: true, sparse: true });
+  console.log(problems ? `\n${problems} problem(s) found.` : "\nAll good — nothing to migrate on PostgreSQL.");
+  if (problems) process.exitCode = 1;
+} finally {
+  await closeDb();
 }
-
-// ── 3. Normalise stored emails that are explicitly null ────────────────────
-// A sparse index still indexes an explicit null — it only skips a MISSING
-// field. Any document literally holding `email: null` therefore keeps
-// colliding after step 1, so unset those. Documents that never had the field
-// are already fine and are not matched here.
-//
-// $type: 10 is "BSON null", and the precision matters: the shorthand
-// `{ email: null }` ALSO matches documents with no email field at all, so it
-// would report work on every already-clean account and make a second run look
-// like it still had something to do.
-const nulls = await users.countDocuments({ email: { $type: 10 } });
-if (nulls) {
-  console.log(`email: unsetting ${nulls} explicit null value(s) so the sparse index skips them`);
-  if (!dryRun) await users.updateMany({ email: { $type: 10 } }, { $unset: { email: "" } });
-} else {
-  console.log("email: no explicit nulls — nothing to do");
-}
-
-// ── 4. Retire the dead email-verification fields ───────────────────────────
-// Replaced by the phoneVerification* family. Harmless if left, but they make
-// the next person reading a user document wonder which system is live.
-const stale = await users.countDocuments({
-  $or: [
-    { isEmailVerified: { $exists: true } },
-    { emailVerificationToken: { $exists: true } },
-    { emailVerificationExpires: { $exists: true } },
-  ],
-});
-if (stale) {
-  console.log(`legacy email-verification fields: clearing on ${stale} account(s)`);
-  if (!dryRun) {
-    await users.updateMany(
-      {},
-      {
-        $unset: {
-          isEmailVerified: "",
-          emailVerificationToken: "",
-          emailVerificationExpires: "",
-        },
-      }
-    );
-  }
-} else {
-  console.log("legacy email-verification fields: none present — nothing to do");
-}
-
-console.log("\nFinal indexes:");
-for (const index of await users.indexes()) {
-  const flags = [index.unique && "unique", index.sparse && "sparse"].filter(Boolean).join(", ");
-  console.log(`  ${index.name}${flags ? `  (${flags})` : ""}`);
-}
-
-await mongoose.disconnect();
-console.log(dryRun ? "\nDRY RUN — nothing was written." : "\nDone.");

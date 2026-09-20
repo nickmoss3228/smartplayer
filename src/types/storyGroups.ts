@@ -1,11 +1,16 @@
 import { TFunction } from 'i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   fetchPublishedStoriesList,
   fetchPublishedStory,
   type PublishedStoryListItem,
 } from '../services/storyServices';
+import { useEntitlements } from '../context/EntitlementsContext';
+import { useAuth } from '../context/AuthContext';
+import { storyKey } from '../config/priceCatalog';
+import { useCatalog } from '../context/CatalogContext';
+import type { CatalogStory } from '../services/catalogServices';
 
 export type StoryCategory = 'general' | 'news';
 
@@ -27,14 +32,80 @@ export interface StoryGroup {
   /** Which heading/section this story is grouped under in List.tsx. Defaults to 'general'. */
   category: StoryCategory;
   /**
-   * Paywall state, decided by the SERVER (config/entitlements.js) and carried
-   * on the list response. Undefined means "the server had no opinion" — a
-   * static story the DB has never heard of — which is treated as unlocked,
-   * because the static catalogue is exactly the free starter pack.
+   * Paywall state. For a published DB story the SERVER decides it and carries
+   * it on the list response; for a built-in story applyCatalogAccess() fills it
+   * from the mirrored catalog. Undefined means the story is not sold.
    */
   locked?: boolean;
-  /** Any one of these SKUs unlocks it. Drives the paywall modal's CTAs. */
+  /** Any one of these SKUs unlocks it, smallest scope first. */
   requiredSkus?: string[];
+  /** When locked: parts 1..freeParts play in full. */
+  freeParts?: number;
+  /** When locked and set: part 1 is a timed preview of this many seconds. */
+  previewSeconds?: number | null;
+}
+
+/**
+ * Fills a BUILT-IN story's paywall fields from the price catalog.
+ *
+ * The server's list endpoint only knows published DB stories, so a static
+ * story would otherwise arrive with no lock at all and look free. Pure, so the
+ * rule can be tested without mounting anything.
+ */
+export function applyCatalogAccess(
+  group: StoryGroup,
+  difficulty: DifficultySlug,
+  owned: boolean,
+  catalog: {
+    getCatalogStory: (key: string) => CatalogStory | null;
+    skusGranting: (key: string) => string[];
+    /** Optional so existing callers and tests keep the paywall on. */
+    paywallEnabled?: boolean;
+  },
+  /** Is anyone signed in? Only meaningful while the paywall is off. */
+  authenticated = false,
+): StoryGroup {
+  const key = storyKey(difficulty, group.slug);
+  const entry = catalog.getCatalogStory(key);
+  // Not in the catalog: no admin has listed it, so there is nothing to sell and
+  // nothing to play. Left locked with no SKU rather than passed through
+  // untouched — an untouched group has `locked: undefined`, which every shelf
+  // reads as "owned", and that is how unlisted stories used to appear free.
+  if (!entry) return { ...group, locked: true, requiredSkus: [], freeParts: 0, previewSeconds: null };
+  // A story the catalog gives away is open to everyone, signed in or not.
+  if (!entry.paid) {
+    return {
+      ...group,
+      locked: false,
+      requiredSkus: [],
+      freeParts: group.totalTracks,
+      previewSeconds: null,
+    };
+  }
+  if (owned) {
+    return { ...group, locked: false, requiredSkus: [], freeParts: group.totalTracks, previewSeconds: null };
+  }
+  // Nothing is sold at the moment, so an ACCOUNT is what opens the catalogue.
+  //
+  // This is the client's copy of the server's rule (accessFor), and it exists
+  // for the stories that have no published DB row — maya, daniel and the rest
+  // arrive from the static catalogue with no `locked` from the server at all.
+  // Without this the page would padlock a signed-in user out of content the
+  // server is perfectly willing to serve, because `owned` is false for
+  // everyone: nobody has bought anything.
+  if (catalog.paywallEnabled === false) {
+    return authenticated
+      ? { ...group, locked: false, requiredSkus: [], freeParts: group.totalTracks, previewSeconds: null }
+      : { ...group, locked: true, requiredSkus: [], freeParts: entry.freeParts, previewSeconds: entry.previewSeconds };
+  }
+  // The row's own allowance, which may override the length-derived default.
+  return {
+    ...group,
+    locked: true,
+    requiredSkus: catalog.skusGranting(key),
+    freeParts: entry.freeParts,
+    previewSeconds: entry.previewSeconds,
+  };
 }
 
 export type DifficultySlug = 'easy' | 'medium' | 'hard';
@@ -153,6 +224,8 @@ function dbStoryToGroup(
     totalParts: number;
     locked?: boolean;
     requiredSkus?: string[];
+    freeParts?: number;
+    previewSeconds?: number | null;
   },
   fallbackCategory: StoryCategory = 'general',
   fallbackCover?: string,
@@ -174,45 +247,184 @@ function dbStoryToGroup(
     cover: story.coverUrl ?? fallbackCover,
     locked: story.locked ?? false,
     requiredSkus: story.requiredSkus ?? [],
+    freeParts: story.freeParts,
+    previewSeconds: story.previewSeconds ?? null,
   };
 }
 
-export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
-  const staticGroups = getStoryGroups(difficulty, t);
+/**
+ * What the published-list endpoint last said, per difficulty, for the life of
+ * the tab.
+ *
+ * This exists so a SECOND visit to a level costs no skeleton: the answer is
+ * already here on the very first render, and the page paints its final state
+ * straight away. Entering a level, going back, and entering it again is the
+ * single most common path through this app, so the cheap case should be the
+ * common one.
+ *
+ * It is stale-while-revalidate, not a plain cache — every mount still refetches
+ * in the background and overwrites this. So a story published from the Story
+ * Builder shows up on the next navigation rather than needing a reload, and the
+ * worst a stale entry can do is render one frame of a list that was correct a
+ * moment ago. Nothing here is an entitlement decision: `locked` is the server's
+ * word, and a cached `locked: false` cannot unlock anything, because the player
+ * asks the server for audio and gets refused independently of this.
+ */
+//
+// Keyed by WHO asked as well as which level. The response carries each story's
+// lock state for the caller, so a list cached while signed out, or signed in as
+// someone else, painted that person's padlocks first and then the real ones.
+const publishedListCache = new Map<
+  string,
+  { stories: PublishedStoryListItem[]; hidden: Set<string> }
+>();
+
+/**
+ * The newest request per cache key. Responses can arrive out of order — React
+ * StrictMode mounts twice, and a slow request can finish after a quick
+ * navigation away and back — and an overtaken answer must not overwrite the
+ * cache, or the NEXT visit opens on a shelf that was already out of date.
+ */
+const latestRequest = new Map<string, number>();
+let requestSeq = 0;
+
+// Stable identities for "the server has not answered yet". A fresh `[]` or
+// `new Set()` is a different object every time it is evaluated, so handing one
+// to setState always counts as a change — which bought a whole extra render
+// that repainted the identical skeleton. Neither is ever mutated: a resolved
+// fetch builds its own Set.
+const NO_STORIES: PublishedStoryListItem[] = [];
+const NO_HIDDEN: Set<string> = new Set();
+
+/**
+ * The level's stories, plus whether the server has answered yet.
+ *
+ * `loading` is the whole point. Without it a page has no way to tell the
+ * difference between "these are the stories" and "these are the stories I
+ * could name before asking", and every caller painted the latter: the static
+ * catalogue rendered first, unlocked and complete, then snapped to the real
+ * list a moment later as padlocks appeared, hidden stories vanished and
+ * published ones arrived. The data was never wrong, it was just shown before
+ * it was true.
+ */
+export function useStoryGroupsWithStatus(
+  difficulty: DifficultySlug,
+  t: TFunction,
+): { stories: StoryGroup[]; loading: boolean } {
   const locale = useAppLocale();
+  const { owns, entitlementsLoading } = useEntitlements();
+  const catalog = useCatalog();
+  const { user } = useAuth();
+  const cacheKey = `${user?.id ?? 'guest'}:${difficulty}`;
+  // Memoised so the static catalogue has one identity per (level, language)
+  // rather than a new array per render — which is what lets the merge at the
+  // bottom of this hook depend on it honestly instead of listing a subset of
+  // its real inputs and silencing the lint rule.
+  const staticGroups = useMemo(() => getStoryGroups(difficulty, t), [difficulty, t]);
   // The RAW rows are held in state and adapted during render, not in the
   // effect: adapting needs the static entry's category as a fallback, and
   // reaching for staticGroups inside the effect would either capture a stale
   // copy or, if listed as a dependency, refetch on every render since
   // getStoryGroups builds a new array each time.
-  const [dbStories, setDbStories] = useState<PublishedStoryListItem[]>([]);
-  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+  //
+  // Seeded from the cache in the initialiser rather than by an effect, which is
+  // what makes a repeat visit flicker-free: by the time the first render runs,
+  // the state already holds the answer.
+  const seed = publishedListCache.get(cacheKey);
+  const [dbStories, setDbStories] = useState<PublishedStoryListItem[]>(
+    () => seed?.stories ?? NO_STORIES,
+  );
+  const [hidden, setHidden] = useState<Set<string>>(() => seed?.hidden ?? NO_HIDDEN);
+  const [loading, setLoading] = useState(() => !seed);
+
+  // Switching levels resets during render, not in an effect.
+  //
+  // /levels/easy → /levels/medium is the same route element with a new param,
+  // so React keeps this component mounted. An effect would only correct the
+  // state AFTER a frame had been painted, and that frame is medium's static
+  // catalogue merged with easy's published rows — a list that has never been
+  // true. Assigning during render makes React throw the in-progress output
+  // away and start again before anything reaches the screen.
+  // Signing in or out changes the key too, and gets the same treatment.
+  const [loadedFor, setLoadedFor] = useState<string>(cacheKey);
+  if (loadedFor !== cacheKey) {
+    const known = publishedListCache.get(cacheKey);
+    setLoadedFor(cacheKey);
+    setDbStories(known?.stories ?? NO_STORIES);
+    setHidden(known?.hidden ?? NO_HIDDEN);
+    // A level already in the cache never drops back to a skeleton.
+    setLoading(!known);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    fetchPublishedStoriesList(difficulty).then(({ stories, hidden: hiddenIds }) => {
+    requestSeq += 1;
+    const requestId = requestSeq;
+    latestRequest.set(cacheKey, requestId);
+
+    fetchPublishedStoriesList(difficulty).then(({ stories, hidden: hiddenIds, ok }) => {
+      // Overtaken by a newer request for the same list: this is older news.
+      if (latestRequest.get(cacheKey) !== requestId) return;
+
+      const known = publishedListCache.get(cacheKey);
+      // A failed fetch comes back empty. Painting that over a list we already
+      // hold swapped the real shelf for the bare static catalogue until the
+      // next successful request put it back.
+      if (!ok && known) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      const hiddenSet = new Set(hiddenIds);
+      // Cached even if this hook has unmounted in the meantime — but only a
+      // real answer, never a failure.
+      if (ok) publishedListCache.set(cacheKey, { stories, hidden: hiddenSet });
       if (cancelled) return;
       setDbStories(stories);
-      setHidden(new Set(hiddenIds));
+      setHidden(hiddenSet);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [difficulty]);
+  }, [difficulty, cacheKey]);
 
-  const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
-  const dbGroups = dbStories.map((s) => {
-    const fallback = staticBySlug.get(s.storyId);
-    const category = s.category ?? fallback?.category ?? 'general';
-    return dbStoryToGroup(
-      s,
-      fallback?.category ?? 'general',
-      coverFor(difficulty, category, fallback?.cover),
-      locale,
+  // Memoised because this used to hand back a freshly built array on EVERY
+  // render — new identity, same contents — which defeated the useMemo in
+  // List.tsx that depends on it and made every card's props new each time.
+  const stories = useMemo(() => {
+    const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
+    const dbGroups = dbStories.map((s) => {
+      const fallback = staticBySlug.get(s.storyId);
+      const category = s.category ?? fallback?.category ?? 'general';
+      return dbStoryToGroup(
+        s,
+        fallback?.category ?? 'general',
+        coverFor(difficulty, category, fallback?.cover),
+        locale,
+      );
+    });
+    const staticWithAccess = staticGroups.map((g) =>
+      applyCatalogAccess(g, difficulty, owns(difficulty, g.slug), catalog, Boolean(user)),
     );
-  });
+    return mergeStoryGroups(staticWithAccess, dbGroups, hidden);
+    // `catalog` belongs here: it arrives asynchronously, and without it this
+    // memo keeps the answer it computed against an EMPTY catalog — every
+    // built-in story locked with no SKU — for the life of the page.
+  }, [staticGroups, difficulty, locale, dbStories, hidden, owns, catalog]);
 
-  return mergeStoryGroups(staticGroups, dbGroups, hidden);
+  // A lock drawn before ownership is known is a lock that flickers off.
+  // A price or a padlock drawn before the catalog lands is one that changes
+  // under the reader, so the catalog is part of "not ready yet" too.
+  return { stories, loading: loading || entitlementsLoading || catalog.catalogLoading };
+}
+
+/**
+ * The stories alone, for callers that are happy to paint the static catalogue
+ * first and correct it a moment later.
+ */
+export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
+  return useStoryGroupsWithStatus(difficulty, t).stories;
 }
 
 /**
@@ -256,6 +468,9 @@ export function useStoryGroup(
   const [dbChecked, setDbChecked] = useState(false);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
   const locale = useAppLocale();
+  const { owns } = useEntitlements();
+  const catalog = useCatalog();
+  const { user } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -295,7 +510,16 @@ export function useStoryGroup(
   // Hidden applies here too. useStoryGroups filtered the list while this hook
   // did not, so a hidden story vanished from the shelves but was still fully
   // reachable by URL — including from a bookmark or the level grid.
-  const group = dbGroup ?? staticGroup;
+  const group =
+    dbGroup ??
+    (staticGroup &&
+      applyCatalogAccess(
+        staticGroup,
+        difficulty,
+        owns(difficulty, staticGroup.slug),
+        catalog,
+        Boolean(user),
+      ));
   return {
     storyGroup: group && hidden.has(group.slug) ? undefined : group,
     loading: !staticGroup && !dbChecked,

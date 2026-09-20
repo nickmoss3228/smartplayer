@@ -10,7 +10,7 @@
 // Adding an acquirer must not require an edit here — if it does, the contract in
 // services/payments/index.js is wrong and that is what needs fixing.
 
-import { Payment } from "../models/Payment.js";
+import { payments as paymentsRepo } from "../db/index.js";
 import { config } from "../config/env.js";
 import {
   getProvider,
@@ -19,7 +19,8 @@ import {
 } from "../services/payments/index.js";
 import { settlePayment } from "../helpers/settlePayment.js";
 import { priceBasket, BasketError, isPurchasable } from "../config/basketPricing.js";
-import { PRODUCTS, CURRENCY } from "../config/priceCatalog.js";
+import { CURRENCY } from "../config/priceCatalog.js";
+import { getCatalog } from "../helpers/catalogStore.js";
 import { callbackUrlFor } from "../helpers/callbackToken.js";
 
 const STATUS_FOR = {
@@ -34,12 +35,19 @@ const STATUS_FOR = {
 /** Non-production only. Gates every field that would be an information leak in prod. */
 const isDev = () => config.nodeEnv !== "production";
 
+/** Order lines as the client has always received them. */
+const itemJson = (item) => ({
+  sku: item.sku,
+  amountMinor: item.amountMinor,
+  durationDays: item.durationDays ?? null,
+});
+
 // GET /api/payments/config
 // Runtime flag, deliberately NOT a Vite build arg: the frontend image is built
 // by CI, so a build-time flag would need a rebuild and redeploy to flip. The
 // shop renders instantly from its bundled catalog and consults this only to
 // decide whether checkout is live.
-export function getPaymentConfig(req, res) {
+export async function getPaymentConfig(req, res) {
   // getProvider() throws when PAYMENTS_PROVIDER names a driver that does not
   // exist. This endpoint is public and hit on page load, so a misconfiguration
   // must degrade to "the shop is closed" rather than 500 for every visitor.
@@ -50,14 +58,15 @@ export function getPaymentConfig(req, res) {
     console.error("[payments] config requested with a broken driver:", error.message);
   }
 
+  const catalog = await getCatalog();
   const body = {
     enabled: config.payments.enabled && Boolean(driver),
     currency: CURRENCY,
     // What THIS environment will actually sell — staging can offer placeholder
-    // packs that production refuses, from the same bundle.
-    purchasableSkus: PRODUCTS.filter((p) =>
-      isPurchasable(p.sku, config.payments.purchasableSkus)
-    ).map((p) => p.sku),
+    // packs that production refuses, from the same catalog.
+    purchasableSkus: catalog.products
+      .filter((p) => isPurchasable(p.sku, config.payments.purchasableSkus, catalog))
+      .map((p) => p.sku),
     // Lets the checkout page tell the buyer that no real money will move.
     fake: driver ? driver.realMoney === false : false,
   };
@@ -97,7 +106,9 @@ export async function createOrder(req, res) {
     priced = priceBasket(
       req.body?.skus,
       req.user.entitlements ?? [],
-      config.payments.purchasableSkus
+      config.payments.purchasableSkus,
+      Date.now(),
+      await getCatalog()
     );
   } catch (error) {
     if (error instanceof BasketError) {
@@ -110,20 +121,19 @@ export async function createOrder(req, res) {
 
   const driver = getProvider();
 
-  // Created BEFORE the driver is called, so its _id can be the order id the
+  // Created BEFORE the driver is called, so its id can be the order id the
   // acquirer echoes back. That ordering is what makes a timed-out create
   // recoverable: the callback still names an order we already know about, even
   // when we never learned the acquirer's own id for it.
-  const payment = await Payment.create({
+  const payment = await paymentsRepo.create({
     userId: req.user._id,
     provider: driver.name,
-    status: "pending",
     amountMinor: priced.amountMinor,
     currency: priced.currency,
     items: priced.items,
   });
 
-  const orderId = payment._id.toString();
+  const orderId = payment.id;
   const returnBase = `${config.frontendUrl ?? ""}/checkout/return?orderId=${orderId}`;
 
   try {
@@ -144,17 +154,17 @@ export async function createOrder(req, res) {
         fail: `${returnBase}&hint=fail`,
       },
       callbackUrl: callbackUrlFor(driver.name, orderId),
-      metadata: { orderId, userId: req.user._id.toString() },
+      metadata: { orderId, userId: req.user._id },
     });
 
-    payment.providerPaymentId = created.providerPaymentId;
-    payment.confirmationUrl = created.confirmationUrl;
-    payment.idempotenceKey = orderId;
-    payment.raw = created.raw ?? null;
-    await payment.save();
+    await paymentsRepo.recordProviderCreate(orderId, {
+      providerPaymentId: created.providerPaymentId ?? null,
+      confirmationUrl: created.confirmationUrl ?? null,
+      raw: created.raw ?? null,
+    });
 
     res.json({
-      orderId: payment._id,
+      orderId,
       confirmationUrl: created.confirmationUrl,
       amountMinor: priced.amountMinor,
       currency: priced.currency,
@@ -165,10 +175,7 @@ export async function createOrder(req, res) {
     });
   } catch (error) {
     console.error("[payments] driver createPayment failed:", error.message);
-    await Payment.updateOne(
-      { _id: payment._id, status: "pending" },
-      { $set: { status: "failed", cancellationReason: error.message.slice(0, 300) } }
-    );
+    await paymentsRepo.markCreateFailed(orderId, error.message ?? "createPayment failed");
     res
       .status(502)
       .json({ error: "The payment provider is unavailable.", code: "PROVIDER_UNAVAILABLE" });
@@ -193,30 +200,25 @@ function buildCustomer(user) {
   if (user?.username) customer.name = user.username;
   if (user?.email) customer.email = user.email;
   if (user?.phoneNumber) customer.phone = user.phoneNumber;
-  if (user?._id) customer.externalId = user._id.toString();
+  if (user?._id) customer.externalId = String(user._id);
   return Object.keys(customer).length ? customer : null;
 }
 
 // GET /api/payments/orders/:id — own orders only, for the return page to poll.
 export async function getOrder(req, res) {
-  const payment = await Payment.findOne({ _id: req.params.id, userId: req.user._id }).catch(
-    () => null
-  );
+  const payment = await paymentsRepo.findOwned(req.params.id, req.user._id);
   if (!payment) return res.status(404).json({ error: "Order not found." });
 
   const body = {
-    orderId: payment._id,
+    orderId: payment.id,
     status: payment.status,
     amountMinor: payment.amountMinor,
     currency: payment.currency,
-    items: payment.items,
+    items: payment.items.map(itemJson),
     // The client refreshes its entitlements when this flips true, so it must
     // mean "the rows are on the user" — not "we have decided to write them".
-    // grantedAt is the idempotency latch and is set BEFORE grantFor() runs;
-    // reporting it here opens a window where the buyer sees the success screen,
-    // refetches, and gets entitlements that have not landed yet. Padlocks stay
-    // on until something else triggers a refresh, which reads as "I paid and it
-    // did not work". grantAppliedAt is stamped after the writes complete.
+    // With settlement in one transaction the two now commit together, but
+    // grantAppliedAt remains the field that states it.
     granted: Boolean(payment.grantAppliedAt),
     confirmationUrl: payment.confirmationUrl,
   };
@@ -235,11 +237,18 @@ export async function getOrder(req, res) {
 
 // GET /api/payments/orders — the buyer's own history.
 export async function listOrders(req, res) {
-  const payments = await Payment.find({ userId: req.user._id })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .select("status amountMinor currency items createdAt grantedAt");
-  res.json({ orders: payments });
+  const payments = await paymentsRepo.listForUserWithItems(req.user._id, 50);
+  res.json({
+    orders: payments.map((p) => ({
+      _id: p.id,
+      status: p.status,
+      amountMinor: p.amountMinor,
+      currency: p.currency,
+      items: p.items.map(itemJson),
+      createdAt: p.createdAt,
+      grantedAt: p.grantedAt,
+    })),
+  });
 }
 
 // ── The webhook ────────────────────────────────────────────────────────────
@@ -284,7 +293,7 @@ export async function paymentWebhook(req, res) {
   }
 
   try {
-    const known = await Payment.findById(parsed.orderId).catch(() => null);
+    const known = await paymentsRepo.findByIdSafe(parsed.orderId);
     if (!known) {
       console.warn(`[payments] webhook for unknown order ${parsed.orderId} — ignoring`);
       return res.sendStatus(200);
@@ -295,7 +304,7 @@ export async function paymentWebhook(req, res) {
     // these two are the ones it cannot see.
     if (parsed.currency && parsed.currency !== known.currency) {
       console.error(
-        `[payments] currency mismatch on ${known._id}: callback says ${parsed.currency}, ` +
+        `[payments] currency mismatch on ${known.id}: callback says ${parsed.currency}, ` +
           `order says ${known.currency}. NOT settling.`
       );
       return res.sendStatus(200);
@@ -306,7 +315,7 @@ export async function paymentWebhook(req, res) {
       known.providerPaymentId !== parsed.providerPaymentId
     ) {
       console.error(
-        `[payments] payment id mismatch on ${known._id}: callback says ` +
+        `[payments] payment id mismatch on ${known.id}: callback says ` +
           `${parsed.providerPaymentId}, order says ${known.providerPaymentId}. NOT settling.`
       );
       return res.sendStatus(200);

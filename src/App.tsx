@@ -5,7 +5,6 @@ import {
   Routes,
   Route,
   Navigate,
-  useParams,
 } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 // Eager, unlike the routes below. It is a handful of elements, and a 404 that
@@ -19,10 +18,11 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProgressProvider } from "./context/ProgressContext";
 import { ProfileProvider } from './context/ProfileContext';
 import { WalletProvider } from './context/WalletContext';
+import { CatalogProvider } from './context/CatalogContext';
+import { SHOP_ENABLED } from './config/features';
 import { EntitlementsProvider } from './context/EntitlementsContext';
 import { CartProvider } from './context/CartContext';
 import { CharacterProvider } from './context/CharacterContext';
-import { FREE_TRIAL_STORIES } from './constants/trial';
 import { Layout } from "./Layout"
 
 // Lazy-loaded — each becomes its own chunk, fetched only when its route is
@@ -61,21 +61,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-/**
- * Soft gate — guests may access tracks 1–FREE_TRIAL_STORIES.
- * Anything beyond that redirects to /signup with trial context.
- */
-const TrackProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
-  const { trackNumber } = useParams<{ trackNumber: string }>();
-  if (loading) return <div>Loading...</div>;
-  const track = parseInt(trackNumber ?? '1', 10);
-  if (!user && track > FREE_TRIAL_STORIES) {
-    return <Navigate to="/signup" state={{ fromTrial: true }} replace />;
-  }
-  return <>{children}</>;
-};
-
 
 
 function App() {
@@ -83,6 +68,7 @@ function App() {
     <AuthProvider>
       <ProfileProvider>
         <WalletProvider>
+        <CatalogProvider>
         <EntitlementsProvider>
         <CartProvider>
         <CharacterProvider>
@@ -97,23 +83,37 @@ function App() {
                 <Route path="/"                element={<Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
                 <Route path="/legal/:docId" element={<Legal />} />
-                {/* One shelf: every story, owned and unowned together. /shop
-                    and /library are kept as entrances into the same page —
-                    /library simply arrives with the filter already set — so
-                    existing links and the navbar keep working while there is
-                    only one surface to maintain. Public, because a visitor can
-                    browse and fill a basket before signing up; checkout is what
-                    requires an account. */}
-                <Route path="/stories" element={<Stories />} />
-                <Route path="/shop" element={<Stories />} />
-                <Route path="/library" element={<Stories initialFilter="mine" />} />
+                {/* The storefront, switched off while the idea is being tested
+                    (config/features.ts). The pages are untouched and still work;
+                    they are simply unreachable, and every old link now lands on
+                    the level picker rather than a 404. */}
+                <Route
+                  path="/stories"
+                  element={SHOP_ENABLED ? <Stories /> : <Navigate to="/levels" replace />}
+                />
+                <Route
+                  path="/shop"
+                  element={SHOP_ENABLED ? <Stories /> : <Navigate to="/levels" replace />}
+                />
+                <Route
+                  path="/library"
+                  element={
+                    SHOP_ENABLED ? <Stories initialFilter="mine" /> : <Navigate to="/levels" replace />
+                  }
+                />
                 {/* Where the payment provider sends the buyer back to. Grants
                     nothing: it polls the server, and the WEBHOOK is what
                     actually settles the purchase. */}
-                <Route path="/checkout/return" element={<CheckoutReturn />} />
+                <Route
+                  path="/checkout/return"
+                  element={SHOP_ENABLED ? <CheckoutReturn /> : <Navigate to="/levels" replace />}
+                />
                 {/* The fake acquirer's page; every endpoint it calls 404s under a driver
                     that moves real money. */}
-                <Route path="/checkout/fake" element={<FakeCheckout />} />
+                <Route
+                  path="/checkout/fake"
+                  element={SHOP_ENABLED ? <FakeCheckout /> : <Navigate to="/levels" replace />}
+                />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/login"           element={<Login />} />
                 <Route path="/signup"          element={<SignUp />} />
@@ -143,14 +143,12 @@ function App() {
                 <Route path="/levels/:difficulty"            element={<List />} />
                 <Route path="/levels/:difficulty/:storySlug" element={<DifficultyDetail />} />
 
-                {/* ── Player: free for tracks ≤ FREE_TRIAL_STORIES, auth required beyond ── */}
+                {/* ── Player: open to everyone. Which parts play is decided
+                    in Player.tsx and enforced by the server. While the shop is
+                    off, signing in IS what opens the rest of a story. ── */}
                 <Route
                   path="/levels/:difficulty/:storySlug/:trackNumber"
-                  element={
-                    <TrackProtectedRoute>
-                      <Player />
-                    </TrackProtectedRoute>
-                  }
+                  element={<Player />}
                 />
 
                 {/* ── Legacy player — fully protected ── */}
@@ -177,6 +175,7 @@ function App() {
         </CharacterProvider>
         </CartProvider>
         </EntitlementsProvider>
+        </CatalogProvider>
         </WalletProvider>
       </ProfileProvider>
     </AuthProvider>

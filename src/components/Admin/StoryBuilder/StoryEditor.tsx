@@ -12,6 +12,7 @@ import { ELEMENTS, ElementId, storyReadiness } from "./partStatus";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
 import StoryCoverEditor from "./StoryCoverEditor";
+import StoryPricingPanel from "./StoryPricingPanel";
 import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
@@ -26,8 +27,9 @@ interface StoryEditorProps {
 
 const MAX_PARTS = 20;
 
-// Part 1 of a paid story is what a non-owner hears before deciding to buy
-// (PAID_PREVIEW_PARTS in backend/src/config/priceCatalog.js). The builder marks
+// Part 1 of a paid story is what a non-owner always hears before deciding to
+// buy — in full on a long story, as a 30-second preview on a short one
+// (freeAllowanceFor in backend/src/config/priceCatalog.js). The builder marks
 // it so the shop window gets made deliberately rather than by accident.
 const PREVIEW_PART = 1;
 
@@ -320,6 +322,16 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           </summary>
           <div className="mt-2 bg-gray-50 rounded-lg border border-gray-200 p-3">
             <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
+          </div>
+        </details>
+
+        <details className="group mt-2">
+          <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black select-none inline-flex items-center gap-1">
+            <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
+            Pricing &amp; access{story.paid === false ? " — free" : ""}
+          </summary>
+          <div className="mt-2">
+            <StoryPricingPanel token={token} story={story} onStoryUpdated={onStoryUpdated} />
           </div>
         </details>
       </div>

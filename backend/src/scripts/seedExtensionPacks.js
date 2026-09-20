@@ -4,7 +4,7 @@
 // shop, the paywall and the whole buy → webhook → entitlement → play loop can
 // be exercised before a single recording exists.
 //
-// WHY THESE ARE Story DOCUMENTS AND NOT STATIC ENTRIES
+// WHY THESE ARE story ROWS AND NOT STATIC ENTRIES
 //
 // Two independent reasons, either of which would settle it:
 //
@@ -17,43 +17,38 @@
 //      no say over who reads them. See the header of config/priceCatalog.js.
 //
 // The placeholder is not a throwaway: when the real audio arrives it is
-// uploaded onto THIS document through the admin Story Builder. The story is
+// uploaded onto THIS story through the admin Story Builder. The story is
 // edited, never migrated, and its storyId — which is half of the SKU — never
 // changes. That is the whole reason to seed rather than to invent later.
 //
-// Direction is enforced, not merely intended: the target is the active
-// MONGODB_URI, and the script refuses unless that database name looks like a
-// dev or staging one. Production content is created through the Story Builder
-// by a human, never by a script.
+// Direction is enforced, not merely intended: the target is DATABASE_URL, and
+// the script refuses unless that database name looks like a dev or staging
+// one. Production content is created through the Story Builder by a human,
+// never by a script.
 //
-// Idempotent: matched on (difficulty, storyId) — the unique index from
-// models/Story.js — and updated in place, so re-running never duplicates and
-// never clobbers audio that has since been uploaded (see PRESERVED below).
+// Idempotent: matched on (difficulty, story_id) — the story table's unique
+// key — and updated in place, so re-running never duplicates and never
+// clobbers audio that has since been uploaded (see PRESERVED below).
 //
 // Usage:
-//   node src/scripts/seedExtensionPacks.js --dry-run
-//   node src/scripts/seedExtensionPacks.js
-//   node src/scripts/seedExtensionPacks.js --unpublish   # hide them again
+//   node --import tsx src/scripts/seedExtensionPacks.js --dry-run
+//   node --import tsx src/scripts/seedExtensionPacks.js
+//   node --import tsx src/scripts/seedExtensionPacks.js --unpublish   # hide them again
+//   node --import tsx src/scripts/seedExtensionPacks.js --delete      # remove them entirely
+//
+// --delete exists because these nine clutter the Story Builder, which lists
+// drafts as well as published stories — unpublishing hides them from learners
+// but not from the person trying to author a real story. Deleting is safe and
+// reversible: the rows carry no audio and no progress, BUILT_IN_ROWS still
+// describes all nine, and re-running this script with no flag recreates them.
+// Their time markers survive separately (recallMarkers), as they always have.
 
-import mongoose from "mongoose";
-import { config } from "../config/env.js";
-import { Story } from "../models/Story.js";
-import { PACK_STORIES } from "../config/priceCatalog.js";
+import { EXTENSION_STORY_KEYS } from "../config/priceCatalog.js";
+import { closeDb, db, ping, stories } from "../db/index.js";
 
 const dryRun = process.argv.includes("--dry-run");
 const unpublish = process.argv.includes("--unpublish");
-
-// Same regex-not-new-URL() reasoning as seedDevFromProd.js: this is a
-// multi-host seed list, and URL()'s error echoes the credentials into the log.
-const targetDbName = /@[^/]+\/([^?]*)/.exec(config.mongoUri)?.[1] ?? "";
-if (!/dev|staging/i.test(targetDbName)) {
-  console.error(
-    `Refusing to run: the active MONGODB_URI points at "${targetDbName || "(default)"}", ` +
-      `which is neither a dev nor a staging database. Production stories are ` +
-      `authored in the Story Builder, not seeded.`,
-  );
-  process.exit(2);
-}
+const destroy = process.argv.includes("--delete");
 
 // Each placeholder's human-facing text. Keyed by the same "difficulty/slug"
 // the price catalog uses, so a slug renamed there fails the assertion below
@@ -126,7 +121,7 @@ const PLACEHOLDERS = {
  */
 const PARTS_PER_STORY = 5;
 
-const expectedKeys = Object.values(PACK_STORIES).flat();
+const expectedKeys = EXTENSION_STORY_KEYS;
 const missing = expectedKeys.filter((k) => !PLACEHOLDERS[k]);
 if (missing.length) {
   console.error(
@@ -136,79 +131,132 @@ if (missing.length) {
   process.exit(2);
 }
 
-const conn = await mongoose
-  .createConnection(config.mongoUri, { serverSelectionTimeoutMS: 15000 })
-  .asPromise();
-const StoryModel = conn.model("Story", Story.schema);
-
-console.log(`target: ${conn.name}${dryRun ? "   (DRY RUN)" : ""}`);
-console.log(`${expectedKeys.length} placeholder stories, ${PARTS_PER_STORY} parts each\n`);
-
-let created = 0;
-let updated = 0;
-
-for (const key of expectedKeys) {
-  const [difficulty, storyId] = key.split("/");
-  const meta = PLACEHOLDERS[key];
-  const existing = await StoryModel.findOne({ difficulty, storyId });
-
-  if (unpublish) {
-    if (!existing) continue;
-    console.log(`  unpublish  ${key}`);
-    if (!dryRun) await StoryModel.updateOne({ _id: existing._id }, { $set: { published: false } });
-    updated += 1;
-    continue;
-  }
-
-  // PRESERVED: parts are only written when the story is new or still empty of
-  // audio. Once a real recording has been uploaded through the Story Builder,
-  // re-running this script must not throw it away — the placeholder's job is
-  // finished at that point.
-  const hasRealAudio = existing?.parts?.some((p) => p.audioUrl);
-  const parts = Array.from({ length: PARTS_PER_STORY }, (_, i) => ({
-    partNumber: i + 1,
-    title: `Part ${i + 1}`,
-    // Null, not "". models/Story.js defaults it to null, and
-    // adaptPublishedStoryToTracks already emits audio: "" for such a part and
-    // reports it as unavailable rather than 404ing — the same state
-    // news-family-visit has been in on production for months.
-    audioUrl: null,
-    helpAudio: [],
-    comicUrl: null,
-    timeMarkers: [],
-    vocabulary: [],
-    phrasalVerbs: [],
-    quiz: [],
-  }));
-
-  const doc = {
-    difficulty,
-    storyId,
-    storyName: meta.en.title,
-    description: meta.en.description,
-    localized: {
-      title: { en: meta.en.title, ru: meta.ru.title },
-      description: { en: meta.en.description, ru: meta.ru.description },
-    },
-    characterIcon: meta.icon,
-    totalParts: PARTS_PER_STORY,
-    category: "general",
-    coverUrl: null, // no art yet — List.tsx falls back to the halftone + icon
-    published: true,
-    ...(hasRealAudio ? {} : { parts }),
-  };
-
-  if (hasRealAudio) {
-    console.log(`  keep audio ${key}  (metadata only)`);
+try {
+  const { database } = await ping();
+  if (!/dev|staging/i.test(database)) {
+    console.error(
+      `Refusing to run: DATABASE_URL points at "${database}", which is neither a ` +
+        `dev nor a staging database. Production stories are authored in the ` +
+        `Story Builder, not seeded.`,
+    );
+    process.exitCode = 2;
   } else {
-    console.log(`  ${existing ? "update    " : "create    "} ${key}`);
+    await seed(database);
   }
-
-  if (!dryRun) {
-    await StoryModel.updateOne({ difficulty, storyId }, { $set: doc }, { upsert: true });
-  }
-  existing ? (updated += 1) : (created += 1);
+} finally {
+  await closeDb();
 }
 
-console.log(`\n${created} created, ${updated} updated${dryRun ? "  (DRY RUN — nothing written)" : ""}`);
-await conn.close();
+async function seed(database) {
+  console.log(`target: ${database}${dryRun ? "   (DRY RUN)" : ""}`);
+  console.log(`${expectedKeys.length} placeholder stories, ${PARTS_PER_STORY} parts each\n`);
+
+  let created = 0;
+  let updated = 0;
+
+  for (const key of expectedKeys) {
+    const [difficulty, storyId] = key.split("/");
+    const meta = PLACEHOLDERS[key];
+    const existing = await stories.findByIdentity(difficulty, storyId);
+
+    if (destroy) {
+      if (!existing) continue;
+      // Refuse to throw away a story someone has actually recorded. The whole
+      // premise of deleting these is that they are empty placeholders; the
+      // moment one is not, it is real content and this script has no business
+      // touching it.
+      const loaded = await stories.loadAggregate(existing.id);
+      if (loaded?.parts.some((p) => p.audioUrl)) {
+        console.log(`  KEPT       ${key}  (has audio — delete it in /admin if you mean it)`);
+        continue;
+      }
+      console.log(`  delete     ${key}`);
+      if (!dryRun) await stories.remove(existing.id);
+      updated += 1;
+      continue;
+    }
+
+    if (unpublish) {
+      if (!existing) continue;
+      console.log(`  unpublish  ${key}`);
+      if (!dryRun) await stories.setPublished(existing.id, false);
+      updated += 1;
+      continue;
+    }
+
+    // PRESERVED: parts are only written when the story is new or still empty of
+    // audio. Once a real recording has been uploaded through the Story Builder,
+    // re-running this script must not throw it away — the placeholder's job is
+    // finished at that point.
+    const aggregate = existing ? await stories.loadAggregate(existing.id) : null;
+    const hasRealAudio = Boolean(aggregate?.parts.some((p) => p.audioUrl));
+    const parts = Array.from({ length: PARTS_PER_STORY }, (_, i) => ({
+      partNumber: i + 1,
+      title: `Part ${i + 1}`,
+      // Null, not "". adaptPublishedStoryToTracks already emits audio: "" for
+      // such a part and reports it as unavailable rather than 404ing — the
+      // same state news-family-visit has been in on production for months.
+      audioUrl: null,
+      helpAudio: [],
+      comicUrl: null,
+      timeMarkers: [],
+      vocabulary: [],
+      phrasalVerbs: [],
+      quiz: [],
+    }));
+
+    const head = {
+      difficulty,
+      storyId,
+      storyName: meta.en.title,
+      description: meta.en.description,
+      titleEn: meta.en.title,
+      titleRu: meta.ru.title,
+      descriptionEn: meta.en.description,
+      descriptionRu: meta.ru.description,
+      characterIcon: meta.icon,
+      totalParts: PARTS_PER_STORY,
+      category: "general",
+      // No art yet — List.tsx falls back to the halftone + icon. A cover
+      // uploaded since the first seed is kept rather than wiped.
+      coverUrl: existing?.coverUrl ?? null,
+      // PUBLISHED, but NOT ready.
+      //
+      // `published` is now catalog membership: a published row is listed to
+      // learners and priced. These nine are meant to be SEEN — the shop should
+      // show the whole shape of what is coming — so they stay published.
+      //
+      // `ready: false` is what stops them being sold: the shop draws them as
+      // "coming soon" with no buy button, because their audio does not exist
+      // yet. That was the hardcoded catalog's behaviour for these same nine
+      // keys, and it is the honest one: visible, not purchasable.
+      //
+      // Unpublishing them instead would take them out of the shop AND out of
+      // the set bundles, which is not what anyone wants to look at.
+      published: true,
+      // Set grouping. Lowercased because the SKU is built from it: `set-leo`.
+      character: meta.character.toLowerCase(),
+      paid: true,
+      ready: false,
+      legacyMongoId: existing?.legacyMongoId ?? null,
+    };
+
+    if (hasRealAudio) {
+      console.log(`  keep audio ${key}  (metadata only)`);
+    } else {
+      console.log(`  ${existing ? "update    " : "create    "} ${key}`);
+    }
+
+    if (!dryRun) {
+      // One transaction: a head without its parts would be a published story
+      // with nothing in it.
+      await db().transaction(async (tx) => {
+        const row = await stories.upsertHead(head, tx);
+        if (!hasRealAudio) await stories.replaceParts(row.id, parts, tx);
+      });
+    }
+    existing ? (updated += 1) : (created += 1);
+  }
+
+  console.log(`\n${created} created, ${updated} updated${dryRun ? "  (DRY RUN — nothing written)" : ""}`);
+}

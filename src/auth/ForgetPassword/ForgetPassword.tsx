@@ -1,37 +1,32 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  IoKeyOutline,
-  IoLockClosedOutline,
-  IoMailOutline,
-  IoEyeOutline,
-  IoEyeOffOutline,
-  IoAlertCircleOutline,
-  IoSyncOutline,
-  IoCheckmarkCircleOutline,
-  IoMailOpenOutline,
-} from 'react-icons/io5'
 import { useAuth } from '../../context/AuthContext'
+import {
+  AsideCopy,
+  AuthShell,
+  CardLede,
+  CardTitle,
+  Eyebrow,
+  Notice,
+  PasswordField,
+  PasswordStrength,
+  QuietLink,
+  SecondaryButton,
+  SubmitButton,
+  TextField,
+} from '../authKit'
 
-const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
-    <div className="pointer-events-none absolute -top-24 -left-20 w-72 h-72 rounded-full bg-blue-200/30 blur-3xl" />
-    <div className="pointer-events-none absolute -bottom-24 -right-20 w-72 h-72 rounded-full bg-red-200/30 blur-3xl" />
-    <div className="relative z-10 max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-black/5 animate-fade-in">
-      {children}
-    </div>
-  </div>
-)
-
-const IconBadge: React.FC<{ icon: React.ReactNode; gradient?: string }> = ({
-  icon,
-  gradient = 'from-red-500 to-blue-600',
-}) => (
+/** Outlined square badge — the terminal states' one piece of iconography. */
+const Badge = ({ stroke, children }: { stroke: string; children: React.ReactNode }) => (
   <div
-    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mx-auto mb-4 shadow-lg animate-scale-in`}
+    className="w-[46px] h-[46px] flex items-center justify-center border rounded-[3px] mb-5"
+    style={{ borderColor: stroke }}
+    aria-hidden="true"
   >
-    {icon}
+    <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
   </div>
 )
 
@@ -56,6 +51,9 @@ const ForgotPassword = () => {
   // Common states
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const redirectTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(redirectTimer.current), [])
 
   const handleRequestReset = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -114,7 +112,10 @@ const ForgotPassword = () => {
       )
     } else {
       setResetSuccess(true)
-      setTimeout(() => {
+      // Kept so the effect above can cancel it. Leaving the timer dangling
+      // meant a visitor who pressed "go to login" themselves was navigated a
+      // second time three seconds later, from a component that was gone.
+      redirectTimer.current = window.setTimeout(() => {
         navigate('/login')
       }, 3000)
     }
@@ -122,25 +123,34 @@ const ForgotPassword = () => {
     setIsLoading(false)
   }
 
-  // Reset password form (when token is present in URL)
+  // ── Setting a new password (a token is in the URL) ──────────────────────
   if (token) {
     if (resetSuccess) {
       return (
-        <AuthShell>
-          <div className="text-center">
-            <IconBadge
-              icon={<IoCheckmarkCircleOutline size={26} className="text-white" />}
-              gradient="from-green-500 to-emerald-600"
-            />
-            <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
-              {t('forgotPassword.resetSuccess.title')}
-            </h1>
-            <p className="text-black/50 text-sm">{t('forgotPassword.resetSuccess.message')}</p>
-            <p className="text-black/40 text-sm mt-1">{t('forgotPassword.resetSuccess.redirecting')}</p>
-          </div>
+        <AuthShell
+          aside={<AsideCopy title={t('auth.aside.newTitle')} body={t('auth.aside.newBody')} />}
+          asideFoot={t('auth.aside.newFoot')}
+        >
+          <Badge stroke="#1f8a4c"><path d="M4 12.5 9.5 18 20 6.5" /></Badge>
+          <p className="m-0 mb-3.5 font-mono text-[11px] tracking-[0.18em] uppercase text-[#1f6b3f]">
+            {t('forgotPassword.resetSuccess.title')}
+          </p>
+          <CardTitle>{t('forgotPassword.resetSuccess.title')}</CardTitle>
+          <p className="m-0 mb-2 text-[15px] leading-relaxed text-[#5b6b7a]">
+            {t('forgotPassword.resetSuccess.message')}
+          </p>
+          {/* The reset now tears down every session server-side, so say so —
+              otherwise the other devices simply stop working and it reads as a
+              bug rather than as the protection it is. */}
+          <p className="m-0 mb-2 text-[15px] leading-relaxed text-[#5b6b7a]">
+            {t('forgotPassword.resetSuccess.signedOutEverywhere')}
+          </p>
+          <p className="m-0 mb-7 text-[13px] text-[#9aa8b5]">
+            {t('forgotPassword.resetSuccess.redirecting')}
+          </p>
           <Link
             to="/login"
-            className="mt-7 w-full inline-flex items-center justify-center py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            className="w-full h-[52px] flex items-center justify-center bg-[#0f151c] text-white rounded-[3px] text-[15px] font-semibold no-underline hover:opacity-90"
           >
             {t('forgotPassword.resetSuccess.goToLogin')}
           </Link>
@@ -149,188 +159,124 @@ const ForgotPassword = () => {
     }
 
     return (
-      <AuthShell>
-        <div className="text-center mb-7">
-          <IconBadge icon={<IoKeyOutline size={24} className="text-white" />} />
-          <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
-            {t('forgotPassword.resetPassword.title')}
-          </h1>
-          <p className="text-black/40 text-sm">{t('forgotPassword.resetPassword.subtitle')}</p>
-        </div>
+      <AuthShell
+        aside={<AsideCopy title={t('auth.aside.newTitle')} body={t('auth.aside.newBody')} />}
+        asideFoot={t('auth.aside.newFoot')}
+      >
+        <Eyebrow>{t('forgotPassword.title')}</Eyebrow>
+        <CardTitle>{t('forgotPassword.resetPassword.title')}</CardTitle>
+        <CardLede>{t('forgotPassword.resetPassword.subtitle')}</CardLede>
 
-        {error && (
-          <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm flex items-start gap-2 animate-fade-in">
-            <IoAlertCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <Notice kind="error">{error}</Notice>}
 
-        <form onSubmit={handleResetPassword} className="space-y-5">
-          <div>
-            <label htmlFor="newPassword" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
-              {t('forgotPassword.resetPassword.newPasswordLabel')}
-            </label>
-            <div className="relative">
-              <IoLockClosedOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
-              <input
-                id="newPassword"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full pl-11 pr-11 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
-                placeholder={t('forgotPassword.resetPassword.newPasswordPlaceholder')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors"
-                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
-              >
-                {showNewPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
-              {t('forgotPassword.resetPassword.confirmPasswordLabel')}
-            </label>
-            <div className="relative">
-              <IoLockClosedOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={6}
-                className="w-full pl-11 pr-11 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
-                placeholder={t('forgotPassword.resetPassword.confirmPasswordPlaceholder')}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((v) => !v)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60 transition-colors"
-                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-                {showConfirmPassword ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        <form onSubmit={handleResetPassword} className="flex flex-col gap-5">
+          <PasswordField
+            id="newPassword"
+            name="new-password"
+            label={t('forgotPassword.resetPassword.newPasswordLabel')}
+            value={newPassword}
+            onChange={setNewPassword}
+            show={showNewPassword}
+            onToggleShow={() => setShowNewPassword((v) => !v)}
+            autoComplete="new-password"
+            required
           >
-            {isLoading ? (
-              <>
-                <IoSyncOutline size={18} className="animate-spin" />
-                {t('forgotPassword.resetPassword.submitting')}
-              </>
-            ) : (
-              t('forgotPassword.resetPassword.submitButton')
+            <PasswordStrength value={newPassword} />
+          </PasswordField>
+
+          <PasswordField
+            id="confirmPassword"
+            name="confirm-password"
+            label={t('forgotPassword.resetPassword.confirmPasswordLabel')}
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            show={showConfirmPassword}
+            onToggleShow={() => setShowConfirmPassword((v) => !v)}
+            autoComplete="new-password"
+            required
+          >
+            {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+              <p className="mt-2 text-[13px] text-[#c2262b]">
+                {t('forgotPassword.errors.passwordMismatch')}
+              </p>
             )}
-          </button>
+          </PasswordField>
+
+          <SubmitButton loading={isLoading} loadingLabel={t('forgotPassword.resetPassword.submitting')}>
+            {t('forgotPassword.resetPassword.submitButton')}
+          </SubmitButton>
         </form>
 
+        <p className="mt-5 mb-0 text-[13px] leading-relaxed text-[#5b6b7a]">
+          {t('forgotPassword.resetSuccess.signedOutEverywhere')}
+        </p>
+
         <div className="mt-7 text-center">
-          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-            {t('forgotPassword.backToLogin')}
-          </Link>
+          <QuietLink to="/login">{t('forgotPassword.backToLogin')}</QuietLink>
         </div>
       </AuthShell>
     )
   }
 
-  // Request reset email form
+  // ── The link has been sent ──────────────────────────────────────────────
   if (emailSent) {
     return (
-      <AuthShell>
-        <div className="text-center">
-          <IconBadge
-            icon={<IoMailOpenOutline size={24} className="text-white" />}
-            gradient="from-blue-500 to-indigo-600"
-          />
-          <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
-            {t('forgotPassword.emailSent.title')}
-          </h1>
-          <p className="text-black/50 text-sm mb-1">
-            {t('forgotPassword.emailSent.message')} <span className="font-semibold text-black/80">{email}</span>
-          </p>
-          <p className="text-black/40 text-xs">{t('forgotPassword.emailSent.instructions')}</p>
-        </div>
+      <AuthShell
+        aside={<AsideCopy title={t('auth.aside.resetTitle')} body={t('auth.aside.resetBody')} />}
+        asideFoot={t('auth.aside.resetFoot')}
+      >
+        <Badge stroke="#0f151c">
+          <path d="M3 6.5h18v11H3z" />
+          <path d="m3.6 7 8.4 6 8.4-6" />
+        </Badge>
+        <Eyebrow>{t('forgotPassword.emailSent.title')}</Eyebrow>
+        <CardTitle>{t('forgotPassword.emailSent.title')}</CardTitle>
+        <p className="m-0 mb-1.5 text-[15px] leading-relaxed text-[#5b6b7a]">
+          {t('forgotPassword.emailSent.message')}{' '}
+          <span className="font-semibold text-[#0f1720]">{email}</span>
+        </p>
+        <p className="m-0 mb-7 text-[13px] text-[#9aa8b5]">
+          {t('forgotPassword.emailSent.instructions')}
+        </p>
 
-        <div className="mt-7 space-y-3">
-          <button
-            onClick={() => setEmailSent(false)}
-            className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-          >
-            {t('forgotPassword.emailSent.tryAnother')}
-          </button>
-          <Link
-            to="/login"
-            className="block text-center text-blue-600 hover:text-blue-700 font-semibold text-sm"
-          >
-            {t('forgotPassword.backToLogin')}
-          </Link>
+        <SecondaryButton onClick={() => setEmailSent(false)}>
+          {t('forgotPassword.emailSent.tryAnother')}
+        </SecondaryButton>
+
+        <div className="mt-7 text-center">
+          <QuietLink to="/login">{t('forgotPassword.backToLogin')}</QuietLink>
         </div>
       </AuthShell>
     )
   }
 
+  // ── Asking for the link ─────────────────────────────────────────────────
   return (
-    <AuthShell>
-      <div className="text-center mb-7">
-        <IconBadge icon={<IoKeyOutline size={24} className="text-white" />} />
-        <h1 className="text-2xl sm:text-3xl font-bold text-black/90 mb-1.5">
-          {t('forgotPassword.title')}
-        </h1>
-        <p className="text-black/40 text-sm">{t('forgotPassword.subtitle')}</p>
-      </div>
+    <AuthShell
+      aside={<AsideCopy title={t('auth.aside.resetTitle')} body={t('auth.aside.resetBody')} />}
+      asideFoot={t('auth.aside.resetFoot')}
+    >
+      <Eyebrow>{t('forgotPassword.title')}</Eyebrow>
+      <CardTitle>{t('forgotPassword.title')}</CardTitle>
+      <CardLede>{t('forgotPassword.subtitle')}</CardLede>
 
-      {error && (
-        <div className="mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm flex items-start gap-2 animate-fade-in">
-          <IoAlertCircleOutline size={18} className="flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <Notice kind="error">{error}</Notice>}
 
-      <form onSubmit={handleRequestReset} className="space-y-5">
-        <div>
-          <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wide text-black/40 mb-1.5">
-            {t('forgotPassword.emailLabel')}
-          </label>
-          <div className="relative">
-            <IoMailOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none" />
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full pl-11 pr-4 py-3 bg-black/[0.03] border border-black/10 rounded-2xl text-black placeholder-black/30 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 focus:bg-white transition-all"
-              placeholder={t('forgotPassword.emailPlaceholder')}
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3.5 bg-gradient-to-r from-red-600 to-blue-600 text-white font-bold rounded-2xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <IoSyncOutline size={18} className="animate-spin" />
-              {t('forgotPassword.sending')}
-            </>
-          ) : (
-            t('forgotPassword.sendButton')
-          )}
-        </button>
+      <form onSubmit={handleRequestReset} className="flex flex-col gap-5">
+        <TextField
+          id="email"
+          name="email"
+          type="email"
+          label={t('forgotPassword.emailLabel')}
+          value={email}
+          onChange={setEmail}
+          autoComplete="email"
+          placeholder={t('forgotPassword.emailPlaceholder')}
+          required
+        />
+        <SubmitButton loading={isLoading} loadingLabel={t('forgotPassword.sending')}>
+          {t('forgotPassword.sendButton')}
+        </SubmitButton>
       </form>
 
       {/*
@@ -340,14 +286,14 @@ const ForgotPassword = () => {
         field and read the deliberately vague "if an account exists…" reply as
         confirmation that a link is coming.
       */}
-      <p className="mt-5 text-xs text-black/40 leading-relaxed">
-        {t('forgotPassword.noEmailHint')}
-      </p>
+      <div className="mt-6 p-4 bg-[#f5f8fa] border border-[#e0e7ed] rounded-[3px]">
+        <p className="m-0 text-[13px] leading-relaxed text-[#47586a]">
+          {t('forgotPassword.noEmailHint')}
+        </p>
+      </div>
 
       <div className="mt-7 text-center">
-        <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
-          {t('forgotPassword.backToLogin')}
-        </Link>
+        <QuietLink to="/login">{t('forgotPassword.backToLogin')}</QuietLink>
       </div>
     </AuthShell>
   )

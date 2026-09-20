@@ -2,7 +2,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router';
 import { IoLockClosed } from 'react-icons/io5';
-import { getProduct, formatPrice, type Product } from '../../config/priceCatalog';
+import { formatPrice } from '../../config/priceCatalog';
+import { useCatalog } from '../../context/CatalogContext';
+import type { CatalogProduct as Product } from '../../services/catalogServices';
 import { useEntitlements } from '../../context/EntitlementsContext';
 import { useAuth } from '../../context/AuthContext';
 import type { Theme } from '../../types/LevelProgress';
@@ -12,21 +14,18 @@ interface Props {
   theme: Theme;
   /** Story being blocked, for the heading. */
   storyTitle?: string;
-  /** SKUs that would unlock it, cheapest scope first (from the server). */
+  /** SKUs that would unlock it, smallest scope first (story, set, level). */
   requiredSkus: string[];
   onClose: () => void;
 }
 
 /**
- * Sells a specific story. Deliberately a SIBLING of TrialGateModal rather than
- * a mode of it: that one sells signing up (its CTAs are /signup and /login),
- * this one sells a SKU. Different audience, different copy, different actions
- * — merging them produces one component with two disjoint halves.
+ * Sells what would unlock a story: the story itself, the character's set, or
+ * the whole level.
  *
- * A signed-out visitor never sees this. They get TrialGateModal, because
- * "create an account" is the cheaper ask and the starter pack is genuinely
- * free; asking a stranger for 1290 ₽ before they have an account is the wrong
- * order.
+ * Shown to guests too. A guest is asked to sign in at the moment they pick an
+ * offer, and comes straight back to this page with the modal open again —
+ * Login and SignUp honour `returnTo` and `openPaywall` (auth/returnTo.ts).
  */
 export const PaywallModal: React.FC<Props> = ({
   isOpen,
@@ -39,22 +38,31 @@ export const PaywallModal: React.FC<Props> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { canBuy } = useEntitlements();
+  const { canBuy, ownedStories } = useEntitlements();
+  // Before the early return: hooks cannot be called conditionally.
+  const { getProduct, priceFor } = useCatalog();
 
   if (!isOpen) return null;
 
-  // The server said these unlock it; the client decides which are sellable in
-  // this environment. A placeholder pack with purchasable:false is listed as
-  // "coming soon" rather than hidden — the buyer should see that the story
-  // exists and is planned, not that the app is missing a price.
   const offers = requiredSkus
     .map((sku) => getProduct(sku))
-    .filter((p): p is Product => p !== null);
+    .filter((p): p is Product => p !== null)
+    // The level bundle has no price yet. An offer nobody can take is noise;
+    // a placeholder story or set still shows, as "coming soon".
+    .filter((p) => p.kind !== 'level' || canBuy(p.sku));
 
   const labelFor = (product: Product) => {
-    if (product.kind === 'pass') return t('paywall.buyAllAccess');
-    if (product.kind === 'pack') return t('paywall.buyPack');
+    if (product.kind === 'set') return t('paywall.buySet');
+    if (product.kind === 'level') return t('paywall.buyLevel');
     return t('paywall.buyStory');
+  };
+
+  const choose = (product: Product) => {
+    if (!user) {
+      navigate('/login', { state: { returnTo: location.pathname, openPaywall: true } });
+      return;
+    }
+    navigate('/shop', { state: { highlightSku: product.sku, returnTo: location.pathname } });
   };
 
   return (
@@ -86,14 +94,9 @@ export const PaywallModal: React.FC<Props> = ({
               <button
                 key={product.sku}
                 disabled={!sellable}
-                onClick={() =>
-                  navigate('/shop', {
-                    state: { highlightSku: product.sku, returnTo: location.pathname },
-                  })
-                }
+                onClick={() => choose(product)}
                 // The first offer is the smallest sufficient purchase, so it
-                // gets the primary treatment — the cheapest way out of the
-                // modal should be the one that reads as the default.
+                // gets the primary treatment.
                 className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-between gap-3 ${
                   !sellable
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -104,12 +107,16 @@ export const PaywallModal: React.FC<Props> = ({
               >
                 <span className="text-sm">{labelFor(product)}</span>
                 <span className="text-sm tabular-nums whitespace-nowrap">
-                  {sellable ? formatPrice(product.amountMinor) : t('paywall.comingSoon')}
+                  {sellable ? formatPrice(priceFor(product, ownedStories)) : t('paywall.comingSoon')}
                 </span>
               </button>
             );
           })}
         </div>
+
+        {!user && (
+          <p className="text-xs text-gray-400 mb-4 leading-relaxed">{t('paywall.loginFirst')}</p>
+        )}
 
         {user && (
           <button

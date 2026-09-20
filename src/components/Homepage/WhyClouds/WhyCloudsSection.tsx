@@ -24,7 +24,7 @@ const WhyCloudsSection = () => {
         {t('homepage.why.sectionLabel')}
       </p> */}
 
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 sm:gap-x-6 sm:gap-y-0 max-w-3xl mx-auto">
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 sm:gap-x-6 sm:gap-y-0 max-w-5xl mx-auto">
         {whyQuestions.map((q) => (
           <Cloud
             key={q.id}

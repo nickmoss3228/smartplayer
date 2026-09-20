@@ -1,31 +1,34 @@
 import React from 'react';
+import { SHOP_ENABLED } from '../../config/features';
 import { useLevelProgressPage } from './useLevelProgressPage';
 import { LevelProgressHeader } from './LevelProgressHeader';
 import { LevelProgressBar } from './LevelProgressBar';
 import { LevelGrid } from './LevelGrid';
 import { LevelLegend } from './LevelLegend';
-import { TrialGateModal } from './TrialGateModal';
 import { CongratsModal } from '../../modules/levelprogress/congratsModule';
 import { LevelProgressSkeleton } from '../../modules/levelprogress/LevelProgressSkeleton';
 import { StoryPreviewModal } from '../../modules/storypreview/StoryPreviewModal';
 import type { LevelProgressProps } from '../../types/LevelProgress';
 import { PaywallModal } from '../Paywall/PaywallModal';
-import { skusGranting, storyKey } from '../../config/priceCatalog';
+import { storyKey } from '../../config/priceCatalog';
+import { useCatalog } from '../../context/CatalogContext';
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
+  const catalog = useCatalog();
   const {
-    user, difficulty, storyTitle, theme,
+    difficulty, storyTitle, theme,
     audioTracks, comics, completedLevels, totalLevels,
     lastListenedLevel, progressPercentage, navigationState,
-    isLoading, getLevelData, isTrialLocked,
-    showCongrats, previewLevel, previewData, showRegisterPrompt,
+    isLoading, getLevelData, isPartLocked,
+    showCongrats, previewLevel, previewData,
     handleLevelCardClick, handleStartListening,
     handleClosePreview, handleCloseCongrats,
-    handleNextDifficulty, handleCloseRegisterPrompt,
+    handleNextDifficulty,
     showPaywall,
     setShowPaywall,
     storyOwned,
-    previewParts,
+    freeParts,
+    previewSeconds,
   } = useLevelProgressPage(props);
 
   if (isLoading) return <LevelProgressSkeleton />;
@@ -50,10 +53,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           audioTracks={audioTracks}
           comics={comics}
           theme={theme}
-          isGuest={!user}
-          previewParts={storyOwned ? 0 : previewParts}
+          freeParts={storyOwned ? 0 : freeParts}
+          previewSeconds={storyOwned ? null : previewSeconds}
           getLevelData={getLevelData}
-          isTrialLocked={isTrialLocked}
+          isPartLocked={isPartLocked}
           onLevelClick={handleLevelCardClick}
         />
       </div>
@@ -77,20 +80,15 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         theme={theme}
       />
 
-      <TrialGateModal
-        isOpen={showRegisterPrompt}
-        theme={theme}
-        onClose={handleCloseRegisterPrompt}
-      />
-
-      {/* The signed-in half of the same gate. A visitor without an account is
-          asked to make one (TrialGateModal above); an account holder who has
-          not bought this story is shown what would unlock it. */}
+      {/* One gate for everyone. A guest sees the same offer and is asked to
+          sign in at the moment they pick one (see PaywallModal). */}
       <PaywallModal
-        isOpen={showPaywall && !storyOwned}
+        // Never while the shop is off: there is nothing to offer, and the
+        // guest has already been sent to sign up instead (useLevelProgressPage).
+        isOpen={SHOP_ENABLED && showPaywall && !storyOwned}
         theme={theme}
         storyTitle={storyTitle}
-        requiredSkus={skusGranting(storyKey(difficulty, props.storySlug ?? 'leo'))}
+        requiredSkus={catalog.skusGranting(storyKey(difficulty, props.storySlug ?? 'leo'))}
         onClose={() => setShowPaywall(false)}
       />
     </div>

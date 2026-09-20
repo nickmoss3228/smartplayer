@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js";
+import { sessions, userDocs } from "../db/index.js";
 import { config } from "../config/env.js";
 import {
   LAST_SEEN_THROTTLE_MS,
@@ -41,7 +41,10 @@ async function resolveBearer(req) {
       };
     }
 
-    const user = await User.findById(decoded.userId).select("-password");
+    // The password hash is loaded but non-enumerable (db/userDoc.ts), so it can
+    // never reach a response. learnedWords are NOT loaded: this runs on every
+    // authenticated request and nothing on this path reads them.
+    const user = await userDocs.loadUser(decoded.userId);
 
     // `code` is what the frontend interceptor (services/apiClient.ts) branches
     // on to tell "you've been suspended" apart from "your session expired" —
@@ -106,10 +109,9 @@ async function resolveBearer(req) {
     if (session) {
       const lastSeen = new Date(session.lastSeenAt ?? 0).getTime();
       if (!Number.isFinite(lastSeen) || now - lastSeen > LAST_SEEN_THROTTLE_MS) {
-        User.updateOne(
-          { _id: user._id, "sessions.jti": decoded.jti },
-          { $set: { "sessions.$.lastSeenAt": new Date(now) } }
-        ).catch((error) => console.error("Session lastSeenAt bump failed:", error));
+        sessions
+          .touch(decoded.jti, now)
+          .catch((error) => console.error("Session lastSeenAt bump failed:", error));
       }
     }
 

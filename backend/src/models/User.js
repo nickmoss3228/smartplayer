@@ -198,10 +198,9 @@ const userSchema = new mongoose.Schema({
   // paid path — costs zero extra queries. A separate collection would add a
   // round-trip to store at most a dozen append-only rows per user.
   //
-  // The FREE starter pack is NOT stored here. It is derived from
-  // STARTER_STORIES in the price catalog, so every account that existed before
-  // payments keeps its access with no backfill, and there is no window in which
-  // a half-finished migration locks a real user out of free content.
+  // What is FREE is NOT stored here. It is derived from each story's length
+  // (freeAllowanceFor in config/priceCatalog.js), so the free allowance can be
+  // changed for every account at once with no backfill.
   //
   // expiresAt is nullable NOW, while nothing recurring is sold. That single
   // field is what makes a subscription a later addition rather than a schema

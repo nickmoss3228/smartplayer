@@ -1,1 +1,0 @@
-export const FREE_TRIAL_STORIES = 2;

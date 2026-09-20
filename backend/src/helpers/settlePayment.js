@@ -7,15 +7,24 @@
 // between them is a bug that only shows up when a webhook is lost — which is
 // precisely when nobody is watching.
 //
-// The idempotency discipline is the one from helpers/spendCurrency.js: the
-// guard is part of the write, not a read-then-write check. A provider will
-// deliver the same event twice and will retry until it gets a 2xx, so "have we
-// already granted this?" asked as a separate query is a race with a payout on
-// the losing side.
+// The idempotency discipline: the guard is part of the write, not a
+// read-then-write check. A provider will deliver the same event twice and will
+// retry until it gets a 2xx, so "have we already granted this?" asked as a
+// separate query is a race with a payout on the losing side.
+//
+// What Postgres changed: the latch, the entitlement writes and the
+// grant-applied stamp now commit TOGETHER. The Mongo version latched first and
+// granted second, so a process dying between the two left a paid order with
+// nothing granted and needed a repair sweep; here that state cannot be written.
 
-import { Payment } from "../models/Payment.js";
-import { User } from "../models/User.js";
-import { getProduct } from "../config/priceCatalog.js";
+import {
+  db,
+  entitlements as entitlementsRepo,
+  payments as paymentsRepo,
+  userDocs,
+} from "../db/index.js";
+import { BUILT_IN_CATALOG } from "../config/priceCatalog.js";
+import { getCatalog } from "./catalogStore.js";
 
 /**
  * Builds the entitlement rows one payment grants.
@@ -23,12 +32,17 @@ import { getProduct } from "../config/priceCatalog.js";
  * Split out and pure so the interesting part — dated SKUs extending rather
  * than stacking — is testable without a database.
  */
-export function rowsFor(payment, existingEntitlements = [], now = Date.now()) {
+export function rowsFor(
+  payment,
+  existingEntitlements = [],
+  now = Date.now(),
+  catalog = BUILT_IN_CATALOG,
+) {
   const perpetual = [];
   const extensions = [];
 
   for (const item of payment.items ?? []) {
-    const product = getProduct(item.sku);
+    const product = catalog.getProduct(item.sku);
     if (!product) continue; // catalog changed under an old order — grant nothing
 
     const days = item.durationDays ?? product.durationDays ?? null;
@@ -67,7 +81,7 @@ export function rowsFor(payment, existingEntitlements = [], now = Date.now()) {
 /**
  * WHY THIS TAKES TWO KINDS OF ID.
  *
- * createOrder writes the Payment row FIRST, then calls the acquirer. If that
+ * createOrder writes the payment row FIRST, then calls the acquirer. If that
  * call times out after the acquirer has already created the payment on their
  * side, we never learn their id — but their callback still arrives, carrying
  * OUR order id, because that is the one identifier both sides agreed on before
@@ -79,15 +93,15 @@ export function rowsFor(payment, existingEntitlements = [], now = Date.now()) {
  */
 async function findPayment(lookup) {
   if (typeof lookup === "string") {
-    return Payment.findOne({ providerPaymentId: lookup });
+    return paymentsRepo.findByProviderId(lookup);
   }
   if (lookup?.orderId) {
-    // A junk id is a 404, not a 500: findById throws CastError on anything that
-    // is not a valid ObjectId, and a forged callback will happily supply one.
-    return Payment.findById(lookup.orderId).catch(() => null);
+    // A junk id is "unknown", not a 500 — a forged callback will happily
+    // supply one.
+    return paymentsRepo.findByIdSafe(lookup.orderId);
   }
   if (lookup?.providerPaymentId) {
-    return Payment.findOne({ providerPaymentId: lookup.providerPaymentId });
+    return paymentsRepo.findByProviderId(lookup.providerPaymentId);
   }
   return null;
 }
@@ -113,23 +127,15 @@ export async function settlePayment(lookup, confirmed) {
   }
 
   if (confirmed.status === "canceled") {
-    await Payment.updateOne(
-      { _id: known._id, status: "pending" },
-      { $set: { status: "canceled", raw: confirmed.raw ?? null } }
-    );
+    await paymentsRepo.markCanceled(known.id, confirmed.raw ?? null);
     return { outcome: "canceled", payment: known };
   }
 
   if (confirmed.status === "failed") {
     // Recorded, but NOT terminal. A declined card followed by a good one is an
     // ordinary purchase, and an acquirer is entitled to send "paid" for this
-    // same payment afterwards. The latch below keys on grantedAt rather than on
-    // status, so that later success still grants — which is why this write is
-    // guarded on grantedAt too, and why nothing here closes the payment off.
-    await Payment.updateOne(
-      { _id: known._id, grantedAt: null, status: "pending" },
-      { $set: { status: "failed", raw: confirmed.raw ?? null } }
-    );
+    // same payment afterwards — see markFailedWhilePending.
+    await paymentsRepo.markFailedWhilePending(known.id, confirmed.raw ?? null);
     return { outcome: "failed", payment: known };
   }
 
@@ -143,49 +149,45 @@ export async function settlePayment(lookup, confirmed) {
   // amount fails this too, deliberately — "I could not tell" is not "it matched".
   if (Number(confirmed.amountMinor) !== Number(known.amountMinor)) {
     console.error(
-      `[payments] amount mismatch on ${known._id}: ` +
+      `[payments] amount mismatch on ${known.id}: ` +
         `acquirer says ${confirmed.amountMinor}, order says ${known.amountMinor}. NOT granting.`
     );
-    await Payment.updateOne(
-      { _id: known._id, grantedAt: null },
-      { $set: { status: "failed", raw: confirmed.raw ?? null } }
-    );
+    await paymentsRepo.markFailed(known.id, confirmed.raw ?? null);
     return { outcome: "amount_mismatch", payment: known };
   }
 
-  const patch = {
-    status: "succeeded",
-    grantedAt: new Date(),
-    paidAt: confirmed.paidAt ?? new Date(),
-    raw: confirmed.raw ?? null,
-  };
+  // THE LATCH, THE GRANT AND THE STAMP — one transaction.
+  //
+  // The latch is conditional on granted_at still being null, so of two
+  // concurrent deliveries exactly one proceeds; the other's UPDATE waits on the
+  // row lock and then matches nothing. Everything after it in this transaction
+  // runs at most once per payment, and commits or rolls back with the latch.
+  const payment = await db().transaction(async (tx) => {
+    const latched = await paymentsRepo.latch(
+      known.id,
+      {
+        paidAt: confirmed.paidAt ?? new Date(),
+        raw: confirmed.raw ?? null,
+        // Backfill the acquirer's id when the create call never got to tell us
+        // — the timed-out-create case in findPayment's comment.
+        providerPaymentId:
+          !known.providerPaymentId && confirmed.providerPaymentId ? confirmed.providerPaymentId : null,
+      },
+      new Date(),
+      tx,
+    );
+    if (!latched) return null;
 
-  // Backfill the acquirer's id when the create call never got to tell us — the
-  // timed-out-create case in findPayment's comment. Inside the latch, so it
-  // happens exactly once under the same guard as everything else.
-  if (!known.providerPaymentId && confirmed.providerPaymentId) {
-    patch.providerPaymentId = confirmed.providerPaymentId;
-  }
-
-  // THE LATCH. Conditional on grantedAt still being null, so of two concurrent
-  // deliveries exactly one proceeds past this line. Everything after it runs at
-  // most once per payment.
-  const payment = await Payment.findOneAndUpdate(
-    { _id: known._id, grantedAt: null },
-    { $set: patch },
-    { new: true }
-  );
+    const settled = { ...latched, items: known.items };
+    await grantFor(settled, tx);
+    await paymentsRepo.stampGrantApplied(latched.id, tx);
+    return settled;
+  });
 
   if (!payment) {
     // Already settled by the other delivery, or by the reconciler.
     return { outcome: "replay", payment: known };
   }
-
-  await grantFor(payment);
-
-  // Only now, after the rows are actually on the user. The reconciler's repair
-  // sweep keys on this, so it must not be set before grantFor returns.
-  await Payment.updateOne({ _id: payment._id }, { $set: { grantAppliedAt: new Date() } });
 
   return { outcome: "granted", payment };
 }
@@ -193,61 +195,43 @@ export async function settlePayment(lookup, confirmed) {
 /**
  * Applies a settled payment's entitlements.
  *
- * Separate from the latch so the reconciler can repair the crash-in-between
- * case: a payment marked succeeded whose rows never landed. Safe to call
- * twice — the perpetual push is guarded on paymentId, and the dated extension
- * is computed from the row that is actually there.
+ * Takes the user's row lock first, then computes and writes. The lock is what
+ * makes rowsFor's "extend from the current expiry" safe: two payments for the
+ * same dated SKU settling at once would otherwise both read the same expiry and
+ * one extension would be lost.
+ *
+ * @param {object} payment a payment row with its `items`
+ * @param {object} [tx] the settlement transaction; one is opened if absent
  */
-export async function grantFor(payment) {
-  const user = await User.findById(payment.userId).select("entitlements");
-  if (!user) {
-    console.error(`[payments] ${payment._id} settled for a user that no longer exists.`);
-    return;
-  }
-
-  const { perpetual, extensions } = rowsFor(payment, user.entitlements ?? []);
-
-  if (perpetual.length) {
-    // The $ne guard makes the push itself idempotent: a second attempt matches
-    // no document rather than appending a duplicate row.
-    await User.updateOne(
-      { _id: payment.userId, "entitlements.paymentId": { $ne: payment._id } },
-      { $push: { entitlements: { $each: perpetual } } }
-    );
-  }
-
-  for (const ext of extensions) {
-    if (ext.hadRow) {
-      await User.updateOne(
-        { _id: payment.userId, "entitlements.sku": ext.sku },
-        {
-          $set: {
-            "entitlements.$.expiresAt": ext.expiresAt,
-            "entitlements.$.paymentId": ext.paymentId,
-            "entitlements.$.source": "purchase",
-          },
-        }
-      );
-    } else {
-      await User.updateOne(
-        { _id: payment.userId, "entitlements.sku": { $ne: ext.sku } },
-        {
-          $push: {
-            entitlements: {
-              sku: ext.sku,
-              grantedAt: new Date(),
-              expiresAt: ext.expiresAt,
-              source: "purchase",
-              paymentId: ext.paymentId,
-            },
-          },
-        }
-      );
+export async function grantFor(payment, tx) {
+  const run = async (t) => {
+    const user = await userDocs.loadUser(payment.userId, { lock: true }, t);
+    if (!user) {
+      console.error(`[payments] ${payment.id} settled for a user that no longer exists.`);
+      return;
     }
-  }
 
-  console.log(
-    `[payments] granted ${payment.items.map((i) => i.sku).join(", ")} ` +
-      `to ${payment.userId} for ${payment.amountMinor} ${payment.currency} (${payment._id})`
-  );
+    const { perpetual, extensions } = rowsFor(
+      { ...payment, _id: payment.id },
+      user.entitlements ?? [],
+      Date.now(),
+      await getCatalog(),
+    );
+
+    // Idempotent by the (user, sku) unique constraint: a second attempt updates
+    // the same row rather than appending another.
+    for (const row of perpetual) {
+      await entitlementsRepo.grantPerpetual(payment.userId, row.sku, row.paymentId, "purchase", t);
+    }
+    for (const ext of extensions) {
+      await entitlementsRepo.grantUntil(payment.userId, ext.sku, ext.expiresAt, ext.paymentId, "purchase", t);
+    }
+
+    console.log(
+      `[payments] granted ${payment.items.map((i) => i.sku).join(", ")} ` +
+        `to ${payment.userId} for ${payment.amountMinor} ${payment.currency} (${payment.id})`
+    );
+  };
+
+  return tx ? run(tx) : db().transaction(run);
 }

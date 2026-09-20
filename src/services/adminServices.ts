@@ -170,6 +170,28 @@ export const grantCurrency = async (
   return data.wallet;
 };
 
+/**
+ * Put one player's Dream School back to its starting state.
+ *
+ * A testing tool. The school is bought a room at a time and nothing in the
+ * game un-buys anything, so without this the only way to replay the early
+ * game is a new account.
+ *
+ * Does NOT touch the wallet: currency is earned by listening rather than by
+ * playing the school, and re-testing a purchase needs something to spend.
+ * Grant currency separately if the balance also needs setting up.
+ */
+export const resetPlayerSchool = async (
+  token: string,
+  userId: string
+): Promise<void> => {
+  const res = await fetch(`${API_URL}/api/admin/players/${userId}/reset-school`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  await parseOrThrow(res);
+};
+
 export interface AdminPlayerProgress {
   username: string;
   email: string;

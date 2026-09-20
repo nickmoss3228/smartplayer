@@ -7,7 +7,7 @@
 // endpoint that names another user — the admin equivalent lives behind
 // adminAuth in admin.controller.js.
 
-import { User } from "../models/User.js";
+import { sessions, userDocs } from "../db/index.js";
 import { pruneDeadSessions } from "../config/sessions.js";
 import {
   publicDevice,
@@ -32,14 +32,11 @@ export async function listSessions(req, res) {
 export async function revokeSession(req, res) {
   const { deviceId } = req.params;
 
-  const result = await User.updateOne(
-    { _id: req.user._id },
-    { $pull: { sessions: { deviceId } } }
-  );
+  const removed = await sessions.removeByDeviceId(req.user._id, deviceId);
 
   // 404 rather than a silent success: "sign out my old laptop" quietly doing
   // nothing is exactly the failure a user would never notice.
-  if (result.modifiedCount === 0) {
+  if (removed === 0) {
     return res.status(404).json({ message: "No such device on this account." });
   }
 
@@ -69,7 +66,7 @@ export async function evictSession(req, res) {
       .json({ message: "This request expired. Please sign in again.", code: "TICKET_INVALID" });
   }
 
-  const user = await User.findById(userId).select("sessions banned");
+  const user = await userDocs.loadUser(userId);
   if (!user) return res.status(401).json({ message: "Invalid ticket" });
   // A ban landing between the 409 and this call must not be worked around by
   // finishing the flow that was already in progress.
@@ -81,12 +78,9 @@ export async function evictSession(req, res) {
 
   // Scoped to the ticket's own user, so a valid ticket can only ever drop a
   // device belonging to the account it was issued for.
-  const result = await User.updateOne(
-    { _id: userId },
-    { $pull: { sessions: { deviceId } } }
-  );
+  const removed = await sessions.removeByDeviceId(userId, deviceId);
 
-  if (result.modifiedCount === 0) {
+  if (removed === 0) {
     return res.status(404).json({ message: "No such device on this account." });
   }
 
@@ -110,10 +104,7 @@ export async function revokeOtherSessions(req, res) {
       .json({ message: "Could not identify the current device." });
   }
 
-  await User.updateOne(
-    { _id: req.user._id },
-    { $pull: { sessions: { deviceId: { $ne: keepDeviceId } } } }
-  );
+  await sessions.removeAllExcept(req.user._id, keepDeviceId);
 
   res.json({ ok: true, keptDeviceId: keepDeviceId });
 }

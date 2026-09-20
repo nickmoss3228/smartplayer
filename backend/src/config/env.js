@@ -19,7 +19,11 @@ dotenv.config({ path: path.join(backendRoot, '.env') });
 // Fail loudly at boot instead of at the first request that happens to need a
 // missing value. Object Storage is checked separately (see below) because the
 // app is perfectly usable without it — only the Story Builder's uploads break.
-const REQUIRED = ['MONGODB_URI', 'JWT_SECRET'];
+// DATABASE_URL replaced MONGODB_URI here when the app moved to PostgreSQL.
+// MONGODB_URI is still read (config.mongoUri) by the one-off scripts that talk
+// to the old database — the backup and the ETL — but the server no longer
+// needs it to start.
+const REQUIRED = ['DATABASE_URL', 'JWT_SECRET'];
 const missing = REQUIRED.filter((key) => !process.env[key]);
 if (missing.length) {
     console.error(
@@ -93,9 +97,25 @@ export const config = {
             sign: process.env.SMSAERO_SIGN || 'malako',
         },
     },
+
+    // Is the SMS code a REQUIREMENT of having an account?
+    //
+    // Off means signup takes an email and a password, never calls the SMS
+    // provider, and hands back a session immediately. It exists because the
+    // provider is not set up yet and, until it is, signup does not merely
+    // fail — it deletes the half-created account on the way out (see
+    // controllers/auth.controller.js), so nobody can register at all.
+    //
+    // Defaults to ON, deliberately. A deployment that forgets this variable
+    // keeps verifying phones rather than silently dropping the check, and
+    // test/api/harness.js registers every test user through the real OTP
+    // flow, which only keeps working because the default is on.
+    phoneVerificationRequired: process.env.PHONE_VERIFICATION_REQUIRED !== 'false',
     adminCode: process.env.ADMIN_CODE,
     adminCodes: parseAdminCodes(process.env.ADMIN_CODES, process.env.ADMIN_CODE),
-    // Audit rows self-expire via a TTL index (see models/AdminAuditLog.js).
+    // Audit rows are expired by a pg_cron job, not by the app (see
+    // db/migrations/manual/001_audit_retention.sql). That job hardcodes the
+    // same 365 days — change both together.
     adminAuditTtlDays: Number(process.env.ADMIN_AUDIT_TTL_DAYS ?? 365),
     // Yandex Object Storage (S3-compatible) — used by the Story Builder to
     // upload story/vocab/quiz audio. Uploads fail clearly until these are set.
@@ -121,6 +141,18 @@ export const config = {
         // while this is off, somebody paid, and they get what they bought.
         // Taking money and honouring money are separate decisions.
         enabled: process.env.PAYMENTS_ENABLED === 'true',
+        // Is content gated by OWNERSHIP at all?
+        //
+        // Distinct from `enabled`, which only stops orders being created. This
+        // one is the paywall itself: off, a signed-in user gets every story
+        // free, and a guest keeps the same taster they always had (the first
+        // parts of a long story) before being asked to register. The catalog,
+        // the prices and the admin pricing panel are untouched — nothing is
+        // sold while this is off, so nothing needs to be priced differently.
+        //
+        // Defaults to ON so a deployment that forgets the variable charges for
+        // content rather than giving the catalogue away.
+        paywallEnabled: process.env.PAYWALL_ENABLED !== 'false',
         // Which driver takes the money. "fake" is a working payment system with
         // the money removed (services/payments/fake.js): it redirects, calls
         // back over real HTTP, retries, and can be told to lose a notification.

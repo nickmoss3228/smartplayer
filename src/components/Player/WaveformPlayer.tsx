@@ -211,6 +211,37 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     // markers that were never recorded, and length alone would call that help.
     const hasHelpAudio = (helpAudioUrls ?? []).filter(Boolean).length > 0;
 
+    // Desktop renders vocabulary and phrasal verbs as two identical labelled
+    // chip blocks (mobile uses VocabularyRow's horizontal scroller for both).
+    // Shared rather than copied because the chip wiring here — audioUrl, the
+    // onPlay arity, the learned-key casing — is exactly what drifted apart
+    // between the two layouts before.
+    const renderWordSection = (
+      words: typeof currentVocabulary,
+      label: string,
+      tourId: string,
+    ) =>
+      words.length > 0 ? (
+        <div className="max-w-[1100px] mx-auto px-5 pb-6 mt-2" data-tour={tourId}>
+          <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-3">
+            {label}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {words.map(({ word, audioKey, audioUrl }) => (
+              <VocabChip
+                key={word}
+                word={word}
+                audioKey={audioKey}
+                audioUrl={audioUrl}
+                onPlay={(_key, url) => playVocabWord(url)}
+                volume={isMuted ? 0 : volume}
+                isLearned={learnedWords?.has((audioKey ?? word).toLowerCase())}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null;
+
     return (
       <div className="waveform-overlay h-full min-h-0">
         <div className="md:hidden flex flex-col h-full min-h-0">
@@ -415,28 +446,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             </div>
           )}
 
-          {currentVocabulary.length > 0 && (
-            <div
-              className="max-w-[1100px] mx-auto px-5 pb-6 mt-2"
-              data-tour="tour-vocabulary"
-            >
-              <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-3">
-                {t("player.vocabulary")}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {currentVocabulary.map(({ word, audioKey, audioUrl }) => (
-                  <VocabChip
-                    key={word}
-                    word={word}
-                    audioKey={audioKey}
-                    audioUrl={audioUrl}
-                    onPlay={(_key, url) => playVocabWord(url)}
-                    volume={isMuted ? 0 : volume}
-                    isLearned={learnedWords?.has((audioKey ?? word).toLowerCase())}
-                  />
-                ))}
-              </div>
-            </div>
+          {renderWordSection(
+            currentVocabulary,
+            t("player.vocabulary"),
+            "tour-vocabulary",
+          )}
+
+          {renderWordSection(
+            currentPhrasalVerbs,
+            t("player.phrasal-verbs"),
+            "tour-phrasal-verbs",
           )}
         </div>
 
