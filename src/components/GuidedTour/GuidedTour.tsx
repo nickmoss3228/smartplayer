@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 // ─── Bump version to force the tour to re-show for existing users ─────────────
-const TOUR_KEY = "playerTourV3";
+const TOUR_KEY = "playerTourV4";
 
 // ─── Static step config (layout-only, no text) ───────────────────────────────
 // Title and body come from i18n; only the structural fields live here.
@@ -13,12 +13,18 @@ interface TourStepConfig {
   padding: number;
 }
 
+// Text is matched to a step by POSITION (guidedTour.steps.<i> in the locales),
+// so reordering here means reordering both translation files too. Each "why"
+// step spotlights the same control as the "what" step right before it.
 const STEP_CONFIG: TourStepConfig[] = [
-  { target: "tour-player",     side: "bottom", padding: 14 },
+  { target: "tour-player",     side: "top",    padding: 14 },
   { target: "tour-comics",     side: "bottom", padding: 10 },
-  { target: "tour-speed", side: "bottom", padding: 10 },
-  { target: "tour-repeat",   side: "bottom",    padding: 10 },
+  { target: "tour-speed",      side: "bottom", padding: 10 },
+  { target: "tour-speed",      side: "bottom", padding: 10 }, // why 3 speeds
+  { target: "tour-repeat",     side: "bottom", padding: 10 },
+  { target: "tour-repeat",     side: "bottom", padding: 10 }, // why 3 repetitions
   { target: "tour-vocabulary", side: "top",    padding: 10 },
+  { target: "tour-vocabulary", side: "top",    padding: 10 }, // why the words are in Russian
   // { target: "tour-quiz",       side: "top",    padding: 12 },
 ];
 
@@ -267,14 +273,7 @@ export const GuidedTour: React.FC = () => {
           </p>
 
           {/* Footer */}
-          <div className="flex items-center justify-between mt-2">
-            <button
-              onClick={dismiss}
-              className="text-[11px] text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
-            >
-              {t("guidedTour.skip")}
-            </button>
-
+          <div className="flex items-center justify-end mt-2">
             <button
               onClick={goNext}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl

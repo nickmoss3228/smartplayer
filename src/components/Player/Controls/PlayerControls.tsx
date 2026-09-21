@@ -92,6 +92,12 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       ? "opacity-40 pointer-events-none cursor-not-allowed"
       : "";
 
+    // A selection only means something while Enhanced mode drives playback.
+    // Outside it the chosen speed/repeat pill used to keep its filled
+    // background, reading as an active control under a disabled group.
+    const pillFor = (selected: boolean) =>
+      selected && isEnhancedMode ? ACTIVE_PILL : IDLE_PILL;
+
     // ── Two derived values used by both layouts ───────────────────────────
     // Green glow: only when Enhanced session is actively running
     const buttonIsGreen = isEnhancedMode && isEnhancedSessionActive;
@@ -117,8 +123,6 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
-      const activeBtn = ACTIVE_PILL;
-      const idleBtn = IDLE_PILL;
 
       return (
         <div className="relative flex flex-col w-full h-full justify-start gap-6">
@@ -203,36 +207,38 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             </div>
           </div>
 
-          {/* Row B — Repeat + Speed */}
+          {/* Row B — Speed + Repeat (repeat sits right, under the mode toggle) */}
           <div className="grid grid-cols-2 gap-[clamp(0.75rem,4vw,2.5rem)]">
-            <div
-              className={`flex flex-col items-center ${disabledClass}`}
-              data-tour="tour-repeat"
-            >
-              {/* w-full + justify-between → pills spread across their column */}
-              <div className="flex items-center justify-evenly w-full max-w-[220px]">
-                {[3, 2, 1].map((count) => (
-                  <button
-                    key={count}
-                    className={`${repeatBtnBase} ${repeatCount === count ? activeBtn : idleBtn}`}
-                    onClick={() => onRepeatCountChange(count)}
-                    title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
-                  >
-                    x{count}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div className="flex flex-col items-center" data-tour="tour-speed">
               <div className="flex items-center justify-evenly w-full max-w-[220px]">
                 {PLAYBACK_RATES.map((speed) => (
                   <button
                     key={speed}
-                    className={`${speedBtnBase} ${playbackRate === speed ? activeBtn : idleBtn}`}
+                    className={`${speedBtnBase} ${pillFor(playbackRate === speed)}`}
                     onClick={() => onSpeedChange(speed)}
                   >
                     {speed}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className={`flex flex-col items-center ${disabledClass}`}
+              data-tour="tour-repeat"
+            >
+              {/* w-full + justify-between → pills spread across their column */}
+              {/* Ascending here, unlike desktop: this cluster sits on the right
+                  under the mode toggle, so the counts read left-to-right. */}
+              <div className="flex items-center justify-evenly w-full max-w-[220px]">
+                {[1, 2, 3].map((count) => (
+                  <button
+                    key={count}
+                    className={`${repeatBtnBase} ${pillFor(repeatCount === count)}`}
+                    onClick={() => onRepeatCountChange(count)}
+                    title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+                  >
+                    x{count}
                   </button>
                 ))}
               </div>
@@ -318,9 +324,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 {[3, 2, 1].map((count) => (
                   <button
                     key={count}
-                    className={`${pillBase} ${
-                      repeatCount === count ? ACTIVE_PILL : IDLE_PILL
-                    }`}
+                    className={`${pillBase} ${pillFor(repeatCount === count)}`}
                     onClick={() => onRepeatCountChange(count)}
                     title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
                   >
@@ -371,7 +375,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                     disabled={!isEnhancedMode}
                     className={`${pillBase}
                       disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
-                      ${playbackRate === speed ? ACTIVE_PILL : IDLE_PILL}`}
+                      ${pillFor(playbackRate === speed)}`}
                     onClick={() => onSpeedChange(speed)}
                   >
                     x{speed}

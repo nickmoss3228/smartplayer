@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Cloud from './Cloud';
 import WhyModal from './WhyModal';
-import { whyQuestions, WhyQuestionId } from './whyCloudsData';
+import { ALL_WHY_QUESTIONS, whyQuestions, WhyQuestionId } from './whyCloudsData';
 
 const WhyCloudsSection = () => {
   const { t } = useTranslation();
@@ -24,12 +24,19 @@ const WhyCloudsSection = () => {
         {t('homepage.why.sectionLabel')}
       </p> */}
 
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 sm:gap-x-6 sm:gap-y-0 max-w-3xl mx-auto">
-        {whyQuestions.map((q, i) => (
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0 sm:gap-x-6 sm:gap-y-0 max-w-5xl mx-auto">
+        {whyQuestions.map((q) => (
           <Cloud
             key={q.id}
-            index={i}
-            label={t(`homepage.why.${q.id}.cloud`)}
+            // Position in ALL_WHY_QUESTIONS, not in this filtered list: the
+            // index picks the blob colour, and /how-to-use paints each
+            // question's section from the same pair. Passing the filtered
+            // index would give a cloud one colour here and another there
+            // whenever ACTIVE_WHY_IDS is not the full set.
+            index={ALL_WHY_QUESTIONS.findIndex((a) => a.id === q.id)}
+            // The statement, not the question — see ACTIVE_WHY_IDS in
+            // whyCloudsData.ts. `.cloud` still holds the question wording.
+            label={t(`homepage.why.${q.id}.slogan`)}
             onClick={() => handleOpen(q.id)}
             isPaused={active !== null}
           />

@@ -65,7 +65,30 @@ export interface AdminStory {
   /** What students see, per locale; empty strings fall back to storyName. */
   localized?: { title: LocalizedText; description: LocalizedText } | null;
   totalParts: number;
+  /**
+   * In the catalog: priced, listed to learners, and playable. A draft is none
+   * of those — accessFor refuses a story the catalog does not list.
+   */
   published: boolean;
+  /**
+   * Where the story's parts come from. 'builtin' means this row is a CATALOG
+   * entry only and the audio/comics/quizzes still load from the static files —
+   * leo, maya, daniel and the news stories. The builder must not offer to edit
+   * their parts, because there are none here to edit.
+   */
+  contentSource?: "db" | "builtin";
+  /** Set grouping, lowercase: "leo" sells through `set-leo`. */
+  character?: string;
+  /** False means free outright — every part, to everyone. */
+  paid?: boolean;
+  /** Sellable now. False shows it without a buy button ("coming soon"). */
+  ready?: boolean;
+  /** Integer kopecks. null derives it from parts x 29 RUB. */
+  priceMinor?: number | null;
+  /** null derives it from the story's length. 0 means nothing is free. */
+  freeParts?: number | null;
+  /** null derives it from the story's length. */
+  previewSeconds?: number | null;
   parts: StoryPart[];
   createdAt: string;
 }
@@ -178,6 +201,12 @@ export const updateStoryMeta = async (
     characterIcon?: string;
     category?: StoryCategory | null;
     localized?: { title: LocalizedText; description: LocalizedText };
+    character?: string;
+    paid?: boolean;
+    ready?: boolean;
+    priceMinor?: number | null;
+    freeParts?: number | null;
+    previewSeconds?: number | null;
   }
 ): Promise<AdminStory> => {
   const res = await fetch(`${API_URL}/api/admin/stories/${id}`, {

@@ -13,7 +13,9 @@ import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
 import { useProgress } from "../context/ProgressContext";
-import { FREE_TRIAL_STORIES } from "../constants/trial";
+import { useEntitlements } from "../context/EntitlementsContext";
+import { storyKey } from "../config/priceCatalog";
+import { useCatalog } from "../context/CatalogContext";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
@@ -55,7 +57,8 @@ const markListenedFullyStored = (difficulty: string, storySlug: string, level: n
 const PLACEHOLDER_TRACK: AudioTrack = { id: "", title: "", audio: "", subtitles: [], timeMarkers: [] };
 
 const Player = React.memo(() => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { owns, entitlementsLoading } = useEntitlements();
   const { setWalletDirect } = useWallet();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
@@ -84,7 +87,7 @@ const Player = React.memo(() => {
     : `/levels/${difficulty}`;
 
   // Replace the useProgress destructure in Player.tsx
-  const { refreshStoryProgress, isInitialLoad } = useProgress();
+  const { refreshStoryProgress } = useProgress();
 
   const navigate = useNavigate();
 
@@ -143,15 +146,70 @@ const Player = React.memo(() => {
     setHasListenedFully(hasListenedFullyStored(difficulty, storySlug, level));
   }, [level, difficulty, storySlug]);
 
+  // ── Paywall ───────────────────────────────────────────────────────────
+  // Same rule as the level grid (useLevelProgressPage) and the server
+  // (config/entitlements.js), for guests and members alike. The grid never
+  // links a locked part, but a URL can: send the learner back to the grid with
+  // the offer open instead of leaving them on a silent player.
+  const { getCatalogStory, paywallEnabled, catalogLoading } = useCatalog();
+  const catalogEntry = getCatalogStory(storyKey(difficulty, storySlug));
+  // Deliberately the same expression the level grid uses, because these two
+  // used to disagree twice over: this one treated a story missing from the
+  // catalog as OWNED (fail open, where the grid failed closed), and it derived
+  // the allowance from the story's length with freeAllowanceFor() instead of
+  // reading the row, so an admin who set freeParts got a grid and a player that
+  // disagreed about which parts play.
+  const storyOwned = catalogEntry
+    ? !catalogEntry.paid ||
+      owns(difficulty, storySlug) ||
+      (!paywallEnabled && Boolean(user))
+    : false;
+  const allowance =
+    catalogEntry && !storyOwned
+      ? { freeParts: catalogEntry.freeParts, previewSeconds: catalogEntry.previewSeconds }
+      : null;
+  // A story the catalog does not list plays nothing — but only once we know the
+  // catalog has actually arrived, or the first frame would bounce everyone.
+  const unlisted = !catalogLoading && !catalogEntry;
+  const partLocked =
+    unlisted ||
+    (allowance !== null &&
+      !(level <= allowance.freeParts || (allowance.previewSeconds !== null && level === 1)));
+  // Part 1 of an unowned short story plays for this long, then stops.
+  const previewSeconds =
+    allowance !== null && allowance.previewSeconds !== null && level === 1 && level > allowance.freeParts
+      ? allowance.previewSeconds
+      : null;
+
   useEffect(() => {
-    // Route layer (TrackProtectedRoute) already blocks guests on tracks > FREE_TRIAL_STORIES.
-    // Only redirect here as a safety net for the legacy /player route which has no params.
-    if (!user && level > FREE_TRIAL_STORIES) {
-      navigate("/login");
-      return;
-    }
-    if (isInitialLoad) return;
-  }, [user, difficulty, level, storySlug, isInitialLoad, navigate]);
+    // Ownership is unknown until both have loaded; redirecting earlier would
+    // bounce a paying customer off their own story.
+    if (authLoading || entitlementsLoading || catalogLoading) return;
+    if (partLocked) navigate(backPath, { replace: true, state: { openPaywall: true } });
+  }, [authLoading, entitlementsLoading, catalogLoading, partLocked, navigate, backPath]);
+
+  const [previewEnded, setPreviewEnded] = useState(false);
+
+  useEffect(() => {
+    setPreviewEnded(false);
+    if (previewSeconds === null) return;
+    // Polled rather than hooked into the waveform's events: Enhanced mode
+    // drives playback segment by segment and resumes on its own, so a one-off
+    // pause at the boundary would be undone. Every tick past the limit pauses
+    // again, and the dialog below covers the controls.
+    const id = window.setInterval(() => {
+      const ws = wavesurferRef.current as unknown as {
+        getCurrentTime?: () => number;
+        pause?: () => void;
+      } | null;
+      const time = ws?.getCurrentTime?.();
+      if (typeof time === "number" && time >= previewSeconds) {
+        ws?.pause?.();
+        setPreviewEnded(true);
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [previewSeconds, level]);
 
   // Resolved once, from ONE source — see modules/story/resolveStory.ts. Before
   // this, tracks came from the DB while the vocabulary chips came from the
@@ -399,6 +457,37 @@ const Player = React.memo(() => {
       className={`h-dvh overflow-hidden bg-gradient-to-br ${theme.background} pt-1`}
     >
       <GuidedTour />
+      {previewEnded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-2xl">
+            <h2 className="mb-2 text-xl font-bold text-gray-900">{t("playerPreview.endedTitle")}</h2>
+            <p className="mb-6 text-sm leading-relaxed text-gray-500">{t("playerPreview.endedBody")}</p>
+            <button
+              onClick={() =>
+                // Nothing is for sale: the way on is an account, not a purchase.
+                paywallEnabled
+                  ? navigate(backPath, { state: { openPaywall: true } })
+                  : navigate(user ? backPath : '/login', {
+                      state: user ? undefined : { returnTo: backPath },
+                    })
+              }
+              className="mb-3 w-full cursor-pointer rounded-xl bg-gray-900 py-3 font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              {paywallEnabled ? t("playerPreview.buy") : t("paywall.signUpToContinue")}
+            </button>
+            <button
+              onClick={() => navigate(backPath)}
+              className="cursor-pointer text-sm text-gray-400 transition-colors hover:text-gray-600"
+            >
+              {t("playerPreview.back")}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex justify-center items-center h-full">
         <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 backdrop-blur-sm rounded-2xl text-center animate-fade-in flex flex-col overflow-hidden">
           {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks ── */}

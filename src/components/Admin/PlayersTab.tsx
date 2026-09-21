@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   fetchAdminPlayers,
   setPlayerBanned,
+  logoutAllPlayerSessions,
   grantCurrency,
+  resetPlayerSchool,
   AdminPlayer,
+  AdminPlayerSharing,
 } from "../../services/adminServices";
 import PlayerProgressModal from "./PlayerProgressModal";
 
@@ -21,6 +24,51 @@ const GRANT_FIELDS = [
 ];
 
 type GrantAmounts = { bitAward: number; bitWord: number; bitPhrase: number };
+
+// Three bands, not a raw number. A score of 47 invites the reader to treat the
+// arithmetic as meaningful precision, which it is not — it is a heuristic whose
+// weights were chosen by judgement (see sharingScore in backend
+// config/sessions.js). Bands say only what the score can honestly support:
+// ignore this, glance at this, look at this.
+const SHARING_BANDS = [
+  { min: 60, label: "Likely shared", className: "bg-red-100 text-red-700" },
+  { min: 30, label: "Possibly shared", className: "bg-amber-100 text-amber-700" },
+];
+
+/**
+ * The evidence behind the band, in plain terms, so an admin can judge it
+ * rather than defer to it. Nothing here is a full IP — the backend only ever
+ * stores /24 and /48 prefixes, and does not send even those.
+ */
+function SharingBadge({ sharing }: { sharing?: AdminPlayerSharing }) {
+  // Absent on accounts that predate the session layer, and on any response
+  // from a backend that hasn't deployed it yet.
+  if (!sharing) return null;
+
+  const band = SHARING_BANDS.find((b) => sharing.score >= b.min);
+  if (!band) return null;
+
+  const detail = [
+    sharing.concurrentNetworks > 1
+      ? `${sharing.activeNow} sessions active on ${sharing.concurrentNetworks} networks`
+      : null,
+    sharing.blockedLogins > 0 ? `${sharing.blockedLogins} logins hit the device cap` : null,
+    `${sharing.distinctNetworks} networks seen recently`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <span
+      // A hover title rather than a modal: this is a hint an admin glances at
+      // on the way to a decision, not a report they sit down to read.
+      title={`${detail}\n\nA signal, not proof — students in one computer lab share a network legitimately.`}
+      className={`text-xs rounded-full px-2 py-0.5 cursor-help ${band.className}`}
+    >
+      {band.label}
+    </span>
+  );
+}
 
 function GrantCurrencyForm({
   onGrant,
@@ -113,6 +161,12 @@ const PlayersTab = ({ token }: { token: string }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [progressUserId, setProgressUserId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+  // The row shows no school state, so a successful reset would otherwise look
+  // exactly like a click that did nothing. Sticky rather than on a timer: a
+  // tester wants to be able to glance back and see which accounts they have
+  // already wiped during this sitting.
+  const [resetDoneId, setResetDoneId] = useState<string | null>(null);
 
   const load = useCallback(
     async (nextPage: number, q: string) => {
@@ -147,6 +201,61 @@ const PlayersTab = ({ token }: { token: string }) => {
     } catch (err) {
       console.error(err);
       setError("Could not update ban status.");
+    }
+  };
+
+  const handleLogoutAll = async (player: AdminPlayer) => {
+    // Confirmed because it is invisible and irreversible from here: every one
+    // of this player's devices is signed out, and there is no undo beyond
+    // asking them to log back in.
+    if (!window.confirm(`Sign out all devices for ${player.nickname}?`)) return;
+    try {
+      await logoutAllPlayerSessions(token, player.id);
+      // Sessions are gone, so nothing can be active and no login can currently
+      // be blocked. Reflected locally rather than refetching the page, which
+      // would reset the admin's scroll position mid-review.
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.id === player.id
+            ? { ...p, sharing: { ...p.sharing, activeNow: 0, concurrentNetworks: 0 } }
+            : p
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Could not sign out that player's devices.");
+    }
+  };
+
+  // Reset one player's Dream School to its starting state.
+  //
+  // Confirmed, and worded with the player's name in it, because this row sits
+  // in a list of near-identical rows and the action is irreversible: the rooms
+  // they bought are gone and the currency they paid is NOT refunded, so a
+  // misfire costs that player everything they spent. Nothing on screen shows
+  // school state, so there would also be no visible sign it had happened to
+  // the wrong person.
+  const handleResetSchool = async (player: AdminPlayer) => {
+    if (
+      !window.confirm(
+        `Reset ${player.nickname}'s school to the starting room?\n\n` +
+          `Every room they bought is removed and their wallpaper, floor, layout ` +
+          `and per-room presets go back to the defaults. Currency is not ` +
+          `refunded, and this cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setError("");
+    setResettingId(player.id);
+    try {
+      await resetPlayerSchool(token, player.id);
+      setResetDoneId(player.id);
+    } catch (err) {
+      console.error(err);
+      setError(`Could not reset ${player.nickname}'s school.`);
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -195,6 +304,7 @@ const PlayersTab = ({ token }: { token: string }) => {
                     Banned
                   </span>
                 )}
+                <SharingBadge sharing={player.sharing} />
               </div>
               <div className="text-xs text-gray-500">{player.email}</div>
             </div>
@@ -212,6 +322,26 @@ const PlayersTab = ({ token }: { token: string }) => {
               className="text-xs text-gray-600 hover:text-black"
             >
               View progress
+            </button>
+
+            <button
+              onClick={() => handleResetSchool(player)}
+              disabled={resettingId === player.id}
+              title="Remove every room bought in the Dream School and restore the defaults"
+              className="text-xs text-gray-600 hover:text-black whitespace-nowrap disabled:opacity-50"
+            >
+              {resettingId === player.id
+                ? "Resetting..."
+                : resetDoneId === player.id
+                  ? "School reset \u2713"
+                  : "Reset school"}
+            </button>
+
+            <button
+              onClick={() => handleLogoutAll(player)}
+              className="text-xs text-gray-600 hover:text-black whitespace-nowrap"
+            >
+              Sign out devices
             </button>
 
             <button

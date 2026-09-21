@@ -1,6 +1,7 @@
 // routes/story.routes.js
 import { Router } from "express";
 import { adminAuth } from "../middleware/adminAuth.js";
+import { optionalAuth } from "../middleware/auth.js";
 import { adminUpload } from "../middleware/adminUpload.js";
 import {
   createStory,
@@ -49,9 +50,16 @@ adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVe
 adminRouter.put("/:id/parts/:partNumber/quiz", adminAuth, saveQuiz);
 adminRouter.patch("/:id/publish", adminAuth, setStoryPublished);
 
-// Public — the player fetches a published story's content here (no auth).
+// Public — the player fetches a published story's content here.
+//
+// optionalAuth, NOT authenticateToken: both routes must keep serving guests
+// (the level list and the two-part trial are open by design), but a signed-in
+// caller has to be identified or a paying customer is served the locked,
+// audio-stripped version of a story they own. optionalAuth verifies a token
+// when one is present — including the ban and session-revocation checks — and
+// falls through to req.user = null when it is not.
 const publicRouter = Router();
-publicRouter.get("/:difficulty", listPublishedStories);
-publicRouter.get("/:difficulty/:storyId", getPublishedStory);
+publicRouter.get("/:difficulty", optionalAuth, listPublishedStories);
+publicRouter.get("/:difficulty/:storyId", optionalAuth, getPublishedStory);
 
 export { adminRouter as adminStoryRoutes, publicRouter as publicStoryRoutes };

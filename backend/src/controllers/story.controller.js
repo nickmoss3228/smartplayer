@@ -3,22 +3,31 @@
 // public endpoint the player fetches a published story from. See
 // helpers/storyLookup.js for how DB stories are merged with the legacy
 // static-file stories at read time.
-import { Story } from "../models/Story.js";
-import { setStoryHidden, hiddenStoryIds } from "../models/StoryVisibility.js";
-import {
-  rememberPartMarkers,
-  recallStoryMarkers,
-  restoreMarkersIntoParts,
-} from "../models/PartMarkers.js";
+//
+// Every edit goes through stories.mutateStory: load, change, write, in one
+// transaction holding the story row. That is the Postgres equivalent of the
+// find/mutate/save() these handlers were written around, with the lock added so
+// two Builder tabs saving different parts cannot overwrite each other.
+import { stories as storiesRepo } from "../db/index.js";
+import { restoreMarkersIntoParts } from "../helpers/markerRestore.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
 import { getQuizPartsForImport, resolveQuizAudioPath } from "../config/quizData.js";
+import {
+  accessFor,
+  isPartVisible,
+  isPreviewPart,
+  storyKey,
+} from "../config/entitlements.js";
+import { getCatalog, invalidateCatalog } from "../helpers/catalogStore.js";
+import { config } from "../config/env.js";
+import { signAudioUrl } from "../helpers/signedAudio.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
 
 // Keeps only the two locales the app ships and coerces to strings, so a
-// malformed payload cannot write arbitrary keys into the document.
+// malformed payload cannot write arbitrary keys into the story.
 function sanitizeLocalized(localized) {
   const pick = (obj) => ({
     en: typeof obj?.en === "string" ? obj.en.trim() : "",
@@ -31,17 +40,38 @@ function buildEmptyParts(totalParts) {
   return Array.from({ length: totalParts }, (_, i) => ({ partNumber: i + 1 }));
 }
 
+/** Answer a mutateStory result: 404 for no story, the halt's own response, or `onSaved`. */
+function sendMutation(res, result, onSaved) {
+  if (!result) return res.status(404).json({ error: "Story not found." });
+  if ("halt" in result) return res.status(result.halt.status).json(result.halt.body);
+  return onSaved(result.story);
+}
+
+/** mutateStory scoped to one part, refusing with 404 when the part is missing. */
+function mutatePart(req, apply) {
+  const partNumber = Number(req.params.partNumber);
+  return storiesRepo.mutateStory(req.params.id, (story) => {
+    const part = story.parts.find((p) => p.partNumber === partNumber);
+    if (!part) return { halt: { status: 404, body: { error: "Part not found." } } };
+    return apply(part, story);
+  });
+}
+
+const savedPart = (story, req) =>
+  story.parts.find((p) => p.partNumber === Number(req.params.partNumber));
+
 // ─── Admin: create/list/fetch/delete ───────────────────────────────────────
 
 // POST /api/admin/stories
 export async function createStory(req, res) {
   try {
+    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, totalParts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
     }
-    if (!storyId?.trim() || !storyName?.trim()) {
+    if (typeof storyId !== "string" || typeof storyName !== "string" || !storyId.trim() || !storyName.trim()) {
       return res.status(400).json({ error: "storyId and storyName are required." });
     }
     const parts = Number(totalParts);
@@ -49,7 +79,7 @@ export async function createStory(req, res) {
       return res.status(400).json({ error: `totalParts must be between 1 and ${MAX_PARTS}.` });
     }
 
-    const existing = await Story.findOne({ difficulty, storyId: storyId.trim() });
+    const existing = await storiesRepo.findByIdentity(difficulty, storyId.trim());
     if (existing) {
       return res.status(409).json({ error: "A story with that id already exists for this difficulty." });
     }
@@ -63,8 +93,8 @@ export async function createStory(req, res) {
 
     // Same rescue as importStory: recreating a story under an id that once had
     // markers gets them back rather than starting from a blank waveform.
-    const remembered = await recallStoryMarkers(difficulty, storyId.trim());
-    const story = await Story.create({
+    const remembered = await storiesRepo.recallMarkers(difficulty, storyId.trim());
+    const story = await storiesRepo.createStoryWithParts({
       difficulty,
       storyId: storyId.trim(),
       storyName: storyName.trim(),
@@ -99,17 +129,18 @@ export async function getStaticQuizSource(req, res) {
 // POST /api/admin/stories/import
 // Imports a built-in story's full content (assembled by the frontend from
 // audioDataByDifficulty.ts/Vocabulary.ts/quizData.js — see storyBuilder plan)
-// into a new Story doc. Always created as a draft (published: false) so it
-// can't affect players until the admin reviews it and explicitly publishes —
-// unlike createStory, matching a static storyId is expected here, not rejected.
+// into a new story. Always created as a draft (published: false) so it can't
+// affect players until the admin reviews it and explicitly publishes — unlike
+// createStory, matching a static storyId is expected here, not rejected.
 export async function importStory(req, res) {
   try {
+    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, category, coverUrl, localized, totalParts, parts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
     }
-    if (!storyId?.trim() || !storyName?.trim()) {
+    if (typeof storyId !== "string" || typeof storyName !== "string" || !storyId.trim() || !storyName.trim()) {
       return res.status(400).json({ error: "storyId and storyName are required." });
     }
     const partsCount = Number(totalParts);
@@ -120,7 +151,7 @@ export async function importStory(req, res) {
       return res.status(400).json({ error: "parts must be an array matching totalParts." });
     }
 
-    const existing = await Story.findOne({ difficulty, storyId: storyId.trim() });
+    const existing = await storiesRepo.findByIdentity(difficulty, storyId.trim());
     if (existing) {
       return res.status(409).json({ error: "This story has already been imported." });
     }
@@ -129,6 +160,8 @@ export async function importStory(req, res) {
       if (!Number.isInteger(part.partNumber)) {
         return res.status(400).json({ error: "Every part needs a partNumber." });
       }
+      const markerError = validateMarkerList(part.timeMarkers ?? []);
+      if (markerError) return res.status(400).json({ error: `Part ${part.partNumber} markers: ${markerError}.` });
       const vocabError = validateVocabList(part.vocabulary ?? []);
       if (vocabError) return res.status(400).json({ error: `Part ${part.partNumber} vocabulary: ${vocabError}.` });
       const phrasalError = validateVocabList(part.phrasalVerbs ?? []);
@@ -145,13 +178,13 @@ export async function importStory(req, res) {
     // A part that arrives empty means "no opinion", which is exactly the case
     // where the remembered copy is the best answer available — and it is the
     // case that used to silently discard hours of work.
-    const remembered = await recallStoryMarkers(difficulty, storyId.trim());
+    const remembered = await storiesRepo.recallMarkers(difficulty, storyId.trim());
     const { parts: partsWithMarkers, restoredCount: restoredParts } = restoreMarkersIntoParts(
       parts,
       remembered,
     );
 
-    const story = await Story.create({
+    const story = await storiesRepo.createStoryWithParts({
       difficulty,
       storyId: storyId.trim(),
       storyName: storyName.trim(),
@@ -179,10 +212,9 @@ export async function importStory(req, res) {
 export async function listStories(req, res) {
   try {
     const { difficulty } = req.query;
-    const filter = difficulty ? { difficulty } : {};
-    const stories = await Story.find(filter)
-      .select("difficulty storyId storyName characterIcon category coverUrl totalParts published createdAt")
-      .sort({ createdAt: -1 });
+    const stories = await storiesRepo.listStoryJson({
+      difficulty: typeof difficulty === "string" && difficulty ? difficulty : undefined,
+    });
     res.json({ stories });
   } catch (error) {
     console.error("listStories error:", error);
@@ -193,7 +225,7 @@ export async function listStories(req, res) {
 // GET /api/admin/stories/:id
 export async function getStory(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
+    const story = await storiesRepo.loadStoryJson(req.params.id);
     if (!story) return res.status(404).json({ error: "Story not found." });
     res.json({ story });
   } catch (error) {
@@ -209,27 +241,73 @@ export async function getStory(req, res) {
 // creation would orphan progress/quiz data keyed by the old values.
 export async function updateStoryMeta(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
-    if (!story) return res.status(404).json({ error: "Story not found." });
+    invalidateCatalog();
+    const {
+      storyName,
+      description,
+      characterIcon,
+      category,
+      localized,
+      // Catalog. These decide what a customer is charged, so each is validated
+      // here rather than trusted — the story table is the paywall's only input.
+      character,
+      paid,
+      ready,
+      priceMinor,
+      freeParts,
+      previewSeconds,
+    } = req.body;
 
-    const { storyName, description, characterIcon, category, localized } = req.body;
-
-    if (storyName !== undefined) {
-      if (!storyName.trim()) return res.status(400).json({ error: "storyName can't be empty." });
-      story.storyName = storyName.trim();
+    if (storyName !== undefined && !storyName.trim()) {
+      return res.status(400).json({ error: "storyName can't be empty." });
     }
-    if (description !== undefined) story.description = description.trim();
-    if (characterIcon !== undefined) story.characterIcon = characterIcon.trim() || "📖";
-    if (category !== undefined) {
-      if (!["general", "news", null].includes(category)) {
-        return res.status(400).json({ error: "category must be general, news, or null." });
+    if (category !== undefined && !["general", "news", null].includes(category)) {
+      return res.status(400).json({ error: "category must be general, news, or null." });
+    }
+    for (const [name, value] of [
+      ["paid", paid],
+      ["ready", ready],
+    ]) {
+      if (value !== undefined && typeof value !== "boolean") {
+        return res.status(400).json({ error: `${name} must be true or false.` });
       }
-      story.category = category;
     }
-    if (localized !== undefined) story.localized = sanitizeLocalized(localized);
+    // null is meaningful on all three — "derive it" — so it is allowed through
+    // and only non-null values are range-checked.
+    for (const [name, value, min] of [
+      ["priceMinor", priceMinor, 0],
+      ["freeParts", freeParts, 0],
+      ["previewSeconds", previewSeconds, 1],
+    ]) {
+      if (value === undefined || value === null) continue;
+      if (!Number.isInteger(value) || value < min) {
+        return res.status(400).json({ error: `${name} must be a whole number of at least ${min}.` });
+      }
+    }
 
-    await story.save();
-    res.json({ story });
+    const result = await storiesRepo.mutateStory(req.params.id, (story) => {
+      if (freeParts !== undefined && freeParts !== null && freeParts > story.totalParts) {
+        return {
+          halt: {
+            status: 400,
+            body: { error: `freeParts cannot exceed the story's ${story.totalParts} parts.` },
+          },
+        };
+      }
+      if (storyName !== undefined) story.storyName = storyName.trim();
+      if (description !== undefined) story.description = description.trim();
+      if (characterIcon !== undefined) story.characterIcon = characterIcon.trim() || "📖";
+      if (category !== undefined) story.category = category;
+      if (localized !== undefined) story.localized = sanitizeLocalized(localized);
+      if (character !== undefined) story.character = String(character ?? "").trim();
+      if (paid !== undefined) story.paid = paid;
+      if (ready !== undefined) story.ready = ready;
+      if (priceMinor !== undefined) story.priceMinor = priceMinor;
+      if (freeParts !== undefined) story.freeParts = freeParts;
+      if (previewSeconds !== undefined) story.previewSeconds = previewSeconds;
+    });
+
+    sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("updateStoryMeta error:", error);
     res.status(500).json({ error: "Failed to update story." });
@@ -240,19 +318,17 @@ export async function updateStoryMeta(req, res) {
 // 3" alongside an existing "part 1"/"part 2") and bumps totalParts to match.
 export async function addPart(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
-    if (!story) return res.status(404).json({ error: "Story not found." });
+    invalidateCatalog();
+    const result = await storiesRepo.mutateStory(req.params.id, (story) => {
+      if (story.parts.length >= MAX_PARTS) {
+        return { halt: { status: 400, body: { error: `A story can have at most ${MAX_PARTS} parts.` } } };
+      }
+      const nextPartNumber = story.parts.reduce((max, p) => Math.max(max, p.partNumber), 0) + 1;
+      story.parts.push({ partNumber: nextPartNumber });
+      story.totalParts = story.parts.length;
+    });
 
-    if (story.parts.length >= MAX_PARTS) {
-      return res.status(400).json({ error: `A story can have at most ${MAX_PARTS} parts.` });
-    }
-
-    const nextPartNumber = story.parts.reduce((max, p) => Math.max(max, p.partNumber), 0) + 1;
-    story.parts.push({ partNumber: nextPartNumber });
-    story.totalParts = story.parts.length;
-    await story.save();
-
-    res.status(201).json({ story });
+    sendMutation(res, result, (story) => res.status(201).json({ story }));
   } catch (error) {
     console.error("addPart error:", error);
     res.status(500).json({ error: "Failed to add part." });
@@ -262,18 +338,19 @@ export async function addPart(req, res) {
 // DELETE /api/admin/stories/:id
 export async function deleteStory(req, res) {
   try {
-    // Snapshot the markers before the document goes. saveMarkers already
-    // mirrors them as they're placed, so this is a backstop — it's what
-    // rescues markers that were saved before PartMarkers existed, and it
-    // covers any path that wrote markers without going through saveMarkers.
-    const story = await Story.findById(req.params.id);
+    invalidateCatalog();
+    // Snapshot the markers before the story goes. saveMarkers already mirrors
+    // them as they're placed, so this is a backstop — it rescues markers saved
+    // before the durable copy existed, and covers any path that wrote markers
+    // without going through saveMarkers.
+    const story = await storiesRepo.loadStoryJson(req.params.id);
     if (story) {
       for (const part of story.parts ?? []) {
         if (part.timeMarkers?.length) {
-          await rememberPartMarkers(story.difficulty, story.storyId, part.partNumber, part.timeMarkers);
+          await storiesRepo.rememberMarkers(story.difficulty, story.storyId, part.partNumber, part.timeMarkers);
         }
       }
-      await story.deleteOne();
+      await storiesRepo.remove(story._id);
     }
     res.json({ success: true });
   } catch (error) {
@@ -344,7 +421,7 @@ function assetKeyFor(story, partNumber, kind, extra) {
 // POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|vocab|phrasal|quizFast|quizSlow[&audioKey=][&index=]
 export async function uploadPartAsset(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
+    const story = await storiesRepo.loadStoryJson(req.params.id);
     if (!story) return res.status(404).json({ error: "Story not found." });
 
     const partNumber = Number(req.params.partNumber);
@@ -421,7 +498,7 @@ export async function uploadPartAsset(req, res) {
 // not go through assetKeyFor — the key has no part number in it.
 export async function uploadStoryCover(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
+    const story = await storiesRepo.loadStoryJson(req.params.id);
     if (!story) return res.status(404).json({ error: "Story not found." });
     if (!req.file) return res.status(400).json({ error: "No file uploaded." });
 
@@ -433,9 +510,12 @@ export async function uploadStoryCover(req, res) {
     }
 
     const key = `stories/${story.difficulty}/${story.storyId}/cover.${ext}`;
-    story.coverUrl = await uploadBuffer(key, req.file.buffer, req.file.mimetype);
-    await story.save();
-    res.json({ story });
+    const coverUrl = await uploadBuffer(key, req.file.buffer, req.file.mimetype);
+
+    const result = await storiesRepo.mutateStory(story._id, (s) => {
+      s.coverUrl = coverUrl;
+    });
+    sendMutation(res, result, (saved) => res.json({ story: saved }));
   } catch (error) {
     // Same reasoning as uploadPartAsset: SDK errors name internals.
     console.error("uploadStoryCover error:", error);
@@ -449,11 +529,10 @@ export async function uploadStoryCover(req, res) {
 // risks removing art a rolled-back story still points at.
 export async function clearStoryCover(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
-    if (!story) return res.status(404).json({ error: "Story not found." });
-    story.coverUrl = null;
-    await story.save();
-    res.json({ story });
+    const result = await storiesRepo.mutateStory(req.params.id, (story) => {
+      story.coverUrl = null;
+    });
+    sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("clearStoryCover error:", error);
     res.status(500).json({ error: "Failed to clear cover." });
@@ -462,44 +541,35 @@ export async function clearStoryCover(req, res) {
 
 // ─── Admin: per-part content ────────────────────────────────────────────────
 
-async function findPartOr404(req, res) {
-  const story = await Story.findById(req.params.id);
-  if (!story) {
-    res.status(404).json({ error: "Story not found." });
-    return null;
+function validateMarkerList(list) {
+  if (!Array.isArray(list)) return "must be an array";
+  if (list.some((m) => typeof m?.time !== "number" || !Number.isFinite(m.time))) {
+    return "every marker needs a numeric time";
   }
-  const partNumber = Number(req.params.partNumber);
-  const part = story.parts.find((p) => p.partNumber === partNumber);
-  if (!part) {
-    res.status(404).json({ error: "Part not found." });
-    return null;
-  }
-  return { story, part };
+  return null;
 }
 
 // PATCH /api/admin/stories/:id/parts/:partNumber/markers  { timeMarkers, audioUrl? }
 export async function saveMarkers(req, res) {
   try {
-    const found = await findPartOr404(req, res);
-    if (!found) return;
-    const { story, part } = found;
-
     const { timeMarkers, audioUrl } = req.body;
-    if (!Array.isArray(timeMarkers) || timeMarkers.some((m) => typeof m.time !== "number")) {
+    if (validateMarkerList(timeMarkers)) {
       return res.status(400).json({ error: "timeMarkers must be an array of { time, label, color }." });
     }
     const sorted = [...timeMarkers].sort((a, b) => a.time - b.time);
 
-    part.timeMarkers = sorted;
-    if (audioUrl) part.audioUrl = audioUrl;
-    await story.save();
+    const result = await mutatePart(req, (part) => {
+      part.timeMarkers = sorted;
+      if (audioUrl) part.audioUrl = audioUrl;
+    });
 
-    // Mirror into the durable copy, so deleting this story to re-import it
-    // doesn't throw the markers away. Keyed by story identity, not _id — see
-    // models/PartMarkers.js.
-    await rememberPartMarkers(story.difficulty, story.storyId, part.partNumber, sorted);
-
-    res.json({ part });
+    await sendMutation(res, result, async (story) => {
+      // Mirror into the durable copy, so deleting this story to re-import it
+      // doesn't throw the markers away. Keyed by story identity, not by row id
+      // — see the part_markers table.
+      await storiesRepo.rememberMarkers(story.difficulty, story.storyId, Number(req.params.partNumber), sorted);
+      res.json({ part: savedPart(story, req) });
+    });
   } catch (error) {
     console.error("saveMarkers error:", error);
     res.status(500).json({ error: "Failed to save markers." });
@@ -518,16 +588,13 @@ function validateVocabList(list) {
 // PUT /api/admin/stories/:id/parts/:partNumber/vocabulary  { vocabulary }
 export async function saveVocabulary(req, res) {
   try {
-    const found = await findPartOr404(req, res);
-    if (!found) return;
-    const { story, part } = found;
-
     const error = validateVocabList(req.body.vocabulary);
     if (error) return res.status(400).json({ error: `Invalid vocabulary: ${error}.` });
 
-    part.vocabulary = req.body.vocabulary;
-    await story.save();
-    res.json({ part });
+    const result = await mutatePart(req, (part) => {
+      part.vocabulary = req.body.vocabulary;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
   } catch (error) {
     console.error("saveVocabulary error:", error);
     res.status(500).json({ error: "Failed to save vocabulary." });
@@ -537,16 +604,13 @@ export async function saveVocabulary(req, res) {
 // PUT /api/admin/stories/:id/parts/:partNumber/phrasal-verbs  { phrasalVerbs }
 export async function savePhrasalVerbs(req, res) {
   try {
-    const found = await findPartOr404(req, res);
-    if (!found) return;
-    const { story, part } = found;
-
     const error = validateVocabList(req.body.phrasalVerbs);
     if (error) return res.status(400).json({ error: `Invalid phrasal verbs: ${error}.` });
 
-    part.phrasalVerbs = req.body.phrasalVerbs;
-    await story.save();
-    res.json({ part });
+    const result = await mutatePart(req, (part) => {
+      part.phrasalVerbs = req.body.phrasalVerbs;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
   } catch (error) {
     console.error("savePhrasalVerbs error:", error);
     res.status(500).json({ error: "Failed to save phrasal verbs." });
@@ -558,18 +622,15 @@ export async function savePhrasalVerbs(req, res) {
 // page, which is how the admin removes a comic they uploaded by mistake.
 export async function saveComic(req, res) {
   try {
-    const found = await findPartOr404(req, res);
-    if (!found) return;
-    const { story, part } = found;
-
     const { comicUrl } = req.body;
     if (comicUrl !== null && typeof comicUrl !== "string") {
       return res.status(400).json({ error: "comicUrl must be a string, or null to clear it." });
     }
 
-    part.comicUrl = comicUrl || null;
-    await story.save();
-    res.json({ part });
+    const result = await mutatePart(req, (part) => {
+      part.comicUrl = comicUrl || null;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
   } catch (error) {
     console.error("saveComic error:", error);
     res.status(500).json({ error: "Failed to save the comic page." });
@@ -592,16 +653,13 @@ function validateQuizList(quiz) {
 // PUT /api/admin/stories/:id/parts/:partNumber/quiz  { quiz }
 export async function saveQuiz(req, res) {
   try {
-    const found = await findPartOr404(req, res);
-    if (!found) return;
-    const { story, part } = found;
-
     const error = validateQuizList(req.body.quiz);
     if (error) return res.status(400).json({ error: `Invalid quiz: ${error}.` });
 
-    part.quiz = req.body.quiz;
-    await story.save();
-    res.json({ part });
+    const result = await mutatePart(req, (part) => {
+      part.quiz = req.body.quiz;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
   } catch (error) {
     console.error("saveQuiz error:", error);
     res.status(500).json({ error: "Failed to save quiz." });
@@ -611,40 +669,42 @@ export async function saveQuiz(req, res) {
 // PATCH /api/admin/stories/:id/publish  { published }
 export async function setStoryPublished(req, res) {
   try {
-    const story = await Story.findById(req.params.id);
-    if (!story) return res.status(404).json({ error: "Story not found." });
-
+    invalidateCatalog();
     const { published } = req.body;
     if (typeof published !== "boolean") {
       return res.status(400).json({ error: "published must be a boolean." });
     }
 
-    if (published) {
-      // Two markers, not one. A single marker cannot describe a segment:
-      // useSegmentEngine looks for the NEXT marker to find the segment end,
-      // finds none, and stops playback at the first boundary, so the track
-      // reports itself complete seconds in. Name the offending parts so the
-      // error says what to fix rather than just refusing.
-      const noAudio = story.parts.filter((p) => !p.audioUrl).map((p) => p.partNumber);
-      const thinMarkers = story.parts
-        .filter((p) => p.audioUrl && (p.timeMarkers?.length ?? 0) < 2)
-        .map((p) => p.partNumber);
-      if (noAudio.length || thinMarkers.length) {
-        const problems = [];
-        if (noAudio.length) problems.push("no audio on part " + noAudio.join(", "));
-        if (thinMarkers.length) {
-          problems.push(
-            "fewer than 2 time markers on part " + thinMarkers.join(", ") +
-              " (a single marker makes the track end at that marker)"
-          );
+    const result = await storiesRepo.mutateStory(req.params.id, (story) => {
+      if (published) {
+        // Two markers, not one. A single marker cannot describe a segment:
+        // useSegmentEngine looks for the NEXT marker to find the segment end,
+        // finds none, and stops playback at the first boundary, so the track
+        // reports itself complete seconds in. Name the offending parts so the
+        // error says what to fix rather than just refusing.
+        const noAudio = story.parts.filter((p) => !p.audioUrl).map((p) => p.partNumber);
+        const thinMarkers = story.parts
+          .filter((p) => p.audioUrl && (p.timeMarkers?.length ?? 0) < 2)
+          .map((p) => p.partNumber);
+        if (noAudio.length || thinMarkers.length) {
+          const problems = [];
+          if (noAudio.length) problems.push("no audio on part " + noAudio.join(", "));
+          if (thinMarkers.length) {
+            problems.push(
+              "fewer than 2 time markers on part " + thinMarkers.join(", ") +
+                " (a single marker makes the track end at that marker)"
+            );
+          }
+          return {
+            halt: { status: 400, body: { error: "Cannot publish yet: " + problems.join("; ") + "." } },
+          };
         }
-        return res.status(400).json({ error: "Cannot publish yet: " + problems.join("; ") + "." });
       }
-    }
 
-    story.published = published;
-    await story.save();
-    res.json({ story });
+      story.published = published;
+    });
+
+    sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("setStoryPublished error:", error);
     res.status(500).json({ error: "Failed to update story." });
@@ -653,12 +713,88 @@ export async function setStoryPublished(req, res) {
 
 // ─── Public: fetch a published story for playback ──────────────────────────
 
+/**
+ * A part the caller has not paid for. Emptied, NOT dropped.
+ *
+ * Numbering is load-bearing: adaptPublishedStoryToTracks (services/storyServices.ts)
+ * says so in its own comment — filtering a part out renumbers every part after
+ * it, so requesting part 5 silently plays a different one while the vocabulary
+ * panel still shows part 5. A locked part therefore keeps its number and its
+ * title (the level grid needs both to draw a padlocked card) and loses
+ * everything that costs money to produce.
+ */
+const lockPart = (part) => ({
+  partNumber: part.partNumber,
+  title: part.title ?? "",
+  locked: true,
+  audioUrl: null,
+  helpAudio: [],
+  timeMarkers: [],
+  comicUrl: null,
+  vocabulary: [],
+  phrasalVerbs: [],
+  quiz: [],
+});
+
+const openPart = (part) => ({
+  partNumber: part.partNumber,
+  title: part.title ?? "",
+  locked: false,
+  audioUrl: part.audioUrl,
+  helpAudio: part.helpAudio ?? [],
+  timeMarkers: part.timeMarkers,
+  comicUrl: part.comicUrl ?? null,
+  vocabulary: part.vocabulary,
+  phrasalVerbs: part.phrasalVerbs,
+  // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
+  // Stored bucket-relative; resolved for THIS environment on the way out.
+  quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
+    ...rest,
+    audio: {
+      fast: resolveQuizAudioPath(rest.audio?.fast),
+      slow: resolveQuizAudioPath(rest.audio?.slow),
+    },
+  })),
+});
+
 // GET /api/stories/:difficulty/:storyId
+//
+// Mounted behind optionalAuth, not authenticateToken: this URL serves guests
+// and members alike, and WHO is asking decides how much comes back. This is
+// the only endpoint that ever hands out a paid audioUrl, which is what makes
+// the paywall enforceable at all — see config/entitlements.js.
 export async function getPublishedStory(req, res) {
   try {
     const { difficulty, storyId } = req.params;
-    const story = await Story.findOne({ difficulty, storyId, published: true }).lean();
-    if (!story) return res.status(404).json({ message: "Story not found." });
+    const aggregate = await storiesRepo.loadPublishedAggregate(difficulty, storyId);
+    if (!aggregate) return res.status(404).json({ message: "Story not found." });
+    const story = storiesRepo.toStoryJson(aggregate, aggregate.parts);
+
+    const catalog = await getCatalog();
+    const access = accessFor(req.user?.entitlements, difficulty, storyId, {
+      authenticated: Boolean(req.user),
+      catalog,
+      // Read per request, never captured in a module const: config is mutable
+      // and the API tests flip this between describes.
+      paywallEnabled: config.payments.paywallEnabled,
+    });
+
+    const parts = await Promise.all(
+      story.parts.map(async (part) => {
+        if (!isPartVisible(access, part.partNumber)) return lockPart(part);
+        // A preview is a listen, not a lesson: the quiz stays closed.
+        const open = isPreviewPart(access, part.partNumber)
+          ? { ...openPart(part), preview: true, quiz: [] }
+          : openPart(part);
+        // Only audio this caller is allowed to hear is ever signed — a locked
+        // part left above with no URL at all. See helpers/signedAudio.js.
+        return {
+          ...open,
+          audioUrl: open.audioUrl ? await signAudioUrl(open.audioUrl) : open.audioUrl,
+          helpAudio: await Promise.all((open.helpAudio ?? []).map((url) => signAudioUrl(url))),
+        };
+      }),
+    );
 
     res.json({
       storyId: story.storyId,
@@ -669,25 +805,16 @@ export async function getPublishedStory(req, res) {
       coverUrl: story.coverUrl ?? null,
       localized: story.localized ?? null,
       totalParts: story.totalParts,
-      parts: story.parts.map((part) => ({
-        partNumber: part.partNumber,
-        title: part.title ?? "",
-        audioUrl: part.audioUrl,
-        helpAudio: part.helpAudio ?? [],
-        timeMarkers: part.timeMarkers,
-        comicUrl: part.comicUrl ?? null,
-        vocabulary: part.vocabulary,
-        phrasalVerbs: part.phrasalVerbs,
-        // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
-        // Stored bucket-relative; resolved for THIS environment on the way out.
-        quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
-          ...rest,
-          audio: {
-            fast: resolveQuizAudioPath(rest.audio?.fast),
-            slow: resolveQuizAudioPath(rest.audio?.slow),
-          },
-        })),
-      })),
+      // The client locks its grid from these rather than recomputing the rule.
+      owned: access.owned,
+      locked: !access.owned,
+      // Infinity does not survive JSON.stringify (it becomes null), so send a
+      // number the client can compare against.
+      freeParts: access.owned ? story.totalParts : access.freeParts,
+      // Part 1 of a short story plays for this long, then the player stops it.
+      previewSeconds: access.owned ? null : access.previewSeconds,
+      requiredSkus: access.owned ? [] : catalog.skusGranting(storyKey(difficulty, storyId)),
+      parts,
     });
   } catch (error) {
     console.error("getPublishedStory error:", error);
@@ -701,12 +828,48 @@ export async function getPublishedStory(req, res) {
 export async function listPublishedStories(req, res) {
   try {
     const { difficulty } = req.params;
-    const [stories, hidden] = await Promise.all([
-      Story.find({ difficulty, published: true })
-        .select("storyId storyName description characterIcon category coverUrl localized totalParts")
-        .lean(),
-      hiddenStoryIds(difficulty),
+    const [rows, hidden] = await Promise.all([
+      storiesRepo.listStoryJson({ difficulty, publishedOnly: true }),
+      storiesRepo.hiddenStoryIds(difficulty),
     ]);
+
+    // The list is the ONE place that knows about stories the caller does not
+    // own, so it carries the lock rather than letting the client infer it.
+    // No part data is exposed here (and never was), so this is presentation
+    // only — the real gate is getPublishedStory above.
+    const authenticated = Boolean(req.user);
+    const catalog = await getCatalog();
+    const stories = rows.map((story) => {
+      const key = storyKey(difficulty, story.storyId);
+      const access = accessFor(req.user?.entitlements, difficulty, story.storyId, {
+        authenticated,
+        catalog,
+        paywallEnabled: config.payments.paywallEnabled,
+      });
+      return {
+        // Exactly the fields this roster has always carried.
+        _id: story._id,
+        storyId: story.storyId,
+        storyName: story.storyName,
+        description: story.description,
+        characterIcon: story.characterIcon,
+        category: story.category,
+        coverUrl: story.coverUrl,
+        localized: story.localized,
+        totalParts: story.totalParts,
+        // The access decision, not a second opinion about it. This used to be
+        // `isPaidStory(key) && !access.owned`, which disagreed with accessFor
+        // for exactly the stories the Story Builder creates: they were in no
+        // catalog, so isPaidStory was false, so `locked` was false, so the
+        // card rendered as OWNED on a logged-out shelf — while accessFor gave
+        // it zero free parts and the audio endpoint refused to serve it. One
+        // source for the lock, and it is the same one that gates the audio.
+        locked: !access.owned,
+        freeParts: access.owned ? story.totalParts : access.freeParts,
+        previewSeconds: access.owned ? null : access.previewSeconds,
+        requiredSkus: access.owned ? [] : catalog.skusGranting(key),
+      };
+    });
     // `hidden` covers the BUILT-IN stories too, which is the point: they are
     // declared in the frontend's static config and rendered regardless of what
     // the database holds, so this list is the only way the admin panel can
@@ -724,7 +887,7 @@ export async function listPublishedStories(req, res) {
 // GET /api/admin/stories/visibility/:difficulty  -> { hidden: [storyId] }
 export async function getStoryVisibility(req, res) {
   try {
-    res.json({ hidden: await hiddenStoryIds(req.params.difficulty) });
+    res.json({ hidden: await storiesRepo.hiddenStoryIds(req.params.difficulty) });
   } catch (error) {
     console.error("getStoryVisibility error:", error);
     res.status(500).json({ error: "Failed to read story visibility." });
@@ -732,9 +895,10 @@ export async function getStoryVisibility(req, res) {
 }
 
 // PUT /api/admin/stories/visibility/:difficulty/:storyId  { hidden }
-// By slug, not by Mongo _id — a built-in story has no document to address.
+// By slug, not by row id — a built-in story has no row to address.
 export async function setStoryVisibility(req, res) {
   try {
+    invalidateCatalog();
     const { difficulty, storyId } = req.params;
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -742,7 +906,7 @@ export async function setStoryVisibility(req, res) {
     if (typeof req.body?.hidden !== "boolean") {
       return res.status(400).json({ error: "hidden must be true or false." });
     }
-    await setStoryHidden(difficulty, storyId, req.body.hidden);
+    await storiesRepo.setHidden(difficulty, storyId, req.body.hidden);
     res.json({ success: true, difficulty, storyId, hidden: req.body.hidden });
   } catch (error) {
     console.error("setStoryVisibility error:", error);

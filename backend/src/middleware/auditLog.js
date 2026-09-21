@@ -14,9 +14,20 @@
 // Known gap: "finish" does not fire if the client aborts mid-flight, so an
 // aborted mutation goes unlogged even if the DB write landed. Accepted for now.
 
-import { AdminAuditLog } from "../models/AdminAuditLog.js";
+import { audit } from "../db/index.js";
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+// adminAuth may record token issue time as a JWT `iat` (seconds) or as a Date.
+// Mongoose cast either silently; a timestamptz column needs a real Date, and a
+// seconds value read as milliseconds would land in January 1970.
+function toIssuedAt(value) {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "number") return new Date(value < 1e12 ? value * 1000 : value);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 const REDACT_KEY = /code|password|token|secret|authorization/i;
 const MAX_STRING = 200;
 const MAX_SERIALIZED_BYTES = 2048;
@@ -59,6 +70,8 @@ const ROUTES = [
   { m: "POST",   re: /^\/api\/admin\/login$/,                                        action: "admin.login" },
   { m: "POST",   re: /^\/api\/admin\/grant-currency$/,                               action: "player.grantCurrency", target: (_m, b) => ({ type: "User", id: b?.userId ?? b?.email ?? null }) },
   { m: "PATCH",  re: /^\/api\/admin\/players\/([^/]+)\/ban$/,                        action: "player.setBanned",       target: (m) => ({ type: "User", id: m[1] }) },
+  { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/logout-all$/,                 action: "player.logoutAll",       target: (m) => ({ type: "User", id: m[1] }) },
+  { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/reset-school$/,              action: "player.resetSchool",     target: (m) => ({ type: "User", id: m[1] }) },
   { m: "POST",   re: /^\/api\/admin\/stories$/,                                      action: "story.create" },
   { m: "POST",   re: /^\/api\/admin\/stories\/import$/,                              action: "story.import" },
   { m: "PATCH",  re: /^\/api\/admin\/stories\/([^/]+)\/publish$/,                    action: "story.setPublished",     target: (m) => ({ type: "Story", id: m[1] }) },
@@ -133,15 +146,18 @@ export function auditAdminAction(req, res, next) {
         }
       : { body: bodySnapshot, query: summarizeBody(req.query) };
 
-    AdminAuditLog.create({
-      actor:
-        req.admin ?? {
-          // A failed login has no identity by definition; a successful one is
-          // attributed by the next request it makes.
-          name: isAdminLogin && status < 400 ? "(login)" : "(anonymous)",
-          sessionId: null,
-          tokenIssuedAt: null,
-        },
+    const actor = req.admin ?? {
+      // A failed login has no identity by definition; a successful one is
+      // attributed by the next request it makes.
+      name: isAdminLogin && status < 400 ? "(login)" : "(anonymous)",
+      sessionId: null,
+      tokenIssuedAt: null,
+    };
+
+    audit.append({
+      actorName: actor.name ?? "(unknown)",
+      actorSessionId: actor.sessionId ?? null,
+      actorTokenIssuedAt: toIssuedAt(actor.tokenIssuedAt),
       ip: req.ip,
       userAgent: req.headers["user-agent"]?.slice(0, 200) ?? null,
       action,

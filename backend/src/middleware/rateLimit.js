@@ -40,6 +40,18 @@ const limitHandler = (label) => (req, res, _next, options) => {
   });
 };
 
+// RATE_LIMITS_DISABLED=true turns every limiter below into a pass-through, for
+// clicking through signup/login repeatedly on a dev or preview backend. It is
+// IGNORED when NODE_ENV=production, so a copied env file cannot switch off
+// brute-force protection on the live site. Read per request rather than at
+// import, so it never depends on the order dotenv and this module load in.
+const limitsDisabled = () =>
+  process.env.RATE_LIMITS_DISABLED === "true" && process.env.NODE_ENV !== "production";
+
+if (limitsDisabled()) {
+  console.warn("[ratelimit] RATE_LIMITS_DISABLED=true — every rate limiter is OFF");
+}
+
 const make = (label, windowMs, max, extra = {}) =>
   rateLimit({
     windowMs,
@@ -47,6 +59,7 @@ const make = (label, windowMs, max, extra = {}) =>
     standardHeaders: "draft-7", // RateLimit + RateLimit-Policy
     legacyHeaders: false, // drop the deprecated X-RateLimit-* set
     handler: limitHandler(label),
+    skip: limitsDisabled,
     ...extra,
   });
 
@@ -76,6 +89,15 @@ export const loginLimiter = make("login", 15 * MINUTE, 10, {
   skipSuccessfulRequests: true,
 });
 export const signupLimiter = make("signup", 60 * MINUTE, 5);
+export const phoneVerificationLimiter = make("phone-verification", 15 * MINUTE, 10);
+
+// POST /api/sessions/evict is the only unauthenticated route that can remove
+// something. Its ticket is unguessable and expires in five minutes, so this is
+// not the primary defence — it is a ceiling on how fast a stolen ticket could
+// be used to clear an account's devices before it expires. Successes count:
+// legitimately freeing more than a handful of slots in an hour is not a thing
+// a real user does.
+export const evictLimiter = make("session-evict", 60 * MINUTE, 10);
 
 // ── Currency-minting endpoints ─────────────────────────────────────────────
 // These two are keyed by USER, not IP. Both sit behind authenticateToken and
@@ -101,6 +123,16 @@ export const phraseRepeatLimiter = make("phrase-repeat", 60 * MINUTE, 200, {
 // One submission carries a whole vocab round (capped at MAX_WORDS_PER_SUBMISSION
 // in the controller), so a legitimate student needs very few of these per hour.
 export const vocabCompleteLimiter = make("vocab-complete", 60 * MINUTE, 60, {
+  keyGenerator: byUser,
+});
+
+// Creating an order is cheap for us but calls out to the payment provider, and
+// each one leaves a `pending` row for the reconciler to chase. Keyed by USER
+// like the two above: the thing worth capping is how many orders one account
+// can open, and an IP key would lump a whole school computer lab into one
+// bucket. Generous, because abandoning a checkout and starting again is normal
+// behaviour, not abuse.
+export const orderLimiter = make("payment-order", 60 * MINUTE, 30, {
   keyGenerator: byUser,
 });
 

@@ -167,6 +167,14 @@ the success redirect must get nothing.
 
 ## 4. Provider choice — Russian rails
 
+> **Status (2026-09-10):** ЮKassa was built against and then **removed** — the
+> adapter, its webhook, the source-IP allowlist and all YOOKASSA_* settings are
+> gone, and another provider is to be chosen. Everything acquirer-neutral was
+> kept: the Payment model, settlePayment, the price catalog, entitlements and
+> the whole frontend. Wiring a replacement means writing one adapter under
+> `backend/src/services/payments/` and giving it a webhook — see the seam
+> comments in `app.js`, `payments.routes.js` and the Caddyfile.
+
 **This section is the least reliable thing in the document.** Payment provider
 availability, terms, and what works for foreign-issued cards have all moved
 repeatedly. Treat the names below as candidates to evaluate this week, not as

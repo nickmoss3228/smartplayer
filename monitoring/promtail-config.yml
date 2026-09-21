@@ -1,0 +1,181 @@
+# Promtail: tails every container's stdout/stderr and ships it to Loki.
+#
+# Label discipline is the single thing that decides whether this stack stays
+# fast or falls over. Loki builds one stream per unique label COMBINATION, and
+# each stream costs memory and its own chunk. So labels here are limited to
+# low-cardinality facts (which container, which level, which status class).
+# Anything unbounded — request path, client IP, user id, trace id — stays in
+# the log LINE, where LogQL can still filter on it at query time for free.
+# Promoting `path` to a label on a busy site is the classic way to OOM Loki.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  # Survives restarts so a `docker compose restart promtail` does not re-ship
+  # everything it has already sent. Backed by a named volume.
+  filename: /promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    # Loki rejects a batch whose lines are older than reject_old_samples_max_age.
+    backoff_config:
+      min_period: 500ms
+      max_period: 5m
+      max_retries: 10
+
+scrape_configs:
+  # ── Every container on the box ───────────────────────────────────────────
+  # docker_sd_configs asks the Docker daemon what is running, so new services
+  # (including the staging profile) are picked up with no config change.
+  - job_name: containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+
+    relabel_configs:
+      # Docker reports names as "/smartplayer-backend"; strip the leading slash.
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+
+      # Tag the environment off the container name so a single dashboard can
+      # separate prod from staging without two sets of queries.
+      #
+      # Written as "set a default, then override" rather than one rule per case.
+      # The obvious negative-lookahead form `^(?!.*-staging$).*` does not compile:
+      # Go uses RE2, which has no lookaround at all, and Promtail rejects the
+      # whole config with "invalid or unsupported Perl syntax". Relabel rules run
+      # top to bottom, so an unconditional rule followed by a narrower one gives
+      # the same result with no lookahead. The first rule has no source_labels,
+      # which matches the empty string and therefore always applies.
+      - target_label: env
+        replacement: production
+      - source_labels: [container]
+        regex: '.*-staging'
+        target_label: env
+        replacement: staging
+
+      # Do not collect the monitoring stack's own logs. Without this, a noisy
+      # Loki logs to Promtail, which ships it back to Loki, which logs about
+      # ingesting it — a feedback loop that fills the disk on its own.
+      #
+      # The leading and trailing `.*` are REQUIRED. Relabel regexes are fully
+      # anchored (an implicit ^...$), so the bare alternation `(loki|promtail)`
+      # matches a container called exactly "loki" and never one called
+      # "smartplayer-loki" — which is what these are actually named. Verified by
+      # observing the stack ingest its own logs with the unanchored form.
+      - source_labels: [container]
+        regex: '.*(loki|promtail|grafana|prometheus|cadvisor|node-exporter).*'
+        action: drop
+
+    pipeline_stages:
+      # Docker's json-file driver wraps each line as {"log":"...","stream":...}.
+      - docker: {}
+
+      # ── Caddy: structured JSON access logs ─────────────────────────────
+      # Only this container's lines are parsed as access logs. `match` keeps
+      # the expensive JSON stage off every other container's output.
+      #
+      # Caddy writes TWO kinds of line to the same stream: access logs (which
+      # carry `status`, `duration`, `request.*`) and its own operational output
+      # (startup, TLS issuance, upstream dial failures), which carries none of
+      # those. Every stage below therefore branches on whether `status` was
+      # extracted. Without that guard the Go templates render a missing key as
+      # the literal string `<no value>`, and Caddy's own error messages get
+      # overwritten with `method=<no value> uri=<no value> ...` — destroying the
+      # text precisely when something is broken and you need to read it.
+      - match:
+          selector: '{container="smartplayer-caddy"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  msg: msg
+                  ts: ts
+                  status: status
+                  duration: duration
+                  method: 'request.method'
+                  uri: 'request.uri'
+                  host: 'request.host'
+                  proto: 'request.proto'
+                  ua: 'request.headers."User-Agent"[0]'
+
+            # Bucket the status code: 4 label values instead of ~40.
+            # toString first — the json stage preserves JSON types, so `status`
+            # arrives as a number and sprig's atoi would fail on it silently.
+            # Non-access lines yield an EMPTY value here, and Loki drops empty
+            # labels, so operational output simply has no status_class rather
+            # than piling into a bogus "none" stream.
+            - template:
+                source: status_class
+                template: '{{ if .status }}{{ $s := atoi (toString .status) }}{{ if ge $s 500 }}5xx{{ else if ge $s 400 }}4xx{{ else if ge $s 300 }}3xx{{ else }}2xx{{ end }}{{ end }}'
+            - labels:
+                status_class:
+
+            # duration is seconds as a float; surface it in milliseconds. LogQL
+            # can then `unwrap duration_ms` for real latency quantiles without
+            # Prometheus histograms — which is why this stack never exposes
+            # Caddy's admin API (see the Caddyfile note).
+            - template:
+                source: duration_ms
+                template: '{{ if .duration }}{{ printf "%.1f" (mulf (float64 .duration) 1000.0) }}{{ end }}'
+
+            # Caddy is configured with time_format rfc3339_nano in the Caddyfile.
+            # Its DEFAULT is a float epoch, which Promtail's `RFC3339Nano` format
+            # cannot parse — every line would silently fall back to ingest time
+            # and latency graphs would bunch up after any restart. The two
+            # settings must always be changed together.
+            - timestamp:
+                source: ts
+                format: RFC3339Nano
+                action_on_failure: fudge
+
+            # Re-emit access logs compactly. The raw JSON is ~800 bytes of
+            # mostly-constant headers per request, which at even modest traffic
+            # dominates the disk budget.
+            #
+            # Built with `template` + `output` rather than a `replace` stage:
+            # `output` only copies an existing field verbatim and cannot format,
+            # so the line has to be assembled into a field first.
+            #
+            # Emitted as LOGFMT so every dashboard panel can say
+            # `| logfmt | unwrap duration_ms` and get typed fields back, instead
+            # of each one re-declaring a brittle `pattern` that breaks the moment
+            # this template gains a field. logfmt also quotes the UA correctly,
+            # so a user-agent containing spaces cannot shift the other columns.
+            #
+            # `.Entry` is the current log line. Using it as the else-branch means
+            # a non-access line passes through byte-for-byte as its original
+            # JSON, keeping the full error detail.
+            - template:
+                source: line
+                template: '{{ if .status }}method={{ .method }} uri={{ .uri }} status={{ .status }} duration_ms={{ .duration_ms }} host={{ .host }} ua="{{ .ua }}"{{ else }}{{ .Entry }}{{ end }}'
+            - output:
+                source: line
+
+      # ── Backend: Node/Express ──────────────────────────────────────────
+      - match:
+          selector: '{container=~"smartplayer-backend.*"}'
+          stages:
+            # Best-effort level extraction. Express/console output is not
+            # structured, so this matches the common prefixes and leaves
+            # anything else unlabelled rather than guessing.
+            - regex:
+                expression: '(?i)^\s*(?P<lvl>error|warn|warning|info|debug)\b'
+            - template:
+                source: level
+                template: '{{ if .lvl }}{{ ToLower .lvl }}{{ else }}info{{ end }}'
+            - labels:
+                level:
+
+            # Node prints multi-line stack traces; without this each frame
+            # becomes its own log entry and the trace is unreadable in Grafana.
+            # A new entry starts only at a timestamp or a known level prefix.
+            - multiline:
+                firstline: '^(\d{4}-\d{2}-\d{2}|\s*(?i:error|warn|warning|info|debug)\b)'
+                max_wait_time: 3s
+                max_lines: 200

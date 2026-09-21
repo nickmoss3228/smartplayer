@@ -68,33 +68,7 @@ export async function recallStoryMarkers(difficulty, storyId) {
   return Object.fromEntries(rows.map((r) => [r.partNumber, r.timeMarkers ?? []]));
 }
 
-/**
- * @typedef {{ time: number, label?: string, color?: string }} TimeMarker
- * @typedef {{ partNumber: number, timeMarkers?: TimeMarker[] }} PartLike
- */
-
-/**
- * Merge remembered markers into incoming parts. Pure, so the rule that decides
- * whether work is preserved or destroyed can be tested without a database.
- *
- * The rule is FILL A GAP, NEVER OVERWRITE: a part that already carries markers
- * is returned untouched, so a caller with an opinion — the static repo files in
- * src/modules/audiodata/markers — always wins. Only an empty part, which means
- * "no opinion", gets the remembered copy. That asymmetry is the whole safety
- * property: no code path can replace real markers with older ones.
- *
- * @param {PartLike[]} [parts]
- * @param {Record<number, TimeMarker[]>} [remembered]
- * @returns {{ parts: PartLike[], restoredCount: number }} restoredCount is parts changed, not markers added.
- */
-export function restoreMarkersIntoParts(parts, remembered) {
-  let restoredCount = 0;
-  const merged = (parts ?? []).map((part) => {
-    if (part.timeMarkers?.length) return part;
-    const saved = remembered?.[part.partNumber];
-    if (!saved?.length) return part;
-    restoredCount++;
-    return { ...part, timeMarkers: saved };
-  });
-  return { parts: merged, restoredCount };
-}
+// Moved to helpers/markerRestore.js so it survives this model's removal.
+// Re-exported here only because the frontend's markerRestore.test.ts still
+// imports it from this path; delete this line with the model.
+export { restoreMarkersIntoParts } from "../helpers/markerRestore.js";

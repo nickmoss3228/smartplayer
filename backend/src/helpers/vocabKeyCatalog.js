@@ -17,11 +17,11 @@
 //   snapshot of exactly those keys; regenerate with
 //   `node scripts/generate-vocab-keys.mjs`.
 //
-//   Story Builder stories — vocabulary lives in the Story documents, so it is
-//   read live and cached briefly rather than snapshotted. A story edited in the
-//   builder must not need a redeploy before its words start counting.
+//   Story Builder stories — vocabulary lives in the story_part_vocab table, so
+//   it is read live and cached briefly rather than snapshotted. A story edited
+//   in the builder must not need a redeploy before its words start counting.
 
-import { Story } from "../models/Story.js";
+import { stories } from "../db/index.js";
 import { LEGACY_VOCAB_KEYS } from "../config/vocabKeys.js";
 
 // Story content only changes when an admin saves in the Story Builder, so a
@@ -35,14 +35,14 @@ async function loadDbKeys() {
   const now = Date.now();
   if (now < cache.expiresAt) return cache.keys;
   // Collapse a stampede: several students finishing a vocab round at once must
-  // not each fire their own distinct() pair.
+  // not each fire their own pair of DISTINCT queries.
   if (cache.inflight) return cache.inflight;
 
   cache.inflight = (async () => {
     try {
       const [vocab, phrasal] = await Promise.all([
-        Story.distinct("parts.vocabulary.audioKey"),
-        Story.distinct("parts.phrasalVerbs.audioKey"),
+        stories.distinctVocabKeys("vocabulary"),
+        stories.distinctVocabKeys("phrasal"),
       ]);
       const keys = new Set(
         [...vocab, ...phrasal]

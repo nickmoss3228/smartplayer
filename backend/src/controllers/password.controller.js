@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { User } from "../models/User.js";
+import { sessions, userDocs } from "../db/index.js";
 import { sendPasswordResetEmail } from "../services/email.service.js";
 
 export async function requestPasswordReset(req, res) {
@@ -9,32 +9,37 @@ export async function requestPasswordReset(req, res) {
   try {
     const { email } = req.body;
 
-    console.log("=== PASSWORD RESET REQUEST ===");
+    // Nothing about the outcome is logged from here on. The endpoint's whole
+    // contract is that the reply does not say whether the address has an
+    // account — printing "User found: YES" next to the request that carries
+    // the address hands that answer to anyone with container log access, and
+    // the logs outlive the request.
 
-    // typeof, not just falsiness: `email` lands in a Mongo query below, so a
-    // JSON body of {"email": {"$ne": null}} must be rejected as input rather
-    // than reaching the query builder as an operator object.
+    // typeof, not just falsiness. The query below is parameterised, so an
+    // object here can no longer become a Mongo-style operator — but it would
+    // still crash on .toLowerCase(), and a 400 is the honest answer.
     if (!email || typeof email !== "string") {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Exact match on the stored value, NOT a regex. This previously built
-    // `new RegExp(`^${email}$`, "i")` straight from the request body, which
-    // meant {"email": ".*"} matched the first user in the collection and mailed
-    // a real account a reset link nobody asked for — while also defeating the
-    // deliberate no-enumeration response a few lines down. A regex can't use
-    // the unique index on email either, so every request was a full collection
-    // scan on an unauthenticated route.
-    //
-    // No escapeRegex() call is needed because there is no longer a pattern to
-    // escape: the field is stored `lowercase: true` (models/User.js), so
-    // lowercasing the input is all the case-insensitivity this ever required.
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    console.log("User found:", user ? "YES" : "NO");
+    // Exact match on the stored value, NOT a pattern. An earlier version built
+    // a case-insensitive RegExp from the request body, so {"email": ".*"}
+    // matched the first account and mailed it a reset link nobody asked for,
+    // defeating the no-enumeration response below. Emails are stored
+    // lowercased, so lowercasing the input is all the case-insensitivity this
+    // needs, and an equality match uses the unique index.
+    // The link is built from FRONTEND_URL, so a server started without it
+    // mails out "undefined/forgot-password?token=…" — a dead link, and the
+    // token is spent either way. Refuse here, before anything is sent.
+    if (!BASE_URL) {
+      console.error("Password reset requested but FRONTEND_URL is not set");
+      return res.status(500).json({ message: "Server error" });
+    }
+
+    const user = await userDocs.loadUserBy("email", email);
 
     // Don't reveal if user exists for security
     if (!user) {
-      console.log("User not found - sending generic response");
       return res.status(200).json({
         message:
           "If an account exists with this email, a password reset link has been sent",
@@ -53,8 +58,6 @@ export async function requestPasswordReset(req, res) {
     user.passwordResetExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    console.log("User updated with reset token");
-
     // Send email with plain token
     // Deliberately NOT logged: the URL carries a live, unhashed reset token.
     // Anyone with container log access could use it to take over the account.
@@ -62,9 +65,6 @@ export async function requestPasswordReset(req, res) {
 
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);
-
-      console.log("Password reset email sent successfully");
-      console.log("==============================");
 
       res.status(200).json({
         message:
@@ -77,14 +77,12 @@ export async function requestPasswordReset(req, res) {
       await user.save();
 
       console.error("Email sending failed:", emailError);
-      console.error("==============================");
       return res.status(500).json({
         message: "Error sending email. Please try again later.",
       });
     }
   } catch (error) {
     console.error("Password reset request error:", error);
-    console.error("==============================");
     res.status(500).json({ message: "Server error" });
   }
 }
@@ -93,10 +91,7 @@ export async function resetPassword(req, res) {
   try {
     const { token, newPassword } = req.body;
 
-    console.log("=== PASSWORD RESET CONFIRMATION ===");
-    console.log("Token received (first 10 chars):", token?.substring(0, 10));
-
-    if (!token || !newPassword) {
+    if (typeof token !== "string" || !token || typeof newPassword !== "string" || !newPassword) {
       return res
         .status(400)
         .json({ message: "Token and new password are required" });
@@ -115,16 +110,9 @@ export async function resetPassword(req, res) {
       .digest("hex");
 
     // Find user with valid token and not expired
-    const user = await User.findOne({
-      passwordResetToken: resetTokenHash,
-      passwordResetExpires: { $gt: Date.now() },
-    });
-
-    console.log("User found with valid token:", user ? "YES" : "NO");
+    const user = await userDocs.loadUserByResetToken(resetTokenHash);
 
     if (!user) {
-      console.log("Invalid or expired token");
-      console.log("===================================");
       return res.status(400).json({
         message: "Invalid or expired reset token",
       });
@@ -137,15 +125,22 @@ export async function resetPassword(req, res) {
     user.passwordResetExpires = undefined;
     await user.save();
 
-    console.log("Password reset successful for user:", user.email);
-    console.log("===================================");
+    // Every device is signed out, including the one doing the reset. Until
+    // this, a reset changed the password and nothing else: the sessions are
+    // JWTs bound to rows in user_session, and those rows survived, so a stolen
+    // token stayed live for up to seven more days. Someone resetting BECAUSE
+    // their account was taken kept the attacker signed in — which is the one
+    // case the whole flow exists for.
+    //
+    // After the save, so a failure here cannot leave the account holding the
+    // old password with its sessions torn down.
+    await sessions.removeAll(user._id);
 
     res.status(200).json({
       message: "Password has been reset successfully",
     });
   } catch (error) {
     console.error("Password reset error:", error);
-    console.error("===================================");
     res.status(500).json({ message: "Server error" });
   }
 }

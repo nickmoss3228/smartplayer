@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FREE_TRIAL_STORIES } from '../../constants/trial';
 import type { Theme } from '../../types/LevelProgress';
 
 interface Props {
@@ -9,7 +8,14 @@ interface Props {
   status: string;
   isCompleted: boolean;
   isLocked: boolean;
-  isGuest: boolean;
+  /**
+   * How many parts play in full without owning the story. Drives the FREE
+   * badge, for guests and signed-in non-owners alike — both get the same
+   * allowance. 0 when the story is owned, so an owner sees no badges.
+   */
+  freeParts: number;
+  /** When set, part 1 is a timed preview and wears a seconds badge instead. */
+  previewSeconds: number | null;
   trackTitle: string;
   comicSrc: string | undefined;
   theme: Theme;
@@ -26,9 +32,12 @@ const getStatusRingClass = (status: string) => {
 
 export const LevelCard: React.FC<Props> = ({
   level, index, status, isCompleted, isLocked,
-  isGuest, trackTitle, comicSrc, theme, onClick,
+  freeParts, previewSeconds, trackTitle, comicSrc, theme, onClick,
 }) => {
   const { t } = useTranslation();
+
+  const isFree = level <= freeParts;
+  const isPreview = !isFree && previewSeconds !== null && level === 1;
 
   return (
     <div
@@ -91,7 +100,7 @@ export const LevelCard: React.FC<Props> = ({
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <span className="text-white/90 text-[10px] font-semibold tracking-widest uppercase drop-shadow">
-              {t('trial.register')}
+              {t('paywall.locked')}
             </span>
           </div>
         )}
@@ -124,10 +133,10 @@ export const LevelCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* FREE badge */}
-        {isGuest && level <= FREE_TRIAL_STORIES && (
+        {/* FREE / preview badge */}
+        {(isFree || isPreview) && (
           <div className="absolute top-2 right-2 z-10 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow tracking-wide uppercase">
-            {t('trial.free')}
+            {isFree ? t('trial.free') : t('shelf.previewBadge', { seconds: previewSeconds })}
           </div>
         )}
       </div>

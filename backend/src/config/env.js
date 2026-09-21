@@ -19,7 +19,11 @@ dotenv.config({ path: path.join(backendRoot, '.env') });
 // Fail loudly at boot instead of at the first request that happens to need a
 // missing value. Object Storage is checked separately (see below) because the
 // app is perfectly usable without it — only the Story Builder's uploads break.
-const REQUIRED = ['MONGODB_URI', 'JWT_SECRET'];
+// DATABASE_URL replaced MONGODB_URI here when the app moved to PostgreSQL.
+// MONGODB_URI is still read (config.mongoUri) by the one-off scripts that talk
+// to the old database — the backup and the ETL — but the server no longer
+// needs it to start.
+const REQUIRED = ['DATABASE_URL', 'JWT_SECRET'];
 const missing = REQUIRED.filter((key) => !process.env[key]);
 if (missing.length) {
     console.error(
@@ -76,12 +80,42 @@ function parseAdminCodes(raw, legacyCode) {
 
 export const config = {
     port: process.env.PORT || 3000,
+    nodeEnv: process.env.NODE_ENV || 'development',
     mongoUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
+    sms: {
+        // 'console' prints the OTP to the server log instead of sending it, so
+        // signup and login are walkable without a paid SMS account. It is
+        // refused outright when NODE_ENV=production (services/sms.service.js) —
+        // there it would mean every verification code in the app is sitting in
+        // plaintext in the container logs.
+        provider: process.env.SMS_PROVIDER || 'smsaero',
+        smsaero: {
+            email: process.env.SMSAERO_EMAIL,
+            apiKey: process.env.SMSAERO_API_KEY,
+            sign: process.env.SMSAERO_SIGN || 'malako',
+        },
+    },
+
+    // Is the SMS code a REQUIREMENT of having an account?
+    //
+    // Off means signup takes an email and a password, never calls the SMS
+    // provider, and hands back a session immediately. It exists because the
+    // provider is not set up yet and, until it is, signup does not merely
+    // fail — it deletes the half-created account on the way out (see
+    // controllers/auth.controller.js), so nobody can register at all.
+    //
+    // Defaults to ON, deliberately. A deployment that forgets this variable
+    // keeps verifying phones rather than silently dropping the check, and
+    // test/api/harness.js registers every test user through the real OTP
+    // flow, which only keeps working because the default is on.
+    phoneVerificationRequired: process.env.PHONE_VERIFICATION_REQUIRED !== 'false',
     adminCode: process.env.ADMIN_CODE,
     adminCodes: parseAdminCodes(process.env.ADMIN_CODES, process.env.ADMIN_CODE),
-    // Audit rows self-expire via a TTL index (see models/AdminAuditLog.js).
+    // Audit rows are expired by a pg_cron job, not by the app (see
+    // db/migrations/manual/001_audit_retention.sql). That job hardcodes the
+    // same 365 days — change both together.
     adminAuditTtlDays: Number(process.env.ADMIN_AUDIT_TTL_DAYS ?? 365),
     // Yandex Object Storage (S3-compatible) — used by the Story Builder to
     // upload story/vocab/quiz audio. Uploads fail clearly until these are set.
@@ -92,4 +126,85 @@ export const config = {
         endpoint: process.env.YANDEX_ENDPOINT,
         baseUrl: process.env.YANDEX_BASE_URL, // public read URL prefix, matches frontend's VITE_YOS_BASE_URL
     },
+
+    // Where the browser lives. Read straight from process.env in
+    // controllers/password.controller.js and services/email.service.js for
+    // historical reasons; surfaced here because the payment return URL needs
+    // it too and a fourth direct read is one too many.
+    frontendUrl: process.env.FRONTEND_URL,
+
+    // Real-money payments. See config/priceCatalog.js for what is sold.
+    payments: {
+        // The kill switch. Absent or not exactly "true" means the shop refuses
+        // to CREATE orders — production runs dark until this is deliberately
+        // set. It does NOT stop settlement: if a provider notification arrives
+        // while this is off, somebody paid, and they get what they bought.
+        // Taking money and honouring money are separate decisions.
+        enabled: process.env.PAYMENTS_ENABLED === 'true',
+        // Is content gated by OWNERSHIP at all?
+        //
+        // Distinct from `enabled`, which only stops orders being created. This
+        // one is the paywall itself: off, a signed-in user gets every story
+        // free, and a guest keeps the same taster they always had (the first
+        // parts of a long story) before being asked to register. The catalog,
+        // the prices and the admin pricing panel are untouched — nothing is
+        // sold while this is off, so nothing needs to be priced differently.
+        //
+        // Defaults to ON so a deployment that forgets the variable charges for
+        // content rather than giving the catalogue away.
+        paywallEnabled: process.env.PAYWALL_ENABLED !== 'false',
+        // Which driver takes the money. "fake" is a working payment system with
+        // the money removed (services/payments/fake.js): it redirects, calls
+        // back over real HTTP, retries, and can be told to lose a notification.
+        // Every driver declares realMoney, and server.js refuses to run one
+        // that does not in production — see assertPaymentsSafeForEnvironment().
+        provider: process.env.PAYMENTS_PROVIDER || 'fake',
+        // Lets staging sell placeholder packs that production refuses.
+        // Comma-separated SKUs, or "*" for everything in the catalog. It only
+        // ever ADDS to the purchasable set — it cannot un-sell something.
+        purchasableSkus: (process.env.PURCHASABLE_SKUS ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        // Signs the per-payment token planted in every callback URL. Neutral by
+        // design rather than living in a driver: we always choose the
+        // callbackUrl, so this authenticates a notification identically for an
+        // acquirer that signs its own and one that offers nothing at all.
+        // Rotating it strands the callbacks of payments already in flight.
+        callbackSecret: process.env.PAYMENTS_CALLBACK_SECRET,
+        // Where a driver reaches US. NOT frontendUrl: locally that is :5173
+        // while the API is :5000, and on staging it must be the public
+        // hostname, because a callback that never crosses the real proxy chain
+        // has not tested the thing staging exists to test.
+        publicApiBase: process.env.PUBLIC_API_BASE,
+        // How long the fake acquirer "takes" before calling back. Long enough
+        // that the return page visibly polls, short enough not to be a nuisance.
+        fakeDelayMs: Number(process.env.FAKE_CALLBACK_DELAY_MS ?? 2000),
+    },
 };
+
+// Payments fail CLOSED. A shop that says "not yet" is recoverable; one that
+// throws mid-checkout is a support ticket. Following the Yandex-keys precedent
+// above: warn loudly at boot, keep running.
+//
+// Note what is NOT checked here: whether the selected driver can actually charge
+// anyone. That answer lives on the driver itself (realMoney), and importing the
+// driver registry from this file would be a cycle — env.js is what the registry
+// reads its configuration from. server.js calls
+// assertPaymentsSafeForEnvironment() at boot instead, which is the same check
+// with the dependency pointing the right way.
+if (config.payments.enabled) {
+    const missingPayments = [];
+    if (!config.payments.callbackSecret) missingPayments.push('PAYMENTS_CALLBACK_SECRET');
+    if (!config.payments.publicApiBase) missingPayments.push('PUBLIC_API_BASE');
+
+    if (missingPayments.length) {
+        console.error(
+            `[env] PAYMENTS_ENABLED=true but payments are unconfigured (missing: ${missingPayments.join(', ')}).\n` +
+            '[env] Payments have been DISABLED: without these a callback cannot be built or\n' +
+            '[env] verified, so orders would be created that could never be settled.\n' +
+            '[env] Generate a secret with `openssl rand -hex 32`.'
+        );
+        config.payments.enabled = false;
+    }
+}

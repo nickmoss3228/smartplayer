@@ -1,0 +1,64 @@
+# Loki 3.x, single-binary mode. Everything lives on this one VM's disk — there
+# is no object storage and no clustering, which is the right shape for one
+# small box and keeps the memory footprint near 150MB.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  # `warn`, not the default `info`: at info Loki narrates every flushed chunk,
+  # and those lines are themselves collected by Promtail, so the stack ends up
+  # paying storage to log about storing logs.
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    # v13 + tsdb is the current schema. `from` is a schema activation date, not
+    # a retention setting — it must stay in the PAST or Loki refuses to start.
+    # Never bump it to "today" when editing this file.
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 336h          # 14 days — bounds disk on a small VM
+  # Caddy access logs arrive in bursts and Promtail retries on rejection; the
+  # defaults (4MB/s, 6MB burst) are sized for a cluster and would drop lines
+  # here only under genuine flooding.
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+  # Refuse absurd label sets rather than letting one bad pipeline stage blow up
+  # the index. See promtail-config.yml for why labels are kept deliberately few.
+  max_label_names_per_series: 15
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  # Guards against a badly-written dashboard query walking the whole store.
+  max_query_lookback: 336h
+
+compactor:
+  working_directory: /loki/compactor
+  # retention_period above is INERT without these three lines. The compactor is
+  # what actually deletes expired chunks; leave it off and the disk grows
+  # forever while the config still claims a 14-day retention.
+  retention_enabled: true
+  delete_request_store: filesystem
+  compaction_interval: 10m
+
+# Loki phones home on startup unless told not to.
+analytics:
+  reporting_enabled: false

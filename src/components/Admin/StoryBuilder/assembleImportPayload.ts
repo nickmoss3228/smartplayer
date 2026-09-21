@@ -18,24 +18,13 @@ import { getStorageUrl } from "../../../services/yandexStorage";
 // deleting the other one is exactly the data loss this is meant to prevent.
 import enTranslation from "../../../locales/en/translation.json";
 import ruTranslation from "../../../locales/ru/translation.json";
-import { getOrderedComics } from "../../../components/Player/Comics/comicsData";
+import { builtInComicFor } from "../../../modules/story/resolveStory";
 import {
   fetchStaticQuizSource,
   ImportStoryPayload,
   StoryPart,
   VocabEntry,
 } from "../../../services/adminStoryServices";
-
-// comicManifest is keyed by difficulty alone, so each level's pages belong to
-// that level's original character story and nothing else. Importing any other
-// story on the same level (leo-additional, the news placeholders) must NOT
-// claim them, or it would ship someone else's artwork — those import with no
-// comics, and get their pages from the builder's Comics tab instead.
-const COMIC_OWNER_BY_DIFFICULTY: Record<DifficultySlug, string> = {
-  easy: "leo",
-  medium: "maya",
-  hard: "daniel",
-};
 
 function buildVocabAudioUrl(
   difficulty: DifficultySlug,
@@ -85,8 +74,6 @@ export async function assembleImportPayload(
   const storySlug = storyGroup.slug;
   const audioTracks = getAudioTracksByStory(difficulty, storySlug);
   const quizByPart = await fetchStaticQuizSource(token, difficulty, storySlug);
-  const comics =
-    COMIC_OWNER_BY_DIFFICULTY[difficulty] === storySlug ? getOrderedComics(difficulty) : [];
 
   const parts: StoryPart[] = audioTracks.map((track) => {
     const partNumber = Number(track.id);
@@ -97,10 +84,10 @@ export async function assembleImportPayload(
       title: track.title,
       audioUrl: track.audio,
       helpAudio: track.helpAudio ?? [],
-      // A track that names its own page wins; the manifest only answers for the
-      // one story per difficulty that owns those pages. Without this, importing
-      // leo-additional or a news story would drop the artwork they now carry.
-      comicUrl: track.comicUrl ?? comics[partNumber - 1] ?? null,
+      // Whatever the built-in version of this story shows — the track's own
+      // page, or the difficulty manifest for the one story per level that owns
+      // it. resolveStory owns that rule; this used to keep a second copy.
+      comicUrl: builtInComicFor(difficulty, storySlug, partNumber),
       timeMarkers: track.timeMarkers,
       vocabulary: adaptWords(difficulty, storySlug, track.id, "vocab"),
       phrasalVerbs: adaptWords(difficulty, storySlug, track.id, "phrasal"),

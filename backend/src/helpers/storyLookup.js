@@ -1,6 +1,6 @@
 // helpers/storyLookup.js
 // Bridges the legacy static-file stories (storyRegistry.js/quizData.js) with
-// DB-backed stories authored through the admin Story Builder (models/Story.js).
+// DB-backed stories authored through the admin Story Builder (the story tables).
 //
 // Precedence: whole-story, DB-first. If a *published* Story doc exists for a
 // (difficulty, storyId), it is 100% authoritative for that story — metadata,
@@ -12,7 +12,7 @@
 import { storyRegistry } from "../config/storyRegistry.js";
 import { getQuizAnswerKey, getPublicQuiz, resolveQuizAudioPath } from "../config/quizData.js";
 import { scoreAgainstAnswerKey } from "./scoreQuiz.js";
-import { Story } from "../models/Story.js";
+import { stories } from "../db/index.js";
 
 function toStoryMeta(story) {
   return {
@@ -29,7 +29,7 @@ function findDbPart(dbStory, partNumber) {
 
 // Looks up one story's metadata — published DB doc first, else static registry.
 export async function getStoryMeta(difficulty, storyId) {
-  const dbStory = await Story.findOne({ difficulty, storyId, published: true }).lean();
+  const dbStory = await stories.findPublishedByIdentity(difficulty, storyId);
   if (dbStory) return toStoryMeta(dbStory);
 
   return (storyRegistry[difficulty] ?? []).find((s) => s.storyId === storyId) ?? null;
@@ -40,7 +40,7 @@ export async function getStoryMeta(difficulty, storyId) {
 // imported+published) — used by getOverview to list stories a user can
 // progress through.
 export async function getAllStoryMeta(difficulty) {
-  const dbStories = await Story.find({ difficulty, published: true }).lean();
+  const dbStories = await stories.list({ difficulty, publishedOnly: true });
   const dbStoryIds = new Set(dbStories.map((s) => s.storyId));
   const staticStories = (storyRegistry[difficulty] ?? []).filter((s) => !dbStoryIds.has(s.storyId));
   return [...staticStories, ...dbStories.map(toStoryMeta)];
@@ -50,7 +50,7 @@ export async function getAllStoryMeta(difficulty) {
 // part.quiz, even if empty — the doc is authoritative once published), else
 // static quizData.js.
 export async function getPublicQuizAsync(difficulty, storyId, partNumber) {
-  const dbStory = await Story.findOne({ difficulty, storyId, published: true }).lean();
+  const dbStory = await stories.loadPublishedAggregate(difficulty, storyId);
   if (dbStory) {
     const part = findDbPart(dbStory, partNumber);
     if (!part || part.quiz.length === 0) return null;
@@ -71,7 +71,7 @@ export async function getPublicQuizAsync(difficulty, storyId, partNumber) {
 
 // Server-only answer key for a part — same precedence as getPublicQuizAsync.
 export async function getQuizAnswerKeyAsync(difficulty, storyId, partNumber) {
-  const dbStory = await Story.findOne({ difficulty, storyId, published: true }).lean();
+  const dbStory = await stories.loadPublishedAggregate(difficulty, storyId);
   if (dbStory) {
     const part = findDbPart(dbStory, partNumber);
     if (!part || part.quiz.length === 0) return null;

@@ -1,0 +1,29 @@
+# Provisioned datasources. Grafana reads this on every start, so the stack
+# comes up already wired — no clicking through the UI after a redeploy, and
+# nothing to restore if the grafana volume is ever lost.
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    uid: loki
+    url: http://loki:3100
+    isDefault: true
+    jsonData:
+      # Lets a log line link straight through to the matching trace/metric view.
+      maxLines: 2000
+      # Loki 3 wants this; without it Grafana falls back to a legacy API shape
+      # and range queries with `unwrap` silently return nothing.
+      timeout: 60
+
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    uid: prometheus
+    url: http://prometheus:9090
+    jsonData:
+      httpMethod: POST
+      # Must match prometheus.yml's global scrape_interval, otherwise Grafana
+      # picks $__rate_interval values that produce gaps in every rate() graph.
+      timeInterval: 30s

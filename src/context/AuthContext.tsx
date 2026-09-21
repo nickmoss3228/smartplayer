@@ -26,12 +26,17 @@ import {
   AuthProviderProps,
   LoginRequest,
   SignUpRequest,
+  LegalConsent,
   AuthResponse,
+  DeviceLimitError,
   TokenValidationResponse,
   ResetPasswordRequest,
   ResetPasswordConfirmRequest,
-  ResetPasswordResult
+  ResetPasswordResult,
+  PhoneVerificationRequired,
+  ResendCodeResult
 } from '../types/Auth';
+import { LEGAL_VERSION } from '../config/legal';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -70,6 +75,44 @@ const toAuthError = (error: unknown, fallback: string): AuthError => {
   return { message: data?.message || fallback, code: data?.code };
 };
 
+/**
+ * Pulls the device list out of a 409 DEVICE_LIMIT_REACHED, or null for any
+ * other failure.
+ *
+ * The shape is validated rather than cast: without a ticket and at least one
+ * device there is nothing the picker could offer, so falling back to the plain
+ * error message beats rendering an empty chooser the user cannot act on.
+ */
+const toDeviceLimit = (error: unknown): DeviceLimitError | null => {
+  const axiosError = error as AxiosError<{
+    code?: string;
+    message?: string;
+    ticket?: string;
+    devices?: DeviceLimitError['devices'];
+  }>;
+  const data = axiosError.response?.data;
+
+  if (axiosError.response?.status !== 409 || data?.code !== 'DEVICE_LIMIT_REACHED') {
+    return null;
+  }
+  if (!data.ticket || !Array.isArray(data.devices) || data.devices.length === 0) {
+    return null;
+  }
+
+  return {
+    ticket: data.ticket,
+    devices: data.devices,
+    message: data.message ?? 'Too many devices are signed in to this account.',
+  };
+};
+
+const toPhoneVerification = (error: unknown): PhoneVerificationRequired | undefined => {
+  const data = (error as AxiosError<{ code?: string; ticket?: string; phoneNumber?: string }>).response?.data;
+  return data?.code === 'PHONE_VERIFICATION_REQUIRED' && data.ticket
+    ? { ticket: data.ticket, phoneNumber: data.phoneNumber ?? '' }
+    : undefined;
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -97,6 +140,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Prevent this account's local total from bleeding into whichever account
     // signs in next on this browser.
     clearListeningTime();
+    // Note the deliberate omission: the "device:id" key (services/deviceId.ts)
+    // is NOT cleared. It identifies the browser, not the session — wiping it
+    // would hand this browser a new identity on every sign-out, so one shared
+    // family computer would burn through the account's device slots.
     setUser(null);
   }, []);
 
@@ -191,6 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { token, user } = response.data;
+      if (!token || !user) throw new Error('Login response was incomplete');
       localStorage.setItem('token', token);
       setUser(user);
       seedListeningTimeFromServer(token);
@@ -226,16 +274,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return { user, error: null };
     } catch (error) {
-      return { user: null, error: toAuthError(error, 'Login failed') };
+      // A 409 means the password was right but every device slot is taken.
+      // `error` is populated too, so the sign-in still reads as failed to any
+      // caller that doesn't know about the picker.
+      const deviceLimit = toDeviceLimit(error);
+      const phoneVerification = toPhoneVerification(error);
+      const authError = toAuthError(error, 'Login failed');
+      return phoneVerification
+        ? { user: null, error: authError, phoneVerification }
+        : deviceLimit
+          ? { user: null, error: authError, deviceLimit }
+          : { user: null, error: authError };
     }
   };
 
-  const signUp = async (username: string, email: string, password: string): Promise<AuthResult> => {
+  const signUp = async (
+    username: string,
+    phoneNumber: string,
+    email: string,
+    password: string,
+    consent: LegalConsent,
+  ): Promise<AuthResult> => {
     try {
       const requestData: SignUpRequest = {
         username,
-        email,
-        password
+        phoneNumber,
+        email: email || undefined,
+        password,
+        // The server rejects the request unless both are true — the form's
+        // disabled submit button is a courtesy, not the gate.
+        acceptedTerms: consent.acceptedTerms,
+        acceptedDataConsent: consent.acceptedDataConsent,
+        legalVersion: LEGAL_VERSION,
       };
       
       const response = await api.post<AuthResponse>('/api/signup', requestData, {
@@ -243,6 +313,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { token, user } = response.data;
+      if (!token || !user) {
+        return {
+          user: null,
+          error: { message: 'Phone verification required', code: 'PHONE_VERIFICATION_REQUIRED' },
+          phoneVerification: { ticket: response.data.ticket!, phoneNumber: response.data.phoneNumber ?? '' },
+        };
+      }
       localStorage.setItem('token', token);
       setUser(user);
       seedListeningTimeFromServer(token);
@@ -276,6 +353,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { user, error: null };
     } catch (error) {
       return { user: null, error: toAuthError(error, 'Registration failed') };
+    }
+  };
+
+  const verifyPhone = async (ticket: string, code: string): Promise<AuthResult> => {
+    try {
+      const response = await api.post<AuthResponse>('/api/verify-phone', { ticket, code }, { skipAuthRedirect: true });
+      const { token, user } = response.data;
+      if (!token || !user) throw new Error('Verification response was incomplete');
+      localStorage.setItem('token', token);
+      setUser(user);
+      seedListeningTimeFromServer(token);
+      migrateGuestProgressIfAny(token);
+      return { user, error: null };
+    } catch (error) {
+      // A correct code can still be refused for want of a device slot. The
+      // verification itself stuck on the server, so surfacing the picker here
+      // lets the user free a slot and finish — the alternative was a bare
+      // "Verification failed" on a code that was in fact right.
+      const deviceLimit = toDeviceLimit(error);
+      const authError = toAuthError(error, 'Verification failed');
+      return deviceLimit
+        ? { user: null, error: authError, deviceLimit }
+        : { user: null, error: authError };
+    }
+  };
+
+  const resendPhoneCode = async (ticket: string): Promise<ResendCodeResult> => {
+    try {
+      const response = await api.post<{ cooldown?: boolean }>(
+        '/api/resend-phone-code',
+        { ticket },
+        { skipAuthRedirect: true }
+      );
+      // The server answers 200 with cooldown:true when it declined to spend a
+      // second message — the existing code still works, so this is not an error.
+      return { error: null, cooldown: response.data?.cooldown === true };
+    } catch (error) {
+      return { error: toAuthError(error, 'Could not send the verification SMS'), cooldown: false };
+    }
+  };
+
+  const startPhoneVerification = async (usernameOrEmail: string, password: string, phoneNumber: string): Promise<AuthResult> => {
+    try {
+      const response = await api.post<AuthResponse>('/api/start-phone-verification', { usernameOrEmail, password, phoneNumber }, { skipAuthRedirect: true });
+      return {
+        user: null,
+        error: { message: 'Phone verification required', code: 'PHONE_VERIFICATION_REQUIRED' },
+        phoneVerification: { ticket: response.data.ticket!, phoneNumber: response.data.phoneNumber ?? '' },
+      };
+    } catch (error) {
+      return { user: null, error: toAuthError(error, 'Could not send the verification SMS') };
     }
   };
 
@@ -331,6 +459,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     signIn,
     signUp,
+    verifyPhone,
+    resendPhoneCode,
+    startPhoneVerification,
     signOut,
     requestPasswordReset,
     confirmPasswordReset

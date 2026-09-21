@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { BLOB_COLORS } from './whyCloudsData';
 
 interface CloudProps {
   label: string;
@@ -7,21 +8,6 @@ interface CloudProps {
   isPaused?: boolean;
 }
 
-// Blob color pairs, one per cloud, cycling through a soft pastel set.
-// Rendered as radial-gradient fades rather than a solid shape + `blur()` —
-// `filter: blur()` forces a per-frame GPU blur pass on the element (and is
-// especially costly on mobile Safari), whereas a gradient with a transparent
-// edge is just a paint, no filter, so it composites for free alongside the
-// bob animation below. Confirmed via user report: original blur-based
-// version was smooth on desktop but choppy on an iPhone 12.
-const BLOB_COLORS: [string, string][] = [
-  ['#bae6fd', '#c7d2fe'], // sky -> indigo
-  ['#fecdd3', '#fed7aa'], // rose -> orange
-  ['#a7f3d0', '#a5f3fc'], // emerald -> cyan
-  ['#ddd6fe', '#bfdbfe'], // violet -> blue
-  ['#fde68a', '#fbcfe8'], // amber -> pink
-  ['#bbf7d0', '#fef08a'], // green -> yellow
-];
 
 const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -32,7 +18,7 @@ const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
 
   return (
     <motion.div
-      className="relative w-32 h-20 sm:w-48 sm:h-32 flex items-center justify-center"
+      className="relative w-48 h-30 sm:w-72 sm:h-48 flex items-center justify-center"
       style={{ willChange: 'transform' }}
       animate={bobbing ? { y: [0, -10, 0] } : { y: 0 }}
       transition={
@@ -46,19 +32,19 @@ const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
           hover/focus glow below is never invisibly clipped. */}
       <div
         aria-hidden
-        className="absolute -top-2 left-2 w-24 h-24 sm:w-28 sm:h-28 rounded-full opacity-70 pointer-events-none"
+        className="absolute -top-3 left-3 w-36 h-36 sm:w-42 sm:h-42 rounded-full opacity-70 pointer-events-none"
         style={{ background: `radial-gradient(circle, ${colorA} 0%, ${colorA}00 72%)` }}
       />
       <div
         aria-hidden
-        className="absolute -bottom-2 right-2 w-28 h-24 sm:w-32 sm:h-28 rounded-full opacity-60 pointer-events-none"
+        className="absolute -bottom-3 right-3 w-42 h-36 sm:w-48 sm:h-42 rounded-full opacity-60 pointer-events-none"
         style={{ background: `radial-gradient(circle, ${colorB} 0%, ${colorB}00 72%)` }}
       />
 
       <button
         type="button"
         onClick={onClick}
-        className="relative z-10 px-3 py-2.5 sm:px-4 sm:py-3 max-w-[9.5rem] sm:max-w-[11rem] text-center text-xs sm:text-sm font-semibold text-gray-700
+        className="relative z-10 px-4.5 py-3.75 sm:px-6 sm:py-4.5 max-w-[14.25rem] sm:max-w-[16.5rem] text-center text-lg sm:text-xl font-semibold text-gray-700
           hover:text-black hover:scale-105 focus-visible:scale-105 focus-visible:outline-none
           focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400
           transition-transform duration-200 cursor-pointer rounded-2xl"

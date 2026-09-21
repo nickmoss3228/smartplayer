@@ -8,7 +8,8 @@
     "feedback": "Feedback",
     "room": "My Room",
     "wallet": "Wallet",
-    "players": "Players"
+    "players": "Players",
+    "stories": "Stories"
   },
   "players": {
     "title": "Find a player",
@@ -102,7 +103,7 @@
       ]
     },
     "tagline": "Train your English by listening to real stories. No shortcuts. No subtitles. Your ears do everything.",
-    "startFree": "Start for Free",
+    "startFree": "Let's get started",
     "howItWorks": "How it works",
     "badge": "Subtitles disabled by design",
     "guideMore": "See the full walkthrough",
@@ -118,6 +119,7 @@
       "close": "Close",
       "repetition": {
         "cloud": "Why 3 repetitions?",
+        "slogan": "3 repetitions",
         "title": "Repeat until it sticks",
         "tag1": "1×",
         "tag2": "2×",
@@ -126,6 +128,7 @@
       },
       "speeds": {
         "cloud": "Why 3 speeds?",
+        "slogan": "3 speeds",
         "title": "Speed hides the words",
         "tagFast": "1.0×",
         "tagMid": "0.8×",
@@ -134,13 +137,16 @@
       },
       "noSubtitles": {
         "cloud": "Why no subtitles?",
+        "slogan": "no subtitles",
         "title": "Your eyes did the work, not the ears",
         "eyeLabel": "Eyes",
         "earLabel": "Ears",
-        "takeaway": "If you could read it, you didn't have to listen."
+        "takeaway": "If you could read it, you didn't have to listen.",
+        "offLabel": "Subtitles off"
       },
       "earsOnly": {
         "cloud": "Why only my ears?",
+        "slogan": "your ears only",
         "title": "Immersion, not grammar",
         "leftLabel": "Can't spell it",
         "rightLabel": "Understand it",
@@ -148,6 +154,7 @@
       },
       "vocabLanguage": {
         "cloud": "Why is the vocabulary not written in English?",
+        "slogan": "words in your language",
         "title": "Reading it isn't hearing it",
         "viaTranslation": "🔊 chair → 👁 стул → 🪑",
         "direct": "🔊 chair → 🪑",
@@ -155,6 +162,7 @@
       },
       "visualMemory": {
         "cloud": "Why train your visual memory?",
+        "slogan": "visual memory",
         "title": "Hear it. Find it. Remember it.",
         "searchPrompt": "Find it in the comic",
         "foundLabel": "Found it!",
@@ -178,7 +186,8 @@
     },
     "start": "Start",
     "next": "Next",
-    "completed": "Completed"
+    "completed": "Completed",
+    "addStory": "Add a story"
   },
   "levels": {
     "easy": "Easy",
@@ -212,6 +221,46 @@
     "overallProgress": "My Progress",
     "completedCount": "",
     "levelLabel": "Level"
+  },
+  "legal": {
+    "backHome": "Back to the homepage",
+    "updated": "Updated",
+    "version": "version",
+    "draftNotice": "Draft. This text is a placeholder and is not yet the operator’s final legal document.",
+    "russianOnlyNotice": "This document is published in Russian only — it governs use of the service in the Russian Federation, and the Russian text is the binding one."
+  },
+  "auth": {
+    "showPassword": "Show",
+    "hidePassword": "Hide",
+    "codeDigit": "Digit {{n}}",
+    "strength": {
+      "label": "Strength",
+      "weak": "weak",
+      "fair": "fair",
+      "good": "strong",
+      "great": "excellent"
+    },
+    "steps": {
+      "details": "Details",
+      "code": "SMS code",
+      "start": "First story"
+    },
+    "newHere": "new here",
+    "aside": {
+      "site": "malako.ru",
+      "loginTitle": "Pick up where you left off.",
+      "loginBody": "English by ear: a story in segments, repeated at three speeds.",
+      "signupTitle": "Four fields and one code from an SMS.",
+      "signupFoot": "three parts free",
+      "verifyTitle": "One number left to confirm.",
+      "verifyFoot": "the code lives 10 minutes",
+      "resetTitle": "A password is not the only door.",
+      "resetBody": "Email is optional on an account: without one, signing in by number and SMS code always works.",
+      "resetFoot": "the link lives 1 hour",
+      "newTitle": "A new password shuts the door behind everyone.",
+      "newBody": "Changing it ends the session on every device — including the one you were not expecting.",
+      "newFoot": "single-use link"
+    }
   },
   "controls": {
     "help": "Help",
@@ -252,8 +301,8 @@
   "login": {
     "title": "Welcome!",
     "subtitle": "Sign in to continue your listening journey.",
-    "usernameOrEmail": "Username or Email",
-    "usernameOrEmailPlaceholder": "Enter your username or email",
+    "usernameOrEmail": "Username, phone or email",
+    "usernameOrEmailPlaceholder": "Username, phone or email",
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "forgotPassword": "Forgot password?",
@@ -264,7 +313,16 @@
     "errors": {
       "tooManyAttempts": "Too many attempts. Please try again in {{minutes}} minutes.",
       "sessionExpired": "Your session expired. Please sign in again.",
-      "accountBanned": "This account has been suspended. Contact support if you think this is a mistake."
+      "accountBanned": "This account has been suspended. Contact support if you think this is a mistake.",
+      "sessionRevoked": "You were signed out on this device. If that wasn't you, change your password."
+    },
+    "deviceLimit": {
+      "title": "Too many devices",
+      "description": "This account is already signed in on the maximum number of devices. Sign one out to continue here.",
+      "lastUsed": "Last used {{when}}",
+      "signOut": "Sign out",
+      "evictFailed": "That didn't work. Please try signing in again.",
+      "cancel": "Never mind"
     }
   },
   "signup": {
@@ -272,7 +330,10 @@
     "subtitle": "Join us and start your journey",
     "username": "Username",
     "usernamePlaceholder": "Choose a username",
+    "phoneNumber": "Phone number",
+    "phonePlaceholder": "+7 999 123-45-67",
     "email": "Email",
+    "emailOptional": "Email (optional)",
     "emailPlaceholder": "Enter your email",
     "password": "Password",
     "passwordPlaceholder": "Create a password",
@@ -282,16 +343,38 @@
     "submitting": "Creating Account...",
     "haveAccount": "Already have an account?",
     "signInLink": "Sign in",
+    "agreements": {
+      "terms": "I accept the <terms>User Agreement</terms> and have read the <privacy>Privacy Policy</privacy>.",
+      "dataConsent": "I give my <consent>consent to the processing of my personal data</consent> under Federal Law No. 152-FZ."
+    },
     "errors": {
+      "agreementsRequired": "Please accept the User Agreement and the personal-data consent to continue.",
       "passwordMismatch": "Passwords do not match",
       "passwordLength": "Password must be at least 6 characters long",
       "invalidEmail": "Please enter a valid email address",
-      "tooManyAttempts": "Too many sign-up attempts. Please try again in {{minutes}} minutes."
-    }
+      "invalidPhone": "Please enter a valid Russian phone number (+7XXXXXXXXXX).",
+      "tooManyAttempts": "Too many sign-up attempts. Please try again in {{minutes}} minutes.",
+      "emailRequired": "Enter your email address."
+    },
+    "phoneVerification": {
+      "title": "Verify your phone",
+      "description": "We sent a 6-digit verification code by SMS. Enter it to finish creating your account.",
+      "codePlaceholder": "123456",
+      "verify": "Verify phone",
+      "resend": "Resend code",
+      "addTitle": "Add your phone number",
+      "addDescription": "This older account needs a verified phone number before you can continue.",
+      "send": "Send verification code",
+      "descriptionTo": "We sent a 6-digit code by SMS to {{phone}}. Enter it below to continue.",
+      "sent": "A new code is on its way.",
+      "alreadySent": "You already have a valid code — check your messages.",
+      "back": "Back"
+    },
+    "phoneNumberOptional": "Phone number (optional)"
   },
   "forgotPassword": {
     "title": "Forgot Password?",
-    "subtitle": "Enter your email address and we'll send you a link to reset your password.",
+    "subtitle": "Enter the email address on your account and we will send you a reset link.",
     "emailLabel": "Email Address",
     "emailPlaceholder": "Enter your email",
     "sendButton": "Send Reset Link",
@@ -317,14 +400,16 @@
       "title": "Password Reset Successful!",
       "message": "Your password has been successfully reset.",
       "redirecting": "Redirecting to login page...",
-      "goToLogin": "Go to Login"
+      "goToLogin": "Go to Login",
+      "signedOutEverywhere": "For safety, we signed this account out on every device. Sign in again with the new password."
     },
     "errors": {
       "passwordMismatch": "Passwords do not match",
       "passwordTooShort": "Password must be at least 6 characters long",
       "invalidToken": "Invalid reset token",
       "tooManyAttempts": "Too many reset requests. Please try again in {{minutes}} minutes."
-    }
+    },
+    "noEmailHint": "Signed up with a phone number and no email? Password reset by SMS is not available yet — contact support to recover your account."
   },
   "dashboard": {
     "loading": "Loading...",
@@ -574,7 +659,75 @@
         "title": "Emotional Coloring",
         "text": "Voiced by a neural network, every story must include breaths, clicking sounds, tone changes, and sarcastic expressions — everything found in real human speech. Emotional context is just as important as the words. Without it, the audio sounds unnatural."
       }
+    },
+    "nav": {
+      "title": "Guide",
+      "doIt": "What you'll do",
+      "then": "Then"
+    },
+    "intro": {
+      "eyebrow": "How malako works",
+      "title1": "You listen.",
+      "title2": "That's the whole method.",
+      "text": "Everything else on this page exists to explain one decision: we give you the audio and take away every way of avoiding it. Here is what you actually do, and the six questions students ask once they realise we mean it.",
+      "readTime": "Two minutes to read"
+    },
+    "loop": {
+      "label": "Your loop, every story",
+      "title": "Five things you do. The player handles the rest.",
+      "s1": {
+        "title": "Pick your milk",
+        "text": "1%, 2,5% or 6%. Difficulty is sold the way milk is — by fat."
+      },
+      "s2": {
+        "title": "Meet the words",
+        "text": "A short list before the story. Tap any word to hear it — never to read it in English."
+      },
+      "s3": {
+        "title": "Listen",
+        "text": "Each line comes back up to three times, each pass faster than the last. No text, no captions."
+      },
+      "s4": {
+        "title": "Hunt the comic",
+        "text": "Every story ships with its own comic. Heard a new word? Go find it in the panels."
+      },
+      "s5": {
+        "title": "Answer, then advance",
+        "text": "A spoken quiz — every question in a normal and a slow version. Pass it and the next story unlocks."
+      }
+    },
+    "groups": {
+      "player": {
+        "label": "In the player",
+        "title": "What happens to one sentence.",
+        "text": "Two settings do all the work, and they are the two things students notice first."
+      },
+      "taken": {
+        "label": "What we take away",
+        "title": "Three crutches, removed on purpose.",
+        "text": "Each of these is something other apps hand you. Each one lets you finish a lesson without ever having listened. That is the whole reason they are gone."
+      },
+      "given": {
+        "label": "What you get back",
+        "title": "One crutch we hand you gladly.",
+        "text": "Pictures are not a shortcut around listening — you still have to hear the word before you can go looking for it."
+      }
+    },
+    "pick": {
+      "navLabel": "Pick your level",
+      "label": "Then",
+      "title": "Pick a fat percentage and start.",
+      "text": "How full the glass sits is how hard the stories are. Change it whenever you like — nothing is locked behind the choice.",
+      "cta": "Choose your level",
+      "note": "You can switch levels at any time."
     }
+  },
+  "notFound": {
+    "title": "Page not found · malako",
+    "eyebrow": "No such page",
+    "body": "The link may be out of date, or there is a typo in the address. Start from the homepage, or pick a story by level.",
+    "home": "Go home",
+    "levels": "Browse levels"
   },
   "congrats": {
     "title": "Congratulations!",
@@ -585,45 +738,56 @@
     "close": "Continue"
   },
   "trial": {
-    "free": "FREE",
-    "register": "Sign up",
-    "unlockTitle": "Unlock All Stories",
-    "unlockDescription": "You've explored {{count}} free stories. Create a free account to unlock everything and track your progress.",
-    "createAccount": "Create Free Account",
-    "login": "Already have an account? Log in",
-    "maybeLater": "Maybe later"
+    "free": "FREE"
+  },
+  "playerPreview": {
+    "endedTitle": "That was a sample",
+    "endedBody": "The rest comes with the purchase — the whole story, with its quiz and vocabulary.",
+    "buy": "Unlock the story",
+    "back": "Back"
   },
   "guidedTour": {
     "steps": [
       {
-        "title": "🎧 Your Audio Track",
+        "title": "Your Audio Track",
         "body": "This is your English listening story. You can use it as a plain audio player — or switch on Enhanced Mode (we highly recommend it!) for a structured, segment-by-segment workout."
       },
       {
-        "title": "🎨 Story Comics",
+        "title": "Story Comics",
         "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
       },
       {
-        "title": "⚡ Playback Speed",
-        "body": "Speed sets how fast the audio plays. Every child learning their first language starts out slow, and speeds up gradually — that is normal. Begin at 0.5×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
+        "title": "Playback Speed",
+        "body": "Speed sets how fast the audio plays: 0.5×, 0.8× or 1×. Begin at 0.5×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
       },
       {
-        "title": "🔄 Enhanced Mode & Repeats",
-        "body": "With Enhanced Mode ON, every segment repeats automatically. Pick ×3 for the best practice: first at 0.5× speed, then 0.8×, and finally full 1.0×. Three passes — every phrase sinks in!"
+        "title": "Why three speeds?",
+        "body": "Think back to being a small child. Your mother explained everything to you slowly, word by word, and only later did you follow normal fast speech. Every child hears and speaks their first language slowly at first, then speeds up gradually. The three speeds retrace that path."
       },
       {
-        "title": "📖 Key Vocabulary",
-        "body": "Before you hit play, explore the vocabulary list. Words are shown in your language so you know what to listen for. Tap any word to hear its English pronunciation!"
+        "title": "Enhanced Mode & Repeats",
+        "body": "With Enhanced Mode ON, every segment repeats automatically — pick ×1, ×2 or ×3."
       },
       {
-        "title": "✅ Take the Quiz",
-        "body": "Once you've listened to the full story this button lights up! Take the quiz and find out how many facts you caught. Good luck! 🍀"
+        "title": "Why three repetitions?",
+        "body": "The brain rarely remembers something after hearing it once. Think of a favourite song: the part you know best is the chorus, because it comes back again and again. Hearing each phrase three times turns it into a chorus."
+      },
+      {
+        "title": "Key Vocabulary",
+        "body": "Maybe your personal dictionary is missing a few words you need. Here they are. Tap any word to hear its English pronunciation!"
+      },
+      {
+        "title": "Why are the words written in Russian?",
+        "body": "We solve the main problem first: learning to hear spoken English. English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. So first you hear the word and understand it — learning how to write it comes later."
+      },
+      {
+        "title": "Take the Quiz",
+        "body": "Once you've listened to the full story this button lights up! Take the quiz and find out how many facts you caught. Good luck!"
       }
     ],
     "stepCounter": "Step {{current}} of {{total}}",
-    "skip": "Skip tour",
     "next": "Next",
-    "letsGo": "Let's go! 🎉"
+    "letsGo": "Let's go!"
   },
   "storyModal": {
     "grammarFocus": "Grammar",
@@ -635,6 +799,7 @@
   },
   "player": {
     "vocabulary": "Vocabulary",
+    "phrasal-verbs": "Phrasal verbs",
     "quiz-incomp": "Take the Quiz!",
     "quiz": "Quiz",
     "quiz-bottom": "Listen until the end to open the quiz.",
@@ -1294,8 +1459,6 @@
   "school": {
     "title": "Your Dream School",
     "loadFailed": "Could not load your school.",
-    "stageOf": "Stage {{current}} of {{total}}",
-    "build": "Build the {{name}}",
     "complete": "Your school is complete",
     "notEnough": "Not enough coins yet",
     "unlocked": "New wing unlocked",
@@ -1365,6 +1528,194 @@
     "view": {
       "outside": "See the building from outside",
       "inside": "See inside the school"
+    },
+    "roomsOf": "{{current}} of {{total}} rooms",
+    "buildOpen": "Build",
+    "buildClose": "Done",
+    "needsFirst": "Build the {{name}} first",
+    "rooms": {
+      "classroom": {
+        "name": "Classroom",
+        "blurb": "A board, some desks, and everyone who showed up."
+      },
+      "corridor": {
+        "name": "Corridor",
+        "blurb": "The spine. Every other room opens off it."
+      },
+      "library": {
+        "name": "Library",
+        "blurb": "A reading wing, a rug, and two people who never leave it."
+      },
+      "lab": {
+        "name": "Listening Lab",
+        "blurb": "Booths, headphones, and the same track one more time."
+      },
+      "courtyard": {
+        "name": "Courtyard",
+        "blurb": "Open air, one tree, and somewhere to be between lessons."
+      },
+      "hall": {
+        "name": "Assembly Hall",
+        "blurb": "A stage, a banner, and a shelf with something to put on it."
+      },
+      "lobby": {
+        "name": "Reception",
+        "blurb": "A front desk, and someone behind it to meet whoever comes in."
+      },
+      "forecourt": {
+        "name": "Forecourt",
+        "blurb": "The way in off the street, with a gate that says so."
+      },
+      "classroomB": {
+        "name": "Second Classroom",
+        "blurb": "Another English room — flags, a globe, the whole alphabet."
+      },
+      "cafeteria": {
+        "name": "Cafeteria",
+        "blurb": "Trays, long tables, and the loudest room here."
+      },
+      "classroomC": {
+        "name": "Third Classroom",
+        "blurb": "A third English room, out past the hall."
+      },
+      "gym": {
+        "name": "Gymnasium",
+        "blurb": "Wall bars, a scoreboard, and room to make some noise."
+      },
+      "archive": {
+        "name": "Archive",
+        "blurb": "The stacks. Older books, and nobody talking."
+      },
+      "studyHall": {
+        "name": "Study Hall",
+        "blurb": "Desks, chairs, and somewhere quiet to use them."
+      },
+      "staffRoom": {
+        "name": "Staff Room",
+        "blurb": "Armchairs, a kettle, and the one room with nothing to teach in it."
+      },
+      "musicRoom": {
+        "name": "Music Room",
+        "blurb": "A piano, a small stage, and somewhere to be heard."
+      },
+      "office": {
+        "name": "Head's Office",
+        "blurb": "A desk, a trophy shelf, and whoever is running this place."
+      },
+      "garden": {
+        "name": "Garden",
+        "blurb": "Raised beds, a tree, and two benches out of the wind."
+      },
+      "classroomD": {
+        "name": "Fourth Classroom",
+        "blurb": "Another English room, out at the east end."
+      },
+      "classroomE": {
+        "name": "Fifth Classroom",
+        "blurb": "The far corner — its board hangs on the west wall."
+      }
+    },
+    "buildPick": "Tap a room to see what it costs",
+    "buildDone": "Build it here",
+    "customizeOpen": "Customize a room",
+    "customizePick": "Tap a room to change how it looks",
+    "customizeReset": "Reset",
+    "payroll": {
+      "pay": "Pay {{amount}}"
     }
+  },
+  "paywall": {
+    "title": "This part is locked",
+    "description": "Buy this story, or the whole set about the character — every track is cheaper that way.",
+    "locked": "Locked",
+    "comingSoon": "Coming soon",
+    "buyStory": "This story",
+    "buySet": "The whole set",
+    "buyLevel": "The whole level",
+    "loginFirst": "To buy, log in or sign up — we will bring you straight back here.",
+    "browseShop": "See everything in the shop",
+    "maybeLater": "Maybe later",
+    "signUpToContinue": "Sign up free to keep listening — we will bring you straight back here."
+  },
+  "shop": {
+    "title": "Shop",
+    "subtitle": "A story is 29 ₽ a track. The whole set about a character is 19 ₽ a track.",
+    "packs": "Level packs",
+    "packBlurb": "Three more stories with the character you already know.",
+    "singleStories": "Single stories",
+    "owned": "Owned",
+    "comingSoon": "Coming soon",
+    "addToCart": "Add",
+    "inCart": "In basket",
+    "remove": "Remove",
+    "cartTitle": "Basket",
+    "cartEmpty": "Your basket is empty.",
+    "total": "Total",
+    "checkout": "Checkout",
+    "checkoutLoginRequired": "Log in to buy",
+    "paymentsDisabled": "The shop is not taking payments yet.",
+    "buy": "Buy",
+    "whatsInside": "What's inside?"
+  },
+  "library": {
+    "title": "My library",
+    "subtitle": "Everything you can listen to.",
+    "empty": "Nothing here yet.",
+    "starter": "Included with your account",
+    "purchased": "Purchased",
+    "passActive": "All access until {{date}}",
+    "passExpired": "Your all-access pass ended on {{date}}",
+    "perpetual": "Yours permanently",
+    "goToShop": "Go to the shop",
+    "openStory": "Open"
+  },
+  "payment": {
+    "pending": "Confirming your payment…",
+    "success": "Payment complete",
+    "failed": "Payment did not go through",
+    "backToLibrary": "Go to my library",
+    "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again.",
+    "canceled": "Payment canceled",
+    "canceledBody": "Nothing was charged.",
+    "successBody": "Everything you bought is unlocked and waiting in your library.",
+    "failedBody": "Nothing was charged. You can try again from the shop whenever you like.",
+    "unlocked": "Unlocked",
+    "startListening": "Start listening",
+    "itemSet": "Story set",
+    "itemLevel": "Whole level",
+    "itemStory": "Single story"
+  },
+  "shelf": {
+    "title": "Stories",
+    "subtitle": "Everything in the app. Yours, and the rest.",
+    "filterAll": "All",
+    "filterMine": "Mine",
+    "filterBuy": "To buy",
+    "yours": "Available",
+    "freeParts": "{{count}} parts free",
+    "freePreview": "{{seconds}} seconds free",
+    "previewBadge": "{{seconds}} sec",
+    "parts": "{{count}} parts",
+    "ownedOf": "{{owned}} of {{total}}",
+    "wholeLevel": "All of {{level}}",
+    "levelMeta": "Every story and news item on the level",
+    "setMeta": "{{count}} tracks · {{perTrack}} a track",
+    "sets": {
+      "leo": "Everything about Leo",
+      "maya": "Everything about Maya",
+      "daniel": "Everything about Daniel"
+    }
+  },
+  "shopPreview": {
+    "sample": "Listen to the first {{seconds}} seconds",
+    "comic": "Comic from part one",
+    "words": "Words from part one",
+    "parts": "Parts",
+    "free": "Free",
+    "loading": "Loading…",
+    "listen": "Listen",
+    "listenFree": "Listen for free",
+    "buyStory": "Buy the story",
+    "close": "Close"
   }
 }

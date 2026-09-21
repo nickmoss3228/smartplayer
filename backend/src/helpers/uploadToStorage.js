@@ -20,7 +20,7 @@ const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 let client = null;
 
-function getClient() {
+export function getClient() {
   const { accessKeyId, secretAccessKey, endpoint } = config.yandex;
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(

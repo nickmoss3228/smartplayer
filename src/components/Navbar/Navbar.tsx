@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
+import { SHOP_ENABLED } from "../../config/features";
 import {
   ChevronDownIcon,
   GlobeAltIcon,
   UserCircleIcon,
   ChatBubbleLeftRightIcon,
   HomeModernIcon,
-  UsersIcon,
+  // UsersIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
@@ -16,10 +18,15 @@ import { useCharacter } from "../../context/CharacterContext";
 import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
+import { useCart } from "../../context/CartContext";
+import gbFlag from "../../assets/flags/gb.svg";
+import ruFlag from "../../assets/flags/ru.svg";
 
+// Bundled rather than hotlinked: flagcdn.com being slow or blocked used to
+// leave the language switcher with broken images.
 const FLAG_URLS: Record<string, string> = {
-  EN: "https://flagcdn.com/w40/gb.png",
-  RU: "https://flagcdn.com/w40/ru.png",
+  EN: gbFlag,
+  RU: ruFlag,
 };
 
 const FlagImg = ({ lang }: { lang: string }) => (
@@ -40,6 +47,7 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { character } = useCharacter();
+  const { count: cartCount } = useCart();
   const navigate = useNavigate();
 
   // The homepage hero already renders the brand name at full size directly
@@ -118,7 +126,7 @@ const Navbar = () => {
                 </button>
               )}
 
-              {user && (
+              {/* {user && (
                 <button
                   onClick={() => navigate("/players")}
                   title={t("navbar.players")}
@@ -126,6 +134,44 @@ const Navbar = () => {
                 >
                   <UsersIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 </button>
+              )} */}
+
+              {/* One entry, because there is now one surface. Shop and
+                  library were merged into /stories — ownership is a state on
+                  each card and "mine" is a filter, so two buttons would lead to
+                  the same page twice.
+
+                  Ungated: a visitor browses and fills a basket before signing
+                  up, and only checkout needs an account.
+
+                  Kept away from WalletChips deliberately. Those are BitAward /
+                  BitWord / BitPhrase, earned by studying; this leads to stories
+                  bought with rubles. Adjacency is most of what makes two
+                  balances read as one. */}
+              {SHOP_ENABLED && (
+              <button
+                onClick={() => navigate("/stories")}
+                title={t("navbar.stories")}
+                aria-label={
+                  cartCount > 0
+                    ? `${t("navbar.stories")} (${cartCount})`
+                    : t("navbar.stories")
+                }
+                className="relative cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+              >
+                <BookOpenIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                {/* A basket you cannot see is a basket you forget. The count is
+                    also in the aria-label above, since a badge is decorative to
+                    a screen reader. */}
+                {cartCount > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gray-900 px-1 text-[10px] font-bold leading-none text-white tabular-nums"
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </button>
               )}
 
               <button

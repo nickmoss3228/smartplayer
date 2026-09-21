@@ -1,16 +1,10 @@
-// export async function getDashboard(req, res) {
-//   res.json({
-//     user: {
-//       id: req.user._id,
-//       username: req.user.username,
-//       createdAt: req.user.createdAt,
-//       email: req.user.email
-//     },
-//   });
-// }
 // controllers/user.controller.js
-import { User } from "../models/User.js";
-import { escapeRegex } from "../helpers/regex.js";
+import { userDocs, users as usersRepo } from "../db/index.js";
+import { ownedStoryKeys } from "../config/entitlements.js";
+import { CURRENCY } from "../config/priceCatalog.js";
+import { getCatalog } from "../helpers/catalogStore.js";
+import { isPurchasable } from "../config/basketPricing.js";
+import { config } from "../config/env.js";
 
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 const SEARCH_MIN_LENGTH = 2;
@@ -18,9 +12,7 @@ const SEARCH_RESULTS_LIMIT = 20;
 
 export async function getProfile(req, res) {
   try {
-    const user = await User.findById(req.user._id).select(
-      "username email nickname"
-    );
+    const user = await userDocs.loadUser(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
@@ -40,6 +32,10 @@ export async function updateProfile(req, res) {
     const updates = {};
 
     if (nickname !== undefined) {
+      if (typeof nickname !== "string")
+        return res
+          .status(400)
+          .json({ message: "Nickname must be between 1 and 30 characters" });
       const trimmed = nickname.trim();
       if (trimmed.length < 1 || trimmed.length > 30)
         return res
@@ -48,15 +44,12 @@ export async function updateProfile(req, res) {
       updates.nickname = trimmed;
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: updates },
-      { new: true, select: "username email nickname" }
-    );
+    const user = await usersRepo.update(req.user._id, updates);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json({
       username: user.username,
-      email: user.email,
+      email: user.email ?? undefined,
       nickname: user.nickname ?? user.username,
     });
   } catch (error) {
@@ -67,11 +60,10 @@ export async function updateProfile(req, res) {
 
 // PATCH /user/heartbeat — called periodically by the frontend while a
 // session is open, so other players see this user as "online" (see
-// searchPlayers below). Stateless JWT auth means there's no session table to
-// query, so a bumped timestamp is the simplest presence signal.
+// searchPlayers below). A bumped timestamp is the simplest presence signal.
 export async function heartbeat(req, res) {
   try {
-    await User.findByIdAndUpdate(req.user._id, { lastActiveAt: new Date() });
+    await usersRepo.touchLastActive(req.user._id);
     res.json({ ok: true });
   } catch (error) {
     console.error("Heartbeat error:", error);
@@ -85,25 +77,17 @@ export async function heartbeat(req, res) {
 // An email match must be exact (case-insensitive) so a partial guess can't
 // be used to enumerate other users' addresses; username/nickname allow a
 // partial, case-insensitive match since those are already shown to other
-// players once found.
+// players once found. The matching rule itself lives in searchUserDocs.
 export async function searchPlayers(req, res) {
   try {
-    const q = (req.query.q ?? "").trim();
+    // `?q=a&q=b` arrives as an array, and `?q[x]=1` as an object.
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
     if (q.length < SEARCH_MIN_LENGTH) return res.json({ players: [] });
 
-    const isEmail = q.includes("@");
-    const filter = isEmail
-      ? { email: q.toLowerCase() }
-      : {
-          $or: [
-            { username: new RegExp(escapeRegex(q), "i") },
-            { nickname: new RegExp(escapeRegex(q), "i") },
-          ],
-        };
-
-    const users = await User.find({ $and: [filter, { _id: { $ne: req.user._id } }] })
-      .select("username nickname character lastActiveAt")
-      .limit(SEARCH_RESULTS_LIMIT);
+    const users = await userDocs.searchUserDocs(q, {
+      excludeId: req.user._id,
+      limit: SEARCH_RESULTS_LIMIT,
+    });
 
     const now = Date.now();
     res.json({
@@ -117,6 +101,44 @@ export async function searchPlayers(req, res) {
     });
   } catch (error) {
     console.error("Search players error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+
+// ── GET /user/entitlements ─────────────────────────────────────────────────
+// What this account owns, already resolved. The client does NOT re-implement
+// config/entitlements.js — it is told the answer and does a Set lookup. One
+// copy of the rule, on the side that enforces it.
+export async function getEntitlements(req, res) {
+  try {
+    const rows = req.user.entitlements ?? [];
+    const now = Date.now();
+    const catalog = await getCatalog();
+
+    res.json({
+      // The raw rows, for anything that wants to show when a purchase was made.
+      entitlements: rows.map((row) => ({
+        sku: row.sku,
+        grantedAt: row.grantedAt,
+        expiresAt: row.expiresAt ?? null,
+        source: row.source,
+      })),
+      // The resolved answer — every paid story this account owns, with sets and
+      // levels already expanded. This is what the UI actually gates on.
+      ownedStories: ownedStoryKeys(rows, now, catalog),
+      currency: CURRENCY,
+      // Which SKUs the server will actually price right now. MUST go through
+      // isPurchasable(): reading `p.purchasable` alone ignores the
+      // PURCHASABLE_SKUS environment override, so staging reported one
+      // sellable SKU while /api/payments/config reported thirteen — and the
+      // paywall modal showed "coming soon" on packs it would happily sell.
+      purchasableSkus: catalog.products
+        .filter((p) => isPurchasable(p.sku, config.payments.purchasableSkus, catalog))
+        .map((p) => p.sku),
+    });
+  } catch (error) {
+    console.error("Get entitlements error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }
