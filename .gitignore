@@ -60,3 +60,7 @@ public/sitemap.xml
 # Live OTPs in plaintext — never commit.
 dev-sms.log
 backend/dev-sms.log
+
+# Claude Code personal settings — permission grants are per-developer, and this
+# repo is public. The team-wide .claude/settings.json is NOT ignored.
+.claude/settings.local.json
