@@ -11,7 +11,6 @@ import { formatPhoneInput, isValidPhoneNumber } from "../../utils/phone";
 import DeviceLimitPanel from "./DeviceLimitPanel";
 import { forwardedState, returnPathFrom } from "../returnTo";
 import {
-  AsideCopy,
   AuthShell,
   BackButton,
   CardLede,
@@ -27,7 +26,6 @@ import {
   StepRail,
   SubmitButton,
   TextField,
-  Waveform,
 } from "../authKit";
 // import { prefetchProgress } from "../../context/ProgressContext";
 
@@ -213,7 +211,7 @@ const Login = () => {
   if (verificationTicket) {
     return (
       <AuthShell
-        aside={<><AsideCopy title={t('auth.aside.verifyTitle')} /><StepRail current={2} /></>}
+        aside={<StepRail current={2} />}
         asideFoot={t('auth.aside.verifyFoot')}
       >
         <Eyebrow>{t('auth.steps.code')}</Eyebrow>
@@ -260,7 +258,6 @@ const Login = () => {
   if (phoneEnrollmentRequired) {
     return (
       <AuthShell
-        aside={<AsideCopy title={t('auth.aside.verifyTitle')} />}
         asideFoot={t('auth.aside.verifyFoot')}
       >
         <Eyebrow>{t('auth.steps.code')}</Eyebrow>
@@ -292,16 +289,6 @@ const Login = () => {
 
   return (
     <AuthShell
-      aside={
-        <div className="flex flex-col gap-6 lg:gap-8">
-          <AsideCopy title={t('auth.aside.loginTitle')} />
-          <Waveform />
-          <p className="m-0 font-mono text-[10px] lg:text-[11px] tracking-[0.14em] uppercase text-[#93a4b4] max-w-[40ch]">
-            {t('auth.aside.loginBody')}
-          </p>
-        </div>
-      }
-      asideFoot={t('auth.aside.site')}
     >
       <Eyebrow>{t('login.submit')}</Eyebrow>
       <CardTitle>{t('login.title')}</CardTitle>

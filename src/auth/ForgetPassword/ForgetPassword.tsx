@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import {
-  AsideCopy,
   AuthShell,
   CardLede,
   CardTitle,
@@ -128,7 +127,6 @@ const ForgotPassword = () => {
     if (resetSuccess) {
       return (
         <AuthShell
-          aside={<AsideCopy title={t('auth.aside.newTitle')} body={t('auth.aside.newBody')} />}
           asideFoot={t('auth.aside.newFoot')}
         >
           <Badge stroke="#1f8a4c"><path d="M4 12.5 9.5 18 20 6.5" /></Badge>
@@ -160,7 +158,6 @@ const ForgotPassword = () => {
 
     return (
       <AuthShell
-        aside={<AsideCopy title={t('auth.aside.newTitle')} body={t('auth.aside.newBody')} />}
         asideFoot={t('auth.aside.newFoot')}
       >
         <Eyebrow>{t('forgotPassword.title')}</Eyebrow>
@@ -222,7 +219,6 @@ const ForgotPassword = () => {
   if (emailSent) {
     return (
       <AuthShell
-        aside={<AsideCopy title={t('auth.aside.resetTitle')} body={t('auth.aside.resetBody')} />}
         asideFoot={t('auth.aside.resetFoot')}
       >
         <Badge stroke="#0f151c">
@@ -253,7 +249,6 @@ const ForgotPassword = () => {
   // ── Asking for the link ─────────────────────────────────────────────────
   return (
     <AuthShell
-      aside={<AsideCopy title={t('auth.aside.resetTitle')} body={t('auth.aside.resetBody')} />}
       asideFoot={t('auth.aside.resetFoot')}
     >
       <Eyebrow>{t('forgotPassword.title')}</Eyebrow>

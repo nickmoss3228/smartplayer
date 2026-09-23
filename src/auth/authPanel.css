@@ -1,0 +1,122 @@
+/*
+ * The five scenes on the auth screens' dark panel (AuthPanel.tsx).
+ *
+ * Plain CSS rather than Tailwind: these are keyframe timelines, and a scene's
+ * elements share one clock through animation-delay — which utilities can
+ * express only as a wall of arbitrary values. Every class is `ap-` prefixed,
+ * because the natural names (.grid, .row, .cell) are Tailwind utilities.
+ *
+ * Each scene is drawn on a fixed 440×300 stage and scaled as a whole, so a
+ * phone gets the same picture smaller rather than a re-flowed one where the
+ * timings no longer line up with the geometry.
+ *
+ * A delay rule must come AFTER the rule that sets its `animation` shorthand:
+ * the shorthand resets animation-delay, and at equal specificity the later
+ * rule wins. Getting this backwards is why the loop scene's centre label once
+ * showed on the first step only.
+ */
+
+/* `backwards`, not `both`: a finished fill would pin opacity at 1 and override
+   the inline opacity:0 AuthPanel sets to fade a scene out. */
+.ap-stage { position: relative; width: 440px; height: 300px; transform-origin: top left; color: #eef4f8; animation: ap-in .4s ease backwards; }
+@keyframes ap-in { from { opacity: 0 } }
+.ap-scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ap-mono { font-family: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas, monospace; }
+
+/* Shared: the speaker's sound arcs lighting up, as if the word were just said. */
+.ap-arc { opacity: .2; animation: ap-arc 3s infinite; }
+.ap-arc.b { animation-delay: .25s; }
+@keyframes ap-arc { 0%, 100% { opacity: .2 } 8%, 18% { opacity: 1 } }
+
+/* ── A · three passes: one sentence at 1.0×, 0.8×, 0.5× ─────────── 9s ── */
+.ap-a-rows { position: relative; display: flex; flex-direction: column; gap: 24px; }
+.ap-a-row { display: flex; align-items: center; gap: 16px; height: 34px; opacity: .14; animation: ap-row 9s infinite; }
+.ap-a-tag { width: 48px; flex: none; font-size: 12px; color: #7d8d9c; }
+.ap-a-ph { display: flex; gap: 0; font-size: 21px; font-weight: 800; letter-spacing: -.01em; white-space: nowrap; }
+.ap-a-row.r2 .ap-a-ph { animation: ap-spread2 9s 3s infinite; }
+.ap-a-row.r3 .ap-a-ph { animation: ap-spread3 9s 6s infinite; }
+.ap-a-row.r2 { animation-delay: 3s; }
+.ap-a-row.r3 { animation-delay: 6s; }
+.ap-a-mark { position: absolute; left: -20px; top: 0; width: 3px; height: 34px; background: #e5484d; border-radius: 1px; animation: ap-mark 9s infinite steps(1); }
+@keyframes ap-row { 0% { opacity: .14 } 4%, 30% { opacity: 1 } 36%, 100% { opacity: .3 } }
+@keyframes ap-spread2 { 0% { gap: 0 } 14%, 100% { gap: .2em } }
+@keyframes ap-spread3 { 0% { gap: 0 } 14%, 100% { gap: .38em } }
+@keyframes ap-mark { 0% { transform: translateY(0) } 33.33% { transform: translateY(58px) } 66.66% { transform: translateY(116px) } }
+
+/* ── B · the subtitle drains away, the ear keeps listening ───────── 7s ── */
+.ap-b { flex-direction: column; gap: 26px; }
+.ap-b-ear { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
+.ap-b-ring { position: absolute; inset: 0; border: 1.5px solid #eef4f8; border-radius: 50%; opacity: 0; animation: ap-ring 3.5s infinite ease-out; }
+.ap-b-ring.b { animation-delay: 1.15s; }
+.ap-b-ring.c { animation-delay: 2.3s; }
+/* No fixed height: the app's preflight makes every box border-box, so a
+   height here would include the padding and squeeze the line out the bottom. */
+.ap-b-cap { position: relative; flex: none; line-height: 30px; padding: 16px 22px; border: 1px solid #2b3644; border-radius: 3px; font-size: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+.ap-b-txt { display: inline-block; animation: ap-drain 7s infinite; }
+.ap-b-off { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #e5484d; opacity: 0; animation: ap-off 7s infinite; }
+@keyframes ap-ring { 0% { transform: scale(.35); opacity: .8 } 100% { transform: scale(1); opacity: 0 } }
+@keyframes ap-drain { 0%, 8% { clip-path: inset(0 100% 0 0) } 28%, 48% { clip-path: inset(0 0 0 0) } 66%, 100% { clip-path: inset(0 0 0 100%) } }
+@keyframes ap-off { 0%, 64% { opacity: 0 } 70%, 94% { opacity: 1 } 100% { opacity: 0 } }
+
+/* ── C · hear a word, imagine the thing — no translation between ── 9s ── */
+.ap-c { gap: 30px; }
+.ap-c-pics { position: relative; width: 190px; height: 190px; }
+.ap-c-obj { position: absolute; inset: 0; width: 190px; height: 190px; opacity: 0; animation: ap-obj 9s infinite; }
+.ap-c-obj path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: ap-draw 9s infinite; }
+.ap-c-obj.o2, .ap-c-obj.o2 path { animation-delay: 3s; }
+.ap-c-obj.o3, .ap-c-obj.o3 path { animation-delay: 6s; }
+@keyframes ap-obj { 0% { opacity: 0 } 3%, 29% { opacity: 1 } 33%, 100% { opacity: 0 } }
+@keyframes ap-draw { 0%, 4% { stroke-dashoffset: 1 } 20%, 100% { stroke-dashoffset: 0 } }
+
+/* ── D · hear the word, pick its picture ─────────────────────────── 7s ── */
+.ap-d { flex-direction: column; align-items: stretch; gap: 18px; padding: 0 10px; }
+.ap-d-word { display: flex; align-items: center; gap: 12px; height: 40px; }
+.ap-d-say { font-size: 26px; font-weight: 800; letter-spacing: -.01em; opacity: 0; animation: ap-say 7s infinite; }
+.ap-d-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ap-d-cell { height: 96px; border: 1px solid #2b3644; border-radius: 2px; display: flex; align-items: center; justify-content: center; }
+.ap-d-cell svg { width: 58px; height: 58px; }
+.ap-d-focus { position: absolute; left: 0; top: 0; width: calc((100% - 20px) / 3); height: 96px; box-sizing: border-box; border: 2px solid #e5484d; border-radius: 2px; opacity: 0; animation: ap-hunt 7s infinite; }
+.ap-d-hit { animation: ap-hit 7s infinite; }
+.ap-d-ok { position: absolute; left: calc((100% - 20px) / 3 + 20px); top: 116px; padding: 4px 8px; background: #e5484d; color: #fff; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border-radius: 2px; opacity: 0; animation: ap-ok 7s infinite; }
+@keyframes ap-say { 0%, 4% { opacity: 0 } 10%, 94% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes ap-hunt {
+  0%, 14% { opacity: 0; transform: translate(0, 0) }
+  16%, 24% { opacity: 1; transform: translate(0, 0) }
+  30%, 36% { opacity: 1; transform: translate(calc(100% + 10px), 0) }
+  42%, 48% { opacity: 1; transform: translate(calc(200% + 20px), 106px) }
+  54%, 94% { opacity: 1; transform: translate(calc(100% + 10px), 106px) }
+  100% { opacity: 0; transform: translate(calc(100% + 10px), 106px) }
+}
+@keyframes ap-hit { 0%, 54% { stroke: #3a4654 } 58%, 94% { stroke: #eef4f8 } 100% { stroke: #3a4654 } }
+@keyframes ap-ok { 0%, 56% { opacity: 0 } 60%, 94% { opacity: 1 } 100% { opacity: 0 } }
+
+/* ── E · the five-step loop, walked round a ring ─────────────────── 10s ── */
+.ap-e { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+.ap-e-node { position: absolute; width: 40px; height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #2b3644; border-radius: 2px; background: #0f151c; color: #7d8d9c; font-size: 12px; animation: ap-node 10s infinite; }
+.ap-e-prog { animation: ap-prog 10s infinite linear; }
+.ap-e-center { position: absolute; left: 65px; top: 105px; width: 170px; height: 90px; }
+.ap-e-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; opacity: 0; animation: ap-lbl 10s infinite; }
+.ap-e-node.s1, .ap-e-lbl.s1 { animation-delay: 2s; }
+.ap-e-node.s2, .ap-e-lbl.s2 { animation-delay: 4s; }
+.ap-e-node.s3, .ap-e-lbl.s3 { animation-delay: 6s; }
+.ap-e-node.s4, .ap-e-lbl.s4 { animation-delay: 8s; }
+@keyframes ap-node { 0%, 18% { background: #eef4f8; color: #0f151c; border-color: #eef4f8 } 20%, 100% { background: #0f151c; color: #7d8d9c; border-color: #2b3644 } }
+@keyframes ap-prog { 0% { stroke-dashoffset: 1 } 100% { stroke-dashoffset: 0 } }
+@keyframes ap-lbl { 0% { opacity: 0 } 2%, 17% { opacity: 1 } 20%, 100% { opacity: 0 } }
+
+/* ── the scene rail: which of the five is on, and how long it has left ── */
+.ap-dot { position: relative; width: 18px; height: 3px; border-radius: 1px; background: #2b3644; overflow: hidden; }
+.ap-dot > i { position: absolute; inset: 0; background: #eef4f8; transform-origin: left; transform: scaleX(0); animation-name: ap-fill; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes ap-fill { to { transform: scaleX(1) } }
+
+/*
+ * Reduced motion: AuthPanel stops rotating and shows scene A only, so only A
+ * needs a still frame — all three passes lit, the last one fully spread.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ap-stage, .ap-stage *, .ap-dot > i { animation: none !important; }
+  .ap-a-row { opacity: 1; }
+  .ap-a-row.r2 .ap-a-ph { gap: .2em; }
+  .ap-a-row.r3 .ap-a-ph { gap: .38em; }
+  .ap-a-mark { transform: translateY(116px); }
+}

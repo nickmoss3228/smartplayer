@@ -18,6 +18,7 @@ import { ReactNode, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IoSyncOutline } from 'react-icons/io5'
+import { AuthPanel } from './AuthPanel'
 
 /* ── tokens ────────────────────────────────────────────────────────────────
    Written out as literals rather than a Tailwind theme extension: this palette
@@ -40,93 +41,45 @@ const fieldBase =
   'placeholder:text-[#9aa8b5] transition-colors ' +
   'focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d] focus:border-[#0f151c]'
 
-/* ── brand ─────────────────────────────────────────────────────────────── */
-
-/** The milk drop, same path the landing uses. White fill in both themes. */
-export const BrandMark = () => (
-  <span className="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.01em]">
-    <svg viewBox="0 0 24 24" className="w-[19px] h-[19px]" aria-hidden="true">
-      <path
-        d="M12 2C8.2 7.4 4.9 11.6 4.9 14.6a7.1 7.1 0 0 0 14.2 0C19.1 11.6 15.8 7.4 12 2Z"
-        fill="#ffffff"
-        stroke="#0f151c"
-        strokeWidth="1.4"
-      />
-    </svg>
-    малако
-  </span>
-)
-
-/**
- * The waveform on the dark panel.
- *
- * Decorative only, and deliberately carrying no numbers: nobody is signed in on
- * these screens, so a "segment 14/26" readout would be invented data about a
- * person the page has never met. The bar heights are a fixed literal path —
- * a stable brand mark rather than a fake reading.
- */
-const WAVE_PLAYED =
-  'M2.5 27.5V32.5 M10.5 13V47 M18.5 7.5V52.5 M26.5 14V46 M34.5 25.5V34.5 M42.5 22V38 M50.5 24.5V35.5 M58.5 19.5V40.5 M66.5 10V50 M74.5 10V50 M82.5 21V39 M90.5 18.5V41.5 M98.5 8V52 M106.5 9V51 M114.5 19.5V40.5 M122.5 24.5V35.5 M130.5 22V38 M138.5 25.5V34.5 M146.5 14.5V45.5 M154.5 9.5V50.5 M162.5 15.5V44.5 M170.5 24.5V35.5 M178.5 10.5V49.5 M186.5 6.5V53.5 M194.5 13.5V46.5 M202.5 25.5V34.5'
-const WAVE_REST =
-  'M210.5 21.5V38.5 M218.5 24.5V35.5 M226.5 20.5V39.5 M234.5 11.5V48.5 M242.5 12V48 M250.5 23.5V36.5 M258.5 15.5V44.5 M266.5 6V54 M274.5 8.5V51.5 M282.5 19.5V40.5 M290.5 24V36 M298.5 21.5V38.5 M306.5 26.5V33.5 M314.5 15.5V44.5 M322.5 11V49 M330.5 18V42 M338.5 22V38 M346.5 8.5V51.5 M354.5 5.5V54.5 M362.5 13.5V46.5'
-
-export const Waveform = () => (
-  <svg
-    viewBox="0 0 365 60"
-    preserveAspectRatio="xMinYMid meet"
-    className="w-full max-w-[365px] h-[46px] sm:h-[60px] block"
-    aria-hidden="true"
-  >
-    <path d={WAVE_PLAYED} fill="none" stroke="#eef4f8" strokeWidth="5" strokeLinecap="round" />
-    <path d={WAVE_REST} fill="none" stroke="#2b3644" strokeWidth="5" strokeLinecap="round" />
-    <line x1="206.5" y1="0" x2="206.5" y2="60" stroke={signal} strokeWidth="2" />
-  </svg>
-)
-
 /* ── layout ────────────────────────────────────────────────────────────── */
 
 interface AuthShellProps {
-  /** The dark panel's middle block. Collapses to a strip under lg. */
-  aside: ReactNode
-  /** Mono line pinned to the panel's bottom on desktop. */
+  /** Extra panel content under the animation (the step rail). Desktop only. */
+  aside?: ReactNode
+  /** Mono line pinned to the panel's bottom. Desktop only. */
   asideFoot?: string
   children: ReactNode
 }
 
 /**
  * The split: one dark machine on the left, the form in the light room on the
- * right. Under lg the panel becomes a header strip rather than disappearing —
- * a phone still needs to know which product it is signing in to.
+ * right. The machine shows AuthPanel — the method, animated — and nothing
+ * else: no brand, no headline beside the card's own heading.
+ *
+ * Under lg the panel becomes a band above the form rather than disappearing,
+ * because phones are where students actually practise. The drawing is capped
+ * lower there so the sign-in button stays within reach. Layout.tsx hides the
+ * site navbar on these routes, so the band starts at the top of the screen.
  */
 export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
   <div className="min-h-screen flex flex-col lg:flex-row bg-[#f5f8fa] text-[#0f1720]">
-    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-[#0f151c] text-[#eef4f8] px-6 py-6 lg:px-12 lg:py-14 flex flex-col justify-between gap-8 lg:gap-10">
-      <BrandMark />
-      {aside}
+    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-[#0f151c] text-[#eef4f8] px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-10">
+      <div className="lg:flex-1 flex flex-col justify-center gap-10">
+        <AuthPanel />
+        {aside && <div className="hidden lg:block">{aside}</div>}
+      </div>
       {asideFoot && (
-        <p className="hidden lg:block font-mono text-[11px] tracking-[0.16em] uppercase text-[#5b6b7a]">
+        <p className="hidden lg:block m-0 font-mono text-[11px] tracking-[0.16em] uppercase text-[#5b6b7a]">
           {asideFoot}
         </p>
       )}
     </aside>
 
-    <main className="flex-1 flex items-start lg:items-center justify-center px-4 py-10 sm:px-8 lg:p-14">
+    <main className="flex-1 flex items-start lg:items-center justify-center px-4 py-6 sm:px-8 sm:py-10 lg:p-14">
       <div className="w-full max-w-[460px] bg-white border border-[#e0e7ed] rounded-[3px] p-6 sm:p-10 animate-fade-in">
         {children}
       </div>
     </main>
-  </div>
-)
-
-/** The panel's headline, and optionally a paragraph under it. */
-export const AsideCopy = ({ title, body }: { title: string; body?: string }) => (
-  <div className="flex flex-col gap-5 lg:gap-7">
-    <h2 className="m-0 text-2xl lg:text-[38px] font-extrabold leading-[1.1] tracking-[-0.03em] max-w-[13ch]">
-      {title}
-    </h2>
-    {body && (
-      <p className="m-0 text-[15px] lg:text-base leading-relaxed text-[#93a4b4] max-w-[34ch]">{body}</p>
-    )}
   </div>
 )
 

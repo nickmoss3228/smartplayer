@@ -15,9 +15,13 @@ export function Layout({ children }: { children: ReactNode }) {
     /^\/levels\/[^/]+\/[^/]+\/[^/]+$/.test(location.pathname) ||
     location.pathname === "/player";
 
+  // The auth screens are a full-bleed split of their own (auth/authKit.tsx);
+  // the fixed navbar floated over their dark panel and repeated the brand.
+  const isAuthRoute = ["/login", "/signup", "/forgot-password"].includes(location.pathname);
+
   return (
     <>
-      {!isPlayerRoute && <Navbar />}
+      {!isPlayerRoute && !isAuthRoute && <Navbar />}
       {children}
     </>
   );

@@ -260,6 +260,15 @@
       "newTitle": "A new password shuts the door behind everyone.",
       "newBody": "Changing it ends the session on every device — including the one you were not expecting.",
       "newFoot": "single-use link"
+    },
+    "panel": {
+      "passes": "3 repetitions · 3 speeds",
+      "subtitles": "no subtitles · just your ears",
+      "word": "hear a word — imagine the thing",
+      "comic": "hear it. pick it. keep it.",
+      "loop": "every story is one loop",
+      "subtitlesOff": "subtitles off",
+      "correct": "correct!"
     }
   },
   "controls": {

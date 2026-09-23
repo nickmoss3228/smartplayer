@@ -6,7 +6,6 @@ import { formatPhoneInput, isValidPhoneNumber } from '../../utils/phone'
 import { legalPath } from '../../config/legal'
 import { forwardedState, returnPathFrom } from '../returnTo'
 import {
-  AsideCopy,
   AuthShell,
   BackButton,
   CardLede,
@@ -162,7 +161,7 @@ const SignUp = () => {
   if (verificationTicket) {
     return (
       <AuthShell
-        aside={<><AsideCopy title={t('auth.aside.verifyTitle')} /><StepRail current={2} /></>}
+        aside={<StepRail current={2} />}
         asideFoot={t('auth.aside.verifyFoot')}
       >
         <Eyebrow>{t('auth.steps.code')}</Eyebrow>
@@ -208,7 +207,7 @@ const SignUp = () => {
 
   return (
     <AuthShell
-      aside={<><AsideCopy title={t('auth.aside.signupTitle')} /><StepRail current={1} /></>}
+      aside={<StepRail current={1} />}
       asideFoot={t('auth.aside.signupFoot')}
     >
       <Eyebrow>{t('auth.steps.details')}</Eyebrow>
