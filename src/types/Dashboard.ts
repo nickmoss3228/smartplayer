@@ -48,8 +48,6 @@ export interface DetailedProgressMap {
 export interface RankInfo {
   title: string;
   icon: IconType;
-  /** Tailwind gradient classes for the rank badge background */
-  gradient: string;
 }
 
 export type LevelStatus = "completed" | "current" | "available" | "locked";
