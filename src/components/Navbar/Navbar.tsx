@@ -1,18 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { SHOP_ENABLED } from "../../config/features";
 import {
-  ChevronDownIcon,
-  GlobeAltIcon,
-  UserCircleIcon,
-  ChatBubbleLeftRightIcon,
-  HomeModernIcon,
-  // UsersIcon,
-  BookOpenIcon,
-} from "@heroicons/react/24/outline";
+  IoChevronDown,
+  IoGlobeOutline,
+  IoPersonCircleOutline,
+  IoChatbubblesOutline,
+  IoHomeOutline,
+  // IoPeopleOutline,
+  IoBookOutline,
+} from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
-import { ImBook } from "react-icons/im";
 import { useAuth } from "../../context/AuthContext";
 import { useCharacter } from "../../context/CharacterContext";
 import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
@@ -33,7 +32,7 @@ const FlagImg = ({ lang }: { lang: string }) => (
   <img
     src={FLAG_URLS[lang]}
     alt={lang}
-    className="w-5 h-3.5 object-cover rounded-sm"
+    className="w-5 h-3.5 object-cover rounded-[2px]"
   />
 );
 
@@ -91,7 +90,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 h-13 right-0 w-full bg-white/60 backdrop-blur-xl border-b border-gray-200/50 shadow-lg z-50">
+      <nav className="fixed top-0 left-0 h-13 right-0 w-full bg-white/60 backdrop-blur-xl border-b border-gray-200 z-50">
         <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-13">
 
@@ -105,7 +104,7 @@ const Navbar = () => {
                 {/* aria-label on the button already names this control, so
                     dropping the visible text costs nothing to a screen reader. */}
                 {!isHomepage && (
-                  <span className="text-2xl font-black lowercase tracking-tight">
+                  <span className="text-2xl font-extrabold lowercase tracking-tight">
                     {t("brand")}
                   </span>
                 )}
@@ -120,9 +119,9 @@ const Navbar = () => {
                 <button
                   onClick={() => navigate("/room")}
                   title={t("navbar.room")}
-                  className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  className="cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <HomeModernIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                  <IoHomeOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 </button>
               )}
 
@@ -130,9 +129,9 @@ const Navbar = () => {
                 <button
                   onClick={() => navigate("/players")}
                   title={t("navbar.players")}
-                  className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  className="cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
                 >
-                  <UsersIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                  <IoPeopleOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 </button>
               )} */}
 
@@ -157,9 +156,9 @@ const Navbar = () => {
                     ? `${t("navbar.stories")} (${cartCount})`
                     : t("navbar.stories")
                 }
-                className="relative cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                className="relative cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
               >
-                <BookOpenIcon className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
+                <IoBookOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
                 {/* A basket you cannot see is a basket you forget. The count is
                     also in the aria-label above, since a badge is decorative to
                     a screen reader. */}
@@ -177,7 +176,7 @@ const Navbar = () => {
               <button
                 onClick={() => navigate("/dashboard")}
                 title={t("navbar.dashboard")}
-                className="cursor-pointer p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                className="cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
               >
                 {portrait ? (
                   <img
@@ -186,17 +185,17 @@ const Navbar = () => {
                     className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200"
                   />
                 ) : (
-                  <UserCircleIcon className="w-7 h-7 text-gray-600 hover:text-black transition-colors" />
+                  <IoPersonCircleOutline className="w-7 h-7 text-gray-600 hover:text-black transition-colors" />
                 )}
               </button>
 
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={toggleDropdown}
-                  className="cursor-pointer flex items-center space-x-1.5 px-3 py-2 rounded-lg text-black hover:bg-gray-100 transition-colors duration-200"
+                  className="cursor-pointer flex items-center space-x-1.5 px-3 py-2 rounded-[3px] text-black hover:bg-gray-100 transition-colors duration-200"
                 >
                   <FlagImg lang={currentLanguage === "EN" ? "EN" : "RU"} />
-                  <ChevronDownIcon
+                  <IoChevronDown
                     className={`w-4 h-4 transition-transform duration-200 ${
                       isDropdownOpen ? "rotate-180" : ""
                     }`}
@@ -204,7 +203,7 @@ const Navbar = () => {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[10000]">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-[3px] shadow-xl border border-gray-200 py-1 z-[10000]">
                     {/* Wallet — sm:hidden because the navbar row (WalletChips
                         default variant) already shows this on desktop; on
                         mobile there's no space for it up top, so it lives
@@ -212,7 +211,7 @@ const Navbar = () => {
                     {user && (
                       <>
                         <div className="sm:hidden px-4 py-2">
-                          <div className="flex items-center text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
+                          <div className="font-mono flex items-center text-[10px] text-gray-600 uppercase tracking-[0.16em] mb-2">
                             {t("navbar.wallet")}
                           </div>
                           <WalletChips variant="dropdown" />
@@ -225,7 +224,7 @@ const Navbar = () => {
                       onClick={handleGuideClick}
                       className="w-full flex cursor-pointer items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
                     >
-                      <ImBook className="w-4 h-4 mr-3" />
+                      <IoBookOutline className="w-4 h-4 mr-3" />
                       {t("navbar.guide")}
                     </button>
 
@@ -233,20 +232,20 @@ const Navbar = () => {
                       onClick={handleFeedbackClick}
                       className="w-full flex cursor-pointer items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
                     >
-                      <ChatBubbleLeftRightIcon className="w-4 h-4 mr-3" />
+                      <IoChatbubblesOutline className="w-4 h-4 mr-3" />
                       {t("navbar.feedback")}
                     </button>
 
                     <div className="border-t border-gray-200 my-1" />
 
                     <div className="px-4 py-2">
-                      <div className="flex items-center text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">
-                        <GlobeAltIcon className="w-3 h-3 mr-2" />
+                      <div className="font-mono flex items-center text-[10px] text-gray-600 uppercase tracking-[0.16em] mb-2">
+                        <IoGlobeOutline className="w-3 h-3 mr-2" />
                         {t("navbar.language")}
                       </div>
                       <button
                         onClick={() => handleLanguageChange("EN")}
-                        className={`w-full text-left cursor-pointer flex items-center gap-2.5 px-2 py-1.5 text-sm rounded transition-colors duration-200 ${
+                        className={`w-full text-left cursor-pointer flex items-center gap-2.5 px-2 py-1.5 text-sm rounded-[3px] transition-colors duration-200 ${
                           currentLanguage === "EN"
                             ? "bg-black text-white"
                             : "text-black hover:bg-gray-100"
@@ -257,7 +256,7 @@ const Navbar = () => {
                       </button>
                       <button
                         onClick={() => handleLanguageChange("RU")}
-                        className={`w-full text-left cursor-pointer flex items-center gap-2.5 px-2 py-1.5 text-sm rounded transition-colors duration-200 ${
+                        className={`w-full text-left cursor-pointer flex items-center gap-2.5 px-2 py-1.5 text-sm rounded-[3px] transition-colors duration-200 ${
                           currentLanguage === "RU"
                             ? "bg-black text-white"
                             : "text-black hover:bg-gray-100"

@@ -63,7 +63,7 @@ function SharingBadge({ sharing }: { sharing?: AdminPlayerSharing }) {
       // A hover title rather than a modal: this is a hint an admin glances at
       // on the way to a decision, not a report they sit down to read.
       title={`${detail}\n\nA signal, not proof — students in one computer lab share a network legitimately.`}
-      className={`text-xs rounded-full px-2 py-0.5 cursor-help ${band.className}`}
+      className={`text-xs rounded-[2px] px-2 py-0.5 cursor-help ${band.className}`}
     >
       {band.label}
     </span>
@@ -127,7 +127,7 @@ function GrantCurrencyForm({
             type="number"
             value={values[f.key]}
             onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
-            className={`w-14 text-black px-1.5 py-0.5 border border-gray-300 rounded text-xs ${f.ring} outline-none`}
+            className={`w-14 text-black px-1.5 py-0.5 border border-gray-300 rounded-[3px] text-xs ${f.ring} outline-none`}
             autoFocus={i === 0}
           />
         </label>
@@ -135,7 +135,7 @@ function GrantCurrencyForm({
       <button
         type="submit"
         disabled={submitting || nothingToGrant}
-        className="text-xs text-white bg-amber-500 hover:bg-amber-600 rounded px-2 py-0.5 disabled:opacity-50"
+        className="text-xs text-white bg-amber-500 hover:bg-amber-600 rounded-[3px] px-2 py-0.5 disabled:opacity-50"
       >
         {submitting ? "..." : "Send"}
       </button>
@@ -281,7 +281,7 @@ const PlayersTab = ({ token }: { token: string }) => {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by username, nickname, or email..."
-        className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-black"
+        className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-4 focus:outline-none focus:ring-2 focus:ring-black"
       />
 
       {error && <p className="text-red-600 mb-2">{error}</p>}
@@ -294,13 +294,13 @@ const PlayersTab = ({ token }: { token: string }) => {
         {players.map((player) => (
           <div
             key={player.id}
-            className="bg-white rounded-lg shadow p-3 border border-gray-200 flex flex-wrap items-center gap-3"
+            className="bg-white rounded-[3px] shadow p-3 border border-gray-200 flex flex-wrap items-center gap-3"
           >
             <div className="flex-1 min-w-[160px]">
               <div className="font-semibold text-black flex items-center gap-2">
                 {player.nickname}
                 {player.banned && (
-                  <span className="text-xs bg-red-100 text-red-600 rounded-full px-2 py-0.5">
+                  <span className="text-xs bg-red-100 text-red-600 rounded-[2px] px-2 py-0.5">
                     Banned
                   </span>
                 )}
@@ -346,7 +346,7 @@ const PlayersTab = ({ token }: { token: string }) => {
 
             <button
               onClick={() => handleToggleBan(player)}
-              className={`text-xs rounded px-2 py-1 whitespace-nowrap ${
+              className={`text-xs rounded-[3px] px-2 py-1 whitespace-nowrap ${
                 player.banned
                   ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   : "bg-red-50 text-red-600 hover:bg-red-100"
@@ -363,7 +363,7 @@ const PlayersTab = ({ token }: { token: string }) => {
           <button
             onClick={() => load(page + 1, query)}
             disabled={loading}
-            className="text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 disabled:opacity-50"
+            className="text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-[3px] px-4 py-2 disabled:opacity-50"
           >
             {loading ? "Loading..." : "Load more"}
           </button>

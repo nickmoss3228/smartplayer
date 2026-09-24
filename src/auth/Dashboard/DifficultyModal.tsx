@@ -69,13 +69,13 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[88vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-scale-in shadow-2xl"
+        className="bg-white rounded-t-[3px] sm:rounded-[3px] w-full max-w-lg max-h-[88vh] sm:max-h-[85vh] overflow-hidden flex flex-col animate-slide-up sm:animate-scale-in shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 flex items-center justify-between flex-shrink-0 border-b border-black/5">
+        <div className="p-5 flex items-center justify-between flex-shrink-0 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-11 h-11 rounded-2xl ${theme.soft} flex items-center justify-center flex-shrink-0`}>
+            <div className={`w-11 h-11 rounded-[3px] ${theme.soft} flex items-center justify-center flex-shrink-0`}>
               <DifficultyIcon className={theme.text} size={22} />
             </div>
             <div className="min-w-0">
@@ -125,7 +125,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
               return (
                 <div
                   key={story.storyId}
-                  className="rounded-2xl overflow-hidden bg-black/[0.02] border border-black/5 animate-fade-in"
+                  className="rounded-[3px] overflow-hidden bg-black/[0.02] border border-line animate-fade-in"
                   style={{ animationDelay: `${storyIndex * 60}ms`, animationFillMode: "backwards" }}
                 >
                   {/* Story header — click to expand/collapse */}
@@ -135,7 +135,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                       setExpandedStory(isExpanded ? null : story.storyId)
                     }
                   >
-                    <span className="text-2xl flex-shrink-0 w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                    <span className="text-2xl flex-shrink-0 w-10 h-10 rounded-[3px] bg-white border border-line flex items-center justify-center">
                       {story.characterIcon}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -167,7 +167,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                   {/* Parts grid — shown when expanded */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 animate-fade-in">
-                      <p className="text-[10px] uppercase tracking-widest text-black/30 font-semibold mb-3">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/30 mb-3">
                         {t("dashboard.modal.storyParts")}
                       </p>
                       <div className="grid grid-cols-5 gap-2">
@@ -185,7 +185,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                               <div
                                 key={partNumber}
                                 className={`
-                                  aspect-square rounded-xl flex flex-col items-center justify-center gap-0.5
+                                  aspect-square rounded-[3px] flex flex-col items-center justify-center gap-0.5
                                   text-sm font-bold transition-all duration-200
                                   ${getStatusStyle(status)}
                                   ${status !== "locked" ? "cursor-pointer active:scale-90 hover:scale-105" : ""}

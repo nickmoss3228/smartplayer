@@ -21,7 +21,7 @@ const WalletChips = ({ variant = "navbar" }: WalletChipsProps) => {
     <div
       key={key}
       title={label}
-      className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100/80 text-xs font-semibold text-gray-700"
+      className="flex items-center gap-1 px-2 py-1 rounded-[2px] bg-gray-100/80 text-xs font-semibold text-gray-700"
     >
       <Icon size={14} className={textClasses} />
       {wallet[key]}

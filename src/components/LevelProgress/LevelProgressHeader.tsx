@@ -36,7 +36,7 @@ export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme, storyT
         <div className="text-sm sm:text-2xl font-bold text-black/80 mb-1 sm:mb-2 tracking-wider transition-all duration-700 animate-slide-down">
           {t(`levelProgress.${difficulty}Title`)}
         </div>
-        <h1 className="text-2xl sm:text-4xl font-bold text-black/80 transition-all duration-700 animate-slide-up break-words">
+        <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-black transition-all duration-700 animate-slide-up break-words">
           {storyTitle ?? theme.subtitle}
         </h1>
       </div>

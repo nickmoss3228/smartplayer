@@ -9,7 +9,7 @@ const STEP_STYLE = [
   'text-gray-300 font-normal',
   'text-gray-500 font-medium',
   'text-gray-700 font-semibold',
-  'text-emerald-600 font-black',
+  'text-gray-900 font-extrabold',
 ];
 
 const RepetitionViz = () => {
@@ -48,8 +48,8 @@ const RepetitionViz = () => {
               scale: step > i ? 1 : 0.8,
             }}
             transition={{ duration: 0.3 }}
-            className={`px-3 py-1 rounded-full text-xs font-bold ${
-              step > i ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'
+            className={`px-3 py-1 rounded-[2px] text-xs font-bold ${
+              step > i ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'
             }`}
           >
             {tag}

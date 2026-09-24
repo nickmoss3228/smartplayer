@@ -523,7 +523,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             const file = e.dataTransfer.files?.[0];
             if (file) void acceptFile(file);
           }}
-          className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-12 cursor-pointer transition-colors ${
+          className={`flex flex-col items-center justify-center gap-2 rounded-[3px] border-2 border-dashed px-6 py-12 cursor-pointer transition-colors ${
             dragOver
               ? "border-amber-400 bg-amber-50"
               : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
@@ -560,14 +560,14 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-[3px] border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 flex-wrap">
           <button
             type="button"
             onClick={() => audition(selected < 0 ? 0 : selected - 1)}
             disabled={times.length === 0}
             title="Previous sentence (←)"
-            className="w-8 h-8 grid place-items-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30"
+            className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-30"
           >
             <IoPlaySkipBack aria-hidden="true" />
             <span className="sr-only">Previous sentence</span>
@@ -576,7 +576,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             type="button"
             onClick={togglePlay}
             title="Play / pause (Space)"
-            className="w-9 h-9 grid place-items-center rounded-lg bg-black text-white hover:bg-gray-800"
+            className="w-9 h-9 grid place-items-center rounded-[3px] bg-black text-white hover:bg-gray-800"
           >
             {playing ? <IoPause aria-hidden="true" /> : <IoPlay aria-hidden="true" />}
             <span className="sr-only">{playing ? "Pause" : "Play"}</span>
@@ -586,7 +586,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             onClick={() => audition(selected < 0 ? 0 : selected + 1)}
             disabled={times.length === 0}
             title="Next sentence (→)"
-            className="w-8 h-8 grid place-items-center rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30"
+            className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-30"
           >
             <IoPlaySkipForward aria-hidden="true" />
             <span className="sr-only">Next sentence</span>
@@ -603,12 +603,12 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
               onClick={undo}
               disabled={history.length === 0}
               title="Undo (Ctrl+Z)"
-              className="w-8 h-8 grid place-items-center rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+              className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
               <IoArrowUndoOutline aria-hidden="true" />
               <span className="sr-only">Undo</span>
             </button>
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <div className="flex rounded-[3px] border border-gray-200 overflow-hidden">
               {ZOOM_LEVELS.map((level, i) => (
                 <button
                   key={level}
@@ -624,7 +624,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
               ))}
             </div>
             <span
-              className={`text-[11px] font-semibold rounded-full border px-2 py-1 ${statusChip.className}`}
+              className={`text-[11px] font-semibold rounded-[2px] border px-2 py-1 ${statusChip.className}`}
             >
               {statusChip.text}
             </span>
@@ -653,18 +653,18 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         <button
           type="button"
           onClick={mark}
-          className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg px-4 py-2"
+          className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-[3px] px-4 py-2"
         >
           <IoAdd aria-hidden="true" />
           Mark sentence
-          <kbd className="ml-1 text-[10px] font-mono bg-white/25 rounded px-1 py-0.5">M</kbd>
+          <kbd className="ml-1 text-[10px] font-mono bg-white/25 rounded-[3px] px-1 py-0.5">M</kbd>
         </button>
         <button
           type="button"
           onClick={detect}
           disabled={duration === 0}
           title="Find the pauses in the recording and put a marker at each sentence"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-[3px] px-3 py-2 hover:bg-gray-50 disabled:opacity-40"
         >
           <IoSparklesOutline aria-hidden="true" />
           {times.length > 0 ? "Detect sentences again" : "Detect sentences"}
@@ -690,7 +690,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
       {uploading && <p className="text-xs text-gray-500">Uploading the recording…</p>}
 
       {issues.length > 0 && (
-        <ul className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-1">
+        <ul className="rounded-[3px] border border-amber-200 bg-amber-50 px-3 py-2 space-y-1">
           {issues.slice(0, 4).map((issue, i) => (
             <li key={i} className="flex items-start gap-2 text-xs text-amber-900">
               <IoWarningOutline className="mt-0.5 shrink-0" aria-hidden="true" />
@@ -727,7 +727,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
           normal part, and forty rows is a page of scrolling to answer the only
           question worth asking, which is whether you reached the end. */}
       {times.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-center">
+        <div className="rounded-[3px] border border-dashed border-gray-300 px-4 py-6 text-center">
           <p className="text-sm text-gray-600 font-medium">No sentences marked yet</p>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
             Students replay one sentence at a time, and a sentence is the gap between two markers —
@@ -745,7 +745,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
                 type="button"
                 onClick={() => audition(i)}
                 title={`Play sentence ${i + 1}`}
-                className={`inline-flex items-baseline gap-1.5 rounded-md px-2 py-1 text-[11px] tabular-nums transition-colors ${
+                className={`inline-flex items-baseline gap-1.5 rounded-[3px] px-2 py-1 text-[11px] tabular-nums transition-colors ${
                   i === selected
                     ? "bg-amber-500 text-white"
                     : flagged.has(i)
@@ -762,7 +762,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
           </div>
 
           {selected >= 0 && selectedBounds && (
-            <div className="flex items-center gap-2 flex-wrap rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+            <div className="flex items-center gap-2 flex-wrap rounded-[3px] bg-gray-50 border border-gray-200 px-3 py-2">
               <span className="text-xs text-black font-semibold">Sentence {selected + 1}</span>
               <span className="text-xs text-gray-500 tabular-nums">
                 {formatTime(selectedBounds.start)} &rarr;{" "}
@@ -777,7 +777,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
                   type="button"
                   onClick={() => nudge(-NUDGE_SECONDS)}
                   title="Move this marker 50ms earlier (Shift+Left)"
-                  className="text-xs text-gray-600 bg-white border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 tabular-nums"
+                  className="text-xs text-gray-600 bg-white border border-gray-300 rounded-[3px] px-2 py-1 hover:bg-gray-100 tabular-nums"
                 >
                   &minus;50ms
                 </button>
@@ -785,7 +785,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
                   type="button"
                   onClick={() => nudge(NUDGE_SECONDS)}
                   title="Move this marker 50ms later (Shift+Right)"
-                  className="text-xs text-gray-600 bg-white border border-gray-300 rounded px-2 py-1 hover:bg-gray-100 tabular-nums"
+                  className="text-xs text-gray-600 bg-white border border-gray-300 rounded-[3px] px-2 py-1 hover:bg-gray-100 tabular-nums"
                 >
                   +50ms
                 </button>
@@ -793,7 +793,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
                   type="button"
                   onClick={() => removeMarker(selected)}
                   title="Remove this marker (Delete) — the sentence joins the one before it"
-                  className="inline-flex items-center gap-1 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 hover:bg-red-50"
+                  className="inline-flex items-center gap-1 text-xs text-red-600 bg-white border border-red-200 rounded-[3px] px-2 py-1 hover:bg-red-50"
                 >
                   <IoTrashOutline aria-hidden="true" />
                   Remove
@@ -809,7 +809,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
           <span className="text-gray-400 group-open:rotate-90 transition-transform">&#9656;</span>
           How marking works
         </summary>
-        <div className="mt-2 text-xs text-gray-600 leading-relaxed bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-1.5">
+        <div className="mt-2 text-xs text-gray-600 leading-relaxed bg-gray-50 border border-gray-200 rounded-[3px] p-3 space-y-1.5">
           <p>
             A marker is the <strong>start of a sentence</strong>. Everything a student does with the
             audio — replay it, slow it down, move on — happens between one marker and the next.
@@ -819,13 +819,13 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             sentence, so students never reach it.
           </p>
           <p>
-            Fastest way: press <kbd className="font-mono bg-white border rounded px-1">Space</kbd>{" "}
-            and tap <kbd className="font-mono bg-white border rounded px-1">M</kbd> as each sentence
+            Fastest way: press <kbd className="font-mono bg-white border rounded-[3px] px-1">Space</kbd>{" "}
+            and tap <kbd className="font-mono bg-white border rounded-[3px] px-1">M</kbd> as each sentence
             begins — each tap moves back to the pause it belongs to. Then walk through with{" "}
-            <kbd className="font-mono bg-white border rounded px-1">&larr;</kbd>{" "}
-            <kbd className="font-mono bg-white border rounded px-1">&rarr;</kbd> and check every
+            <kbd className="font-mono bg-white border rounded-[3px] px-1">&larr;</kbd>{" "}
+            <kbd className="font-mono bg-white border rounded-[3px] px-1">&rarr;</kbd> and check every
             sentence sounds whole. Drag a marker on the wave to move it,{" "}
-            <kbd className="font-mono bg-white border rounded px-1">Ctrl+Z</kbd> undoes.
+            <kbd className="font-mono bg-white border rounded-[3px] px-1">Ctrl+Z</kbd> undoes.
           </p>
           <p className="text-gray-500">Your work saves itself a moment after each change.</p>
         </div>

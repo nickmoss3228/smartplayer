@@ -12,7 +12,7 @@
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { IoChevronBack } from "react-icons/io5";
 import { usePlayerSchool } from "../modules/players/usePlayerSchool";
 import { buildableRooms, stageFor } from "../config/schoolCatalog";
 
@@ -29,7 +29,7 @@ const PlayerRoom = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-dvh pt-14">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-violet-500" />
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900" />
       </div>
     );
   }
@@ -52,7 +52,7 @@ const PlayerRoom = () => {
       <Suspense
         fallback={
           <div className="w-full h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
           </div>
         }
       >
@@ -70,11 +70,11 @@ const PlayerRoom = () => {
         title={t("players.back")}
         className="absolute left-3 top-3 flex items-center gap-1 text-xs font-semibold text-black/70 bg-white/90 backdrop-blur rounded-full pl-2 pr-3 py-2 shadow-sm active:scale-95 transition-transform"
       >
-        <ChevronLeftIcon className="w-4 h-4" />
+        <IoChevronBack className="w-4 h-4" />
         {t("players.back")}
       </button>
 
-      <div className="absolute right-3 top-3 bg-white/90 backdrop-blur rounded-full px-3.5 py-1.5 shadow-sm text-right pointer-events-none">
+      <div className="absolute right-3 top-3 bg-white/90 backdrop-blur rounded-[3px] px-3.5 py-1.5 shadow-sm text-right pointer-events-none">
         <div className="text-[13px] font-bold text-black/80 leading-tight">{nickname}</div>
         <div className="text-[10px] font-semibold text-black/40 leading-tight">
           {t(`school.stages.${stage.id}.name`, stage.name)} ·{" "}

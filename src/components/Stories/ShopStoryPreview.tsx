@@ -112,7 +112,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
       aria-label={story.title}
     >
       <div
-        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[3px] bg-white shadow-xl sm:rounded-[3px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: the story's own art, title over it. */}
@@ -129,10 +129,10 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
             <IoClose size={18} aria-hidden="true" />
           </button>
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent px-5 pb-3 pt-10">
-            <p className="text-[10px] uppercase tracking-widest text-white/60">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/60">
               {t(`list.category.${story.category}`)} · {t('shelf.parts', { count: story.totalTracks })}
             </p>
-            <h2 className="text-xl font-black leading-tight text-white">{story.title}</h2>
+            <h2 className="text-xl font-extrabold leading-tight text-white">{story.title}</h2>
           </div>
         </div>
 
@@ -143,7 +143,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
 
           {/* The sample. */}
           {firstTrack?.audio && (
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center gap-3 rounded-[3px] border border-gray-200 p-3">
               <button
                 type="button"
                 onClick={toggleSample}
@@ -180,28 +180,28 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
 
           {firstTrack?.comicUrl && (
             <div>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="font-mono mb-1.5 text-[10px] uppercase tracking-[0.16em] text-gray-400">
                 {t('shopPreview.comic')}
               </p>
               <img
                 src={firstTrack.comicUrl}
                 alt=""
                 loading="lazy"
-                className="max-h-56 w-full rounded-md object-cover object-top"
+                className="max-h-56 w-full rounded-[3px] object-cover object-top"
               />
             </div>
           )}
 
           {words.length > 0 && (
             <div>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <p className="font-mono mb-1.5 text-[10px] uppercase tracking-[0.16em] text-gray-400">
                 {t('shopPreview.words')}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {words.map((word) => (
                   <span
                     key={word.audioKey || word.word}
-                    className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700"
+                    className="rounded-[2px] border border-gray-200 px-2.5 py-1 text-xs text-gray-700"
                   >
                     {word.word}
                   </span>
@@ -211,7 +211,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
           )}
 
           <div>
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <p className="font-mono mb-1 text-[10px] uppercase tracking-[0.16em] text-gray-400">
               {t('shopPreview.parts')}
             </p>
             {resolved ? (
@@ -229,11 +229,11 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
                       {!locked ? null : !open ? (
                         <IoLockClosed size={12} className="shrink-0 text-gray-400" aria-hidden="true" />
                       ) : isPreview ? (
-                        <span className="shrink-0 text-[10px] uppercase text-gray-400">
+                        <span className="font-mono shrink-0 text-[10px] uppercase tracking-[0.16em] text-gray-400">
                           {t('shelf.previewBadge', { seconds: previewSeconds })}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-[10px] font-semibold uppercase text-green-600">
+                        <span className="font-mono shrink-0 text-[10px] uppercase tracking-[0.16em] text-green-600">
                           {t('shopPreview.free')}
                         </span>
                       )}
@@ -252,7 +252,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
             <button
               type="button"
               onClick={openStory}
-              className="w-full cursor-pointer rounded-sm bg-green-600 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="w-full cursor-pointer rounded-[2px] bg-green-600 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               {t('shopPreview.listen')}
             </button>
@@ -263,7 +263,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
                   type="button"
                   onClick={() => buy(single.sku)}
                   disabled={has(single.sku)}
-                  className="w-full cursor-pointer rounded-sm bg-gray-900 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-[2px] bg-gray-900 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
                 >
                   {has(single.sku)
                     ? t('shop.inCart')
@@ -275,7 +275,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
                   type="button"
                   onClick={() => buy(set.sku)}
                   disabled={has(set.sku)}
-                  className="w-full cursor-pointer rounded-sm border-2 border-gray-900 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                  className="w-full cursor-pointer rounded-[2px] border-2 border-gray-900 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
                 >
                   {has(set.sku)
                     ? t('shop.inCart')

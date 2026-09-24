@@ -55,7 +55,7 @@ const FeedbackTab = ({ token }: { token: string }) => {
         {feedback.map((item) => (
           <div
             key={item._id}
-            className="bg-white rounded-lg shadow p-4 border border-gray-200"
+            className="bg-white rounded-[3px] shadow p-4 border border-gray-200"
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-black">{item.name}</span>

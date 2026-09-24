@@ -241,7 +241,7 @@ export const GuidedTour: React.FC = () => {
         />
 
         {/* Card body */}
-        <div className="relative bg-white rounded-2xl shadow-2xl px-5 pt-5 pb-4 flex flex-col gap-2.5">
+        <div className="relative bg-white rounded-[3px] shadow-xl px-5 pt-5 pb-4 flex flex-col gap-2.5">
 
           {/* Progress dots */}
           <div className="flex items-center justify-center gap-1.5">
@@ -249,8 +249,8 @@ export const GuidedTour: React.FC = () => {
               <div
                 key={i}
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  i === step ? "w-5 bg-green-500"
-                  : i < step  ? "w-2 bg-green-300"
+                  i === step ? "w-5 bg-gray-900"
+                  : i < step  ? "w-2 bg-gray-400"
                   :             "w-2 bg-gray-200"
                 }`}
               />
@@ -258,7 +258,7 @@ export const GuidedTour: React.FC = () => {
           </div>
 
           {/* Step counter */}
-          <p className="text-[10px] text-center text-gray-400 uppercase tracking-widest font-semibold">
+          <p className="font-mono text-[10px] text-center text-gray-400 uppercase tracking-[0.16em]">
             {t("guidedTour.stepCounter", { current: step + 1, total: steps.length })}
           </p>
 
@@ -276,9 +276,8 @@ export const GuidedTour: React.FC = () => {
           <div className="flex items-center justify-end mt-2">
             <button
               onClick={goNext}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl
-                         bg-green-500 hover:bg-green-400 active:scale-95
-                         text-white text-[13px] font-semibold
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[3px]
+                         text-white text-[13px] font-semibold
                          cursor-pointer shadow-sm transition-all"
             >
               {!isLast ? (

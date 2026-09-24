@@ -108,7 +108,7 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
       <div className="mx-auto max-w-5xl px-4 pb-40 pt-20 sm:px-6">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-gray-900">
+            <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-gray-900">
               {t('shelf.title')}
             </h1>
             <p className="mt-0.5 text-sm text-gray-400">{t('shop.subtitle')}</p>
@@ -122,7 +122,7 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
                 type="button"
                 onClick={() => setFilter(f.id)}
                 aria-pressed={filter === f.id}
-                className={`rounded-sm border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                className={`font-mono rounded-[2px] border px-2.5 py-1 text-[11px] uppercase tracking-[0.18em] transition-colors ${
                   filter === f.id
                     ? 'border-gray-900 bg-gray-900 text-white'
                     : 'border-gray-200 text-gray-500 hover:bg-white'
@@ -170,7 +170,7 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
             <button
               type="button"
               onClick={clear}
-              className="rounded-sm border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50"
+              className="rounded-[2px] border border-gray-200 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50"
             >
               {t('shop.remove')}
             </button>
@@ -178,7 +178,7 @@ const Stories = ({ initialFilter = 'all' }: Props) => {
               type="button"
               onClick={checkout}
               disabled={busy || !paymentConfig?.enabled}
-              className="rounded-sm bg-gray-900 px-5 py-2 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-[2px] bg-gray-900 px-5 py-2 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {!user
                 ? t('shop.checkoutLoginRequired')

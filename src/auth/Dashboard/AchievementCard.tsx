@@ -58,10 +58,9 @@ const AchievementCard: React.FC<Props> = ({ category, value, index, onOpen }) =>
         earned: earnedCount,
         total: category.tiers.length,
       })}
-      className="group relative bg-white rounded-3xl p-4 sm:p-5 flex flex-col gap-3.5 text-left
-                 shadow-[0_2px_10px_rgba(0,0,0,0.06)] border border-black/5
+      className="group relative bg-white rounded-[3px] p-4 sm:p-5 flex flex-col gap-3.5 text-left border border-line
                  overflow-hidden animate-scale-in
-                 transition-all duration-200 hover:shadow-md active:scale-[0.98]
+                 transition-all duration-200 hover:border-line-strong active:scale-[0.98]
                  focus:outline-none focus-visible:ring-2 focus-visible:ring-black/25
                  focus-visible:ring-offset-2"
       style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
@@ -79,7 +78,7 @@ const AchievementCard: React.FC<Props> = ({ category, value, index, onOpen }) =>
       {/* ── Medallion + category ── */}
       <div className="flex items-center gap-3">
         <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+          className="w-11 h-11 rounded-[3px] flex items-center justify-center flex-shrink-0"
           style={{
             backgroundColor: style?.tint ?? "rgba(11,11,11,0.05)",
             boxShadow: style ? `inset 0 0 0 1.5px ${style.hex}` : "none",
@@ -94,7 +93,7 @@ const AchievementCard: React.FC<Props> = ({ category, value, index, onOpen }) =>
           </p>
           {/* Tier is named in words, so it never rests on color alone. */}
           <p
-            className="text-[10px] font-bold uppercase tracking-[0.12em] mt-0.5 truncate"
+            className="font-mono text-[10px] uppercase tracking-[0.16em] mt-0.5 truncate"
             style={{ color: medallionInk }}
           >
             {tierName}

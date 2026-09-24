@@ -301,7 +301,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         style={{ paddingTop: "calc(0.5rem + env(safe-area-inset-top))" }}
       >
         {title && (
-          <span className="text-white text-[11px] uppercase tracking-widest font-semibold font-['Montserrat'] truncate">
+          <span className="text-white text-[11px] uppercase tracking-[0.16em] font-mono truncate">
             {title}
           </span>
         )}
@@ -386,7 +386,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
           className="absolute left-3 z-20 pointer-events-none"
           style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
         >
-          <span className="text-white/90 text-[10px] font-semibold font-['Montserrat'] bg-black/55 rounded-full px-2.5 py-1 tabular-nums">
+          <span className="text-white/90 text-[10px] font-semibold bg-black/55 rounded-[2px] px-2.5 py-1 tabular-nums">
             {Math.round(scale * 100)}%
           </span>
         </div>
@@ -401,7 +401,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
           animation: "comicsHintFade 4s ease forwards",
         }}
       >
-        <span className="text-white/80 text-[9px] font-['Montserrat'] bg-black/45 backdrop-blur-sm rounded-full px-3 py-1 whitespace-nowrap">
+        <span className="text-white/80 text-[9px] bg-black/45 backdrop-blur-sm rounded-[2px] px-3 py-1 whitespace-nowrap">
           Scroll · Pinch to zoom &nbsp;·&nbsp; Double-click to zoom in
         </span>
       </div>

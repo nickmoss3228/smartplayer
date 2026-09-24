@@ -1,6 +1,8 @@
 import { Link } from 'react-router';
 import { motion, useReducedMotion } from 'framer-motion';
+import { motionEnter } from '../components/ui/motion';
 import { useTranslation } from 'react-i18next';
+import { buttonPrimary, buttonSecondary } from '../components/ui/buttonStyles';
 
 /**
  * Real 404 page.
@@ -28,7 +30,7 @@ const NotFound = () => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white pt-14 sm:pt-20">
+    <div className="min-h-dvh flex flex-col bg-room pt-14 sm:pt-20">
       <title>{t('notFound.title')}</title>
       <meta name="robots" content="noindex, nofollow" />
 
@@ -37,14 +39,14 @@ const NotFound = () => {
           className="text-center max-w-md"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={motionEnter}
         >
-          <p className="text-[9px] sm:text-[10px] tracking-[0.5em] uppercase text-gray-400 mb-2">
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase text-gray-400 mb-2">
             {t('notFound.eyebrow')}
           </p>
 
           <h1
-            className="text-6xl sm:text-8xl font-black text-black
+            className="text-6xl sm:text-8xl font-extrabold text-black
               tracking-tighter leading-none mb-4"
           >
             404
@@ -60,15 +62,13 @@ const NotFound = () => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/"
-              className="px-6 py-3 rounded-full bg-black text-white font-medium
-                text-sm hover:bg-gray-800 transition-colors"
+              className={buttonPrimary}
             >
               {t('notFound.home')}
             </Link>
             <Link
               to="/levels"
-              className="px-6 py-3 rounded-full border border-gray-300 text-black
-                font-medium text-sm hover:bg-gray-50 transition-colors"
+              className={buttonSecondary}
             >
               {t('notFound.levels')}
             </Link>

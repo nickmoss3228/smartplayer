@@ -2,8 +2,10 @@ import { Link } from 'react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'framer-motion';
+import { motionEnter, STAGGER } from '../components/ui/motion';
 import MilkGlass from '../components/Levels/MilkGlass';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
+import { buttonPrimary } from '../components/ui/buttonStyles';
 
 /**
  * Level picker, told as three glasses of milk.
@@ -44,7 +46,7 @@ const Levels = () => {
     // Plain white, same as every other page. White milk stays readable because
     // the contrast that matters is milk against the *tinted glass interior*,
     // not against the page behind it — so the ground doesn't have to carry it.
-    <div className="min-h-dvh flex flex-col bg-white pt-14 sm:pt-20">
+    <div className="min-h-dvh flex flex-col bg-room pt-14 sm:pt-20">
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-10">
 
         {/* ── Header ── */}
@@ -52,12 +54,12 @@ const Levels = () => {
           className="text-center mb-5 sm:mb-10"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={motionEnter}
         >
-          <p className="text-[9px] sm:text-[10px] tracking-[0.5em] uppercase text-gray-400 mb-2">
+          <p className="font-mono text-[10px] tracking-[0.16em] uppercase text-gray-400 mb-2">
             {t('levels.fatLabel')}
           </p>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-black tracking-tighter leading-none">
+          <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-black">
             {t('levels.selectProficiency')}
           </h1>
         </motion.div>
@@ -76,13 +78,13 @@ const Levels = () => {
                 type="button"
                 onClick={() => setSelectedLevel(level.id)}
                 aria-pressed={isSelected}
-                className="group flex flex-col items-center cursor-pointer rounded-2xl
+                className="group flex flex-col items-center cursor-pointer rounded-[3px]
                   px-1 pt-2 pb-3 sm:px-3
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-black/60
                   focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 + index * 0.09, ease: 'easeOut' }}
+                transition={{ ...motionEnter, delay: 0.1 + index * STAGGER }}
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
               >
                 {/* Lift is on an inner wrapper so it composites independently
@@ -106,7 +108,7 @@ const Levels = () => {
                   {/* Жирность, printed the way a carton prints it — the
                       biggest thing on the pack. */}
                   <span
-                    className={`mt-2 sm:mt-3 font-black tabular-nums leading-none
+                    className={`mt-2 sm:mt-3 font-extrabold tabular-nums leading-none
                       text-xl sm:text-3xl transition-colors duration-200
                       ${isSelected ? 'text-black' : 'text-gray-400'}`}
                   >
@@ -132,24 +134,17 @@ const Levels = () => {
         {/* ── Continue ── */}
         <div className="mt-7 sm:mt-12 w-full max-w-xs px-4 sm:px-0">
           {chosen ? (
-            <Link to={`/levels/${chosen.id}`} className="block">
-              <motion.button
-                className="w-full py-3 bg-black text-white font-bold text-sm
-                  tracking-[0.2em] uppercase cursor-pointer
-                  hover:bg-gray-800 transition-colors"
-                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {t('levels.continue')}
-              </motion.button>
-            </Link>
-          ) : (
-            <button
-              disabled
-              className="w-full py-3 border border-gray-200 text-gray-300 font-bold
-                text-sm tracking-[0.2em] uppercase cursor-not-allowed"
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionEnter}
             >
+              <Link to={`/levels/${chosen.id}`} className={`${buttonPrimary} w-full`}>
+                {t('levels.continue')}
+              </Link>
+            </motion.div>
+          ) : (
+            <button disabled className={`${buttonPrimary} w-full`}>
               {t('levels.continue')}
             </button>
           )}

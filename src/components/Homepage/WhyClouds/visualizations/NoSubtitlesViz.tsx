@@ -35,7 +35,7 @@ const NoSubtitlesViz = () => {
       {/* The player frame. Deliberately plain: it is a stand-in for the
           story you are listening to, and the only thing that changes on it
           is the caption line at the bottom. */}
-      <div className="w-full max-w-[19rem] rounded-xl overflow-hidden border border-gray-200">
+      <div className="w-full max-w-[19rem] rounded-[3px] overflow-hidden border border-gray-200">
         <div className="h-20 flex items-center justify-center bg-gray-50">
           <motion.span
             animate={{
@@ -67,7 +67,7 @@ const NoSubtitlesViz = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.45, delay: 0.15 }}
-                className="text-[10px] uppercase tracking-widest font-bold text-gray-400"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400"
               >
                 {t('homepage.why.noSubtitles.offLabel')}
               </motion.span>
@@ -87,7 +87,7 @@ const NoSubtitlesViz = () => {
           className="flex flex-col items-center gap-1"
         >
           <IoEyeOutline size={30} />
-          <span className="text-[10px] uppercase tracking-widest">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em]">
             {t('homepage.why.noSubtitles.eyeLabel')}
           </span>
         </motion.div>
@@ -102,7 +102,7 @@ const NoSubtitlesViz = () => {
           className="flex flex-col items-center gap-1"
         >
           <IoEarOutline size={30} />
-          <span className="text-[10px] uppercase tracking-widest">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em]">
             {t('homepage.why.noSubtitles.earLabel')}
           </span>
         </motion.div>

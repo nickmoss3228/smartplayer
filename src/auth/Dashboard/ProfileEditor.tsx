@@ -93,12 +93,12 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 }
               }}
               maxLength={30}
-              className="bg-black/[0.04] rounded-xl px-3 py-1.5 text-base font-bold text-black focus:outline-none focus:ring-2 focus:ring-black/30 w-full max-w-[180px]"
+              className="bg-black/[0.04] rounded-[3px] px-3 py-1.5 text-base font-bold text-black focus:outline-none focus:ring-2 focus:ring-black/30 w-full max-w-[180px]"
             />
             <button
               onClick={saveNickname}
               disabled={saving}
-              className="px-3 py-1.5 bg-black text-white rounded-xl text-sm font-bold hover:bg-black/80 disabled:opacity-50 transition-colors"
+              className="px-3 py-1.5 bg-black text-white rounded-[3px] text-sm font-bold hover:bg-black/80 disabled:opacity-50 transition-colors"
             >
               {saving ? "…" : t("dashboard.profile.save")}
             </button>
@@ -107,7 +107,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
                 setEditingNickname(false);
                 setNicknameInput(profile.nickname);
               }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/[0.04] hover:bg-black/10 transition-colors flex-shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-[3px] bg-black/[0.04] hover:bg-black/10 transition-colors flex-shrink-0"
               aria-label={t("dashboard.profile.cancel")}
             >
               <IoClose size={16} className="text-black/60" />

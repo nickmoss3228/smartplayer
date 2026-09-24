@@ -53,21 +53,21 @@ const PartMatrix = ({
     <table className="w-full text-sm border-collapse min-w-[520px]">
       <thead>
         <tr>
-          <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 pb-2 pr-3">
+          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-gray-400 pb-2 pr-3">
             Part
           </th>
           {ELEMENTS.map((el) => (
             <th
               key={el.id}
               title={el.required ? el.label : `${el.label} — optional`}
-              className={`text-center text-[11px] font-semibold uppercase tracking-wide pb-2 px-1 ${
+              className={`font-mono text-center text-[11px] uppercase tracking-[0.18em] pb-2 px-1 ${
                 el.required ? "text-gray-400" : "text-gray-300"
               }`}
             >
               {el.short}
             </th>
           ))}
-          <th className="text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400 pb-2 pl-3">
+          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-gray-400 pb-2 pl-3">
             Status
           </th>
         </tr>
@@ -87,7 +87,7 @@ const PartMatrix = ({
                 {status.partNumber === previewPart && (
                   <span
                     title="A non-owner hears this part before deciding to buy"
-                    className="ml-1.5 text-[9px] uppercase tracking-wide text-amber-700 bg-amber-100 rounded px-1 py-0.5"
+                    className="font-mono ml-1.5 text-[10px] uppercase tracking-[0.16em] text-amber-700 bg-amber-100 rounded-[3px] px-1 py-0.5"
                   >
                     preview
                   </span>
@@ -107,7 +107,7 @@ const PartMatrix = ({
                       type="button"
                       onClick={() => onPick(status.partNumber, el.id)}
                       title={`Part ${status.partNumber} — ${el.label}`}
-                      className={`w-7 h-7 rounded-md text-[11px] font-bold leading-none tabular-nums transition-colors ${
+                      className={`w-7 h-7 rounded-[3px] text-[11px] font-bold leading-none tabular-nums transition-colors ${
                         CELL_STYLE[state]
                       } ${here ? "ring-2 ring-amber-500 ring-offset-1" : "hover:brightness-95"}`}
                     >
@@ -144,7 +144,7 @@ const PartMatrix = ({
         onClick={onAddPart}
         disabled={addingPart || !canAddPart}
         title={canAddPart ? "Add another part" : `A story can have at most ${maxParts} parts.`}
-        className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
+        className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-[3px] px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
       >
         {addingPart ? "Adding…" : "+ Add part"}
       </button>

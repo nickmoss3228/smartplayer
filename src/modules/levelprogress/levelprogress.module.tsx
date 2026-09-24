@@ -41,7 +41,7 @@ export const getLevelStyles = (status: LevelStatus, theme: any): string => {
       return [
         `${theme.currentGradient}`,
         `border-2 ${theme.currentColor}`,
-        "text-black/80 shadow-2xl cursor-pointer",
+        "text-black/80 shadow-xl cursor-pointer",
         "ring-4 ring-white/60 scale-105",
         "transition-all duration-300 hover:scale-110 hover:ring-white/80",
       ].join(" ");

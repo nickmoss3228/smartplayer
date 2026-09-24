@@ -42,12 +42,12 @@ const EarsOnlyViz = () => {
             transition={
               shouldReduceMotion ? undefined : { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
             }
-            className="flex items-center gap-1 text-emerald-600"
+            className="flex items-center gap-1 text-green-700"
           >
             <IoEarOutline size={30} />
             <IoChatbubbleEllipsesOutline size={24} />
           </motion.div>
-          <p className="text-xs font-semibold text-emerald-700">{t('homepage.why.earsOnly.rightLabel')}</p>
+          <p className="text-xs font-semibold text-green-700">{t('homepage.why.earsOnly.rightLabel')}</p>
         </motion.div>
       </div>
 

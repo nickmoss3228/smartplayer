@@ -171,9 +171,9 @@ const CheckoutReturn = () => {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="mx-auto max-w-md px-4 pt-24 text-center">
-        <div className="rounded-2xl border border-gray-200 bg-white p-8">
+        <div className="rounded-[3px] border border-gray-200 bg-white p-8">
           {granted ? (
-            <IoCheckmarkCircle size={44} className="mx-auto mb-4 text-emerald-500" aria-hidden="true" />
+            <IoCheckmarkCircle size={44} className="mx-auto mb-4 text-green-600" aria-hidden="true" />
           ) : dead || leansFailed ? (
             <IoCloseCircle size={44} className="mx-auto mb-4 text-gray-300" aria-hidden="true" />
           ) : (
@@ -191,9 +191,9 @@ const CheckoutReturn = () => {
           {/* What was bought. On success it is what was UNLOCKED, which is the
               question the buyer actually has at this moment. */}
           {order && (
-            <div className="mb-6 rounded-xl bg-gray-50 px-4 py-3 text-left">
+            <div className="mb-6 rounded-[3px] bg-gray-50 px-4 py-3 text-left">
               {granted && (
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                <p className="font-mono mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-green-700">
                   <IoLockOpenOutline aria-hidden="true" />
                   {t('payment.unlocked')}
                 </p>
@@ -218,7 +218,7 @@ const CheckoutReturn = () => {
               reconciliation job settles it within a few minutes, so this is a
               "come back shortly", not a failure. */}
           {timedOut && !granted && !dead && !leansFailed && (
-            <p className="mb-6 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            <p className="mb-6 rounded-[3px] bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
               {t('payment.stillProcessing')}
             </p>
           )}
@@ -227,20 +227,20 @@ const CheckoutReturn = () => {
             {granted && storyPath && (
               <button
                 onClick={() => navigate(storyPath)}
-                className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+                className="w-full rounded-[3px] bg-ink py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {t('payment.startListening')}
               </button>
             )}
             <button
               onClick={() => navigate('/library')}
-              className="w-full rounded-xl bg-gray-900 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              className="w-full rounded-[3px] bg-gray-900 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
             >
               {t('payment.backToLibrary')}
             </button>
             <button
               onClick={() => navigate('/shop')}
-              className="w-full rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50 active:scale-95"
+              className="w-full rounded-[3px] border border-gray-200 py-3 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50 active:scale-95"
             >
               {t('library.goToShop')}
             </button>
@@ -287,8 +287,8 @@ const Diagnostics = ({
   ];
 
   return (
-    <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-white/60 p-4 text-left">
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+    <div className="mt-4 rounded-[3px] border border-dashed border-gray-300 bg-white/60 p-4 text-left">
+      <p className="font-mono mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-gray-400">
         <IoFlaskOutline aria-hidden="true" />
         Test mode
       </p>
@@ -375,8 +375,8 @@ export const FakeCheckout = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-md px-4 pt-24">
-        <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-white p-8 text-center">
-          <p className="mb-1 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-600">
+        <div className="rounded-[3px] border-2 border-dashed border-amber-300 bg-white p-8 text-center">
+          <p className="font-mono mb-1 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-amber-600">
             <IoFlaskOutline aria-hidden="true" />
             Test payment page
           </p>
@@ -390,14 +390,14 @@ export const FakeCheckout = () => {
           <p className="mb-6 font-mono text-[11px] text-gray-400">order {payment.orderId}</p>
 
           {decided ? (
-            <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500">
+            <p className="rounded-[3px] bg-gray-50 px-3 py-2 text-sm text-gray-500">
               Already decided: <span className="font-mono">{payment.status}</span>
               {payment.delivered ? ' · callback delivered' : ' · callback not delivered'}
             </p>
           ) : (
             <>
-              <div className="mb-6 space-y-2 rounded-xl bg-gray-50 p-3 text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <div className="mb-6 space-y-2 rounded-[3px] bg-gray-50 p-3 text-left">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-400">
                   Simulate
                 </p>
                 <SimRow
@@ -435,21 +435,21 @@ export const FakeCheckout = () => {
                 <button
                   disabled={busy}
                   onClick={() => finish('pay')}
-                  className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:opacity-90 active:scale-95 disabled:opacity-40"
+                  className="w-full rounded-[3px] bg-ink py-3 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-45"
                 >
                   Pay
                 </button>
                 <button
                   disabled={busy}
                   onClick={() => finish('decline')}
-                  className="w-full rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 active:scale-95 disabled:opacity-40"
+                  className="w-full rounded-[3px] border border-gray-200 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 active:scale-95 disabled:opacity-40"
                 >
                   Decline
                 </button>
                 <button
                   disabled={busy}
                   onClick={() => finish('cancel')}
-                  className="w-full rounded-xl py-3 text-sm font-medium text-gray-400 hover:text-gray-600 active:scale-95 disabled:opacity-40"
+                  className="w-full rounded-[3px] py-3 text-sm font-medium text-gray-400 hover:text-gray-600 active:scale-95 disabled:opacity-40"
                 >
                   Cancel
                 </button>
@@ -480,7 +480,7 @@ const SimRow = ({
         <button
           key={key}
           onClick={() => onPick(key)}
-          className={`rounded-md px-2 py-1 font-mono text-[11px] transition-colors ${
+          className={`rounded-[3px] px-2 py-1 font-mono text-[11px] transition-colors ${
             value === key
               ? 'bg-gray-900 text-white'
               : 'bg-white text-gray-500 hover:bg-gray-100'

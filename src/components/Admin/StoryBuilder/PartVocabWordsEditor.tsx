@@ -90,7 +90,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-2">
+      <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2">
         <div className="text-sm font-semibold text-black">Add a word</div>
         <input
           type="file"
@@ -104,14 +104,14 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
             value={audioKeyInput}
             onChange={(e) => setAudioKeyInput(e.target.value)}
             placeholder="English key/filename (e.g. flat)"
-            className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
+            className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
           <input
             type="text"
             value={wordInput}
             onChange={(e) => setWordInput(e.target.value)}
             placeholder="Russian text (e.g. квартира)"
-            className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
+            className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
         </div>
         <input
@@ -119,13 +119,13 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
           value={definitionInput}
           onChange={(e) => setDefinitionInput(e.target.value)}
           placeholder="Definition (optional)"
-          className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
+          className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
         />
         <button
           type="button"
           onClick={handleAdd}
           disabled={uploading}
-          className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-4 py-2 disabled:opacity-50"
+          className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
           {uploading ? "Uploading..." : "Add word"}
         </button>
@@ -136,7 +136,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
       {words.length > 0 && (
         <div className="space-y-1">
           {words.map((w, i) => (
-            <div key={i} className="flex items-center gap-3 text-sm bg-gray-50 rounded px-3 py-2">
+            <div key={i} className="flex items-center gap-3 text-sm bg-gray-50 rounded-[3px] px-3 py-2">
               {/* Leading, and a fixed width wide enough for the longest state
                   ("✗ won't load"), so the whole list can be scanned straight
                   down the left edge for a clip that didn't load rather than
@@ -163,7 +163,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
         type="button"
         onClick={handleSave}
         disabled={saving}
-        className="text-sm bg-black text-white rounded-lg px-4 py-2 disabled:opacity-50"
+        className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
       >
         {saving ? "Saving..." : `Save ${kind === "vocab" ? "vocabulary" : "phrasal verbs"}`}
       </button>

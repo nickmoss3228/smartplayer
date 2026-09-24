@@ -146,7 +146,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
         </p>
         <button
           onClick={onClose}
-          className="px-5 py-2 rounded-full bg-white/90 text-black shadow-sm hover:bg-white transition-colors"
+          className="px-5 py-2 rounded-[3px] bg-white/90 text-black shadow-sm hover:bg-white transition-colors"
         >
           Назад
         </button>
@@ -172,7 +172,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
             Результат: {score} из {order.length}
           </p>
           {user && newlyLearnedCount > 0 && (
-            <div className="inline-flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-full bg-sky-50 border border-sky-100 text-sky-600 text-sm font-semibold">
+            <div className="inline-flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-[3px] bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold">
               <BitWordIcon size={15} />
               +{newlyLearnedCount} BitWord
             </div>
@@ -180,14 +180,14 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
           <div className="flex gap-3">
             <button
               onClick={handleRestart}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500 text-white font-semibold shadow-sm hover:bg-green-600 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
             >
               <IoRefresh size={16} />
               Играть снова
             </button>
             <button
               onClick={onClose}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/90 text-black shadow-sm hover:bg-white active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[3px] bg-white/90 text-black shadow-sm hover:bg-white active:scale-95 transition-all"
             >
               <IoArrowBack size={16} />
               Назад
@@ -197,13 +197,13 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
       ) : (
         <>
           <div className="shrink-0 flex flex-col items-center gap-2 py-3">
-            <p className="text-black/60 text-xs uppercase tracking-widest font-semibold">
+            <p className="font-mono text-black/60 text-[10px] uppercase tracking-[0.16em]">
               Нажми на слово, которое ты услышал
             </p>
             <button
               onClick={playCurrent}
               aria-label="Повторить произношение"
-              className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+              className="w-14 h-14 rounded-full bg-gray-900 hover:bg-gray-800 text-white flex items-center justify-center active:scale-95 transition-all"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -253,7 +253,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
                   key={w.word}
                   onClick={() => handleChoice(w)}
                   disabled={status !== "idle"}
-                  className={`rounded-xl px-2 py-3 min-h-[3.5rem] font-semibold font-['Montserrat'] leading-snug text-center break-words whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
+                  className={`rounded-[3px] px-2 py-3 min-h-[3.5rem] font-semibold leading-snug text-center break-words whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
                 >
                   {w.word}
                 </button>

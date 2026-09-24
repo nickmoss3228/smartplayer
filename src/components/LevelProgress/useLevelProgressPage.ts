@@ -22,6 +22,9 @@ import type { LevelProgressProps } from '../../types/LevelProgress';
 import type { Difficulty } from '../../types/Player';
 import { resolveStory } from '../../modules/story/resolveStory';
 
+/** Just past the preview dialog's 320ms entrance (App.css dialog-panel-in). */
+const PRELOAD_AFTER_OPEN_MS = 400;
+
 // ── Congrats localStorage helpers ─────────────────────────────────────────
 const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
 const hasShownCongrats = (diff: string) =>
@@ -188,7 +191,10 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     }
     setPreviewLevel(level);
     setPreviewData(storyPreviewData[`${difficulty}-${storySlug}-${level}`] ?? null);
-    preloadAudioAssets(level);
+    // Warm the audio only once the preview dialog has finished opening: the
+    // preload creates an <audio> element per clip at once, and doing that in
+    // the click frame is what made the dialog's entrance stutter on phones.
+    window.setTimeout(() => preloadAudioAssets(level), PRELOAD_AFTER_OPEN_MS);
   };
 
   const handleStartListening = () => {

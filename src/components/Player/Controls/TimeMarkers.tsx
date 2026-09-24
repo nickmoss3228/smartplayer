@@ -23,7 +23,7 @@ export const TimeMarkers: React.FC<TimeMarkersProps> = React.memo(
               onClick={() => onMarkerClick(marker.time)}
               title={`Jump to ${marker.label}`}
             >
-              {/* <span onClick={() => onMarkerClick(marker.time)} className="absolute top-1 left-1/2 -translate-x-1/2 bg-black/75 text-white px-1.5 py-0.5 md:px-[6px] md:py-0.5 rounded text-[11px] md:text-[11px] whitespace-nowrap">
+              {/* <span onClick={() => onMarkerClick(marker.time)} className="absolute top-1 left-1/2 -translate-x-1/2 bg-black/75 text-white px-1.5 py-0.5 md:px-[6px] md:py-0.5 rounded-[3px] text-[11px] md:text-[11px] whitespace-nowrap">
                 {marker.label}
               </span> */}
             </div>

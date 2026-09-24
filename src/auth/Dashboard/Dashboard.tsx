@@ -105,11 +105,11 @@ const Dashboard: React.FC = () => {
   const RankIcon = rank.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-20 pb-10 px-3 sm:px-6">
+    <div className="min-h-screen bg-room pt-20 pb-10 px-3 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         {/* ── Header ── */}
-        <div className="bg-white rounded-3xl p-4 sm:p-6 mb-4 sm:mb-6 shadow-[0_2px_16px_rgba(0,0,0,0.06)] border border-black/5 animate-fade-in">
+        <div className="bg-white rounded-[3px] p-4 sm:p-6 mb-4 sm:mb-6 border border-line animate-fade-in">
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
 
             {/* ── Profile ── */}
@@ -118,8 +118,8 @@ const Dashboard: React.FC = () => {
                 <div className="animate-pulse flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-gray-200" />
                   <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-32" />
-                    <div className="h-3 bg-gray-200 rounded w-48" />
+                    <div className="h-4 bg-gray-200 rounded-[3px] w-32" />
+                    <div className="h-3 bg-gray-200 rounded-[3px] w-48" />
                   </div>
                 </div>
               ) : profile ? (
@@ -141,13 +141,13 @@ const Dashboard: React.FC = () => {
 
             {/* ── Rank badge ── */}
             <div
-              className={`flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-2xl p-3.5 sm:p-4 sm:w-40 bg-gradient-to-br ${rank.gradient} shadow-lg flex-shrink-0`}
+              className={`flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-[3px] p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0`}
             >
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-[3px] bg-white/10 flex items-center justify-center flex-shrink-0">
                 <RankIcon size={20} className="text-white" />
               </div>
               <div className="flex-1 sm:text-center min-w-0">
-                <p className="text-[10px] uppercase tracking-widest text-white/75 font-semibold">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
                   {t("dashboard.stats.currentRank")}
                 </p>
                 <p className="text-base sm:text-lg font-bold capitalize text-white truncate">
@@ -160,10 +160,10 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-black/5 flex justify-end">
+          <div className="mt-4 pt-4 border-t border-line flex justify-end">
             <button
               onClick={signOut}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
             >
               <IoLogOutOutline size={16} />
               {t("dashboard.signOut")}
@@ -175,10 +175,10 @@ const Dashboard: React.FC = () => {
         {progressLoading ? (
           <div className="flex flex-col gap-3 mb-6">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-3xl p-4 sm:p-5 border border-black/5 animate-pulse">
-                <div className="h-11 w-11 bg-gray-200 rounded-2xl mb-3" />
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
-                <div className="h-2 bg-gray-200 rounded" />
+              <div key={i} className="bg-white rounded-[3px] p-4 sm:p-5 border border-line animate-pulse">
+                <div className="h-11 w-11 bg-gray-200 rounded-[3px] mb-3" />
+                <div className="h-4 bg-gray-200 rounded-[3px] w-1/3 mb-2" />
+                <div className="h-2 bg-gray-200 rounded-[3px]" />
               </div>
             ))}
           </div>
@@ -197,9 +197,9 @@ const Dashboard: React.FC = () => {
                       key={difficulty}
                       onClick={() => setSelectedDifficulty(difficulty)}
                       className="
-                        bg-white rounded-3xl p-4 sm:p-5 text-left
-                        border border-black/5 shadow-[0_2px_10px_rgba(0,0,0,0.05)]
-                        hover:shadow-md active:scale-[0.98]
+                        bg-white rounded-[3px] p-4 sm:p-5 text-left
+                        border border-line
+                        hover:border-line-strong active:scale-[0.98]
                         transition-all duration-200
                         focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2
                         animate-scale-in
@@ -207,7 +207,7 @@ const Dashboard: React.FC = () => {
                       style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-11 h-11 rounded-2xl ${theme.soft} flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 rounded-[3px] ${theme.soft} flex items-center justify-center flex-shrink-0`}>
                           <Icon className={theme.text} size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
 
             {/* ── Progress charts ── */}
             <div className="mb-6 animate-fade-in-delay-2">
-              <h2 className="text-xs text-black/40 font-bold mb-3 uppercase tracking-widest">
+              <h2 className="font-mono text-[10px] text-black/40 mb-3 uppercase tracking-[0.16em]">
                 {t("dashboard.charts.sectionTitle")}
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">

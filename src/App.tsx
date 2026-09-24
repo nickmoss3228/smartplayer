@@ -1,5 +1,6 @@
 import './i18n';
 import { ReactNode, Suspense, lazy } from 'react';
+import { MotionConfig } from 'framer-motion';
 import {
   BrowserRouter as Router,
   Routes,
@@ -75,6 +76,11 @@ function App() {
         <ProgressProvider>
           <Provider store={store}>
             <Router>
+              {/* One switch for every framer-motion animation in the app:
+                  with the phone's "reduce motion" on, movement is dropped
+                  and only fades remain. The CSS side is handled by the
+                  prefers-reduced-motion rule in App.css. */}
+              <MotionConfig reducedMotion="user">
               <Layout>
               {/* <Navbar /> */}
               <Suspense fallback={<div>Loading...</div>}>
@@ -169,6 +175,7 @@ function App() {
                 </Routes>
               </Suspense>
                 </Layout>
+              </MotionConfig>
             </Router>
           </Provider>
         </ProgressProvider>

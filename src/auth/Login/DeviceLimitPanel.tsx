@@ -47,9 +47,9 @@ const DeviceLimitPanel = ({ limit, onFreed, onCancel }: DeviceLimitPanelProps) =
   };
 
   return (
-    <div className="mb-5 bg-white border border-[#e0e7ed] rounded-[3px] animate-fade-in">
-      <div className="px-4 py-3.5 border-b border-[#e0e7ed]">
-        <p className="m-0 font-mono text-[10px] tracking-[0.16em] uppercase text-[#5b6b7a]">
+    <div className="mb-5 bg-white border border-line rounded-[3px] animate-fade-in">
+      <div className="px-4 py-3.5 border-b border-line">
+        <p className="m-0 font-mono text-[10px] tracking-[0.16em] uppercase text-dim">
           {t("login.deviceLimit.title")}
         </p>
         <p className="m-0 mt-2 text-sm leading-relaxed text-[#47586a]">
@@ -77,8 +77,8 @@ const DeviceLimitPanel = ({ limit, onFreed, onCancel }: DeviceLimitPanelProps) =
                 <path d="M11 18.6h2" />
               </svg>
               <div className="min-w-0">
-                <p className="m-0 text-sm font-semibold text-[#0f1720] truncate">{device.label}</p>
-                <p className="m-0 font-mono text-[11px] text-[#9aa8b5]">
+                <p className="m-0 text-sm font-semibold text-ink truncate">{device.label}</p>
+                <p className="m-0 font-mono text-[11px] text-muted">
                   {t("login.deviceLimit.lastUsed", {
                     when: formatRelativeTime(device.lastSeenAt, i18n.language),
                   })}
@@ -89,7 +89,7 @@ const DeviceLimitPanel = ({ limit, onFreed, onCancel }: DeviceLimitPanelProps) =
               type="button"
               onClick={() => handleEvict(device.deviceId)}
               disabled={pendingId !== null}
-              className="flex-none h-9 px-3.5 flex items-center justify-center bg-transparent border border-[#c8d3dc] rounded-[3px] text-[13px] text-[#0f151c] cursor-pointer hover:border-[#0f151c] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d]"
+              className="flex-none h-9 px-3.5 flex items-center justify-center bg-transparent border border-line-strong rounded-[3px] text-[13px] text-ink cursor-pointer hover:border-ink disabled:opacity-50 disabled:cursor-not-allowed focus:outline-2 focus:outline-offset-2 focus:outline-signal"
             >
               {pendingId === device.deviceId ? (
                 <IoSyncOutline size={14} className="animate-spin" />
@@ -102,16 +102,16 @@ const DeviceLimitPanel = ({ limit, onFreed, onCancel }: DeviceLimitPanelProps) =
       </ul>
 
       {error && (
-        <p role="alert" className="m-0 px-4 py-3 border-t border-[#e0e7ed] text-sm text-[#c2262b]">
+        <p role="alert" className="m-0 px-4 py-3 border-t border-line text-sm text-signal-ink">
           {error}
         </p>
       )}
 
-      <div className="px-4 py-3 border-t border-[#e0e7ed]">
+      <div className="px-4 py-3 border-t border-line">
         <button
           type="button"
           onClick={onCancel}
-          className="text-[13px] text-[#5b6b7a] hover:text-[#0f151c] underline underline-offset-2 cursor-pointer"
+          className="text-[13px] text-dim hover:text-ink underline underline-offset-2 cursor-pointer"
         >
           {t("login.deviceLimit.cancel")}
         </button>

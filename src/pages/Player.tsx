@@ -459,11 +459,11 @@ const Player = React.memo(() => {
       <GuidedTour />
       {previewEnded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-2xl">
+          <div className="w-full max-w-sm rounded-[3px] bg-white p-7 text-center shadow-xl">
             <h2 className="mb-2 text-xl font-bold text-gray-900">{t("playerPreview.endedTitle")}</h2>
             <p className="mb-6 text-sm leading-relaxed text-gray-500">{t("playerPreview.endedBody")}</p>
             <button
@@ -475,7 +475,7 @@ const Player = React.memo(() => {
                       state: user ? undefined : { returnTo: backPath },
                     })
               }
-              className="mb-3 w-full cursor-pointer rounded-xl bg-gray-900 py-3 font-semibold text-white transition-opacity hover:opacity-90"
+              className="mb-3 w-full cursor-pointer rounded-[3px] bg-gray-900 py-3 font-semibold text-white transition-opacity hover:opacity-90"
             >
               {paywallEnabled ? t("playerPreview.buy") : t("paywall.signUpToContinue")}
             </button>
@@ -489,7 +489,7 @@ const Player = React.memo(() => {
         </div>
       )}
       <div className="flex justify-center items-center h-full">
-        <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 backdrop-blur-sm rounded-2xl text-center animate-fade-in flex flex-col overflow-hidden">
+        <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 backdrop-blur-sm rounded-[3px] text-center animate-fade-in flex flex-col overflow-hidden">
           {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks ── */}
           <div className="shrink-0 relative flex items-center justify-center min-h-[52px] px-2">
             <button

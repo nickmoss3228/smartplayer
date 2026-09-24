@@ -134,21 +134,21 @@ const ForgotPassword = () => {
             {t('forgotPassword.resetSuccess.title')}
           </p>
           <CardTitle>{t('forgotPassword.resetSuccess.title')}</CardTitle>
-          <p className="m-0 mb-2 text-[15px] leading-relaxed text-[#5b6b7a]">
+          <p className="m-0 mb-2 text-[15px] leading-relaxed text-dim">
             {t('forgotPassword.resetSuccess.message')}
           </p>
           {/* The reset now tears down every session server-side, so say so —
               otherwise the other devices simply stop working and it reads as a
               bug rather than as the protection it is. */}
-          <p className="m-0 mb-2 text-[15px] leading-relaxed text-[#5b6b7a]">
+          <p className="m-0 mb-2 text-[15px] leading-relaxed text-dim">
             {t('forgotPassword.resetSuccess.signedOutEverywhere')}
           </p>
-          <p className="m-0 mb-7 text-[13px] text-[#9aa8b5]">
+          <p className="m-0 mb-7 text-[13px] text-muted">
             {t('forgotPassword.resetSuccess.redirecting')}
           </p>
           <Link
             to="/login"
-            className="w-full h-[52px] flex items-center justify-center bg-[#0f151c] text-white rounded-[3px] text-[15px] font-semibold no-underline hover:opacity-90"
+            className="w-full h-[52px] flex items-center justify-center bg-ink text-white rounded-[3px] text-[15px] font-semibold no-underline hover:opacity-90"
           >
             {t('forgotPassword.resetSuccess.goToLogin')}
           </Link>
@@ -193,7 +193,7 @@ const ForgotPassword = () => {
             required
           >
             {confirmPassword.length > 0 && confirmPassword !== newPassword && (
-              <p className="mt-2 text-[13px] text-[#c2262b]">
+              <p className="mt-2 text-[13px] text-signal-ink">
                 {t('forgotPassword.errors.passwordMismatch')}
               </p>
             )}
@@ -204,7 +204,7 @@ const ForgotPassword = () => {
           </SubmitButton>
         </form>
 
-        <p className="mt-5 mb-0 text-[13px] leading-relaxed text-[#5b6b7a]">
+        <p className="mt-5 mb-0 text-[13px] leading-relaxed text-dim">
           {t('forgotPassword.resetSuccess.signedOutEverywhere')}
         </p>
 
@@ -227,11 +227,11 @@ const ForgotPassword = () => {
         </Badge>
         <Eyebrow>{t('forgotPassword.emailSent.title')}</Eyebrow>
         <CardTitle>{t('forgotPassword.emailSent.title')}</CardTitle>
-        <p className="m-0 mb-1.5 text-[15px] leading-relaxed text-[#5b6b7a]">
+        <p className="m-0 mb-1.5 text-[15px] leading-relaxed text-dim">
           {t('forgotPassword.emailSent.message')}{' '}
-          <span className="font-semibold text-[#0f1720]">{email}</span>
+          <span className="font-semibold text-ink">{email}</span>
         </p>
-        <p className="m-0 mb-7 text-[13px] text-[#9aa8b5]">
+        <p className="m-0 mb-7 text-[13px] text-muted">
           {t('forgotPassword.emailSent.instructions')}
         </p>
 
@@ -281,7 +281,7 @@ const ForgotPassword = () => {
         field and read the deliberately vague "if an account exists…" reply as
         confirmation that a link is coming.
       */}
-      <div className="mt-6 p-4 bg-[#f5f8fa] border border-[#e0e7ed] rounded-[3px]">
+      <div className="mt-6 p-4 bg-room border border-line rounded-[3px]">
         <p className="m-0 text-[13px] leading-relaxed text-[#47586a]">
           {t('forgotPassword.noEmailHint')}
         </p>

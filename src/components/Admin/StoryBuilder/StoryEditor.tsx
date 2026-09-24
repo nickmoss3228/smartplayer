@@ -28,7 +28,7 @@ interface StoryEditorProps {
 const MAX_PARTS = 20;
 
 // Part 1 of a paid story is what a non-owner always hears before deciding to
-// buy — in full on a long story, as a 30-second preview on a short one
+// buy — always in full; the first three parts are free on any story
 // (freeAllowanceFor in backend/src/config/priceCatalog.js). The builder marks
 // it so the shop window gets made deliberately rather than by accident.
 const PREVIEW_PART = 1;
@@ -192,7 +192,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                   ? "Put this story on the shelves"
                   : `${readiness.total - readiness.sellableCount} parts are not ready to sell`
             }
-            className={`text-sm rounded-lg px-4 py-2 disabled:opacity-50 ${
+            className={`text-sm rounded-[3px] px-4 py-2 disabled:opacity-50 ${
               story.published
                 ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 : readiness.complete
@@ -213,20 +213,20 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
 
       <div className="mb-4">
         {editingMeta ? (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-2 max-w-md">
+          <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2 max-w-md">
             <div className="flex gap-2">
               <input
                 type="text"
                 value={editIcon}
                 onChange={(e) => setEditIcon(e.target.value)}
-                className="w-16 text-black text-center px-2 py-1.5 border border-gray-300 rounded-lg"
+                className="w-16 text-black text-center px-2 py-1.5 border border-gray-300 rounded-[3px]"
               />
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Story name"
-                className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-lg"
+                className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-[3px]"
               />
               {/* Which shelf the story sits on in the students' list. A
                   published story REPLACES its built-in entry outright, so
@@ -235,7 +235,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
               <select
                 value={editCategory}
                 onChange={(e) => setEditCategory(e.target.value as StoryCategory)}
-                className="text-black text-sm px-2 py-1.5 border border-gray-300 rounded-lg bg-white"
+                className="text-black text-sm px-2 py-1.5 border border-gray-300 rounded-[3px] bg-white"
                 title="Which section of the story list this appears under"
               >
                 <option value="general">Stories</option>
@@ -247,13 +247,13 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Description"
               rows={2}
-              className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+              className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
             />
             <div className="flex gap-2">
               <button
                 onClick={handleSaveMeta}
                 disabled={savingMeta}
-                className="text-sm bg-black text-white rounded-lg px-4 py-1.5 disabled:opacity-50"
+                className="text-sm bg-black text-white rounded-[3px] px-4 py-1.5 disabled:opacity-50"
               >
                 {savingMeta ? "Saving..." : "Save"}
               </button>
@@ -320,7 +320,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
             <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
             Card image{story.coverUrl ? "" : " — none set"}
           </summary>
-          <div className="mt-2 bg-gray-50 rounded-lg border border-gray-200 p-3">
+          <div className="mt-2 bg-gray-50 rounded-[3px] border border-gray-200 p-3">
             <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
           </div>
         </details>
@@ -341,7 +341,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       {/* Parts down, elements across. Replaces both the part row and the step
           row: one click lands on a cell, and the same grid is the report on
           what the story still owes. */}
-      <div className="mb-4 bg-white rounded-lg border border-gray-200 p-3">
+      <div className="mb-4 bg-white rounded-[3px] border border-gray-200 p-3">
         <PartMatrix
           readiness={readiness}
           activePart={partNumber}

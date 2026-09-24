@@ -72,7 +72,7 @@ const OfferRow = ({ sku, title, meta, fullMinor, priceMinor, inCart, highlighted
         highlighted ? 'ring-2 ring-[#FFE24A] ring-offset-2' : ''
       }`}
     >
-      <span className="text-base font-black uppercase tracking-tight text-gray-900">{title}</span>
+      <span className="text-base font-extrabold uppercase tracking-tight text-gray-900">{title}</span>
       <span className="text-xs text-gray-500">{meta}</span>
       <span className="ml-auto flex items-baseline gap-1.5 text-sm tabular-nums">
         {/* Struck through only when the bundle actually saves something. */}
@@ -84,7 +84,7 @@ const OfferRow = ({ sku, title, meta, fullMinor, priceMinor, inCart, highlighted
       <button
         type="button"
         onClick={onToggle}
-        className={`cursor-pointer rounded-sm px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+        className={`font-mono cursor-pointer rounded-[2px] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.18em] transition-colors ${
           inCart
             ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
             : 'bg-gray-900 text-white hover:bg-gray-700'
@@ -154,15 +154,15 @@ export const LevelShelf = ({ difficulty, filter, highlightSku, onPreview }: Prop
       {/* Shelf header. The fat percentage is the level's own identity in this
           app, so it belongs here rather than a generic "Easy / Medium / Hard". */}
       <div className="flex items-end justify-between gap-3 border-b-2 border-gray-900 pb-1.5">
-        <h2 className="text-xl font-black uppercase leading-none tracking-tight text-gray-900 sm:text-2xl">
+        <h2 className="text-xl font-extrabold uppercase leading-none tracking-tight text-gray-900 sm:text-2xl">
           {t(`list.difficultyTitle.${difficulty}`)}
         </h2>
-        <span className="shrink-0 text-[11px] uppercase tracking-widest text-gray-500 tabular-nums">
+        <span className="font-mono shrink-0 text-[11px] uppercase tracking-[0.18em] text-gray-500 tabular-nums">
           {t('levels.fatLabel')}{' '}
           <span className="font-semibold text-gray-800">{t(`levels.${levelFat[difficulty]}`)}</span>
           <span className="mx-1.5 text-gray-300">·</span>
           {loading ? (
-            <span className="inline-block h-3 w-14 rounded bg-gray-200 align-middle animate-pulse" />
+            <span className="inline-block h-3 w-14 rounded-[3px] bg-gray-200 align-middle animate-pulse" />
           ) : (
             t('shelf.ownedOf', {
               owned: stories.filter((s) => s.locked !== true).length,
@@ -177,7 +177,7 @@ export const LevelShelf = ({ difficulty, filter, highlightSku, onPreview }: Prop
       ) : (
         groups.map(({ category, stories: groupStories }) => (
           <div key={category} className="flex flex-col gap-2">
-            <h3 className="px-0.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <h3 className="font-mono px-0.5 text-[10px] uppercase tracking-[0.16em] text-gray-500">
               {t(`list.category.${category}`)}
             </h3>
 
@@ -210,7 +210,7 @@ export const LevelShelf = ({ difficulty, filter, highlightSku, onPreview }: Prop
                   <div
                     key={story.slug}
                     id={sku ? `sku-${sku}` : undefined}
-                    className={`rounded-sm ${
+                    className={`rounded-[2px] ${
                       sku && highlightSku === sku ? 'ring-2 ring-[#FFE24A] ring-offset-2' : ''
                     }`}
                   >

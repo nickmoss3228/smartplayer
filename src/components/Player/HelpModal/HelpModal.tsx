@@ -1,3 +1,4 @@
+import { IoHeadsetOutline } from 'react-icons/io5';
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { TimeMarker } from "../../../types";
 import { createPortal } from "react-dom"; 
@@ -191,7 +192,7 @@ const HelpModal: React.FC<HelpModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-10 w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl">
+      <div className="relative z-10 w-full sm:max-w-sm bg-white rounded-t-[3px] sm:rounded-[3px] shadow-xl">
         <div className="flex justify-center pt-3 sm:hidden">
           <div className="w-9 h-1 bg-gray-200 rounded-full" />
         </div>
@@ -200,8 +201,8 @@ const HelpModal: React.FC<HelpModalProps> = ({
           {/* header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-lg select-none">
-                🎧
+              <div className="w-9 h-9 rounded-[3px] bg-gray-100 flex items-center justify-center select-none">
+                <IoHeadsetOutline size={18} aria-hidden />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800 leading-tight">Listening Aid</p>
@@ -223,8 +224,8 @@ const HelpModal: React.FC<HelpModalProps> = ({
           </div>
 
           {/* segment label
-          <div className="bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100 rounded-xl px-4 py-2.5 text-center min-h-[42px] flex items-center justify-center">
-            <p className="text-sm font-semibold text-indigo-700 truncate">
+          <div className="bg-gray-50 border border-gray-200 rounded-[3px] px-4 py-2.5 text-center min-h-[42px] flex items-center justify-center">
+            <p className="text-sm font-semibold text-gray-900 truncate">
               {mLabel(timeMarkers[markerIdx], markerIdx)}
             </p>
           </div> */}
@@ -274,11 +275,11 @@ const HelpModal: React.FC<HelpModalProps> = ({
               onClick={handleBarClick}
             >
               <div
-                className="absolute inset-y-0 left-0 bg-indigo-500 rounded-full transition-none"
+                className="absolute inset-y-0 left-0 bg-gray-900 rounded-full transition-none"
                 style={{ width: `${progress * 100}%` }}
               />
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-indigo-600 shadow ring-2 ring-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-gray-900 shadow ring-2 ring-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                 style={{ left: `calc(${progress * 100}% - 7px)` }}
               />
             </div>
@@ -293,7 +294,7 @@ const HelpModal: React.FC<HelpModalProps> = ({
             <button
               onClick={handlePrev}
               disabled={!canPrev}
-              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
+              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -304,7 +305,7 @@ const HelpModal: React.FC<HelpModalProps> = ({
             {/* <button 
               onClick={handleReplay}
               disabled={!canInteract}
-              className="p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-500"
+              className="p-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-500"
             >
               <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -314,7 +315,7 @@ const HelpModal: React.FC<HelpModalProps> = ({
             <button
               onClick={handlePlayPause}
               disabled={!canInteract}
-              className="w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white flex items-center justify-center shadow-lg transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-14 h-14 rounded-full bg-gray-900 hover:bg-gray-800 active:scale-95 text-white flex items-center justify-center transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isPlaying ? (
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -331,7 +332,7 @@ const HelpModal: React.FC<HelpModalProps> = ({
             <button
               onClick={handleNext}
               disabled={!canNext}
-              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
+              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
             >
               Next
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

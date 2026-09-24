@@ -140,7 +140,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
               key={`${difficulty}:${group.slug}`}
               onClick={() => handleImport(difficulty, group)}
               disabled={importingSlug === group.slug}
-              className="flex items-center gap-1.5 text-xs text-left text-gray-700 rounded px-2 py-1 hover:bg-gray-100 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-xs text-left text-gray-700 rounded-[3px] px-2 py-1 hover:bg-gray-100 disabled:opacity-50"
             >
               <span>{group.coverEmoji}</span>
               <span className="flex-1 truncate">{group.title}</span>
@@ -160,14 +160,14 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowShelves((v) => !v)}
-            className="text-sm rounded-lg px-3 py-2 text-gray-600 hover:bg-gray-200"
+            className="text-sm rounded-[3px] px-3 py-2 text-gray-600 hover:bg-gray-200"
           >
             {showShelves ? "Hide shelves" : "Shelves"}
           </button>
           {!showNewForm && (
             <button
               onClick={() => setShowNewForm(true)}
-              className="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg px-4 py-2"
+              className="bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-[3px] px-4 py-2"
             >
               New story
             </button>
@@ -200,7 +200,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
               view, so there was no way to check a second story without throwing
               away where you were. */}
           <aside
-            className={`shrink-0 bg-white rounded-lg border border-gray-200 sticky top-4 max-h-[calc(100vh-8rem)] flex flex-col transition-[width] ${
+            className={`shrink-0 bg-white rounded-[3px] border border-gray-200 sticky top-4 max-h-[calc(100vh-8rem)] flex flex-col transition-[width] ${
               railOpen ? "w-64" : "w-10"
             }`}
           >
@@ -211,8 +211,8 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
               aria-expanded={railOpen}
               className={`flex items-center gap-1 text-gray-400 hover:text-black hover:bg-gray-50 shrink-0 ${
                 railOpen
-                  ? "self-end px-2 py-1.5 rounded-tr-lg"
-                  : "flex-col py-2 rounded-t-lg"
+                  ? "self-end px-2 py-1.5 rounded-tr-[3px]"
+                  : "flex-col py-2 rounded-t-[3px]"
               }`}
             >
               {railOpen ? (
@@ -234,7 +234,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
               />
             ) : (
               <span
-                className="text-[10px] uppercase tracking-widest text-gray-400 select-none mx-auto mt-2"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400 select-none mx-auto mt-2"
                 style={{ writingMode: "vertical-rl" }}
               >
                 Stories
@@ -252,7 +252,7 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
                 onBack={handleBack}
               />
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-10 text-center">
+              <div className="bg-white rounded-[3px] border border-gray-200 p-10 text-center">
                 <p className="text-gray-500">
                   {stories.length === 0
                     ? "No stories yet — create one, or import a built-in from the list."

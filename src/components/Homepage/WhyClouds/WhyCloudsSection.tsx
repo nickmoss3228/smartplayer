@@ -20,7 +20,7 @@ const WhyCloudsSection = () => {
 
   return (
     <section className="relative z-10 px-6 pt-4 pb-1 sm:pt-5 sm:pb-1">
-      {/* <p className="text-center text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-2 sm:mb-3">
+      {/* <p className="font-mono text-center text-[10px] tracking-[0.16em] uppercase text-gray-400 mb-2 sm:mb-3">
         {t('homepage.why.sectionLabel')}
       </p> */}
 

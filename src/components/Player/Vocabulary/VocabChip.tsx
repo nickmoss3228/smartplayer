@@ -53,7 +53,7 @@ export const VocabChip: React.FC<VocabChipProps> = React.memo(
       <div className="group relative">
         <button
           onClick={handleClick}
-          className={`inline-flex items-center gap-1.5 transition-all duration-200 text-xs font-semibold font-['Montserrat'] px-3 py-1.5 rounded-full cursor-pointer select-none
+          className={`inline-flex items-center gap-1.5 transition-all duration-200 text-xs font-semibold px-3 py-1.5 rounded-[2px] cursor-pointer select-none
             ${
               isLearned
                 ? "bg-green-500 text-white ring-1 ring-green-300/70 shadow-sm shadow-green-500/30"

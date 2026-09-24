@@ -16,11 +16,11 @@ export const SpeedControl: React.FC<SpeedControlProps> = React.memo(
           {PLAYBACK_RATES.map((speed) => (
             <button
               key={speed}
-              className={`text-white rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
+              className={`text-white rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium transition-all duration-200 active:scale-95
                 ${
                   playbackRate === speed
-                    ? "bg-[#05df3bff] text-black border-green-500"
-                    : "bg-black/20 hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                    ? "bg-green-500 text-black border-green-500"
+                    : "bg-black/20 hover:bg-green-500 hover:text-white hover:border-green-500"
                 }`}
               onClick={() => onSpeedChange(speed)}
             >
@@ -92,11 +92,11 @@ SpeedControl.displayName = "SpeedControl";
           {[3, 2, 1].map((count) => (
             <button
               key={count}
-              className={`border-2 rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium font-['Montserrat'] transition-all duration-200 active:scale-95
+              className={`border-2 rounded-full w-10 h-10 md:w-12 md:h-12 sm:w-11 sm:h-11 flex items-center justify-center cursor-pointer text-xs font-medium transition-all duration-200 active:scale-95
                 ${
                   repeatCount === count
-                    ? "bg-[#05df3bff] text-black border-green-500"
-                    : "bg-black/90 text-white/90 border-[#ddd] hover:bg-[#05df3bff] hover:text-white hover:border-green-500"
+                    ? "bg-green-500 text-black border-green-500"
+                    : "bg-black/90 text-white/90 border-[#ddd] hover:bg-green-500 hover:text-white hover:border-green-500"
                 }`}
               onClick={() => onRepeatCountChange(count)}
               title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}

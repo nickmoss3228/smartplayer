@@ -47,7 +47,7 @@ const Cloud: React.FC<CloudProps> = ({ label, index, onClick, isPaused }) => {
         className="relative z-10 px-4.5 py-3.75 sm:px-6 sm:py-4.5 max-w-[14.25rem] sm:max-w-[16.5rem] text-center text-lg sm:text-xl font-semibold text-gray-700
           hover:text-black hover:scale-105 focus-visible:scale-105 focus-visible:outline-none
           focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400
-          transition-transform duration-200 cursor-pointer rounded-2xl"
+          transition-transform duration-200 cursor-pointer rounded-[3px]"
       >
         {label}
       </button>

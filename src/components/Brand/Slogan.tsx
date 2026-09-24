@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { EASE_ENTER } from '../ui/motion';
 import { useTranslation } from 'react-i18next';
 import { themes } from '../../modules/levelprogress/themes.levelprogress';
 
@@ -54,12 +55,12 @@ const Slogan = ({ className = '' }: { className?: string }) => {
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={word}
-            className="col-start-1 row-start-1 whitespace-nowrap font-black"
+            className="col-start-1 row-start-1 whitespace-nowrap font-extrabold"
             style={{ color: accent }}
             initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: '0.45em' }}
             animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: '-0.45em' }}
-            transition={{ duration: shouldReduceMotion ? 0.2 : 0.42, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: shouldReduceMotion ? 0.2 : 0.42, ease: EASE_ENTER }}
           >
             {word}
           </motion.span>

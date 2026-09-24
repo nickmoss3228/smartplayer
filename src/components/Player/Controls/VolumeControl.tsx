@@ -1,6 +1,5 @@
 import React from "react";
-import { FaVolumeHigh } from "react-icons/fa6";
-import { FaVolumeMute } from "react-icons/fa";
+import { IoVolumeHigh, IoVolumeMute } from "react-icons/io5";
 
 interface VolumeControlProps {
   isMuted: boolean;
@@ -17,9 +16,9 @@ export const VolumeControl: React.FC<VolumeControlProps> = React.memo(
         onClick={onMuteToggle}
       >
         {isMuted ? (
-          <FaVolumeMute className="text-[24px] sm:text-[24px] md:text-[30px]" />
+          <IoVolumeMute className="text-[24px] sm:text-[24px] md:text-[30px]" />
         ) : (
-          <FaVolumeHigh className="text-[24px] sm:text-[24px] md:text-[30px]" />
+          <IoVolumeHigh className="text-[24px] sm:text-[24px] md:text-[30px]" />
         )}
       </div>
 
@@ -61,7 +60,7 @@ export const VolumeControl: React.FC<VolumeControlProps> = React.memo(
           {Array.from({ length: 11 }, (_, i) => (
             <div key={i} className="flex flex-col items-center gap-[2px]">
               <div className="w-[1px] h-[5px] bg-white/40" />
-              <span className="text-white/60 text-[9px] sm:text-[9px] md:text-[10px] font-['Montserrat'] leading-none select-none">
+              <span className="text-white/60 text-[9px] sm:text-[9px] md:text-[10px] leading-none select-none">
                 {i}
               </span>
             </div>

@@ -240,13 +240,13 @@ const Login = () => {
           </SubmitButton>
         </form>
 
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-[#e0e7ed]">
+        <div className="flex items-center justify-between mt-6 pt-5 border-t border-line">
           <BackButton onClick={backToSignIn}>{t('signup.phoneVerification.back')}</BackButton>
           <button
             type="button"
             onClick={handleResend}
             disabled={isLoading}
-            className="text-sm font-semibold text-[#0f151c] hover:text-[#e5484d] disabled:opacity-50 cursor-pointer py-1"
+            className="text-sm font-semibold text-ink hover:text-signal disabled:opacity-50 cursor-pointer py-1"
           >
             {t('signup.phoneVerification.resend')}
           </button>
@@ -280,7 +280,7 @@ const Login = () => {
           </SubmitButton>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-[#e0e7ed]">
+        <div className="mt-6 pt-5 border-t border-line">
           <BackButton onClick={backToSignIn}>{t('signup.phoneVerification.back')}</BackButton>
         </div>
       </AuthShell>

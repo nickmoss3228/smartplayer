@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { motionEnter, motionFast } from '../../ui/motion';
 import { IoClose, IoRefreshOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
@@ -52,18 +53,18 @@ const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, c
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={motionFast}
           onClick={onClose}
         >
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="relative w-full max-w-lg rounded-3xl bg-white shadow-2xl p-6 sm:p-8
+            className="relative w-full max-w-lg rounded-[3px] bg-white shadow-xl p-6 sm:p-8
               max-h-[85vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={motionEnter}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -82,7 +83,7 @@ const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, c
             <button
               type="button"
               onClick={onReplay}
-              className="mt-6 mx-auto flex items-center gap-2 text-xs font-bold tracking-[0.15em]
+              className="font-mono mt-6 mx-auto flex items-center gap-2 text-[10px] tracking-[0.16em]
                 uppercase text-gray-400 hover:text-black transition-colors cursor-pointer"
             >
               <IoRefreshOutline size={14} />

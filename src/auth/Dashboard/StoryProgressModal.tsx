@@ -53,7 +53,7 @@ const StoryProgressModal: React.FC<StoryProgressModalProps> = ({
     >
       {/* Modal */}
       <div
-        className="bg-white border-2 border-black rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-white border-2 border-black rounded-[3px] w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -93,7 +93,7 @@ const StoryProgressModal: React.FC<StoryProgressModalProps> = ({
 
         {/* Parts Grid */}
         <div className="p-5 overflow-y-auto flex-1">
-          <p className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400 mb-3">
             {t("dashboard.modal.storyParts")}
           </p>
           <div className="grid grid-cols-5 gap-3">
@@ -110,7 +110,7 @@ const StoryProgressModal: React.FC<StoryProgressModalProps> = ({
                 <div
                   key={partNumber}
                   className={`
-                    aspect-square rounded-xl flex flex-col items-center justify-center gap-1
+                    aspect-square rounded-[3px] flex flex-col items-center justify-center gap-1
                     text-sm font-bold transition-all duration-200
                     ${getStatusStyle(status)}
                     ${status !== "locked" ? "cursor-pointer active:scale-95 hover:scale-105" : ""}
@@ -138,7 +138,7 @@ const StoryProgressModal: React.FC<StoryProgressModalProps> = ({
             ).map(({ status, label }) => (
               <div key={status} className="flex items-center gap-1.5">
                 <div
-                  className={`w-4 h-4 rounded border-2 ${
+                  className={`w-4 h-4 rounded-[3px] border-2 ${
                     status === "completed" ? "bg-black border-black" :
                     status === "current"   ? "bg-white border-black ring-1 ring-black ring-offset-1" :
                     status === "available" ? "bg-white border-black" :

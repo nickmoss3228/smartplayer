@@ -1,12 +1,16 @@
+// Loaded by App.css through `@config`. Colours, fonts and the entrance easing
+// live in App.css's `@theme` block (docs/design-manifest.md); this file only
+// carries the older animation utilities.
+//
+// Each animation name is declared exactly once. It used to declare `bounce-in`
+// and `scale-in` twice; in an object literal the second silently wins, so the
+// first definitions and the keyframes only they used were dead. The survivors
+// below are the ones that were actually rendering.
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       keyframes: {
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(10px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
         "slide-down": {
           from: { opacity: "0", transform: "translateY(-20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -14,14 +18,6 @@ module.exports = {
         "slide-up": {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
-        },
-        "scale-in": {
-          from: { opacity: "0", transform: "scale(0.8)" },
-          to: { opacity: "1", transform: "scale(1)" },
-        },
-        "bounce-in": {
-          from: { opacity: "0", transform: "scale(0) rotate(-180deg)" },
-          to: { opacity: "1", transform: "scale(1) rotate(0deg)" },
         },
         confetti: {
           "0%": {
@@ -73,8 +69,6 @@ module.exports = {
         "blink-ring": "blink-ring 1.2s ease-in-out infinite",
         "slide-down": "slide-down 0.7s ease-out",
         "slide-up": "slide-up 0.7s ease-out",
-        "scale-in": "scale-in 0.5s ease-out both",
-        "bounce-in": "bounce-in 0.6s ease-out",
         confetti: "confetti 3s ease-in-out infinite",
         "confetti-slow": "confetti 4s ease-in-out infinite",
         "confetti-fast": "confetti 2.5s ease-in-out infinite",

@@ -1,5 +1,22 @@
+import { IoEyeOutline, IoVolumeHighOutline } from 'react-icons/io5';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+
+/* Drawn rather than an emoji (CLAUDE.md: no emoji) — the same one-stroke
+   chair the auth panel draws, so the object reads the same everywhere. */
+const Chair = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={`inline-block ${className}`} fill="none" stroke="currentColor"
+    strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M34 12 V88 M34 54 H74 V88 M34 12 H48 V54" />
+  </svg>
+);
+
+/** "chair", as heard: a speaker, then the English word. */
+const Heard = () => (
+  <>
+    <IoVolumeHighOutline className="inline h-4 w-4 align-[-2px]" aria-hidden /> chair
+  </>
+);
 
 const VocabLanguageViz = () => {
   const { t } = useTranslation();
@@ -10,9 +27,7 @@ const VocabLanguageViz = () => {
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
-      <span className="text-5xl" aria-hidden>
-        🪑
-      </span>
+      <Chair className="w-14 h-14 text-gray-900" />
 
       <div className="flex flex-col gap-5 w-full max-w-xs">
         {/* Track A — via translation: this is literally what our own vocab
@@ -28,7 +43,7 @@ const VocabLanguageViz = () => {
             transition={{ delay: delay(0), duration: 0.4 }}
             className="font-semibold text-gray-400"
           >
-            🔊 chair
+            <Heard />
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -42,9 +57,9 @@ const VocabLanguageViz = () => {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: delay(900), duration: 0.4 }}
-            className="font-semibold text-orange-500"
+            className="font-semibold text-amber-700"
           >
-            👁 стул
+            <IoEyeOutline className="inline h-4 w-4 align-[-2px]" aria-hidden /> стул
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -60,14 +75,14 @@ const VocabLanguageViz = () => {
             transition={{ delay: delay(1800), duration: 0.4 }}
             className="font-semibold text-gray-600"
           >
-            🪑
+            <Chair className="h-5 w-5" />
           </motion.span>
         </div>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: delay(2200) }}
-          className="text-center text-[11px] uppercase tracking-widest text-orange-500 font-bold"
+          className="font-mono text-center text-[11px] uppercase tracking-[0.18em] text-amber-700"
         >
           {t('homepage.why.vocabLanguage.viaTranslation')} · 2×
         </motion.p>
@@ -80,7 +95,7 @@ const VocabLanguageViz = () => {
             transition={{ delay: delay(200), duration: 0.4 }}
             className="font-semibold text-gray-400"
           >
-            🔊 chair
+            <Heard />
           </motion.span>
           <motion.span
             initial={{ opacity: 0 }}
@@ -94,16 +109,16 @@ const VocabLanguageViz = () => {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: delay(800), duration: 0.4 }}
-            className="font-semibold text-emerald-600"
+            className="font-semibold text-green-700"
           >
-            🪑
+            <Chair className="h-5 w-5" />
           </motion.span>
         </div>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: delay(1100) }}
-          className="text-center text-[11px] uppercase tracking-widest text-emerald-600 font-bold"
+          className="font-mono text-center text-[11px] uppercase tracking-[0.18em] text-green-700"
         >
           {t('homepage.why.vocabLanguage.direct')}
         </motion.p>

@@ -19,11 +19,12 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IoSyncOutline } from 'react-icons/io5'
 import { AuthPanel } from './AuthPanel'
+import { buttonBase, buttonTone } from '../components/ui/buttonStyles'
 
 /* ── tokens ────────────────────────────────────────────────────────────────
-   Written out as literals rather than a Tailwind theme extension: this palette
-   belongs to the auth surface and the landing, not (yet) to the whole app, and
-   inlining them keeps the port reviewable in one place. */
+   The same values as the `@theme` block in App.css, which is the source of
+   truth for classes (`bg-ink`, `text-dim` …). These JS copies exist only for
+   places that need a colour as a value — inline styles, SVG attributes. */
 export const ink = '#0f151c'
 export const room = '#f5f8fa'
 export const line = '#e0e7ed'
@@ -34,12 +35,12 @@ export const signal = '#e5484d'
 export const signalInk = '#c2262b'
 
 const microLabel =
-  'block font-mono text-[10px] tracking-[0.16em] uppercase text-[#5b6b7a]'
+  'block font-mono text-[10px] tracking-[0.16em] uppercase text-dim'
 
 const fieldBase =
-  'w-full h-12 px-3.5 bg-white border border-[#e0e7ed] rounded-[3px] text-[15px] text-[#0f1720] ' +
-  'placeholder:text-[#9aa8b5] transition-colors ' +
-  'focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d] focus:border-[#0f151c]'
+  'w-full h-12 px-3.5 bg-white border border-line rounded-[3px] text-[15px] text-ink ' +
+  'placeholder:text-muted transition-colors ' +
+  'focus:outline-2 focus:outline-offset-2 focus:outline-signal focus:border-ink'
 
 /* ── layout ────────────────────────────────────────────────────────────── */
 
@@ -62,21 +63,21 @@ interface AuthShellProps {
  * site navbar on these routes, so the band starts at the top of the screen.
  */
 export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
-  <div className="min-h-screen flex flex-col lg:flex-row bg-[#f5f8fa] text-[#0f1720]">
-    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-[#0f151c] text-[#eef4f8] px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-10">
+  <div className="min-h-screen flex flex-col lg:flex-row bg-room text-ink">
+    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-ink text-panel-text px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-10">
       <div className="lg:flex-1 flex flex-col justify-center gap-10">
         <AuthPanel />
         {aside && <div className="hidden lg:block">{aside}</div>}
       </div>
       {asideFoot && (
-        <p className="hidden lg:block m-0 font-mono text-[11px] tracking-[0.16em] uppercase text-[#5b6b7a]">
+        <p className="hidden lg:block m-0 font-mono text-[11px] tracking-[0.16em] uppercase text-dim">
           {asideFoot}
         </p>
       )}
     </aside>
 
     <main className="flex-1 flex items-start lg:items-center justify-center px-4 py-6 sm:px-8 sm:py-10 lg:p-14">
-      <div className="w-full max-w-[460px] bg-white border border-[#e0e7ed] rounded-[3px] p-6 sm:p-10 animate-fade-in">
+      <div className="w-full max-w-[460px] bg-white border border-line rounded-[3px] p-6 sm:p-10 animate-fade-in">
         {children}
       </div>
     </main>
@@ -96,13 +97,13 @@ export const StepRail = ({ current }: { current: 1 | 2 | 3 }) => {
         const done = n < current
         return (
           <li key={label} className="contents">
-            {i > 0 && <span className="w-px h-[18px] ml-[15px] bg-[#2b3644]" aria-hidden="true" />}
+            {i > 0 && <span className="w-px h-[18px] ml-[15px] bg-panel-line" aria-hidden="true" />}
             <span className="flex items-center gap-4 h-[52px]">
               <span
                 className={`w-[30px] h-[30px] flex-none flex items-center justify-center rounded-[2px] font-mono text-[13px] ${
                   active
-                    ? 'bg-[#eef4f8] text-[#0f151c] font-bold'
-                    : 'border border-[#2b3644] text-[#93a4b4]'
+                    ? 'bg-panel-text text-ink font-bold'
+                    : 'border border-panel-line text-panel-dim'
                 }`}
                 aria-hidden="true"
               >
@@ -114,7 +115,7 @@ export const StepRail = ({ current }: { current: 1 | 2 | 3 }) => {
                   n
                 )}
               </span>
-              <span className={active ? 'text-[15px] font-semibold' : 'text-[15px] text-[#93a4b4]'}>
+              <span className={active ? 'text-[15px] font-semibold' : 'text-[15px] text-panel-dim'}>
                 {label}
               </span>
             </span>
@@ -128,17 +129,17 @@ export const StepRail = ({ current }: { current: 1 | 2 | 3 }) => {
 /* ── card header ───────────────────────────────────────────────────────── */
 
 export const Eyebrow = ({ children }: { children: ReactNode }) => (
-  <p className="m-0 mb-3.5 font-mono text-[11px] tracking-[0.18em] uppercase text-[#e5484d]">
+  <p className="m-0 mb-3.5 font-mono text-[11px] tracking-[0.18em] uppercase text-signal">
     {children}
   </p>
 )
 
 export const CardTitle = ({ children }: { children: ReactNode }) => (
-  <h1 className="m-0 mb-2 text-[26px] sm:text-[30px] font-extrabold tracking-[-0.03em]">{children}</h1>
+  <h1 className="m-0 mb-2 text-[26px] sm:text-[30px] font-extrabold tracking-[-0.03em] leading-tight">{children}</h1>
 )
 
 export const CardLede = ({ children }: { children: ReactNode }) => (
-  <p className="m-0 mb-7 text-[15px] leading-relaxed text-[#5b6b7a]">{children}</p>
+  <p className="m-0 mb-7 text-[15px] leading-relaxed text-dim">{children}</p>
 )
 
 /* ── messages ──────────────────────────────────────────────────────────── */
@@ -147,7 +148,7 @@ type NoticeKind = 'error' | 'warn' | 'info' | 'success'
 
 const NOTICE: Record<NoticeKind, { box: string; text: string; stroke: string; path: ReactNode }> = {
   error: {
-    box: 'bg-[#fdf4f4] border-[#f3cdce] border-l-[3px] border-l-[#e5484d]',
+    box: 'bg-[#fdf4f4] border-[#f3cdce] border-l-[3px] border-l-signal',
     text: 'text-[#8f2126]',
     stroke: '#c2262b',
     path: (<><circle cx="12" cy="12" r="9" /><path d="M12 7v6" /><path d="M12 17v.1" /></>),
@@ -228,7 +229,7 @@ export const TextField = ({
   <div>
     <div className="flex items-baseline justify-between gap-3 mb-2">
       <label htmlFor={id} className={microLabel}>{label}</label>
-      {hint && <span className="text-xs text-[#9aa8b5]">{hint}</span>}
+      {hint && <span className="text-xs text-muted">{hint}</span>}
     </div>
     <input
       id={id}
@@ -275,7 +276,7 @@ export const PasswordField = ({
         <button
           type="button"
           onClick={onToggleShow}
-          className="font-mono text-[10px] tracking-[0.16em] uppercase text-[#5b6b7a] hover:text-[#0f151c] py-1 cursor-pointer"
+          className="font-mono text-[10px] tracking-[0.16em] uppercase text-dim hover:text-ink py-1 cursor-pointer"
         >
           {t(show ? 'auth.hidePassword' : 'auth.showPassword')}
         </button>
@@ -319,9 +320,9 @@ export const PhoneField = ({
 }) => (
   <div>
     <label htmlFor={id} className={`${microLabel} mb-2`}>{label}</label>
-    <div className="flex items-stretch h-12 bg-white border border-[#e0e7ed] rounded-[3px] overflow-hidden focus-within:border-[#0f151c] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#e5484d]">
+    <div className="flex items-stretch h-12 bg-white border border-line rounded-[3px] overflow-hidden focus-within:border-ink focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-signal">
       <span
-        className="w-[52px] flex-none flex items-center justify-center border-r border-[#e0e7ed] bg-[#f5f8fa] font-mono text-sm text-[#5b6b7a]"
+        className="w-[52px] flex-none flex items-center justify-center border-r border-line bg-room font-mono text-sm text-dim"
         aria-hidden="true"
       >
         +7
@@ -336,7 +337,7 @@ export const PhoneField = ({
         value={value.replace(/^\+7\s?/, '')}
         onChange={(e) => onChange(format(e.target.value))}
         placeholder="999 123-45-67"
-        className="flex-1 min-w-0 px-3.5 bg-transparent border-0 font-mono text-[15px] tracking-[0.04em] text-[#0f1720] placeholder:text-[#9aa8b5] focus:outline-none"
+        className="flex-1 min-w-0 px-3.5 bg-transparent border-0 font-mono text-[15px] tracking-[0.04em] text-ink placeholder:text-muted focus:outline-none"
       />
     </div>
   </div>
@@ -410,7 +411,7 @@ export const OtpField = ({
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onFocus={(e) => e.target.select()}
-            className="w-full min-w-0 h-[60px] sm:h-[68px] border border-[#c8d3dc] rounded-[3px] bg-white text-center font-mono text-[22px] sm:text-[26px] text-[#0f1720] focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d] focus:border-[#0f151c]"
+            className="w-full min-w-0 h-[60px] sm:h-[68px] border border-line-strong rounded-[3px] bg-white text-center font-mono text-[22px] sm:text-[26px] text-ink focus:outline-2 focus:outline-offset-2 focus:outline-signal focus:border-ink"
           />
         ))}
       </div>
@@ -467,7 +468,7 @@ export const SubmitButton = ({
   <button
     type="submit"
     disabled={disabled || loading}
-    className="w-full h-[52px] flex items-center justify-center gap-2.5 bg-[#0f151c] text-white rounded-[3px] text-[15px] font-semibold cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-45 disabled:cursor-not-allowed focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d]"
+    className={`${buttonBase} w-full h-[52px] gap-2.5 ${buttonTone.primary}`}
   >
     {loading ? (
       <>
@@ -486,7 +487,7 @@ export const SecondaryButton = ({
   <button
     type="button"
     onClick={onClick}
-    className="w-full h-12 flex items-center justify-center bg-transparent border border-[#c8d3dc] rounded-[3px] text-[15px] font-semibold text-[#0f151c] cursor-pointer hover:border-[#0f151c] focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d]"
+    className={`${buttonBase} w-full h-12 ${buttonTone.secondary}`}
   >
     {children}
   </button>
@@ -496,7 +497,7 @@ export const OutlineLink = ({ to, state, children }: { to: string; state?: unkno
   <Link
     to={to}
     state={state}
-    className="w-full h-12 flex items-center justify-center border border-[#0f151c] rounded-[3px] text-[15px] font-semibold text-[#0f151c] no-underline hover:bg-[#0f151c] hover:text-white transition-colors focus:outline-2 focus:outline-offset-2 focus:outline-[#e5484d]"
+    className={`${buttonBase} w-full h-12 ${buttonTone.outline}`}
   >
     {children}
   </Link>
@@ -506,7 +507,7 @@ export const OutlineLink = ({ to, state, children }: { to: string; state?: unkno
 export const QuietLink = ({ to, children }: { to: string; children: ReactNode }) => (
   <Link
     to={to}
-    className="text-sm text-[#5b6b7a] no-underline border-b border-[#c8d3dc] hover:text-[#0f151c] hover:border-[#0f151c]"
+    className="text-sm text-dim no-underline border-b border-line-strong hover:text-ink hover:border-ink"
   >
     {children}
   </Link>
@@ -515,9 +516,9 @@ export const QuietLink = ({ to, children }: { to: string; children: ReactNode })
 /** The "впервые здесь" rule between the form and the alternative action. */
 export const Divider = ({ children }: { children: ReactNode }) => (
   <div className="flex items-center gap-3.5 my-7">
-    <span className="flex-1 h-px bg-[#e0e7ed]" />
-    <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-[#9aa8b5]">{children}</span>
-    <span className="flex-1 h-px bg-[#e0e7ed]" />
+    <span className="flex-1 h-px bg-line" />
+    <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-muted">{children}</span>
+    <span className="flex-1 h-px bg-line" />
   </div>
 )
 
@@ -526,7 +527,7 @@ export const BackButton = ({ onClick, children }: { onClick: () => void; childre
   <button
     type="button"
     onClick={onClick}
-    className="inline-flex items-center gap-2 text-sm text-[#5b6b7a] hover:text-[#0f151c] cursor-pointer py-1"
+    className="inline-flex items-center gap-2 text-sm text-dim hover:text-ink cursor-pointer py-1"
   >
     <svg viewBox="0 0 24 24" className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M14 5 7 12l7 7" />

@@ -10,11 +10,11 @@ interface QuestionAudioButtonProps {
 }
 
 const colors: Record<PlayState, string> = {
-  idle:           "bg-indigo-500 hover:bg-indigo-600 text-white",
-  "playing-fast": "bg-indigo-300 text-white cursor-not-allowed",
+  idle:           "bg-gray-900 hover:bg-gray-800 text-white",
+  "playing-fast": "bg-gray-400 text-white cursor-not-allowed",
   "played-fast":  "bg-amber-500 hover:bg-amber-600 text-white",
   "playing-slow": "bg-amber-300 text-white cursor-not-allowed",
-  "played-slow":  "bg-indigo-500 hover:bg-indigo-600 text-white",
+  "played-slow":  "bg-gray-900 hover:bg-gray-800 text-white",
 };
 
 const QuestionAudioButton: React.FC<QuestionAudioButtonProps> = ({
@@ -50,7 +50,7 @@ const QuestionAudioButton: React.FC<QuestionAudioButtonProps> = ({
         onClick={onPress}
         disabled={isPlaying}
         className={`
-          inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
+          inline-flex items-center gap-2 px-4 py-2 rounded-[3px] text-sm font-semibold
           whitespace-nowrap transition-all duration-200 shadow-sm
           ${colors[playState]}
         `}

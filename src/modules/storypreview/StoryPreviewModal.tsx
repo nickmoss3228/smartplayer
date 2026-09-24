@@ -1,4 +1,5 @@
 // StoryPreviewModal.tsx
+import { IoBulbOutline, IoChevronDown, IoClose } from 'react-icons/io5';
 import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
 import { StoryPreview } from "./storyPreviewData.tsx";
@@ -41,8 +42,18 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
     : [];
 
   return (
+    /*
+      Opening used to stutter on phones. Three things piled onto the same
+      frames: a backdrop-blur behind a full-screen layer whose opacity was
+      animating (the blur is re-rendered every frame), a second blur on the
+      close button over a scaling image, and the audio preloads the click
+      fired — one <audio> per vocab clip, each dispatching load events. The
+      blurs are gone, the preloads wait until the dialog has landed
+      (useLevelProgressPage), and the entrance is two composite-only
+      animations (App.css: dialog-backdrop-in / dialog-panel-in).
+    */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 dialog-backdrop-in"
       onClick={onClose}
     >
       {/*
@@ -52,7 +63,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
       */}
       <div
         className="relative w-full max-w-[680px] bg-gray-900 border border-white/10
-                   rounded-3xl shadow-2xl overflow-hidden animate-scale-in
+                   rounded-[3px] shadow-xl overflow-hidden dialog-panel-in
                    flex flex-col max-h-[90vh] sm:max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -68,12 +79,12 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
           <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${theme.progressGradient}`} />
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm
-                       text-white/70 hover:text-white hover:bg-black/70 transition-all
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60
+                       text-white/70 hover:text-white hover:bg-black/80 transition-colors
                        flex items-center justify-center text-sm leading-none"
-            aria-label="Close"
+            aria-label={t("storyModal.back")}
           >
-            ✕
+            <IoClose size={18} aria-hidden />
           </button>
         </div>
 
@@ -85,7 +96,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               difficulty/duration to keep this compact for the grammar dropdown below */}
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-xs text-white/45 uppercase tracking-widest">
+              <p className="font-mono text-[10px] text-white/45 uppercase tracking-[0.16em]">
                 {difficulty} · {duration}
               </p>
               <div className="flex items-center gap-3 shrink-0">
@@ -121,15 +132,15 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
 
               {/* Grammar points — smaller text on mobile */}
               <div>
-                <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">
+                <p className="font-mono text-[10px] text-white/60 uppercase tracking-[0.16em] mb-2">
                   {t("storyModal.grammarFocus")}
                 </p>
                 <div className="flex flex-col gap-2">
                   {safeGrammarPoints.map((point, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <span className="mt-0.5 flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5 rounded-full
-                                       bg-blue-500/20 text-blue-400 text-[9px] sm:text-[10px]
-                                       font-bold flex items-center justify-center border border-blue-500/30">
+                                       bg-white/10 text-white/80 text-[9px] sm:text-[10px]
+                                       font-bold flex items-center justify-center border border-white/20">
                         {i + 1}
                       </span>
                       {/* text-xs on mobile, text-sm on sm+ */}
@@ -140,8 +151,8 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               </div>
 
               {/* Tip — hidden on mobile, visible on sm+ */}
-              <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
-                <span className="text-xl flex-shrink-0">💡</span>
+              <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-[3px] p-4">
+                <IoBulbOutline size={20} className="flex-shrink-0 text-white/70" aria-hidden />
                 <p className="text-white/65 text-sm leading-relaxed">
                   <span className="text-white font-semibold">{t("storyModal.tip") + ": "}</span>
                   {tip}
@@ -157,13 +168,11 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             className="w-full py-2 text-xs font-medium text-white/35 hover:text-white/60
                        transition-colors flex items-center justify-center gap-1.5"
           >
-            <span
-              className={`inline-block transition-transform duration-300 ${
-                showDetails ? "rotate-180" : "rotate-0"
-              }`}
-            >
-              ▼
-            </span>
+            <IoChevronDown
+              size={14}
+              aria-hidden
+              className={`transition-transform duration-300 ${showDetails ? "rotate-180" : "rotate-0"}`}
+            />
             {showDetails ? t("storyModal.hideDetails") : t("storyModal.grammarAndTips")}
           </button>
         </div>
@@ -173,15 +182,15 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-white/15 text-white/55
+              className="flex-1 py-3 rounded-[3px] border border-white/15 text-white/55
                          hover:text-white hover:border-white/30 transition-all text-sm font-medium"
             >
               {t("storyModal.back")}
             </button>
             <button
               onClick={onStart}
-              className={`flex-1 py-3 rounded-xl bg-gradient-to-r ${theme.progressGradient}
-                          text-white font-semibold text-sm shadow-lg
+              className={`flex-1 py-3 rounded-[3px] bg-gradient-to-r ${theme.progressGradient}
+                          text-white font-semibold text-sm
                           hover:opacity-90 active:scale-[0.98] transition-all`}
             >
               {t("storyModal.startListening")}

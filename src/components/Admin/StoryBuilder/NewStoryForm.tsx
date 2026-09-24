@@ -47,7 +47,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-4 border border-gray-200 space-y-3 max-w-lg">
+    <form onSubmit={handleSubmit} className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-3 max-w-lg">
       <h2 className="font-semibold text-black">New story</h2>
 
       <div>
@@ -55,7 +55,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-          className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg"
+          className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         >
           <option value="easy">Easy</option>
           <option value="medium">Medium</option>
@@ -70,7 +70,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
           value={storyId}
           onChange={(e) => setStoryId(e.target.value)}
           required
-          className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg"
+          className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         />
       </div>
 
@@ -81,7 +81,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
           value={storyName}
           onChange={(e) => setStoryName(e.target.value)}
           required
-          className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg"
+          className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         />
       </div>
 
@@ -91,7 +91,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg"
+          className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         />
       </div>
 
@@ -102,7 +102,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
             type="text"
             value={characterIcon}
             onChange={(e) => setCharacterIcon(e.target.value)}
-            className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-center"
+            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-center"
           />
         </div>
         <div className="flex-1">
@@ -114,7 +114,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
             value={totalParts}
             onChange={(e) => setTotalParts(e.target.value)}
             required
-            className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg"
+            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
           />
         </div>
       </div>
@@ -125,7 +125,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-4 py-2 disabled:opacity-50"
+          className="bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
           {submitting ? "Creating..." : "Create story"}
         </button>

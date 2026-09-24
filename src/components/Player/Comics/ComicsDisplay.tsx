@@ -39,12 +39,11 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
     if (variant === "circular") {
       return (
         <div
-          className="h-full max-h-full w-auto max-w-full aspect-square mx-auto rounded-2xl
+          className="h-full max-h-full w-auto max-w-full aspect-square mx-auto rounded-[3px]
                   bg-white/10 border border-white/15 flex items-center justify-center"
         >
           <span
-            className="text-white/40 text-xs uppercase tracking-widest
-                     font-semibold font-['Montserrat']"
+            className="text-white/40 text-[10px] uppercase tracking-[0.16em] font-mono"
           >
             Comics
           </span>
@@ -53,12 +52,11 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
     }
     return (
       <div
-        className="w-[70%] max-w-[280px] aspect-square mx-auto rounded-2xl
+        className="w-[70%] max-w-[280px] aspect-square mx-auto rounded-[3px]
                       bg-white/10 border border-white/15 flex items-center justify-center"
       >
         <span
-          className="text-white/40 text-xs uppercase tracking-widest
-                         font-semibold font-['Montserrat']"
+          className="text-white/40 text-[10px] uppercase tracking-[0.16em] font-mono"
         >
           Comics
         </span>
@@ -105,8 +103,7 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
           >
             <span
               className="
-              text-white text-[7px] uppercase tracking-widest
-              font-semibold font-['Montserrat']
+              text-white text-[9px] uppercase tracking-[0.16em] font-mono
               opacity-0 group-hover:opacity-100
               transition-opacity duration-300
             "
@@ -128,7 +125,7 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
         onClick={handleOpen}
         aria-label="Open comic"
         className="
-        h-full max-h-full w-auto max-w-full aspect-square rounded-2xl overflow-hidden
+        h-full max-h-full w-auto max-w-full aspect-square rounded-[3px] overflow-hidden
         bg-white/10 border border-white/15 cursor-pointer group relative block
         focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60
       "

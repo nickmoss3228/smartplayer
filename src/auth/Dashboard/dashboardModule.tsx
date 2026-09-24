@@ -28,11 +28,13 @@ export const getTotalLevels = (overviewData: OverviewData | null): number => {
 };
 
 export const getRank = (progress: number): RankInfo => {
-  if (progress >= 90) return { title: 'advanced', icon: IoRibbonOutline, gradient: 'from-purple-500 to-fuchsia-500' };
-  if (progress >= 70) return { title: 'intermediate', icon: IoTrophyOutline, gradient: 'from-amber-400 to-orange-500' };
-  if (progress >= 50) return { title: 'preintermediate', icon: IoMedalOutline, gradient: 'from-slate-400 to-slate-500' };
-  if (progress >= 25) return { title: 'elementary', icon: IoSchoolOutline, gradient: 'from-sky-400 to-blue-500' };
-  return { title: 'beginner', icon: IoLeafOutline, gradient: 'from-green-400 to-emerald-500' };
+  // The rank card is one ink panel for every rank (design manifest: colour
+  // means a level or a state) — the icon and the title tell the ranks apart.
+  if (progress >= 90) return { title: 'advanced', icon: IoRibbonOutline };
+  if (progress >= 70) return { title: 'intermediate', icon: IoTrophyOutline };
+  if (progress >= 50) return { title: 'preintermediate', icon: IoMedalOutline };
+  if (progress >= 25) return { title: 'elementary', icon: IoSchoolOutline };
+  return { title: 'beginner', icon: IoLeafOutline };
 }
 
 export const getProgressPercentage = (completed: number, total: number): number => {

@@ -71,14 +71,14 @@ const AchievementDetailModal: React.FC<Props> = ({ category, value, onClose }) =
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[88vh] sm:max-h-[85vh]
-                   overflow-hidden flex flex-col shadow-2xl animate-slide-up sm:animate-scale-in"
+        className="bg-white rounded-t-[3px] sm:rounded-[3px] w-full max-w-md max-h-[88vh] sm:max-h-[85vh]
+                   overflow-hidden flex flex-col shadow-xl animate-slide-up sm:animate-scale-in"
       >
         {/* ── Header ── */}
-        <div className="p-5 flex items-start justify-between gap-3 flex-shrink-0 border-b border-black/5">
+        <div className="p-5 flex items-start justify-between gap-3 flex-shrink-0 border-b border-line">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+              className="w-12 h-12 rounded-[3px] flex items-center justify-center flex-shrink-0"
               style={{
                 backgroundColor: style?.tint ?? "rgba(11,11,11,0.05)",
                 boxShadow: style ? `inset 0 0 0 1.5px ${style.hex}` : "none",
@@ -91,7 +91,7 @@ const AchievementDetailModal: React.FC<Props> = ({ category, value, onClose }) =
                 {t(`dashboard.achievements.categories.${category.key}.title`)}
               </h2>
               <p
-                className="text-[11px] font-bold uppercase tracking-[0.12em] mt-0.5"
+                className="font-mono text-[11px] uppercase tracking-[0.18em] mt-0.5"
                 style={{ color: headerInk }}
               >
                 {highest
@@ -145,7 +145,7 @@ const AchievementDetailModal: React.FC<Props> = ({ category, value, onClose }) =
 
         {/* ── The ladder, rung by rung ── */}
         <div className="overflow-y-auto flex-1 px-5 pb-5">
-          <p className="text-[10px] uppercase tracking-widest text-black/30 font-semibold mb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/30 mb-3">
             {t("dashboard.achievements.allTiers", {
               earned: earnedCount,
               total: category.tiers.length,
@@ -211,7 +211,7 @@ const AchievementDetailModal: React.FC<Props> = ({ category, value, onClose }) =
                       </p>
                       {/* State in words — the medal colour never carries it alone. */}
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${
+                        className={`font-mono text-[10px] uppercase tracking-[0.16em] flex-shrink-0 ${
                           earned
                             ? "text-black/45"
                             : current

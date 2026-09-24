@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { StoryGroup, DifficultySlug } from '../../types/storyGroups';
 import { formatPrice } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
+import { SHOP_ENABLED } from '../../config/features';
 
 /**
  * One story on the shelf.
@@ -171,7 +172,7 @@ export const StoryCard = ({
       <button
         type="button"
         onClick={onOpen}
-        className={`group relative block w-full cursor-pointer overflow-hidden rounded-sm text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
+        className={`group relative block w-full cursor-pointer overflow-hidden rounded-[2px] text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
           story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
         }`}
       >
@@ -207,13 +208,13 @@ export const StoryCard = ({
         {/* Top-left chip: a padlock, or where you got to. The two can never
             both apply — a locked story has no progress to report. */}
         {showLock ? (
-          <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-sm bg-gray-900/90 p-1 text-white">
+          <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-[2px] bg-gray-900/90 p-1 text-white">
             <IoLockClosed size={11} aria-hidden="true" />
           </span>
         ) : (
           (hasStarted || isCompleted) && (
             <span
-              className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-sm px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
+              className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-[2px] px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
                 isCompleted ? 'bg-gray-900 text-white' : 'bg-[var(--level-accent)] text-white'
               }`}
             >
@@ -259,10 +260,16 @@ export const StoryCard = ({
       {/* Below the panel: "available", or parts · price · buy. Kept outside
           the card button so "open" and "buy" are two separate targets —
           nesting them would make the whole card ambiguous to a keyboard. */}
-      <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-wider">
+      <div className="font-mono mt-1.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.16em]">
         {!isShop && isLocked ? (
           <>
-            <span className="min-w-0 truncate font-semibold text-green-600">{freeHint}</span>
+            {/* "3 parts free" only means something next to a shop that sells
+                the rest. With the shop off it is just a number that reads
+                like a limit, so the row keeps its parts count and nothing
+                else. Comes back by itself when SHOP_ENABLED does. */}
+            <span className="min-w-0 truncate font-semibold text-green-600">
+              {SHOP_ENABLED ? freeHint : null}
+            </span>
             <span className="shrink-0 tabular-nums text-gray-400">
               {t('shelf.parts', { count: total })}
             </span>
@@ -289,7 +296,7 @@ export const StoryCard = ({
               <button
                 type="button"
                 onClick={onBuy}
-                className={`shrink-0 cursor-pointer rounded-sm px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                className={`font-mono shrink-0 cursor-pointer rounded-[2px] px-2 py-1 text-[10px] uppercase tracking-[0.16em] transition-colors ${
                   isShop && inCart
                     ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
                     : 'bg-gray-900 text-white hover:bg-gray-700'

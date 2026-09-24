@@ -1,15 +1,18 @@
 /* Fonts are self-hosted (@fontsource, imported in main.tsx) — nothing is
    fetched from Google at runtime, so text renders the same when that host is
-   slow or unreachable. */
+   slow or unreachable.
+
+   Colours match the tokens in App.css (ink on room). The app has no dark theme,
+   so it declares `color-scheme: light` — `light dark` let a phone in dark mode
+   paint native controls (scrollbars, autofill, pickers) dark on light pages. */
 :root {
   font-family: "Manrope", sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.797);
-  background-color: #ebebeb;
-  /* #3e2626; #1f1f1f; */
+  color-scheme: light;
+  color: #0f151c;
+  background-color: #f5f8fa;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -25,5 +28,3 @@ html, body, #root {
 body {
   overflow-x: hidden;
 }
-
-

@@ -13,7 +13,7 @@ const COLORS = [
 ];
 
 const SIZES = ["w-2 h-2", "w-2.5 h-2.5", "w-3 h-3", "w-3.5 h-3.5"];
-const SHAPES = ["rounded-sm", "rounded-full"];
+const SHAPES = ["rounded-[2px]", "rounded-full"];
 
 interface Piece {
   key: string;

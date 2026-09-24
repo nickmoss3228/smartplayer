@@ -86,7 +86,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     const { t } = useTranslation();
 
     const labelClass =
-      "text-white/60 text-[9px] uppercase tracking-widest font-semibold font-['Montserrat'] whitespace-nowrap";
+      "text-white/60 text-[9px] uppercase tracking-[0.16em] font-mono whitespace-nowrap";
 
     const disabledClass = !isEnhancedMode
       ? "opacity-40 pointer-events-none cursor-not-allowed"
@@ -120,9 +120,9 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     // ═══════════════════════════════════════════════════════════
     if (layout === "mobile") {
       const repeatBtnBase =
-        "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
+        "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
-        "rounded-full flex items-center justify-center cursor-pointer font-medium font-['Montserrat'] transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
+        "rounded-[3px] flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
 
       return (
         <div className="relative flex flex-col w-full h-full justify-start gap-6">
@@ -172,7 +172,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
         p-[clamp(12px,4vw,24px)]
         ${
           buttonIsGreen
-            ? "bg-[#05df3bff] hover:bg-green-400"
+            ? "bg-green-500 hover:bg-green-400"
             : "bg-black/20 hover:bg-black/30"
         } text-white`}
                 onClick={onPlayPause}
@@ -256,7 +256,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
 
     const pillBase =
       "rounded-full w-10 h-10 flex items-center justify-center " +
-      "cursor-pointer text-xs font-medium font-['Montserrat'] " +
+      "cursor-pointer text-xs font-medium " +
       "transition-all duration-200 active:scale-95";
 
     return (
@@ -344,7 +344,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 flex items-center justify-center
                 ${
                   buttonIsGreen
-                    ? "bg-[#05df3bff] hover:bg-green-400"
+                    ? "bg-green-500 hover:bg-green-400"
                     : "bg-black/20 hover:bg-black/30"
                 } text-white`}
               onClick={onPlayPause}

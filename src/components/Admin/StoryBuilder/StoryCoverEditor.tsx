@@ -81,7 +81,7 @@ const StoryCoverEditor = ({ token, story, onStoryUpdated }: StoryCoverEditorProp
 
   return (
     <div className="flex items-start gap-3">
-      <div className="w-20 shrink-0 aspect-[4/5] rounded-lg overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
+      <div className="w-20 shrink-0 aspect-[4/5] rounded-[3px] overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
         {story.coverUrl ? (
           <img src={story.coverUrl} alt="" className="h-full w-full object-cover" />
         ) : (

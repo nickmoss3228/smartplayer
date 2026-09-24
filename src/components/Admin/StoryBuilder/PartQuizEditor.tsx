@@ -112,7 +112,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {questions.map((q, qIndex) => (
-        <div key={qIndex} className="bg-gray-50 rounded-lg border border-gray-200 p-3 space-y-2">
+        <div key={qIndex} className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-black">Question {qIndex + 1}</span>
             <button
@@ -129,7 +129,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
             value={q.question}
             onChange={(e) => updateQuestion(qIndex, { question: e.target.value })}
             placeholder="Question text"
-            className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-lg"
+            className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-black">
@@ -186,7 +186,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
                   value={option}
                   onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
                   placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
-                  className="flex-1 text-black text-sm px-2 py-1.5 border border-gray-300 rounded-lg"
+                  className="flex-1 text-black text-sm px-2 py-1.5 border border-gray-300 rounded-[3px]"
                 />
               </label>
             ))}
@@ -199,7 +199,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           type="button"
           onClick={addQuestion}
           disabled={questions.length >= MAX_QUESTIONS}
-          className="text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2 disabled:opacity-50"
+          className="text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
           Add question ({questions.length}/{MAX_QUESTIONS})
         </button>
@@ -207,7 +207,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="text-sm bg-black text-white rounded-lg px-4 py-2 disabled:opacity-50"
+          className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save quiz"}
         </button>

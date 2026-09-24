@@ -73,7 +73,7 @@ export const CongratsModal: React.FC<CongratsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+        className="absolute inset-0 bg-black/70"
         onClick={onClose}
       ></div>
 
@@ -95,7 +95,7 @@ export const CongratsModal: React.FC<CongratsModalProps> = ({
 
       {/* Modal Content */}
       <div
-        className={`relative bg-gradient-to-br ${theme.gradient} rounded-3xl shadow-2xl max-w-md w-full p-8 transform transition-all duration-300 animate-scale-in`}
+        className={`relative bg-gradient-to-br ${theme.gradient} rounded-[3px] shadow-xl max-w-md w-full p-8 dialog-panel-in`}
       >
         {/* Trophy */}
         <div className="flex justify-center mb-6">
@@ -122,9 +122,8 @@ export const CongratsModal: React.FC<CongratsModalProps> = ({
         <div className="flex flex-col gap-3 animate-fade-in-delay-3">
           <button
             onClick={handleBrowseStories}
-            className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 font-semibold py-4 px-6 rounded-xl
-              hover:bg-white/90 transform hover:scale-105 transition-all duration-300
-              shadow-lg hover:shadow-xl active:scale-95"
+            className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 font-semibold py-4 px-6 rounded-[3px]
+              hover:bg-white/90 transform hover:scale-105 transition-all duration-300 active:scale-95"
           >
             <IoLibraryOutline size={20} />
             {t("congrats.browseStories")}
@@ -133,7 +132,7 @@ export const CongratsModal: React.FC<CongratsModalProps> = ({
           {hasNextDifficulty && (
             <button
               onClick={handleNextDifficulty}
-              className="w-full flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white font-semibold py-4 px-6 rounded-xl
+              className="w-full flex items-center justify-center gap-2 bg-white/20 text-white font-semibold py-4 px-6 rounded-[3px]
                 hover:bg-white/30 transform hover:scale-105 transition-all duration-300
                 border-2 border-white/30 hover:border-white/50 active:scale-95"
             >

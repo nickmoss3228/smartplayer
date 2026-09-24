@@ -20,6 +20,7 @@ import {
   BLOB_COLORS,
   type WhyQuestionId,
 } from '../components/Homepage/WhyClouds/whyCloudsData';
+import { buttonPrimary } from '../components/ui/buttonStyles';
 
 /**
  * The guide, told as the six cloud questions opened up.
@@ -112,7 +113,7 @@ const VizStage: React.FC<{ Viz: ComponentType }> = ({ Viz }) => {
   }, []);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-7">
+    <div className="rounded-[3px] border border-gray-200 bg-white p-5 sm:p-7">
       {/* min-height reserves the space the viz will occupy, so the page does
           not jump as each one mounts on scroll. */}
       <div
@@ -126,8 +127,8 @@ const VizStage: React.FC<{ Viz: ComponentType }> = ({ Viz }) => {
         <button
           type="button"
           onClick={() => setPlayKey((k) => k + 1)}
-          className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1
-            font-['Montserrat'] text-[10px] font-bold uppercase tracking-widest text-gray-400
+          className="flex items-center gap-1.5 rounded-[2px] border border-gray-200 px-3 py-1
+            font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400
             transition hover:border-gray-300 hover:text-gray-700"
         >
           <IoRefreshOutline className="h-3 w-3" />
@@ -173,7 +174,7 @@ const CloudBlock: React.FC<{ id: WhyQuestionId; Viz: ComponentType; index: numbe
           <p className="text-sm font-semibold text-gray-500">
             {t(`homepage.why.${id}.cloud`)}
           </p>
-          <h3 className="mt-1 text-xl font-black leading-tight text-gray-900 sm:text-2xl">
+          <h3 className="mt-1 text-xl font-extrabold leading-tight text-gray-900 sm:text-2xl">
             {t(`homepage.why.${id}.title`)}
           </h3>
         </div>
@@ -192,17 +193,17 @@ const RailLink: React.FC<{ href: string; label: string; active: boolean }> = ({
 }) => (
   <a
     href={href}
-    className={`flex items-center gap-2.5 rounded-md border-l-2 px-2.5 py-1.5 text-[13px] transition
+    className={`flex items-center gap-2.5 rounded-[3px] border-l-2 px-2.5 py-1.5 text-[13px] transition
       ${
         active
-          ? 'border-emerald-500 font-semibold text-gray-900'
+          ? 'border-signal font-semibold text-gray-900'
           : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
       }`}
   >
     <span
       aria-hidden
       className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors
-        ${active ? 'bg-emerald-500' : 'bg-gray-300'}`}
+        ${active ? 'bg-signal' : 'bg-gray-300'}`}
     />
     {label}
   </a>
@@ -254,10 +255,10 @@ const HowToUse: React.FC = () => {
           overflow-y-auto border-r border-gray-200 bg-white px-4 py-6 lg:flex"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-xl font-black lowercase tracking-tighter">
+          <span className="text-xl font-extrabold lowercase tracking-tighter">
             {t('brand')}
           </span>
-          <span className="font-['Montserrat'] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400">
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
             {t('howToUse.nav.title')}
           </span>
         </div>
@@ -267,7 +268,7 @@ const HowToUse: React.FC = () => {
 
           {GROUPS.map((g) => (
             <React.Fragment key={g.key}>
-              <span className="px-2.5 pb-1 pt-3 font-['Montserrat'] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400">
+              <span className="px-2.5 pb-1 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
                 {t(`howToUse.groups.${g.key}.label`)}
               </span>
               {g.ids.map((id) => (
@@ -281,7 +282,7 @@ const HowToUse: React.FC = () => {
             </React.Fragment>
           ))}
 
-          <span className="px-2.5 pb-1 pt-3 font-['Montserrat'] text-[9px] font-bold uppercase tracking-[0.2em] text-gray-400">
+          <span className="px-2.5 pb-1 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
             {t('howToUse.nav.then')}
           </span>
           <RailLink
@@ -298,25 +299,27 @@ const HowToUse: React.FC = () => {
           <header className="pt-8 pb-12 sm:pt-12 sm:pb-16">
             <button
               onClick={() => navigate(-1)}
-              className="mb-8 flex items-center gap-1.5 rounded-full border border-gray-200 bg-white
-                px-4 py-2 text-sm font-medium text-gray-600 transition
+              className="mb-8 flex items-center gap-1.5 rounded-[3px] border border-gray-200 bg-white
+                px-4 py-2 text-sm text-gray-600 transition
                 hover:border-gray-300 hover:text-gray-900"
             >
               <IoChevronBack className="h-4 w-4" />
               {t('howToUse.back')}
             </button>
 
-            <p className="font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
               {t('howToUse.intro.eyebrow')}
             </p>
-            <h1 className="mt-3 text-4xl font-black leading-[1.02] tracking-tight text-gray-900 sm:text-6xl">
+            {/* Two-tone in ink rather than a brand colour: the page's own
+                emphasis, without a hue that means nothing elsewhere. */}
+            <h1 className="mt-3 text-4xl font-extrabold leading-[1.02] tracking-tight text-gray-500 sm:text-6xl">
               {t('howToUse.intro.title1')}{' '}
-              <span className="text-emerald-600">{t('howToUse.intro.title2')}</span>
+              <span className="text-gray-900">{t('howToUse.intro.title2')}</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
               {t('howToUse.intro.text')}
             </p>
-            <span className="mt-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-['Montserrat'] text-[10px] font-bold uppercase tracking-widest text-gray-500">
+            <span className="mt-6 inline-flex items-center gap-2 rounded-[2px] border border-gray-200 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-gray-500">
               <IoEarOutline className="h-3.5 w-3.5" />
               {t('howToUse.intro.readTime')}
             </span>
@@ -326,10 +329,10 @@ const HowToUse: React.FC = () => {
               Numbered, unlike the old section labels — this genuinely is a
               sequence, so the numbers carry information. */}
           <section id="do" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
-            <p className="font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
               {t('howToUse.loop.label')}
             </p>
-            <h2 className="mt-3 mb-8 text-2xl font-black leading-tight text-gray-900 sm:text-3xl">
+            <h2 className="mt-3 mb-8 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
               {t('howToUse.loop.title')}
             </h2>
 
@@ -337,21 +340,21 @@ const HowToUse: React.FC = () => {
               {loopSteps.map(({ Icon, title, text }, i) => (
                 <li
                   key={title}
-                  className={`flex gap-4 rounded-2xl border border-gray-200 bg-white p-5
+                  className={`flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5
                     ${i === 4 ? 'sm:col-span-2' : ''}`}
                 >
                   <span
                     aria-hidden
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl
-                      border border-emerald-200 bg-emerald-50 text-emerald-600"
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[3px]
+                      border border-line bg-room text-ink"
                   >
                     <Icon className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="font-['Montserrat'] text-[10px] font-bold tracking-[0.2em] text-gray-400">
+                    <p className="font-mono text-[10px] tracking-[0.16em] text-gray-400">
                       {String(i + 1).padStart(2, '0')}
                     </p>
-                    <h3 className="mt-0.5 text-[15px] font-bold text-gray-900">{title}</h3>
+                    <h3 className="mt-0.5 text-[15px] text-gray-900">{title}</h3>
                     <p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p>
                   </div>
                 </li>
@@ -365,10 +368,10 @@ const HowToUse: React.FC = () => {
               key={g.key}
               className="border-t border-gray-200 py-12 sm:py-16"
             >
-              <p className="font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
                 {t(`howToUse.groups.${g.key}.label`)}
               </p>
-              <h2 className="mt-3 text-2xl font-black leading-tight text-gray-900 sm:text-3xl">
+              <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
                 {t(`howToUse.groups.${g.key}.title`)}
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-gray-500">
@@ -390,10 +393,10 @@ const HowToUse: React.FC = () => {
 
           {/* ═══════════════ LEVELS ═══════════════ */}
           <section id="levels" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
-            <p className="font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
               {t('howToUse.pick.label')}
             </p>
-            <h2 className="mt-3 text-2xl font-black leading-tight text-gray-900 sm:text-3xl">
+            <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
               {t('howToUse.pick.title')}
             </h2>
             <p className="mt-3 mb-8 max-w-xl text-sm leading-relaxed text-gray-500">
@@ -406,7 +409,7 @@ const HowToUse: React.FC = () => {
               {LEVEL_IDS.map((id) => (
                 <div
                   key={id}
-                  className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-4"
+                  className="flex flex-col items-center rounded-[3px] border border-gray-200 bg-white p-4"
                 >
                   <MilkGlass
                     fill={LEVEL_FILL[id]}
@@ -414,7 +417,7 @@ const HowToUse: React.FC = () => {
                     className="h-auto w-full max-w-[92px]"
                     style={{ color: themes[id].accent }}
                   />
-                  <span className="mt-3 text-xl font-black tabular-nums leading-none text-gray-900">
+                  <span className="mt-3 text-xl font-extrabold tabular-nums leading-none text-gray-900">
                     {t(`levels.fat${id.charAt(0).toUpperCase()}${id.slice(1)}`)}
                   </span>
                   <span className="mt-1 text-center text-xs font-bold text-gray-500">
@@ -427,8 +430,7 @@ const HowToUse: React.FC = () => {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 to="/levels"
-                className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3
-                  text-sm font-bold text-white transition hover:bg-gray-700"
+                className={buttonPrimary}
               >
                 {t('howToUse.pick.cta')}
                 <IoArrowForward className="h-4 w-4" />
@@ -438,7 +440,7 @@ const HowToUse: React.FC = () => {
           </section>
 
           <footer className="border-t border-gray-200 py-10 text-center">
-            <p className="font-['Montserrat'] text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
               {t('howToUse.footer')}
             </p>
           </footer>

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { IoSearchOutline } from "react-icons/io5";
 import { usePlayerSearch, SEARCH_MIN_LENGTH } from "../modules/players/usePlayerSearch";
 import { PlayerListItem } from "../services/profileServices";
 import { useCharacterPortrait } from "../modules/character/useCharacterPortrait";
@@ -18,7 +18,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-2 bg-white/70 hover:bg-white rounded-2xl p-4 shadow-sm transition-colors"
+      className="flex flex-col items-center gap-2 bg-white/70 hover:bg-white rounded-[3px] p-4 border border-line transition-colors"
     >
       <div className="relative">
         <img
@@ -52,20 +52,20 @@ const Players = () => {
   const showEmpty = !showHint && searched && !loading && !error && players.length === 0;
 
   return (
-    <div className="min-h-dvh pt-16 pb-10 px-4 bg-gradient-to-br from-sky-50 to-amber-50">
+    <div className="min-h-dvh pt-16 pb-10 px-4 bg-room">
       <div className="max-w-xl mx-auto">
-        <h1 className="text-xl font-bold text-black/80 mb-4">
+        <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-black mb-4">
           {t("players.title")}
         </h1>
 
         <div className="relative mb-6">
-          <MagnifyingGlassIcon className="w-5 h-5 text-black/30 absolute left-3 top-1/2 -translate-y-1/2" />
+          <IoSearchOutline className="w-5 h-5 text-black/30 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("players.searchPlaceholder")}
-            className="w-full text-black pl-10 pr-4 py-2.5 rounded-full bg-white/80 shadow-sm border border-black/5 focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm"
+            className="w-full text-black pl-10 pr-4 py-2.5 rounded-[3px] bg-white border border-line focus:outline-2 focus:outline-offset-2 focus:outline-signal text-sm"
           />
         </div>
 
@@ -77,7 +77,7 @@ const Players = () => {
 
         {!showHint && loading && (
           <div className="flex justify-center mt-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
           </div>
         )}
 

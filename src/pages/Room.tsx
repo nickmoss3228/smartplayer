@@ -122,7 +122,7 @@ const BuildBar = ({
   const poor = spec ? wallet[spec.currency] < spec.price : false;
 
   return (
-    <div className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white/95 backdrop-blur shadow-2xl overflow-hidden">
+    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden">
       {spec ? (
         <div className="px-4 pt-3 pb-3">
           <div className="flex items-start justify-between gap-3">
@@ -136,8 +136,8 @@ const BuildBar = ({
             type="button"
             disabled={busy || poor}
             onClick={() => onBuy(spec)}
-            className={`mt-2.5 w-full rounded-xl py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50 ${
-              poor ? "bg-black/40" : "bg-violet-600"
+            className={`mt-2.5 w-full rounded-[3px] py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50 ${
+              poor ? "bg-black/40" : "bg-gray-900"
             }`}
           >
             {done}
@@ -176,7 +176,7 @@ const Swatches = ({
   lockedLabel: (s: number) => string;
 }) => (
   <div className="mb-5">
-    <h3 className="text-[11px] font-bold uppercase tracking-wide text-black/40 mb-2">{title}</h3>
+    <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">{title}</h3>
     <div className="grid grid-cols-4 gap-2">
       {items.map((item) => {
         const locked = item.unlocksAtStage > stage;
@@ -187,9 +187,9 @@ const Swatches = ({
             disabled={locked}
             onClick={() => onPick(item.id)}
             title={locked ? lockedLabel(item.unlocksAtStage) : item.name}
-            className={`relative aspect-square rounded-xl border-2 transition-transform ${
+            className={`relative aspect-square rounded-[3px] border-2 transition-transform ${
               currentId === item.id
-                ? "border-violet-500 scale-105"
+                ? "border-gray-900 scale-105"
                 : "border-black/10 active:scale-95"
             } ${locked ? "opacity-40" : ""}`}
             style={{
@@ -223,10 +223,10 @@ const Swatches = ({
 const AdvisorFace = () => (
   // Built from the same box vocabulary as the people in the scene, so the
   // person in the corner reads as somebody who works here.
-  <span className="relative block h-9 w-9 shrink-0 rounded-lg bg-[#dfe4ec] overflow-hidden">
-    <span className="absolute inset-x-1.5 top-1 h-3.5 rounded-sm bg-[#3b2a1e]" />
-    <span className="absolute inset-x-2 top-2.5 h-3 rounded-sm bg-[#f2c48d]" />
-    <span className="absolute inset-x-1 bottom-0 h-3.5 rounded-t-md bg-[#4a6ea9]" />
+  <span className="relative block h-9 w-9 shrink-0 rounded-[3px] bg-[#dfe4ec] overflow-hidden">
+    <span className="absolute inset-x-1.5 top-1 h-3.5 rounded-[2px] bg-[#3b2a1e]" />
+    <span className="absolute inset-x-2 top-2.5 h-3 rounded-[2px] bg-[#f2c48d]" />
+    <span className="absolute inset-x-1 bottom-0 h-3.5 rounded-t-[3px] bg-[#4a6ea9]" />
   </span>
 );
 
@@ -256,7 +256,7 @@ const AdvisorCard = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 6, scale: 0.98 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="pointer-events-auto w-[min(17rem,72vw)] rounded-2xl bg-white/95 backdrop-blur shadow-xl overflow-hidden"
+      className="pointer-events-auto w-[min(17rem,72vw)] rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden"
     >
       <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
         <AdvisorFace />
@@ -276,7 +276,7 @@ const AdvisorCard = ({
           disabled={busy}
           onClick={advice.action === "pay" ? onPay : onBuild}
           className={`w-full py-2 text-[12px] font-bold text-white active:scale-[0.99] disabled:opacity-50 ${
-            urgent ? "bg-rose-500" : "bg-violet-600"
+            urgent ? "bg-rose-500" : "bg-gray-900"
           }`}
         >
           {advice.action === "pay" ? payLabel : buildLabel}
@@ -324,7 +324,7 @@ const CustomizeSheet = ({
   const fields = room ? customisable(room.kind, Boolean(room.outdoor)) : [];
 
   return (
-    <div className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white/95 backdrop-blur shadow-2xl overflow-hidden">
+    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden">
       {room && look ? (
         <div className="px-4 pt-3 pb-1 max-h-[46vh] overflow-y-auto">
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -334,7 +334,7 @@ const CustomizeSheet = ({
                 type="button"
                 disabled={busy}
                 onClick={onReset}
-                className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-bold text-violet-700 bg-violet-50 active:scale-95 disabled:opacity-50"
+                className="shrink-0 rounded-[3px] px-2 py-1 text-[11px] font-bold text-gray-900 bg-gray-100 active:scale-95 disabled:opacity-50"
               >
                 {resetLabel}
               </button>
@@ -363,7 +363,7 @@ const CustomizeSheet = ({
           )}
           {fields.includes("layoutId") && (
             <div className="mb-4">
-              <h3 className="text-[11px] font-bold uppercase tracking-wide text-black/40 mb-2">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">
                 {titles.layout}
               </h3>
               <div className="grid grid-cols-2 gap-2">
@@ -375,9 +375,9 @@ const CustomizeSheet = ({
                       type="button"
                       disabled={locked || busy}
                       onClick={() => onSet({ roomId: room.id, layoutId: layout.id })}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl border-2 py-2 text-xs font-bold transition-transform active:scale-95 ${
+                      className={`flex items-center justify-center gap-1.5 rounded-[3px] border-2 py-2 text-xs font-bold transition-transform active:scale-95 ${
                         look.layoutId === layout.id
-                          ? "border-violet-500 bg-violet-50 text-violet-700"
+                          ? "border-gray-900 bg-gray-100 text-gray-900"
                           : "border-black/10 text-black/60"
                       } ${locked ? "opacity-40" : ""}`}
                     >
@@ -466,7 +466,7 @@ const Room = () => {
   if (loading || characterLoading) {
     return (
       <div className="flex justify-center items-center min-h-dvh pt-14">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-violet-500" />
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900" />
       </div>
     );
   }
@@ -572,7 +572,7 @@ const Room = () => {
       <Suspense
         fallback={
           <div className="w-full h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500" />
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
           </div>
         }
       >
@@ -621,7 +621,7 @@ const Room = () => {
           aria-label={t(exterior ? "school.view.inside" : "school.view.outside")}
           title={t(exterior ? "school.view.inside" : "school.view.outside")}
           className={`h-11 w-11 rounded-full backdrop-blur shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
-            exterior ? "bg-violet-600 text-white" : "bg-white/90 text-black/60"
+            exterior ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
           }`}
         >
           {exterior ? <IoLayersOutline size={21} /> : <IoBusinessOutline size={21} />}
@@ -690,7 +690,7 @@ const Room = () => {
             onClose={leaveMode}
           />
         ) : !offer.length ? (
-          <div className="pointer-events-none flex items-center gap-2 rounded-2xl bg-white/90 backdrop-blur px-5 py-3 shadow-lg">
+          <div className="pointer-events-none flex items-center gap-2 rounded-[3px] bg-white/90 backdrop-blur px-5 py-3 shadow-lg">
             <IoSparkles size={18} className="text-amber-500" />
             <span className="text-sm font-bold text-black/70">{t("school.complete")}</span>
           </div>
@@ -699,9 +699,9 @@ const Room = () => {
             type="button"
             onClick={() => enterMode("build")}
             disabled={busy}
-            className={`pointer-events-auto relative flex items-center gap-2 rounded-2xl px-6 py-3.5 shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
+            className={`pointer-events-auto relative flex items-center gap-2 rounded-[3px] px-6 py-3.5 shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
               canBuildSomething
-                ? "bg-violet-600 shadow-violet-900/30"
+                ? "bg-gray-900 shadow-gray-900/30"
                 : "bg-black/55 backdrop-blur shadow-black/20"
             }`}
           >
@@ -746,8 +746,8 @@ const Room = () => {
             transition={{ type: "spring", stiffness: 220, damping: 22 }}
             className="absolute inset-x-0 top-1/3 flex justify-center px-6 pointer-events-none"
           >
-            <div className="bg-white/95 backdrop-blur rounded-2xl px-6 py-4 shadow-2xl text-center max-w-xs">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-violet-500 mb-1">
+            <div className="bg-white/95 backdrop-blur rounded-[3px] px-6 py-4 shadow-xl text-center max-w-xs">
+              <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 mb-1">
                 {t("school.unlocked")}
               </div>
               <div className="text-lg font-bold text-black/85">{roomName(celebrating)}</div>
@@ -775,7 +775,7 @@ const Room = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className="absolute right-0 top-0 bottom-0 w-[min(20rem,85vw)] bg-white shadow-2xl z-40 flex flex-col"
+              className="absolute right-0 top-0 bottom-0 w-[min(20rem,85vw)] bg-white shadow-xl z-40 flex flex-col"
             >
               <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
                 <h2 className="text-sm font-bold text-black/80">{t("school.look.title")}</h2>
@@ -808,7 +808,7 @@ const Room = () => {
                 />
 
                 <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-wide text-black/40 mb-2">
+                  <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">
                     {t("school.look.layout")}
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
@@ -820,9 +820,9 @@ const Room = () => {
                           type="button"
                           disabled={locked}
                           onClick={() => run(() => setLook({ layoutId: layout.id }))}
-                          className={`flex items-center justify-center gap-1.5 rounded-xl border-2 py-2.5 text-xs font-bold transition-transform active:scale-95 ${
+                          className={`flex items-center justify-center gap-1.5 rounded-[3px] border-2 py-2.5 text-xs font-bold transition-transform active:scale-95 ${
                             school.layoutId === layout.id
-                              ? "border-violet-500 bg-violet-50 text-violet-700"
+                              ? "border-gray-900 bg-gray-100 text-gray-900"
                               : "border-black/10 text-black/60"
                           } ${locked ? "opacity-40" : ""}`}
                         >
@@ -845,7 +845,7 @@ const Room = () => {
 
       {toast && (
         <div className="absolute bottom-28 inset-x-0 flex justify-center px-4 pointer-events-none z-50">
-          <div className="bg-black/85 text-white text-sm rounded-full px-4 py-2 shadow-lg">
+          <div className="bg-black/85 text-white text-sm rounded-[3px] px-4 py-2 shadow-lg">
             {toast}
           </div>
         </div>

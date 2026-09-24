@@ -13,8 +13,8 @@
  */
 export const StoryCardSkeleton = () => (
   <div className="animate-pulse" aria-hidden="true">
-    <div className="aspect-[4/5] rounded-sm bg-gray-200" />
-    <div className="mt-1.5 h-3 w-2/3 rounded bg-gray-200" />
+    <div className="aspect-[4/5] rounded-[2px] bg-gray-200" />
+    <div className="mt-1.5 h-3 w-2/3 rounded-[3px] bg-gray-200" />
   </div>
 );
 

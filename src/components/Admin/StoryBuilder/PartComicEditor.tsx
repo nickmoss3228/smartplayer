@@ -175,7 +175,7 @@ const PartComicEditor = ({
             const file = e.dataTransfer.files?.[0];
             if (file) void uploadFile(file);
           }}
-          className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-6 py-6 cursor-pointer transition-colors ${
+          className={`flex flex-col items-center justify-center gap-1 rounded-[3px] border-2 border-dashed px-6 py-6 cursor-pointer transition-colors ${
             dragOver
               ? "border-amber-400 bg-amber-50"
               : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
@@ -211,11 +211,11 @@ const PartComicEditor = ({
 
       {comicUrl ? (
         <div className="space-y-2">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-2 inline-block max-w-full">
+          <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-2 inline-block max-w-full">
             <img
               src={comicUrl}
               alt={`Comic page for part ${part.partNumber}`}
-              className="max-h-96 w-auto max-w-full rounded"
+              className="max-h-96 w-auto max-w-full rounded-[3px]"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -238,7 +238,7 @@ const PartComicEditor = ({
           </div>
         </div>
       ) : builtIn ? (
-        <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
+        <div className="bg-amber-50 rounded-[3px] border border-amber-200 p-4">
           <p className="text-sm font-semibold text-amber-900">
             This story already has artwork for part {part.partNumber}
           </p>
@@ -251,14 +251,14 @@ const PartComicEditor = ({
             <img
               src={builtIn}
               alt={`Built-in comic page for part ${part.partNumber}`}
-              className="w-32 rounded border border-amber-200 bg-white"
+              className="w-32 rounded-[3px] border border-amber-200 bg-white"
             />
             <div className="flex flex-col items-start gap-2">
               <button
                 type="button"
                 onClick={() => handleAdopt([part])}
                 disabled={adopting}
-                className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-lg px-3 py-1.5 disabled:opacity-50"
+                className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-3 py-1.5 disabled:opacity-50"
               >
                 {adopting ? "Saving…" : "Use this page"}
               </button>
@@ -279,7 +279,7 @@ const PartComicEditor = ({
           </div>
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-8 text-center">
+        <div className="bg-gray-50 rounded-[3px] border border-dashed border-gray-300 p-8 text-center">
           <p className="text-sm text-gray-500">No comic page for this part yet.</p>
           <p className="text-xs text-gray-400 mt-1">
             Parts without one show the players an empty &ldquo;Comics&rdquo; placeholder.

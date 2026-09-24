@@ -60,7 +60,7 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
         {!isMobile && (
           <div className="relative">
             {isLoading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-lg">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-[3px]">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span className="text-white text-sm">Loading audio...</span>
@@ -73,7 +73,7 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
               ref={waveformRef}
               className="w-full mx-auto rounded-full overflow-hidden relative px-1 group
                          bg-black/40 h-[48px]
-                         md:bg-white/60 md:h-8 md:rounded-lg md:px-0.5"
+                         md:bg-white/60 md:h-8 md:rounded-[3px] md:px-0.5"
             >
               <div
                 id="hover"

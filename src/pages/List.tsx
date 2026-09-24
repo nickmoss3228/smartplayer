@@ -108,7 +108,7 @@ const List = () => {
                 push the shelf down a row once it resolves. */}
             <p className="text-gray-400 text-sm mt-1 min-h-[1.25rem]">
               {loading ? (
-                <span className="inline-block h-3 w-24 rounded bg-gray-200 align-middle animate-pulse" />
+                <span className="inline-block h-3 w-24 rounded-[3px] bg-gray-200 align-middle animate-pulse" />
               ) : (
                 <>
                   {libraryCount} {t('list.stories')}
@@ -132,7 +132,7 @@ const List = () => {
           groupedStories.map(({ category, stories: groupStories }) => (
             <div key={category}>
               {groupedStories.length > 1 && (
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1 animate-fade-in-delay-2">
+                <h2 className="font-mono text-[10px] text-gray-500 uppercase tracking-[0.16em] mb-2 px-1 animate-fade-in-delay-2">
                   {t(`list.category.${category}`)}
                 </h2>
               )}
@@ -158,7 +158,7 @@ const List = () => {
             </div>
           ))
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-[3px] border border-gray-200 overflow-hidden">
             <div className="text-center py-16 text-gray-400">
               <IoSearchOutline size={32} className="mx-auto mb-3 opacity-40" aria-hidden="true" />
             </div>

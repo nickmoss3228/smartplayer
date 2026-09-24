@@ -35,8 +35,8 @@ const Legal = () => {
           {t('legal.backHome')}
         </Link>
 
-        <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">{doc.title}</h1>
-        <p className="mt-2 text-xs uppercase tracking-widest text-gray-400">
+        <h1 className="mt-6 text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight">{doc.title}</h1>
+        <p className="font-mono mt-2 text-[10px] uppercase tracking-[0.16em] text-gray-400">
           {t('legal.updated')} {doc.updated} · {t('legal.version')} {LEGAL_VERSION}
         </p>
 

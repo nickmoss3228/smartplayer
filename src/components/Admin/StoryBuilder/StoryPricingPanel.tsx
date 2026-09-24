@@ -14,8 +14,9 @@ import { AdminStory, updateStoryMeta } from "../../../services/adminStoryService
  * ── The empty-means-derive rule ─────────────────────────────────────────────
  *
  * Price, free parts and preview seconds are all optional, and blank is a real
- * value meaning "work it out from the length" — 29 ₽ a track, and either three
- * free parts (10 parts or more) or a 30-second preview of part 1 (fewer).
+ * value meaning "work it out from the length" — 29 ₽ a track, and the first
+ * three parts free (every part, on a story of three or fewer). No timed
+ * preview unless one is typed in here.
  * Almost every story should leave all three blank; they exist for the one that
  * should not follow the rule.
  *
@@ -101,11 +102,11 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
     }
   };
 
-  const field = "w-full text-black px-3 py-2 border border-gray-300 rounded-lg text-sm";
+  const field = "w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-sm";
   const label = "block text-xs text-gray-500 mb-1";
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 border border-gray-200 space-y-4">
+    <div className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-4">
       <div>
         <h3 className="font-semibold text-black">Pricing &amp; access</h3>
         <p className="mt-0.5 text-xs text-gray-500">
@@ -186,7 +187,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
                 inputMode="numeric"
                 value={freeParts}
                 onChange={(e) => setFreeParts(e.target.value)}
-                placeholder={story.totalParts >= 10 ? "3 (from length)" : "0 (from length)"}
+                placeholder={`${Math.min(3, story.totalParts)} (from length)`}
                 className={field}
               />
               <p className="mt-1 text-[11px] text-gray-400">Parts 1…n play in full. 0 means none.</p>
@@ -199,7 +200,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
                 inputMode="numeric"
                 value={previewSeconds}
                 onChange={(e) => setPreviewSeconds(e.target.value)}
-                placeholder={story.totalParts >= 10 ? "none" : "30 (from length)"}
+                placeholder="none"
                 className={field}
               />
               <p className="mt-1 text-[11px] text-gray-400">
@@ -217,7 +218,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
         type="button"
         onClick={save}
         disabled={saving}
-        className="px-3 py-2 rounded-lg bg-black text-white text-sm disabled:opacity-50 cursor-pointer"
+        className="px-3 py-2 rounded-[3px] bg-black text-white text-sm disabled:opacity-50 cursor-pointer"
       >
         {saving ? "Saving…" : "Save pricing"}
       </button>

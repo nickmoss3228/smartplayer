@@ -190,13 +190,13 @@ const SignUp = () => {
           </SubmitButton>
         </form>
 
-        <div className="flex items-center justify-between mt-6 pt-5 border-t border-[#e0e7ed]">
+        <div className="flex items-center justify-between mt-6 pt-5 border-t border-line">
           <BackButton onClick={backToDetails}>{t('signup.phoneVerification.back')}</BackButton>
           <button
             type="button"
             onClick={handleResend}
             disabled={isLoading}
-            className="text-sm font-semibold text-[#0f151c] hover:text-[#e5484d] disabled:opacity-50 cursor-pointer py-1"
+            className="text-sm font-semibold text-ink hover:text-signal disabled:opacity-50 cursor-pointer py-1"
           >
             {t('signup.phoneVerification.resend')}
           </button>
@@ -284,7 +284,7 @@ const SignUp = () => {
               submit button. Only once the second field has content, so it does
               not accuse the user of a mismatch they are still typing. */}
           {confirmPassword.length > 0 && confirmPassword !== password && (
-            <p className="mt-2 text-[13px] text-[#c2262b]">{t('signup.errors.passwordMismatch')}</p>
+            <p className="mt-2 text-[13px] text-signal-ink">{t('signup.errors.passwordMismatch')}</p>
           )}
         </PasswordField>
 
@@ -293,14 +293,14 @@ const SignUp = () => {
             half-filled form. handleSubmit re-checks both flags rather than
             relying on the disabled button alone: `disabled` is a UI state, and
             the account is created by the request, not by the button. */}
-        <div className="flex flex-col gap-3 bg-[#f5f8fa] border border-[#e0e7ed] rounded-[3px] p-4">
+        <div className="flex flex-col gap-3 bg-room border border-line rounded-[3px] p-4">
           <label htmlFor="terms" className="flex items-start gap-3 text-[13px] leading-relaxed text-[#47586a] cursor-pointer">
             <input
               id="terms"
               type="checkbox"
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-0.5 h-4 w-4 flex-none accent-[#0f151c] cursor-pointer"
+              className="mt-0.5 h-4 w-4 flex-none accent-ink cursor-pointer"
             />
             <span>
               <Trans
@@ -311,7 +311,7 @@ const SignUp = () => {
                       to={legalPath('terms')}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0f151c] underline underline-offset-2 hover:text-[#e5484d]"
+                      className="text-ink underline underline-offset-2 hover:text-signal"
                     />
                   ),
                   privacy: (
@@ -319,7 +319,7 @@ const SignUp = () => {
                       to={legalPath('privacy')}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0f151c] underline underline-offset-2 hover:text-[#e5484d]"
+                      className="text-ink underline underline-offset-2 hover:text-signal"
                     />
                   ),
                 }}
@@ -333,7 +333,7 @@ const SignUp = () => {
               type="checkbox"
               checked={acceptedDataConsent}
               onChange={(e) => setAcceptedDataConsent(e.target.checked)}
-              className="mt-0.5 h-4 w-4 flex-none accent-[#0f151c] cursor-pointer"
+              className="mt-0.5 h-4 w-4 flex-none accent-ink cursor-pointer"
             />
             <span>
               <Trans
@@ -344,7 +344,7 @@ const SignUp = () => {
                       to={legalPath('consent')}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#0f151c] underline underline-offset-2 hover:text-[#e5484d]"
+                      className="text-ink underline underline-offset-2 hover:text-signal"
                     />
                   ),
                 }}

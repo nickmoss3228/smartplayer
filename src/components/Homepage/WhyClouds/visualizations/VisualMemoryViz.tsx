@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { IoSearchOutline, IoCheckmarkCircle } from 'react-icons/io5';
+import { IoSearchOutline, IoCheckmarkCircle, IoVolumeHighOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
 // Real comic panel (see Comics/comicsData.ts) — reused here so the demo
@@ -19,14 +19,14 @@ const VisualMemoryViz = () => {
         transition={{ delay: delay(0), duration: 0.4 }}
         className="flex items-center gap-2 text-lg font-bold text-gray-700"
       >
-        <span aria-hidden>🔊</span>
+        <IoVolumeHighOutline aria-hidden className="h-5 w-5" />
         <span>kitten</span>
       </motion.div>
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: delay(300) }}
-        className="text-[11px] uppercase tracking-widest text-gray-400 font-bold -mt-3"
+        className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-400 -mt-3"
       >
         {t('homepage.why.visualMemory.searchPrompt')}
       </motion.p>
@@ -37,7 +37,7 @@ const VisualMemoryViz = () => {
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: delay(500), duration: 0.5 }}
-          className="absolute inset-0 rounded-2xl overflow-hidden border-2 border-white shadow-lg bg-gray-100"
+          className="absolute inset-0 rounded-[3px] overflow-hidden border border-line bg-gray-100"
         >
           <img
             src={COMIC_SRC}
@@ -76,7 +76,7 @@ const VisualMemoryViz = () => {
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: delay(2100), duration: 0.4, ease: 'easeOut' }}
-          className="absolute rounded-full border-2 border-yellow-300"
+          className="absolute rounded-full border-2 border-signal"
           style={{ left: '9%', top: '22%', width: '34%', height: '34%' }}
         />
       </div>
@@ -85,7 +85,7 @@ const VisualMemoryViz = () => {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: delay(2300) }}
-        className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-bold text-emerald-700"
+        className="flex items-center gap-1.5 rounded-[2px] bg-green-50 border border-green-200 px-3 py-1 text-xs font-bold text-green-700"
       >
         <IoCheckmarkCircle size={14} />
         {t('homepage.why.visualMemory.foundLabel')}

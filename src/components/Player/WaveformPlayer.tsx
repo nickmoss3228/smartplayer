@@ -223,7 +223,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     ) =>
       words.length > 0 ? (
         <div className="max-w-[1100px] mx-auto px-5 pb-6 mt-2" data-tour={tourId}>
-          <p className="text-white/50 text-[10px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-3">
+          <p className="text-white/50 text-[10px] uppercase tracking-[0.16em] font-mono mb-3">
             {label}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -353,7 +353,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 <>
                   <button
                     onClick={onOpenQuiz}
-                    className="px-5 py-2 rounded-lg text-sm font-semibold
+                    className="px-5 py-2 rounded-[3px] text-sm font-semibold
                      bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
                      hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
                   >
@@ -361,7 +361,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                   </button>
                   <button
                     onClick={onOpenVocabQuiz}
-                    className="px-5 py-2 rounded-lg text-sm font-semibold
+                    className="px-5 py-2 rounded-[3px] text-sm font-semibold
                      bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
                      hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
                   >
@@ -394,7 +394,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             /* No bg-white/60 card: the controls sit straight on the page
                gradient the way the mobile ones do. The white panel was the
                only reason desktop needed dark, filled buttons. */
-            className="max-w-[1100px] mx-auto p-[35px] rounded-2xl md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
+            className="max-w-[1100px] mx-auto p-[35px] rounded-[3px] md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
             data-tour="tour-controls"
           >
             <PlayerControls
@@ -429,7 +429,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             <div className="max-w-[1100px] mx-auto flex justify-center pt-3 gap-3 mt-6">
               <button
                 onClick={onOpenQuiz}
-                className="px-5 py-2 rounded-lg text-sm font-semibold
+                className="px-5 py-2 rounded-[3px] text-sm font-semibold
                  bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
                  hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
               >
@@ -437,7 +437,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               </button>
               <button
                 onClick={onOpenVocabQuiz}
-                className="px-5 py-2 rounded-lg text-sm font-semibold
+                className="px-5 py-2 rounded-[3px] text-sm font-semibold
                  bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
                  hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
               >

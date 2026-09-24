@@ -47,7 +47,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
+        className="bg-white rounded-[3px] shadow-xl w-full max-w-md mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold text-black mb-4">
@@ -65,7 +65,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
               required
-              className="w-full px-3 py-2 text-black border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full px-3 py-2 text-black border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-black"
               placeholder={t("feedback.namePlaceholder", "Your name") as string}
             />
           </div>
@@ -80,7 +80,7 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
               maxLength={2000}
               required
               rows={4}
-              className="w-full px-3 text-black py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black resize-none"
+              className="w-full px-3 text-black py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-black resize-none"
               placeholder={t("feedback.messagePlaceholder", "Bug report or suggestion...") as string}
             />
           </div>
@@ -105,14 +105,14 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-4 py-2 text-sm rounded-[3px] text-gray-600 hover:bg-gray-100 transition-colors"
             >
               {t("feedback.cancel", "Cancel")}
             </button>
             <button
               type="submit"
               disabled={status === "sending" || status === "sent"}
-              className="px-4 py-2 text-sm rounded-lg bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm rounded-[3px] bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
               {status === "sending"
                 ? t("feedback.sending", "Sending...")

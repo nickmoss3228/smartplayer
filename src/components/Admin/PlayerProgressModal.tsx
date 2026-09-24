@@ -29,7 +29,7 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        className="bg-white rounded-[3px] shadow-lg p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -54,15 +54,15 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
+              <div className="bg-gray-50 rounded-[3px] p-2 text-center">
                 <div className="font-bold text-black">{data.wallet.bitAward}</div>
                 <div className="text-xs text-gray-500">BitAward</div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
+              <div className="bg-gray-50 rounded-[3px] p-2 text-center">
                 <div className="font-bold text-black">{data.wallet.bitWord}</div>
                 <div className="text-xs text-gray-500">BitWord</div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-2 text-center">
+              <div className="bg-gray-50 rounded-[3px] p-2 text-center">
                 <div className="font-bold text-black">{data.wallet.bitPhrase}</div>
                 <div className="text-xs text-gray-500">BitPhrase</div>
               </div>

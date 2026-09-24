@@ -26,7 +26,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
       onClick={() => onClick(story)}
       className="
         group relative w-full text-left
-        border-2 border-black rounded-xl p-4
+        border-2 border-black rounded-[3px] p-4
         hover:bg-black hover:text-white
         active:scale-95 transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
@@ -34,7 +34,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onClick }) => {
     >
       {/* Finished badge */}
       {isFinished && (
-        <span className="absolute top-2 right-2 text-xs bg-black text-white group-hover:bg-white group-hover:text-black px-2 py-0.5 rounded-full font-semibold border border-black transition-colors">
+        <span className="absolute top-2 right-2 text-xs bg-black text-white group-hover:bg-white group-hover:text-black px-2 py-0.5 rounded-[2px] font-semibold border border-black transition-colors">
           {t("dashboard.story.finished")}
         </span>
       )}

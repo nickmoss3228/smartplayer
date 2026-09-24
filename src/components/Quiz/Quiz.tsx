@@ -157,13 +157,13 @@ const Quiz: React.FC<QuizProps> = ({
   const getOptionClasses = (index: number) => {
     const base =
       // ↓ p-3 on mobile, p-4 on sm+  |  gap-2 on mobile, gap-3 on sm+
-      "w-full p-3 sm:p-4 text-left rounded-xl border-2 font-medium transition-all duration-200 flex items-center gap-2 sm:gap-3 group";
+      "w-full p-3 sm:p-4 text-left rounded-[3px] border-2 font-medium transition-all duration-200 flex items-center gap-2 sm:gap-3 group";
 
     if (feedback === "idle" || selectedAnswer === null) {
       if (isLocked) {
         return `${base} bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed`;
       }
-      return `${base} bg-white border-gray-200 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer`;
+      return `${base} bg-white border-gray-200 text-gray-700 hover:border-gray-900 hover:bg-gray-50 hover:text-gray-900 cursor-pointer`;
     }
     if (selectedAnswer === index) {
       if (feedback === "correct") {
@@ -190,7 +190,7 @@ const Quiz: React.FC<QuizProps> = ({
         );
       }
       return (
-        <span className={`${baseIcon} bg-gray-100 text-gray-500 group-hover:bg-indigo-100 group-hover:text-indigo-600`}>
+        <span className={`${baseIcon} bg-gray-100 text-gray-500 group-hover:bg-gray-900 group-hover:text-white`}>
           {letter}
         </span>
       );
@@ -217,12 +217,12 @@ const Quiz: React.FC<QuizProps> = ({
 
   if (!showResults) {
     return (
-      <div className="w-full mx-auto bg-white/60 rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full mx-auto bg-white/60 rounded-[3px] shadow-xl overflow-hidden">
 
         {/* Progress bar */}
         <div className="h-1.5 bg-gray-100 w-full">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-700 ease-out"
+            className="h-full bg-gray-900 transition-all duration-700 ease-out"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -232,7 +232,7 @@ const Quiz: React.FC<QuizProps> = ({
 
           {/* Header row — ↓ mb-4 on mobile, mb-6 on sm+ */}
           <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <span className="text-xs font-semibold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-600 bg-gray-50 px-2 py-1 rounded-[2px] border border-gray-200">
               {t('quiz.question')}  {currentQuestion + 1} / {questions.length}
             </span>
             <span className="text-xs font-semibold text-gray-400">
@@ -282,12 +282,12 @@ const Quiz: React.FC<QuizProps> = ({
   const passed = score >= passingScore;
 
   return (
-    <div className="w-full mx-auto mt-4 bg-white/80 rounded-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full mx-auto mt-4 bg-white/80 rounded-[3px] shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
 
       <QuizConfetti active={celebrate} />
 
       {/* Top accent bar */}
-      <div className={`h-2 w-full ${passed ? "bg-gradient-to-r from-green-400 to-emerald-500" : "bg-gradient-to-r from-orange-400 to-red-500"}`} />
+      <div className={`h-2 w-full ${passed ? "bg-green-500" : "bg-orange-500"}`} />
 
       {/* ↓ p-4 on mobile, p-8 on sm+ */}
       <div className="p-4 sm:p-8 text-center">
@@ -327,7 +327,7 @@ const Quiz: React.FC<QuizProps> = ({
         {/* Reward badge — only for signed-in students; guests aren't credited server-side */}
         {passed && user && (
           <div className="flex justify-center mb-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-600 text-xs sm:text-sm font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[2px] bg-amber-50 border border-amber-100 text-amber-600 text-xs sm:text-sm font-semibold">
               <BitAwardIcon size={15} />
               {t('quiz.rewardEarned', { amount: QUIZ_PASS_BITAWARD })}
             </div>
@@ -343,15 +343,15 @@ const Quiz: React.FC<QuizProps> = ({
         {/* Stats row — ↓ gap-2 on mobile, gap-3 on sm+  |  mb-6 on mobile, mb-8 on sm+ */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8">
           {/* ↓ p-2.5 on mobile, p-3 on sm+  |  text-lg on mobile, text-xl on sm+ */}
-          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+          <div className="bg-gray-50 rounded-[3px] p-2.5 sm:p-3 border border-gray-100">
             <p className="text-lg sm:text-xl font-bold text-gray-800">{score}</p>
             <p className="text-xs text-gray-400 mt-0.5">{t('quiz.correctanswers')}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+          <div className="bg-gray-50 rounded-[3px] p-2.5 sm:p-3 border border-gray-100">
             <p className="text-lg sm:text-xl font-bold text-gray-800">{questions.length - score}</p>
             <p className="text-xs text-gray-400 mt-0.5">{t('quiz.incorrectanswers')}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100">
+          <div className="bg-gray-50 rounded-[3px] p-2.5 sm:p-3 border border-gray-100">
             <p className={`text-lg sm:text-xl font-bold ${passed ? "text-green-600" : "text-orange-500"}`}>
               {passed ? t('quiz.pass') : t('quiz.fail')}
             </p>
@@ -362,23 +362,23 @@ const Quiz: React.FC<QuizProps> = ({
         {/* Action buttons */}
         {isSubmitting ? (
           <div className="flex items-center justify-center gap-3 py-4 text-gray-500 text-sm">
-            <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
             Saving your progress...
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleRetry}
-              className="flex-1 bg-white/80 cursor-pointer px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base"
+              className="flex-1 bg-white/80 cursor-pointer px-6 py-3 rounded-[3px] border-2 border-gray-200 text-gray-600 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base"
             >
               {t('quiz.tryagain')}
             </button>
             <button
               onClick={handleReturn}
-              className={`flex-1 cursor-pointer px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 text-sm sm:text-base ${
+              className={`flex-1 cursor-pointer px-6 py-3 rounded-[3px] font-semibold text-white transition-all duration-200 text-sm sm:text-base ${
                 passed
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-lg shadow-green-500/30"
-                  : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 shadow-lg shadow-indigo-500/30"
+                  ? "bg-gray-900 hover:bg-gray-800"
+                  : "bg-gray-900 hover:bg-gray-800"
               }`}
             >
               {t('quiz.return-btn')}

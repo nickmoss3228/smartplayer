@@ -41,8 +41,8 @@ export const ChartTooltip: React.FC<TooltipProps> = ({
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 rounded-xl bg-white px-3 py-2
-                 shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-black/10"
+      className="pointer-events-none absolute z-10 rounded-[3px] bg-white px-3 py-2
+                 shadow-xl border border-black/10"
       style={{ left, top: Math.max(4, y - 12), width: TOOLTIP_WIDTH }}
     >
       <p
@@ -106,8 +106,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   children,
 }) => (
   <div
-    className="bg-white rounded-3xl p-4 sm:p-5 border border-black/5
-               shadow-[0_2px_10px_rgba(0,0,0,0.06)]"
+    className="bg-white rounded-[3px] p-4 sm:p-5 border border-line"
   >
     <div className="mb-3">
       <h3 className="font-bold text-black/85 text-sm sm:text-base">{title}</h3>
@@ -121,7 +120,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
         className="text-[11px] font-semibold cursor-pointer list-none
                    text-black/40 hover:text-black/70 transition-colors
                    focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20
-                   rounded px-1 -mx-1 py-0.5 inline-block"
+                   rounded-[3px] px-1 -mx-1 py-0.5 inline-block"
       >
         {tableLabel}
       </summary>
@@ -170,7 +169,7 @@ interface EmptyStateProps {
 
 export const ChartEmptyState: React.FC<EmptyStateProps> = ({ height, message }) => (
   <div
-    className="flex items-center justify-center rounded-2xl bg-black/[0.02]"
+    className="flex items-center justify-center rounded-[3px] bg-black/[0.02]"
     style={{ height }}
   >
     <p className="text-xs text-black/35 px-6 text-center">{message}</p>

@@ -11,13 +11,13 @@ export const LevelLegend: React.FC<Props> = ({ theme }) => {
     <div className="text-center mt-22 animate-fade-in-delay-1">
       <div className="flex text-xs items-center justify-center gap-4 text-black/80 flex-wrap gap-y-2">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-white/90 text-black/80 flex items-center justify-center text-[10px] font-bold shadow-sm ring-1 ring-white/20">
+          <div className="w-5 h-5 rounded-full bg-white/90 text-black/80 flex items-center justify-center text-[10px] font-bold ring-1 ring-white/20">
             1
           </div>
           <span>{t('levelProgress.locked')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center shadow-sm">
+          <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -25,7 +25,7 @@ export const LevelLegend: React.FC<Props> = ({ theme }) => {
           <span>{t('levelProgress.completed')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`w-5 h-5 rounded-md bg-white/90 border-3 ${theme.lastListenedBorder} animate-blink-ring shadow-sm`} />
+          <div className={`w-5 h-5 rounded-[3px] bg-white/90 border-3 ${theme.lastListenedBorder} animate-blink-ring`} />
           <span>{t('levelProgress.current')}</span>
         </div>
       </div>

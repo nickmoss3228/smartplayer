@@ -34,7 +34,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   if (isLoading) return <LevelProgressSkeleton />;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${theme.background} p-8 transition-all duration-1000 ease-in-out`}>
+    <div className={`min-h-screen bg-room p-8 transition-all duration-1000 ease-in-out`}>
       <div className="max-w-4xl pt-12 mx-auto">
 
         <LevelProgressHeader difficulty={difficulty} theme={theme} storyTitle={storyTitle} />

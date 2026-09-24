@@ -21,7 +21,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ checked, onChange, l
       </div>
       
       {label && (
-        <span className="text-white/70 text-[8px] uppercase tracking-widest font-semibold font-['Montserrat'] whitespace-nowrap">
+        <span className="text-white/70 text-[9px] uppercase tracking-[0.16em] font-mono whitespace-nowrap">
           {label}
         </span>
       )}

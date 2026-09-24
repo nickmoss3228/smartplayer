@@ -46,7 +46,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
         </td>
         <td className="px-3 py-2">
           <span
-            className={`px-1.5 py-0.5 rounded text-xs font-semibold ${
+            className={`px-1.5 py-0.5 rounded-[3px] text-xs font-semibold ${
               OUTCOME_STYLES[entry.outcome]
             }`}
           >
@@ -80,7 +80,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
             {/* Redacted server-side: code words, passwords and tokens are
                 replaced before the row is written, and file buffers are
                 summarised down to name/size/mimetype. */}
-            <pre className="text-xs bg-white border border-gray-200 rounded p-2 overflow-x-auto text-gray-700">
+            <pre className="text-xs bg-white border border-gray-200 rounded-[3px] p-2 overflow-x-auto text-gray-700">
               {JSON.stringify(entry.summary, null, 2)}
             </pre>
           </td>
@@ -121,7 +121,7 @@ const AuditTab = ({ token }: { token: string }) => {
   }, [load]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <div className="bg-white rounded-[3px] border border-gray-200 p-4">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="text-sm font-bold text-black">Admin audit log</h2>
@@ -136,7 +136,7 @@ const AuditTab = ({ token }: { token: string }) => {
             setAction(e.target.value);
             setPage(1);
           }}
-          className="text-xs text-black border border-gray-300 rounded-lg px-2 py-1.5"
+          className="text-xs text-black border border-gray-300 rounded-[3px] px-2 py-1.5"
         >
           <option value="">All actions</option>
           {actions.map((name) => (
@@ -181,7 +181,7 @@ const AuditTab = ({ token }: { token: string }) => {
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page === 1 || loading}
-          className="px-3 py-1.5 text-xs rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+          className="px-3 py-1.5 text-xs rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-40"
         >
           Previous
         </button>
@@ -189,7 +189,7 @@ const AuditTab = ({ token }: { token: string }) => {
         <button
           onClick={() => setPage((p) => p + 1)}
           disabled={!hasMore || loading}
-          className="px-3 py-1.5 text-xs rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+          className="px-3 py-1.5 text-xs rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-40"
         >
           Next
         </button>

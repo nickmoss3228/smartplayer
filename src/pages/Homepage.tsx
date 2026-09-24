@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import WhyCloudsSection from '../components/Homepage/WhyClouds/WhyCloudsSection';
 import BrandMark from '../components/Brand/BrandMark';
 import Slogan from '../components/Brand/Slogan';
+import { buttonPrimary } from '../components/ui/buttonStyles';
 
 const Homepage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -15,7 +16,7 @@ const Homepage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-room relative overflow-x-hidden">
       <div
         className={`transition-opacity duration-1000 ease-out
           ${isVisible ? 'opacity-100' : 'opacity-0'}`}
@@ -96,7 +97,7 @@ const Homepage = () => {
               page rather than from under the navbar, which is why `sm:pt-6`
               read as smaller than the mobile value instead of larger.) */}
           <div className="px-8 sm:px-12 md:px-20 lg:px-32 pt-6 sm:pt-8 md:pt-10 text-center">
-            <p className="text-[9px] tracking-[0.6em] uppercase text-gray-400 mb-3 sm:mb-4">
+            <p className="font-mono text-[10px] tracking-[0.16em] uppercase text-gray-400 mb-3 sm:mb-4">
               {t('homepage.eyebrow')}
             </p>
 
@@ -104,7 +105,7 @@ const Homepage = () => {
                 three-word "The Infinity Player" title used to require. */}
             <h1
               className="text-5xl sm:text-7xl md:text-7xl lg:text-8xl
-                font-black text-black leading-none tracking-tighter lowercase"
+                font-extrabold text-black leading-none tracking-tighter lowercase"
             >
               {t('brand')}
             </h1>
@@ -130,14 +131,14 @@ const Homepage = () => {
               whole page now, so this row sits directly on the bottom edge. */}
           <div className="flex flex-col items-center px-8 sm:px-12 md:px-16 pb-10 sm:pb-12">
             <div className="flex flex-col gap-2 w-full max-w-xs md:gap-3">
-              <Link to="/levels">
-                <button
-                  className="w-full py-3 bg-black text-white
-                    font-bold text-sm tracking-[0.2em] uppercase
-                    hover:bg-gray-800 transition-colors cursor-pointer"
-                >
-                  {t('homepage.startFree')}
-                </button>
+              {/* The one uppercase CTA in the app — the hero's voice
+                  (design manifest §5). A styled Link, not a button inside a
+                  link, so it is one control to a keyboard or screen reader. */}
+              <Link
+                to="/levels"
+                className={`${buttonPrimary} w-full text-sm font-bold tracking-[0.2em] uppercase`}
+              >
+                {t('homepage.startFree')}
               </Link>
               {/* <Link to="/how-to-use">
                 <button

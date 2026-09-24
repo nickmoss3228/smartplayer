@@ -72,7 +72,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
     return (
       <div className="w-full flex items-center justify-center gap-2 py-6">
         <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-        <span className="text-white/50 text-xs font-['Montserrat']">Loading audio…</span>
+        <span className="text-white/50 text-xs">Loading audio…</span>
       </div>
     );
   }
@@ -154,7 +154,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
       {/* ── Time labels ── */}
       <div
         className="flex justify-between -mt-2 px-0.5
-                   text-[11px] font-medium font-['Montserrat']
+                   text-[11px] font-medium
                    tabular-nums text-white/45"
       >
         <span>{currentTime}</span>

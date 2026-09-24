@@ -44,8 +44,8 @@ const SpeedsViz = () => {
         {tags.map((tag, i) => (
           <span
             key={tag}
-            className={`px-3 py-1 rounded-full text-xs font-bold transition-colors duration-300 ${
-              stage === i ? 'bg-sky-100 text-sky-700' : 'bg-gray-100 text-gray-400'
+            className={`px-3 py-1 rounded-[2px] text-xs font-bold transition-colors duration-300 ${
+              stage === i ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'
             }`}
           >
             {tag}

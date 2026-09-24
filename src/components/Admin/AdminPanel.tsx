@@ -90,7 +90,7 @@ const AdminPanel = () => {
         <meta name="robots" content="noindex, nofollow" />
         <form
           onSubmit={handleLogin}
-          className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm"
+          className="bg-white rounded-[3px] shadow-lg p-8 w-full max-w-sm"
         >
           <h1 className="text-xl font-bold text-black mb-4 text-center">
             Admin Access
@@ -101,7 +101,7 @@ const AdminPanel = () => {
             onChange={(e) => setCode(e.target.value)}
             placeholder="Enter code word"
             required
-            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black"
           />
           {loginError && (
             <p className="text-sm text-red-600 mb-3">{loginError}</p>
@@ -109,7 +109,7 @@ const AdminPanel = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="w-full bg-black text-white py-2 rounded-[3px] hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             {loading ? "Checking..." : "Enter"}
           </button>
@@ -143,7 +143,7 @@ const AdminPanel = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-sm rounded-[3px] text-gray-600 hover:bg-gray-200 transition-colors"
           >
             Log out
           </button>
@@ -154,7 +154,7 @@ const AdminPanel = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
+              className={`px-4 py-2 text-sm font-semibold rounded-t-[3px] transition-colors ${
                 activeTab === tab.id
                   ? "bg-white text-black border border-b-0 border-gray-200"
                   : "text-gray-500 hover:text-black"

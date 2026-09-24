@@ -71,21 +71,21 @@ const AchievementsRow: React.FC = () => {
   if (loading) {
     return (
       <div className="mb-6">
-        <div className="h-3 w-28 bg-gray-200 rounded mb-3 animate-pulse" />
+        <div className="h-3 w-28 bg-gray-200 rounded-[3px] mb-3 animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-3xl bg-white border border-black/5 p-4 sm:p-5 animate-pulse"
+              className="rounded-[3px] bg-white border border-line p-4 sm:p-5 animate-pulse"
             >
               <div className="flex items-center gap-3 mb-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-gray-200 flex-shrink-0" />
+                <div className="w-11 h-11 rounded-[3px] bg-gray-200 flex-shrink-0" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3 bg-gray-200 rounded w-3/4" />
-                  <div className="h-2 bg-gray-200 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 rounded-[3px] w-3/4" />
+                  <div className="h-2 bg-gray-200 rounded-[3px] w-1/2" />
                 </div>
               </div>
-              <div className="h-7 bg-gray-200 rounded w-1/2 mb-3.5" />
+              <div className="h-7 bg-gray-200 rounded-[3px] w-1/2 mb-3.5" />
               <div className="flex gap-1">
                 {[0, 1, 2, 3, 4].map((r) => (
                   <div key={r} className="h-2 flex-1 bg-gray-200 rounded-full" />
@@ -101,7 +101,7 @@ const AchievementsRow: React.FC = () => {
   return (
     <div className="mb-6">
       <div className="flex items-baseline justify-between gap-3 mb-3">
-        <h2 className="text-xs text-black/40 font-bold uppercase tracking-widest">
+        <h2 className="font-mono text-[10px] text-black/40 uppercase tracking-[0.16em]">
           {t("dashboard.achievements.title")}
         </h2>
         <p className="text-xs text-black/35 font-semibold tabular-nums flex-shrink-0">

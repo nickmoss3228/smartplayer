@@ -67,15 +67,15 @@ export const PaywallModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 dialog-backdrop-in"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl animate-scale-in"
+        className="bg-white rounded-[3px] p-8 max-w-sm w-full text-center shadow-xl dialog-panel-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`w-16 h-16 rounded-full bg-gradient-to-br ${theme.progressGradient} flex items-center justify-center mx-auto mb-5 shadow-lg`}
+          className={`w-16 h-16 rounded-full bg-gradient-to-br ${theme.progressGradient} flex items-center justify-center mx-auto mb-5`}
         >
           <IoLockClosed className="w-8 h-8 text-white" aria-hidden="true" />
         </div>
@@ -97,7 +97,7 @@ export const PaywallModal: React.FC<Props> = ({
                 onClick={() => choose(product)}
                 // The first offer is the smallest sufficient purchase, so it
                 // gets the primary treatment.
-                className={`w-full py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-between gap-3 ${
+                className={`w-full py-3 px-4 rounded-[3px] font-semibold transition-all flex items-center justify-between gap-3 ${
                   !sellable
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : index === 0

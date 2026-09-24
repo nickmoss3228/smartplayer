@@ -109,7 +109,7 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
   };
 
   return (
-    <div className="mb-6 bg-gray-50 rounded-lg border border-gray-200 p-3">
+    <div className="mb-6 bg-gray-50 rounded-[3px] border border-gray-200 p-3">
       <h3 className="text-sm font-semibold text-black mb-1">Shown in the app</h3>
       <p className="text-xs text-gray-500 mb-3">
         Unlisting takes a story off the students' list immediately. It does{" "}
@@ -133,7 +133,7 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                 return (
                   <div
                     key={key}
-                    className={`flex items-center gap-2 text-sm rounded px-2 py-1.5 ${
+                    className={`flex items-center gap-2 text-sm rounded-[3px] px-2 py-1.5 ${
                       isHidden ? "bg-gray-100 text-gray-400" : "bg-white text-black"
                     }`}
                   >
@@ -141,7 +141,7 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                     <span className={isHidden ? "line-through" : ""}>{item.title}</span>
                     <span className="text-xs text-gray-400">{item.slug}</span>
                     {item.builtIn && (
-                      <span className="text-[10px] uppercase tracking-wide text-gray-400 border border-gray-300 rounded px-1">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400 border border-gray-300 rounded-[3px] px-1">
                         built-in
                       </span>
                     )}
@@ -154,7 +154,7 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                           ? "Put this back on the shelf"
                           : "Take this off the shelf. Anyone who already owns it keeps access, but it disappears from their list too."
                       }
-                      className={`ml-auto text-xs rounded-lg px-3 py-1 disabled:opacity-50 ${
+                      className={`ml-auto text-xs rounded-[3px] px-3 py-1 disabled:opacity-50 ${
                         isHidden
                           ? "bg-black text-white hover:bg-gray-800"
                           : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"

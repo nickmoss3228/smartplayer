@@ -55,17 +55,17 @@ export default function VoiceSwitcher() {
 
         {/* Subtle overlay hint */}
         <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors duration-200 flex items-end justify-center pb-1">
-          <span className="text-white text-[9px] font-bold font-['Montserrat'] tracking-wider opacity-0 group-hover:opacity-100 drop-shadow">
+          <span className="text-white text-[9px] font-mono tracking-[0.16em] opacity-0 group-hover:opacity-100 drop-shadow">
             CHANGE
           </span>
         </div>
       </button>
 
       {/* ── Name below avatar ── */}
-      <p className="text-black/80 text-[11px] font-semibold font-['Montserrat'] mt-1.5 select-none">
+      <p className="text-black/80 text-[11px] font-mono mt-1.5 select-none">
         {selected.label}
       </p>
-      <p className="text-black/40 text-[9px] font-['Montserrat'] select-none -mt-0.5">
+      <p className="text-black/40 text-[9px] font-mono select-none -mt-0.5">
         {selected.age}
       </p>
       
@@ -75,12 +75,12 @@ export default function VoiceSwitcher() {
         <div
           className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2
                      bg-gray-900/95 backdrop-blur-sm border border-white/10
-                     rounded-2xl shadow-2xl p-3 z-50 w-[220px]"
+                     rounded-[3px] shadow-xl p-3 z-50 w-[220px]"
         >
           {/* Arrow pointing down */}
           <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900/95" />
 
-          <p className="text-white/40 text-[9px] uppercase tracking-widest font-semibold font-['Montserrat'] mb-2.5 text-center select-none">
+          <p className="text-white/40 text-[9px] uppercase tracking-[0.16em] font-mono mb-2.5 text-center select-none">
             Choose a voice
           </p>
 
@@ -91,7 +91,7 @@ export default function VoiceSwitcher() {
                 <button
                   key={voice.id}
                   onClick={() => handleSelect(voice)}
-                  className={`flex flex-col items-center gap-1 p-1.5 rounded-xl transition-all duration-150 active:scale-95
+                  className={`flex flex-col items-center gap-1 p-1.5 rounded-[3px] transition-all duration-150 active:scale-95
                     ${isActive
                       ? "bg-[#05df3bff]/20 ring-2 ring-[#05df3bff]"
                       : "hover:bg-white/10"
@@ -105,11 +105,11 @@ export default function VoiceSwitcher() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className={`text-[10px] font-semibold font-['Montserrat'] leading-tight
+                  <span className={`text-[10px] font-semibold leading-tight
                     ${isActive ? "text-[#05df3bff]" : "text-white/80"}`}>
                     {voice.label}
                   </span>
-                  <span className="text-white/35 text-[8px] font-['Montserrat'] -mt-0.5 leading-tight">
+                  <span className="text-white/35 text-[8px] -mt-0.5 leading-tight">
                     {voice.age}
                   </span>
                 </button>

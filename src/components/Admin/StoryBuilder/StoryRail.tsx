@@ -80,7 +80,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search stories"
-          className="w-full text-sm text-black px-3 py-1.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full text-sm text-black px-3 py-1.5 border border-gray-300 rounded-[3px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
         />
       </div>
 
@@ -94,14 +94,14 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
         {grouped.map(({ difficulty, total, categories }) =>
           total === 0 ? null : (
             <section key={difficulty} className="mb-4">
-              <h3 className="text-[11px] font-bold uppercase tracking-wide text-gray-400 px-2 mb-1 flex items-baseline gap-1.5">
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-400 px-2 mb-1 flex items-baseline gap-1.5">
                 {difficulty}
                 <span className="font-normal text-gray-300 tabular-nums">{total}</span>
               </h3>
 
               {categories.map(({ category, stories: inCategory }) => (
                 <div key={category} className="mb-2">
-                  <h4 className="text-[10px] uppercase tracking-wide text-gray-300 px-2 mb-0.5">
+                  <h4 className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-300 px-2 mb-0.5">
                     {categoryLabel(category)}
                   </h4>
                   <ul className="space-y-0.5">
@@ -111,7 +111,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
                           type="button"
                           onClick={() => onOpen(story._id)}
                           aria-current={story._id === activeId ? "true" : undefined}
-                          className={`w-full flex items-center gap-2 text-left rounded-lg px-2 py-1.5 transition-colors ${
+                          className={`w-full flex items-center gap-2 text-left rounded-[3px] px-2 py-1.5 transition-colors ${
                             story._id === activeId
                               ? "bg-black text-white"
                               : "text-gray-700 hover:bg-gray-100"

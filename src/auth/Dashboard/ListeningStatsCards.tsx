@@ -38,7 +38,7 @@ const ListeningStatsCard: React.FC = () => {
     .find((m) => totalSeconds >= m.seconds);
 
   return (
-    <div className="border-2 border-black rounded-lg p-4 sm:p-6">
+    <div className="border-2 border-black rounded-[3px] p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">🎧</span>
