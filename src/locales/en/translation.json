@@ -269,7 +269,8 @@
       "loop": "every story is one loop",
       "subtitlesOff": "subtitles off",
       "correct": "correct!"
-    }
+    },
+    "back": "Back"
   },
   "controls": {
     "help": "Help",

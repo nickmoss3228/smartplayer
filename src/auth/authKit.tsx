@@ -15,11 +15,12 @@
  * panel colour and red is kept for focus, markers and errors.
  */
 import { ReactNode, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { IoSyncOutline } from 'react-icons/io5'
+import { IoSyncOutline, IoChevronBack } from 'react-icons/io5'
 import { AuthPanel } from './AuthPanel'
 import { buttonBase, buttonTone } from '../components/ui/buttonStyles'
+import BrandMark from '../components/Brand/BrandMark'
 
 /* ── tokens ────────────────────────────────────────────────────────────────
    The same values as the `@theme` block in App.css, which is the source of
@@ -55,16 +56,18 @@ interface AuthShellProps {
 /**
  * The split: one dark machine on the left, the form in the light room on the
  * right. The machine shows AuthPanel — the method, animated — and nothing
- * else: no brand, no headline beside the card's own heading.
+ * else beside it: no headline competing with the card's own heading.
  *
  * Under lg the panel becomes a band above the form rather than disappearing,
  * because phones are where students actually practise. The drawing is capped
  * lower there so the sign-in button stays within reach. Layout.tsx hides the
- * site navbar on these routes, so the band starts at the top of the screen.
+ * site navbar on these routes, so the panel's own header row is the only
+ * identity and way out these screens have — see `AuthShellHeader` below.
  */
 export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
   <div className="min-h-screen flex flex-col lg:flex-row bg-room text-ink">
-    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-ink text-panel-text px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-10">
+    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-ink text-panel-text px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-6 lg:gap-10">
+      <AuthShellHeader />
       <div className="lg:flex-1 flex flex-col justify-center gap-10">
         <AuthPanel />
         {aside && <div className="hidden lg:block">{aside}</div>}
@@ -83,6 +86,45 @@ export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
     </main>
   </div>
 )
+
+/**
+ * Back arrow + brand, pinned to the top of the dark panel on every auth
+ * screen (both steps of sign-up, both steps of reset). With the site navbar
+ * hidden here (Layout.tsx), this row is the only way back and the only place
+ * the product's name appears, so it always renders — never conditional on
+ * which step of the flow is showing.
+ *
+ * The two controls do different jobs and stay visually separate rather than
+ * merged into one: the arrow is `navigate(-1)`, wherever that actually is
+ * (a story's paywall prompt, the homepage, a bookmark) — the same pattern
+ * `pages/HowToUse.tsx`'s back button already uses. The brand is always `/`.
+ * Collapsing them into one "back to home" control would be wrong the moment
+ * someone arrives here from anywhere other than the homepage.
+ */
+const AuthShellHeader = () => {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  return (
+    <div className="flex-none flex items-center gap-4">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        aria-label={t('auth.back')}
+        className="flex-none w-8 h-8 -ml-1.5 flex items-center justify-center rounded-[2px] text-panel-dim hover:text-panel-text hover:bg-white/5 cursor-pointer transition-colors focus:outline-2 focus:outline-offset-2 focus:outline-signal"
+      >
+        <IoChevronBack size={18} />
+      </button>
+      <Link
+        to="/"
+        aria-label={t('brand')}
+        className="flex items-center gap-2 no-underline text-panel-text hover:opacity-80 transition-opacity"
+      >
+        <BrandMark className="w-5 h-5" />
+        <span className="text-[15px] font-extrabold lowercase tracking-tight">{t('brand')}</span>
+      </Link>
+    </div>
+  )
+}
 
 /** Step rail: details → code → first story. `done` steps show a tick. */
 export const StepRail = ({ current }: { current: 1 | 2 | 3 }) => {
