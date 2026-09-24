@@ -127,10 +127,14 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
                     e.stopPropagation();
                     onMarkerClick(t);
                   }}
+                  // White is set explicitly. These used `bg-red/30 ring-red/25`,
+                  // which are not Tailwind classes (red needs a shade), so the
+                  // dot painted only `ring-1` in the inherited text colour —
+                  // white until the root colour became ink, then black.
                   className="absolute z-30 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10
                              w-[4px] h-[4px] rounded-full
-                             bg-red/30 ring-1 ring-red/25
-                             active:bg-red active:scale-125
+                             ring-1 ring-white/80
+                             active:bg-white active:scale-125
                              transition-transform touch-manipulation"
                   style={{ left: `${(t / durationSeconds) * 100}%` }}
                 />

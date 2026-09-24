@@ -122,7 +122,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       const repeatBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
-        "rounded-[3px] flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
+        "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
 
       return (
         <div className="relative flex flex-col w-full h-full justify-start gap-6">
