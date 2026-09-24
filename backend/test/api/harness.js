@@ -79,8 +79,10 @@ Object.assign(process.env, {
   PURCHASABLE_SKUS: "*",
   FAKE_CALLBACK_DELAY_MS: "0",
   FRONTEND_URL: "http://localhost:5173",
-  // Email is never actually sent; see the password-reset tests.
-  RESEND_API_KEY: process.env.RESEND_API_KEY ?? "re_test_dummy",
+  // Email is never actually sent; see the password-reset tests. Pinned blank so
+  // a real key in .env can never make the suite send real mail.
+  POSTBOX_ACCESS_KEY_ID: "",
+  POSTBOX_SECRET_ACCESS_KEY: "",
 });
 
 export const ADMIN_CODE = "test-admin-code";

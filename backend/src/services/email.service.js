@@ -1,7 +1,41 @@
-import { Resend } from "resend";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { domainToUnicode } from "node:url";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Yandex Cloud Postbox speaks the Amazon SES v2 API, so the stock AWS client
+// works once pointed at Postbox's endpoint. The credentials are a static
+// access key of smartplayer-postbox-sa, which holds ONLY postbox.sender — a
+// separate SA from the Object Storage one on purpose, so a leaked storage key
+// cannot send mail as малако.рф and vice versa.
+//
+// Credentials are passed explicitly rather than left to the SDK's default
+// chain: that chain would happily pick up AWS_* variables or ~/.aws from the
+// host and send with whatever it found. Unlike the old Resend client, this
+// constructor does not throw on a missing key, so the check happens at send
+// time (see below) and a blank key no longer crashes the process at boot.
+const POSTBOX_ENDPOINT = "https://postbox.cloud.yandex.net";
+
+const postbox = new SESv2Client({
+  region: "ru-central1",
+  endpoint: POSTBOX_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.POSTBOX_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.POSTBOX_SECRET_ACCESS_KEY ?? "",
+  },
+});
+
+// Postbox refuses to send from an address whose domain it has not verified
+// (DKIM CNAMEs in DNS), so there is no sensible fallback sender — the old
+// 'onboarding@resend.dev' default only ever delivered to the Resend account
+// owner's own inbox.
+function senderAddress() {
+  const from = process.env.EMAIL_FROM;
+  if (!from || !process.env.POSTBOX_ACCESS_KEY_ID || !process.env.POSTBOX_SECRET_ACCESS_KEY) {
+    throw new Error(
+      "Email is not configured: EMAIL_FROM, POSTBOX_ACCESS_KEY_ID and POSTBOX_SECRET_ACCESS_KEY must all be set."
+    );
+  }
+  return from;
+}
 
 // Renders the A-label host (xn--80aa4acdq.xn--p1ai) back as its U-label
 // (малако.рф) for DISPLAY ONLY. The href must keep the punycode form: it is
@@ -46,11 +80,7 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
   const displayUrl = toDisplayUrl(resetUrl);
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-      to: email,
-      subject: "🔒 Reset Your Password - malako",
-      html: `
+    const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -154,19 +184,44 @@ export async function sendPasswordResetEmail(email, resetUrl, username) {
           
         </body>
         </html>
-      `,
-    });
+      `;
 
-    if (error) {
-      console.error('Resend error:', error);
-      throw error;
-    }
+    // A plain-text alternative alongside the HTML: HTML-only mail scores
+    // worse with spam filters (Mail.ru and Yandex included), and it is what a
+    // text-only client or a screen reader in plain mode actually shows.
+    const text = [
+      `Hi ${username},`,
+      "",
+      "We received a request to reset your password for your malako account.",
+      "Open this link to create a new password:",
+      "",
+      resetUrl,
+      "",
+      "The link expires in 1 hour.",
+      "If you didn't request this, ignore this email — your password stays unchanged.",
+    ].join("\n");
+
+    const result = await postbox.send(
+      new SendEmailCommand({
+        FromEmailAddress: senderAddress(),
+        Destination: { ToAddresses: [email] },
+        Content: {
+          Simple: {
+            Subject: { Data: "🔒 Reset Your Password - malako", Charset: "UTF-8" },
+            Body: {
+              Html: { Data: html, Charset: "UTF-8" },
+              Text: { Data: text, Charset: "UTF-8" },
+            },
+          },
+        },
+      })
+    );
 
     console.log('Email sent successfully!');
-    console.log('Email ID:', data?.id);
+    console.log('Message ID:', result.MessageId);
     console.log('====================================');
 
-    return { success: true, data };
+    return { success: true, data: { id: result.MessageId } };
 
   } catch (error) {
     console.error('=== EMAIL SENDING ERROR ===');
