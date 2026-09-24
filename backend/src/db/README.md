@@ -4,10 +4,11 @@
 helper, middleware, job and payment service reads and writes PostgreSQL through
 this directory; `server.js` refuses to start without `DATABASE_URL`.
 
-MongoDB is still used by the one-off scripts only — the backup
-(`scripts/backupMongo.ts`), the content ETL, and a few older maintenance
-scripts that still import `src/models/*.js`. Nothing on a request path touches
-it. This is verified locally against Postgres; it has not been deployed.
+MongoDB is gone from the codebase: the Mongoose models, the `mongoose`
+dependency, the Mongo backup script and the Mongo → Postgres ETL were removed
+on 2026-09-23, after production and staging had both run on Postgres. The ETL
+and backup scripts are in git history (last present at `f7a9bba`) if the
+pre-migration export at `D:\smartplayer-db-backup\2026-09-13T13-39-09-391Z\` ever has to be re-imported.
 
 Most controllers load users through `userDoc.ts`, which presents a row in the
 old nested Mongoose shape (`user.wallet.bitAward`, `user._id`, `user.save()`)
@@ -32,13 +33,6 @@ transactions and row locks.
 
 Also outside this directory:
 
-- `src/scripts/migrateToPostgres.ts` — the Mongo → Postgres ETL. Story content
-  only by default; `--all` adds accounts, progress, payments, audit, feedback.
-- `src/scripts/backupMongo.ts` — full export of every database on the Atlas
-  cluster in Canonical Extended JSON, verified by reading each file back. The
-  pre-migration backup taken with it lives at
-  `D:\smartplayer-db-backup\2026-09-13T13-39-09-391Z\` — outside the repo on
-  purpose: it holds password hashes, phone numbers and consent records.
 - `src/config/sessions.d.ts`, `src/config/schoolCatalog.d.ts` — type bridges,
   so this TypeScript can use the plain-JS config without copying constants out
   of it. The config files stay `.js` because the frontend's Vitest suite
@@ -55,17 +49,7 @@ npm run db:generate          # schema.ts -> a new migrations/*.sql  (offline)
 npm run db:migrate           # apply migrations to DATABASE_URL
 npm run db:studio            # browse the database
 
-npm run etl                  # DRY RUN, story content only
-npm run etl:commit           # write story content
-npm run etl:verify           # compare Mongo and Postgres, write nothing
-npm run etl -- --all         # (any of the above) also accounts, payments, progress...
-
-npx tsx src/scripts/backupMongo.ts   # export every Mongo database to D:\smartplayer-db-backup
 ```
-
-The ETL is **dry-run by default**, unlike the other scripts in `src/scripts/`,
-which take `--dry-run` as an opt-in. It is the most consequential script in the
-repo and the cost of inverting the default is one word.
 
 ## Running it locally
 
@@ -82,7 +66,6 @@ export PGSSL=disable
 
 npm run db:migrate
 npm run test:integration
-npm run etl                 # dry run against your dev Mongo
 ```
 
 `docker compose --profile localdb up -d postgres` describes the same container,
@@ -109,8 +92,9 @@ docker exec smartplayer-postgres psql -U smartplayer -d smartplayer_dev  \
       CREATE SCHEMA public;"
 ```
 
-## What has actually been exercised
+## What was exercised before the cutover
 
+A historical record — the ETL mentioned below has since been removed.
 Against real Postgres, with the real dev Mongo database (21 users, 16 stories,
 4 payments):
 
@@ -170,14 +154,12 @@ multi-step operation becomes one transaction. Most of the value of this
 migration is in that parameter.
 
 **`fake_payment` has no foreign key to `payment`, on purpose.** It is the fake
-acquirer's own records (see `models/FakePayment.js`); the boundary between it
+acquirer's own records (services/payments/fake.js); the boundary between it
 and our ledger is the thing being tested, so it knows our order id only as an
 opaque string, exactly as a real acquirer would.
 
 ## What is deliberately NOT done
 
-- Controllers are untouched. Porting them off `src/models/*.js` is the next
-  large piece of work and it is separate from this one.
 - `Progress` and `story_progress` still duplicate each other. Collapsing them
   is worth doing *after* the storage swap is proven, not during it.
 - The compensation paths that exist only because Mongo had no transactions —
@@ -187,17 +169,9 @@ opaque string, exactly as a real acquirer would.
 - No `postgres_exporter` yet. There is no database observability today at all,
   so this is net-new work rather than a replacement.
 
-## Cutover checklist
+## Cutover
 
-1. Provision Yandex Managed PostgreSQL (`ru-central1`), enable `pg_cron` in the
-   cluster's shared preload libraries — **that setting restarts the cluster**,
-   so do it while provisioning, not in the window.
-2. `npm run db:migrate`, then apply `migrations/manual/001_audit_retention.sql`.
-3. `npm run etl` (dry run), read the counts, then `npm run etl:commit`, then
-   `npm run etl:verify`. The wallet and payment sums must match exactly.
-4. Port controllers onto the repos.
-5. Add `DATABASE_URL` to `config/env.js`'s `REQUIRED`, add a connection check to
-   `server.js`, and add `npm run db:migrate` to the deploy.
-
-Steps 1–3 are reversible. Step 4 is the one to review carefully. Step 5 is the
-point of no return — keep Atlas running behind it for at least two weeks.
+Done. Staging and production run on the self-hosted `db` container (see
+`docker-compose.yml`), and MongoDB was removed from the codebase on 2026-09-23.
+Moving to Yandex Managed PostgreSQL later is a `pg_dump`/`pg_restore` plus a
+change of `DATABASE_URL`; apply `migrations/manual/001_audit_retention.sql` there.

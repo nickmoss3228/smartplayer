@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 // allowJs (tsconfig.test.json) infers this plain backend JS module directly.
-import { restoreMarkersIntoParts } from "../../../backend/src/models/PartMarkers.js";
+import { restoreMarkersIntoParts } from "../../../backend/src/helpers/markerRestore.js";
 
 /**
  * Guards the rule that decides whether hours of marker placement survive a

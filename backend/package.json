@@ -14,9 +14,6 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "etl": "tsx src/scripts/migrateToPostgres.ts",
-    "etl:commit": "tsx src/scripts/migrateToPostgres.ts --commit",
-    "etl:verify": "tsx src/scripts/migrateToPostgres.ts --verify",
     "test:db": "tsx --test \"src/db/ids.test.ts\" \"src/db/repos/*.test.ts\"",
     "test:integration": "tsx --test \"src/db/integration.test.ts\"",
     "test:api": "node --import tsx --test --test-concurrency=1 \"test/api/*.test.js\""
@@ -39,7 +36,6 @@
     "express-rate-limit": "^7.5.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.0",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "pg": "^8.23.0",

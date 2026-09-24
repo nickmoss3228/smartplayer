@@ -19,10 +19,8 @@ dotenv.config({ path: path.join(backendRoot, '.env') });
 // Fail loudly at boot instead of at the first request that happens to need a
 // missing value. Object Storage is checked separately (see below) because the
 // app is perfectly usable without it — only the Story Builder's uploads break.
-// DATABASE_URL replaced MONGODB_URI here when the app moved to PostgreSQL.
-// MONGODB_URI is still read (config.mongoUri) by the one-off scripts that talk
-// to the old database — the backup and the ETL — but the server no longer
-// needs it to start.
+// DATABASE_URL replaced MONGODB_URI when the app moved to PostgreSQL; nothing
+// reads MONGODB_URI any more.
 const REQUIRED = ['DATABASE_URL', 'JWT_SECRET'];
 const missing = REQUIRED.filter((key) => !process.env[key]);
 if (missing.length) {
@@ -81,7 +79,6 @@ function parseAdminCodes(raw, legacyCode) {
 export const config = {
     port: process.env.PORT || 3000,
     nodeEnv: process.env.NODE_ENV || 'development',
-    mongoUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
     sms: {

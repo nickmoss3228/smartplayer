@@ -1,14 +1,14 @@
 // helpers/settlePayment.test.js
 //
 // Covers rowsFor() — the decision about WHAT a settled payment grants — with
-// no database in the loop. Importing the module pulls in the mongoose schemas
-// but never connects; defining a schema is not a connection.
+// no database in the loop. Importing the module loads the data layer, which
+// is lazy (db/client.ts) and opens no connection until something queries.
 //
-// What is deliberately NOT tested here: that Mongo applies the conditional
+// What is deliberately NOT tested here: that Postgres applies the conditional
 // update in settlePayment() atomically. That is assumed, exactly as
 // helpers/spendCurrency.js assumes it. The end-to-end "the same webhook
 // delivered twice grants once" property is verified against a real database by
-// scripts/verifyPaymentLoop.mjs, because npm test must not require Mongo.
+// scripts/verifyPaymentLoop.mjs, because npm test must not require a database.
 //
 // Nothing in the catalog is dated any more, but rowsFor still honours a
 // durationDays stored on an order line, so the extension rules are exercised
