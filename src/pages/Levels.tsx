@@ -78,7 +78,7 @@ const Levels = () => {
                 type="button"
                 onClick={() => setSelectedLevel(level.id)}
                 aria-pressed={isSelected}
-                className="group flex flex-col items-center cursor-pointer rounded-[3px]
+                className="group flex flex-col items-center cursor-pointer rounded-card
                   px-1 pt-2 pb-3 sm:px-3
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-black/60
                   focus-visible:ring-offset-2 focus-visible:ring-offset-white"

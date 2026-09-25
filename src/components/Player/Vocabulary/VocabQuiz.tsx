@@ -172,7 +172,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
             Результат: {score} из {order.length}
           </p>
           {user && newlyLearnedCount > 0 && (
-            <div className="inline-flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-[3px] bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold">
+            <div className="inline-flex items-center gap-1.5 mb-4 px-3 py-1.5 rounded-tile bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold">
               <BitWordIcon size={15} />
               +{newlyLearnedCount} BitWord
             </div>
@@ -253,7 +253,7 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
                   key={w.word}
                   onClick={() => handleChoice(w)}
                   disabled={status !== "idle"}
-                  className={`rounded-[3px] px-2 py-3 min-h-[3.5rem] font-semibold leading-snug text-center break-words whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
+                  className={`rounded-tile px-2 py-3 min-h-[3.5rem] font-semibold leading-snug text-center break-words whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
                 >
                   {w.word}
                 </button>

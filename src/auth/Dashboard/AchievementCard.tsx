@@ -58,7 +58,7 @@ const AchievementCard: React.FC<Props> = ({ category, value, index, onOpen }) =>
         earned: earnedCount,
         total: category.tiers.length,
       })}
-      className="group relative bg-white rounded-[3px] p-4 sm:p-5 flex flex-col gap-3.5 text-left border border-line
+      className="group relative bg-white rounded-card p-4 sm:p-5 flex flex-col gap-3.5 text-left border border-line
                  overflow-hidden animate-scale-in
                  transition-all duration-200 hover:border-line-strong active:scale-[0.98]
                  focus:outline-none focus-visible:ring-2 focus-visible:ring-black/25
@@ -78,7 +78,7 @@ const AchievementCard: React.FC<Props> = ({ category, value, index, onOpen }) =>
       {/* ── Medallion + category ── */}
       <div className="flex items-center gap-3">
         <div
-          className="w-11 h-11 rounded-[3px] flex items-center justify-center flex-shrink-0"
+          className="w-11 h-11 rounded-tile flex items-center justify-center flex-shrink-0"
           style={{
             backgroundColor: style?.tint ?? "rgba(11,11,11,0.05)",
             boxShadow: style ? `inset 0 0 0 1.5px ${style.hex}` : "none",

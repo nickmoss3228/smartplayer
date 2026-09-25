@@ -33,9 +33,9 @@ const WalletRow: React.FC = () => {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="rounded-[3px] bg-white border border-line p-4 sm:p-5 animate-pulse"
+            className="rounded-card bg-white border border-line p-4 sm:p-5 animate-pulse"
           >
-            <div className="w-9 h-9 rounded-[3px] bg-gray-200 mb-3" />
+            <div className="w-9 h-9 rounded-tile bg-gray-200 mb-3" />
             <div className="h-6 bg-gray-200 rounded-[3px] w-1/2" />
           </div>
         ))}
@@ -52,10 +52,10 @@ const WalletRow: React.FC = () => {
         {CURRENCIES.map(({ key, label, icon: Icon, chipClasses }) => (
           <div
             key={key}
-            className="bg-white rounded-[3px] p-4 sm:p-5 flex flex-col gap-2
+            className="bg-white rounded-card p-4 sm:p-5 flex flex-col gap-2
                        border border-line"
           >
-            <div className={`w-9 h-9 rounded-[3px] flex items-center justify-center ${chipClasses}`}>
+            <div className={`w-9 h-9 rounded-tile flex items-center justify-center ${chipClasses}`}>
               <Icon size={18} />
             </div>
             <p className="text-2xl sm:text-3xl font-extrabold text-black tracking-tight">

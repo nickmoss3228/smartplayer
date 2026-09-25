@@ -49,7 +49,7 @@ export const LevelCard: React.FC<Props> = ({
       {/* Square cover */}
       <div
         className={`
-          relative w-full aspect-square rounded-[3px] overflow-hidden
+          relative w-full aspect-square rounded-card overflow-hidden
           bg-gradient-to-br from-white/30 to-white/10 transition-shadow duration-300
           ${getStatusRingClass(status)}
         `}
@@ -58,7 +58,7 @@ export const LevelCard: React.FC<Props> = ({
         {status === 'lastListened' && (
           <div
             aria-hidden
-            className={`absolute inset-0 rounded-[3px] z-20 pointer-events-none border-4 ${theme.lastListenedBorder} animate-blink-ring`}
+            className={`absolute inset-0 rounded-card z-20 pointer-events-none border-4 ${theme.lastListenedBorder} animate-blink-ring`}
           />
         )}
 
@@ -85,7 +85,7 @@ export const LevelCard: React.FC<Props> = ({
 
         {/* Lock overlay */}
         {isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[3px] z-10 gap-1.5">
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-card z-10 gap-1.5">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-7 h-7 text-white/95 drop-shadow"
@@ -135,7 +135,7 @@ export const LevelCard: React.FC<Props> = ({
 
         {/* FREE / preview badge */}
         {(isFree || isPreview) && (
-          <div className="font-mono absolute top-2 right-2 z-10 bg-gray-900 text-white text-[10px] px-1.5 py-0.5 rounded-[2px] tracking-[0.16em] uppercase">
+          <div className="font-mono absolute top-2 right-2 z-10 bg-gray-900 text-white text-[10px] px-1.5 py-0.5 rounded-chip tracking-[0.16em] uppercase">
             {isFree ? t('trial.free') : t('shelf.previewBadge', { seconds: previewSeconds })}
           </div>
         )}

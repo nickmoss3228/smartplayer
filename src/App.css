@@ -56,6 +56,13 @@
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
+  /* Corner radii (manifest §4): `rounded-card` for cards and the panels a
+     learner browses, `rounded-tile` for pieces set inside them (icon tiles,
+     vocab chips, answer tiles, caption plates), `rounded-chip` for badges. */
+  --radius-card: 12px;
+  --radius-tile: 8px;
+  --radius-chip: 5px;
+
   /* Motion tokens (manifest §8). `ease-enter` is the one entrance curve. */
   --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
 }

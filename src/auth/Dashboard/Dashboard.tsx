@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
       <div className="max-w-6xl mx-auto">
 
         {/* ── Header ── */}
-        <div className="bg-white rounded-[3px] p-4 sm:p-6 mb-4 sm:mb-6 border border-line animate-fade-in">
+        <div className="bg-white rounded-card p-4 sm:p-6 mb-4 sm:mb-6 border border-line animate-fade-in">
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
 
             {/* ── Profile ── */}
@@ -141,9 +141,9 @@ const Dashboard: React.FC = () => {
 
             {/* ── Rank badge ── */}
             <div
-              className={`flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-[3px] p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0`}
+              className={`flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-card p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0`}
             >
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-[3px] bg-white/10 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-tile bg-white/10 flex items-center justify-center flex-shrink-0">
                 <RankIcon size={20} className="text-white" />
               </div>
               <div className="flex-1 sm:text-center min-w-0">
@@ -175,8 +175,8 @@ const Dashboard: React.FC = () => {
         {progressLoading ? (
           <div className="flex flex-col gap-3 mb-6">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-[3px] p-4 sm:p-5 border border-line animate-pulse">
-                <div className="h-11 w-11 bg-gray-200 rounded-[3px] mb-3" />
+              <div key={i} className="bg-white rounded-card p-4 sm:p-5 border border-line animate-pulse">
+                <div className="h-11 w-11 bg-gray-200 rounded-tile mb-3" />
                 <div className="h-4 bg-gray-200 rounded-[3px] w-1/3 mb-2" />
                 <div className="h-2 bg-gray-200 rounded-[3px]" />
               </div>
@@ -197,7 +197,7 @@ const Dashboard: React.FC = () => {
                       key={difficulty}
                       onClick={() => setSelectedDifficulty(difficulty)}
                       className="
-                        bg-white rounded-[3px] p-4 sm:p-5 text-left
+                        bg-white rounded-card p-4 sm:p-5 text-left
                         border border-line
                         hover:border-line-strong active:scale-[0.98]
                         transition-all duration-200
@@ -207,7 +207,7 @@ const Dashboard: React.FC = () => {
                       style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
                     >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-11 h-11 rounded-[3px] ${theme.soft} flex items-center justify-center flex-shrink-0`}>
+                        <div className={`w-11 h-11 rounded-tile ${theme.soft} flex items-center justify-center flex-shrink-0`}>
                           <Icon className={theme.text} size={20} />
                         </div>
                         <div className="flex-1 min-w-0">

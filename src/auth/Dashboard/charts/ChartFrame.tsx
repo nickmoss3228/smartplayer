@@ -41,7 +41,7 @@ export const ChartTooltip: React.FC<TooltipProps> = ({
   return (
     <div
       role="tooltip"
-      className="pointer-events-none absolute z-10 rounded-[3px] bg-white px-3 py-2
+      className="pointer-events-none absolute z-10 rounded-tile bg-white px-3 py-2
                  shadow-xl border border-black/10"
       style={{ left, top: Math.max(4, y - 12), width: TOOLTIP_WIDTH }}
     >
@@ -106,7 +106,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   children,
 }) => (
   <div
-    className="bg-white rounded-[3px] p-4 sm:p-5 border border-line"
+    className="bg-white rounded-card p-4 sm:p-5 border border-line"
   >
     <div className="mb-3">
       <h3 className="font-bold text-black/85 text-sm sm:text-base">{title}</h3>
@@ -169,7 +169,7 @@ interface EmptyStateProps {
 
 export const ChartEmptyState: React.FC<EmptyStateProps> = ({ height, message }) => (
   <div
-    className="flex items-center justify-center rounded-[3px] bg-black/[0.02]"
+    className="flex items-center justify-center rounded-tile bg-black/[0.02]"
     style={{ height }}
   >
     <p className="text-xs text-black/35 px-6 text-center">{message}</p>

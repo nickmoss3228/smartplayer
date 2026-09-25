@@ -63,7 +63,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
       */}
       <div
         className="relative w-full max-w-[680px] bg-gray-900 border border-white/10
-                   rounded-[3px] shadow-xl overflow-hidden dialog-panel-in
+                   rounded-card shadow-xl overflow-hidden dialog-panel-in
                    flex flex-col max-h-[90vh] sm:max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
@@ -151,7 +151,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
               </div>
 
               {/* Tip — hidden on mobile, visible on sm+ */}
-              <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-[3px] p-4">
+              <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-tile p-4">
                 <IoBulbOutline size={20} className="flex-shrink-0 text-white/70" aria-hidden />
                 <p className="text-white/65 text-sm leading-relaxed">
                   <span className="text-white font-semibold">{t("storyModal.tip") + ": "}</span>

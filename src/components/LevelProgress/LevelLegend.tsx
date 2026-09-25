@@ -25,7 +25,7 @@ export const LevelLegend: React.FC<Props> = ({ theme }) => {
           <span>{t('levelProgress.completed')}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`w-5 h-5 rounded-[3px] bg-white/90 border-3 ${theme.lastListenedBorder} animate-blink-ring`} />
+          <div className={`w-5 h-5 rounded-chip bg-white/90 border-3 ${theme.lastListenedBorder} animate-blink-ring`} />
           <span>{t('levelProgress.current')}</span>
         </div>
       </div>

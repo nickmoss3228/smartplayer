@@ -112,7 +112,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
       aria-label={story.title}
     >
       <div
-        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[3px] bg-white shadow-xl sm:rounded-[3px]"
+        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-card bg-white shadow-xl sm:rounded-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: the story's own art, title over it. */}
@@ -143,7 +143,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
 
           {/* The sample. */}
           {firstTrack?.audio && (
-            <div className="flex items-center gap-3 rounded-[3px] border border-gray-200 p-3">
+            <div className="flex items-center gap-3 rounded-tile border border-gray-200 p-3">
               <button
                 type="button"
                 onClick={toggleSample}
@@ -187,7 +187,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
                 src={firstTrack.comicUrl}
                 alt=""
                 loading="lazy"
-                className="max-h-56 w-full rounded-[3px] object-cover object-top"
+                className="max-h-56 w-full rounded-tile object-cover object-top"
               />
             </div>
           )}
@@ -201,7 +201,7 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
                 {words.map((word) => (
                   <span
                     key={word.audioKey || word.word}
-                    className="rounded-[2px] border border-gray-200 px-2.5 py-1 text-xs text-gray-700"
+                    className="rounded-chip border border-gray-200 px-2.5 py-1 text-xs text-gray-700"
                   >
                     {word.word}
                   </span>

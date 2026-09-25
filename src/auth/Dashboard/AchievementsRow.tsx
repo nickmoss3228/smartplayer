@@ -76,10 +76,10 @@ const AchievementsRow: React.FC = () => {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-[3px] bg-white border border-line p-4 sm:p-5 animate-pulse"
+              className="rounded-card bg-white border border-line p-4 sm:p-5 animate-pulse"
             >
               <div className="flex items-center gap-3 mb-3.5">
-                <div className="w-11 h-11 rounded-[3px] bg-gray-200 flex-shrink-0" />
+                <div className="w-11 h-11 rounded-tile bg-gray-200 flex-shrink-0" />
                 <div className="flex-1 space-y-1.5">
                   <div className="h-3 bg-gray-200 rounded-[3px] w-3/4" />
                   <div className="h-2 bg-gray-200 rounded-[3px] w-1/2" />

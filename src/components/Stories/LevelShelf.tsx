@@ -210,7 +210,7 @@ export const LevelShelf = ({ difficulty, filter, highlightSku, onPreview }: Prop
                   <div
                     key={story.slug}
                     id={sku ? `sku-${sku}` : undefined}
-                    className={`rounded-[2px] ${
+                    className={`rounded-card ${
                       sku && highlightSku === sku ? 'ring-2 ring-[#FFE24A] ring-offset-2' : ''
                     }`}
                   >

@@ -158,7 +158,7 @@ const List = () => {
             </div>
           ))
         ) : (
-          <div className="bg-white rounded-[3px] border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
             <div className="text-center py-16 text-gray-400">
               <IoSearchOutline size={32} className="mx-auto mb-3 opacity-40" aria-hidden="true" />
             </div>

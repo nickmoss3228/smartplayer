@@ -18,7 +18,7 @@ export const LevelProgressBar: React.FC<Props> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="backdrop-blur-sm rounded-[3px] p-6 mb-5 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
+    <div className="backdrop-blur-sm rounded-card p-6 mb-5 transition-all duration-500 animate-fade-in-delay-2 hover:bg-white/80">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-black/80">
           {t('levelProgress.overallProgress')}

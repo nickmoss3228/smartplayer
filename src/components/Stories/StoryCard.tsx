@@ -172,7 +172,7 @@ export const StoryCard = ({
       <button
         type="button"
         onClick={onOpen}
-        className={`group relative block w-full cursor-pointer overflow-hidden rounded-[2px] text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
+        className={`group relative block w-full cursor-pointer overflow-hidden rounded-card text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
           story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
         }`}
       >
@@ -208,13 +208,13 @@ export const StoryCard = ({
         {/* Top-left chip: a padlock, or where you got to. The two can never
             both apply — a locked story has no progress to report. */}
         {showLock ? (
-          <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-[2px] bg-gray-900/90 p-1 text-white">
+          <span className="absolute left-2 top-2 z-10 inline-flex items-center rounded-chip bg-gray-900/90 p-1 text-white">
             <IoLockClosed size={11} aria-hidden="true" />
           </span>
         ) : (
           (hasStarted || isCompleted) && (
             <span
-              className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-[2px] px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
+              className={`list-card__chip absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-chip px-1.5 py-[3px] text-[10px] font-semibold tabular-nums ${
                 isCompleted ? 'bg-gray-900 text-white' : 'bg-[var(--level-accent)] text-white'
               }`}
             >
@@ -239,7 +239,7 @@ export const StoryCard = ({
             the panel already says twice: the padlock-or-progress chip sits in
             the top-left corner, and the accent progress bar runs along the
             bottom edge. */}
-        <span className="absolute inset-x-[7%] top-1/2 z-10 block -translate-y-1/2 rounded-[2px] bg-gray-900 px-2.5 py-2 text-white transition-transform duration-500 ease-out sm:group-hover:translate-y-0">
+        <span className="absolute inset-x-[7%] top-1/2 z-10 block -translate-y-1/2 rounded-tile bg-gray-900 px-2.5 py-2 text-white transition-transform duration-500 ease-out sm:group-hover:translate-y-0">
           <span className="block text-[11px] font-bold uppercase leading-tight tracking-wide line-clamp-3 sm:text-[13px]">
             {story.title}
           </span>
@@ -296,7 +296,7 @@ export const StoryCard = ({
               <button
                 type="button"
                 onClick={onBuy}
-                className={`font-mono shrink-0 cursor-pointer rounded-[2px] px-2 py-1 text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                className={`font-mono shrink-0 cursor-pointer rounded-chip px-2 py-1 text-[10px] uppercase tracking-[0.16em] transition-colors ${
                   isShop && inCart
                     ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
                     : 'bg-gray-900 text-white hover:bg-gray-700'
