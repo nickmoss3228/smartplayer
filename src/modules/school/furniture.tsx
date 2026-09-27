@@ -28,7 +28,10 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { BOOTH_STOOL, DOOR_WIDTH, PropInstance, SEAT_GAP } from "./props";
+import { BOOTH_STOOL, CAFE_STOOL, DOOR_WIDTH, PropInstance, SEAT_GAP, SEAT_TOP } from "./props";
+import { FOLIAGE, useAtmosphere } from "./atmosphere";
+import { PopIn } from "./Arrival";
+import { schoolNow } from "./schoolClock";
 
 // A flat, slightly dusty palette. Deliberately narrow — a limited palette is
 // most of what makes unrelated box props read as one set.
@@ -91,14 +94,19 @@ const Desk = () => (
   </group>
 );
 
+// Every seat below follows the chair's proportions, because the seated body in
+// People.tsx is built for exactly one seat: its top at SEAT_TOP, its front edge
+// no more than ~0.24m ahead of where the occupant's hips are (the prop origin),
+// and its back at least ~0.14m behind them. Deeper than that and the shins,
+// which hang 0.33m forward, end up inside the cushion.
 const Chair = () => (
   <group>
-    <Box p={[0, 0.42, 0]} s={[0.44, 0.06, 0.44]} c={PALETTE.wood} />
-    <Box p={[0, 0.48, 0.2]} s={[0.44, 0.44, 0.06]} c={PALETTE.wood} />
-    <Box p={[-0.17, 0, -0.17]} s={[0.05, 0.42, 0.05]} c={PALETTE.metalDark} />
-    <Box p={[0.17, 0, -0.17]} s={[0.05, 0.42, 0.05]} c={PALETTE.metalDark} />
-    <Box p={[-0.17, 0, 0.17]} s={[0.05, 0.42, 0.05]} c={PALETTE.metalDark} />
-    <Box p={[0.17, 0, 0.17]} s={[0.05, 0.42, 0.05]} c={PALETTE.metalDark} />
+    <Box p={[0, SEAT_TOP - 0.06, 0]} s={[0.44, 0.06, 0.44]} c={PALETTE.wood} />
+    <Box p={[0, SEAT_TOP, 0.2]} s={[0.44, 0.44, 0.06]} c={PALETTE.wood} />
+    <Box p={[-0.17, 0, -0.17]} s={[0.05, SEAT_TOP - 0.06, 0.05]} c={PALETTE.metalDark} />
+    <Box p={[0.17, 0, -0.17]} s={[0.05, SEAT_TOP - 0.06, 0.05]} c={PALETTE.metalDark} />
+    <Box p={[-0.17, 0, 0.17]} s={[0.05, SEAT_TOP - 0.06, 0.05]} c={PALETTE.metalDark} />
+    <Box p={[0.17, 0, 0.17]} s={[0.05, SEAT_TOP - 0.06, 0.05]} c={PALETTE.metalDark} />
   </group>
 );
 
@@ -247,12 +255,17 @@ const Door = () => (
   </group>
 );
 
-/** The one prop that moves on its own without being asked — a clock with a
- *  stopped hand reads as broken, and the whole point is that the room is alive. */
+/** The one prop that moves on its own without being asked — and it tells the
+ *  school's own time (schoolClock.ts), the same time as the clock on screen.
+ *  By day a school hour is a real minute, so the minute hand visibly sweeps. */
 const Clock = () => {
-  const hand = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (hand.current) hand.current.rotation.z = -clock.elapsedTime * 0.35;
+  const minuteHand = useRef<THREE.Group>(null);
+  const hourHand = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const { hours } = schoolNow();
+    // Clockwise seen from the front, which is -z rotation for a face on +z.
+    if (minuteHand.current) minuteHand.current.rotation.z = -((hours % 1) * Math.PI * 2);
+    if (hourHand.current) hourHand.current.rotation.z = -(((hours % 12) / 12) * Math.PI * 2);
   });
   return (
     <group>
@@ -266,10 +279,19 @@ const Clock = () => {
         <cylinderGeometry args={[0.27, 0.27, 0.04, 14]} />
         <meshLambertMaterial color={PALETTE.paper} />
       </mesh>
-      <mesh ref={hand} position={[0, 2.3, 0.14]}>
-        <boxGeometry args={[0.045, 0.36, 0.02]} />
-        <meshLambertMaterial color={PALETTE.metalDark} />
-      </mesh>
+      {/* Each hand hangs from the centre, so it turns about its own end. */}
+      <group ref={hourHand} position={[0, 2.3, 0.14]}>
+        <mesh position={[0, 0.07, 0]}>
+          <boxGeometry args={[0.06, 0.15, 0.02]} />
+          <meshLambertMaterial color={PALETTE.metalDark} />
+        </mesh>
+      </group>
+      <group ref={minuteHand} position={[0, 2.3, 0.15]}>
+        <mesh position={[0, 0.1, 0]}>
+          <boxGeometry args={[0.035, 0.22, 0.02]} />
+          <meshLambertMaterial color={PALETTE.metalDark} />
+        </mesh>
+      </group>
     </group>
   );
 };
@@ -283,13 +305,20 @@ const Rug = () => (
   </group>
 );
 
+/**
+ * Deep-looking, shallow-seated. The seat cushion stops 0.24m in front of the
+ * sit point and the rest of the depth is a thick back cushion, so it still
+ * reads as an armchair while the occupant's shins hang clear of the front
+ * instead of going through it. It used to be a 0.8m-deep seat, and every
+ * reader in the library sat with their legs buried in the upholstery.
+ */
 const Armchair = () => (
   <group>
-    <Box p={[0, 0.18, 0]} s={[0.8, 0.28, 0.8]} c={PALETTE.fabric} />
-    <Box p={[0, 0, 0.32]} s={[0.8, 0.85, 0.16]} c={PALETTE.fabric} />
-    <Box p={[-0.36, 0.18, 0]} s={[0.14, 0.28, 0.7]} c="#5a6aa2" />
-    <Box p={[0.36, 0.18, 0]} s={[0.14, 0.28, 0.7]} c="#5a6aa2" />
-    <Box p={[0, 0, 0]} s={[0.7, 0.18, 0.7]} c={PALETTE.woodDark} />
+    <Box p={[0, 0, 0.08]} s={[0.7, 0.18, 0.64]} c={PALETTE.woodDark} />
+    <Box p={[0, 0.18, -0.05]} s={[0.6, SEAT_TOP - 0.18, 0.42]} c={PALETTE.fabric} />
+    <Box p={[0, 0.18, 0.28]} s={[0.8, 0.72, 0.28]} c={PALETTE.fabric} />
+    <Box p={[-0.36, 0.18, 0.07]} s={[0.14, SEAT_TOP, 0.66]} c="#5a6aa2" />
+    <Box p={[0.36, 0.18, 0.07]} s={[0.14, SEAT_TOP, 0.66]} c="#5a6aa2" />
   </group>
 );
 
@@ -307,10 +336,10 @@ const ReadingTable = () => (
 
 const Bench = () => (
   <group>
-    <Box p={[0, 0.42, 0]} s={[1.6, 0.08, 0.42]} c={PALETTE.wood} />
-    <Box p={[0, 0.5, 0.18]} s={[1.6, 0.4, 0.07]} c={PALETTE.wood} />
-    <Box p={[-0.65, 0, 0]} s={[0.09, 0.42, 0.38]} c={PALETTE.metalDark} />
-    <Box p={[0.65, 0, 0]} s={[0.09, 0.42, 0.38]} c={PALETTE.metalDark} />
+    <Box p={[0, SEAT_TOP - 0.08, 0]} s={[1.6, 0.08, 0.42]} c={PALETTE.wood} />
+    <Box p={[0, SEAT_TOP, 0.18]} s={[1.6, 0.4, 0.07]} c={PALETTE.wood} />
+    <Box p={[-0.65, 0, 0]} s={[0.09, SEAT_TOP - 0.08, 0.38]} c={PALETTE.metalDark} />
+    <Box p={[0.65, 0, 0]} s={[0.09, SEAT_TOP - 0.08, 0.38]} c={PALETTE.metalDark} />
   </group>
 );
 
@@ -343,11 +372,11 @@ const Booth = () => (
     {/* The stool. Without it the whole lab was people sitting in mid-air, and
         BOOTH_STOOL is where props.ts seats them — the two must agree. */}
     <group position={[0, 0, BOOTH_STOOL]}>
-      <mesh position={[0, 0.44, 0]}>
+      <mesh position={[0, SEAT_TOP - 0.03, 0]}>
         <cylinderGeometry args={[0.21, 0.19, 0.06, 10]} />
         <meshLambertMaterial color={PALETTE.fabric} />
       </mesh>
-      <Box p={[0, 0, 0]} s={[0.07, 0.44, 0.07]} c={PALETTE.metalDark} />
+      <Box p={[0, 0, 0]} s={[0.07, SEAT_TOP - 0.06, 0.07]} c={PALETTE.metalDark} />
       <mesh position={[0, 0.03, 0]}>
         <cylinderGeometry args={[0.22, 0.24, 0.05, 10]} />
         <meshLambertMaterial color={PALETTE.metal} />
@@ -427,12 +456,28 @@ const Plant = () => (
   </group>
 );
 
-const Bush = () => (
-  <group>
-    <Box p={[0, 0, 0]} s={[0.7, 0.42, 0.7]} c={PALETTE.leafDark} />
-    <Box p={[0.05, 0.36, -0.04]} s={[0.5, 0.3, 0.5]} c={PALETTE.leaf} ry={0.5} />
-  </group>
-);
+/** Blossom in spring: pink specks on the part of each canopy tier that the
+ *  tier above leaves showing. [x, top of the tier, z] in canopy space. */
+const BLOSSOM_SPOTS: [number, number, number][] = [
+  [-0.9, 0.8, 0.3],
+  [0.8, 0.8, -0.55],
+  [0.3, 0.8, 0.92],
+  [-0.55, 1.4, -0.25],
+  [0.45, 1.4, 0.4],
+  [0.1, 1.8, -0.1],
+];
+
+const Bush = () => {
+  const f = FOLIAGE[useAtmosphere().season];
+  return (
+    <group>
+      <Box p={[0, 0, 0]} s={[0.7, 0.42, 0.7]} c={f.dark} />
+      <Box p={[0.05, 0.36, -0.04]} s={[0.5, 0.3, 0.5]} c={f.light} ry={0.5} />
+      {f.cap && <Box p={[0.05, 0.66, -0.04]} s={[0.46, 0.05, 0.46]} c={f.cap} ry={0.5} />}
+      {f.blossom && <Box p={[0.12, 0.66, 0.08]} s={[0.12, 0.05, 0.12]} c={f.blossom} />}
+    </group>
+  );
+};
 
 /** The only prop with idle motion of its own — the canopy sways, which does
  *  more for "this place is alive" outdoors than any number of extra people. */
@@ -443,13 +488,27 @@ const Tree = () => {
       canopy.current.rotation.z = Math.sin(clock.elapsedTime * 0.6) * 0.025;
     }
   });
+  // By the calendar: green in summer, orange and gold in autumn, snow on
+  // every tier in winter, blossom in spring. See atmosphere.ts.
+  const f = FOLIAGE[useAtmosphere().season];
   return (
     <group>
       <Box p={[0, 0, 0]} s={[0.4, 1.7, 0.4]} c={PALETTE.woodDark} />
       <group ref={canopy} position={[0, 1.7, 0]}>
-        <Box p={[0, 0, 0]} s={[2.1, 0.8, 2.1]} c={PALETTE.leafDark} />
-        <Box p={[0, 0.7, 0]} s={[1.5, 0.7, 1.5]} c={PALETTE.leaf} ry={0.6} />
-        <Box p={[0, 1.3, 0]} s={[0.9, 0.5, 0.9]} c={PALETTE.leaf} ry={1.1} />
+        <Box p={[0, 0, 0]} s={[2.1, 0.8, 2.1]} c={f.dark} />
+        <Box p={[0, 0.7, 0]} s={[1.5, 0.7, 1.5]} c={f.light} ry={0.6} />
+        <Box p={[0, 1.3, 0]} s={[0.9, 0.5, 0.9]} c={f.top} ry={1.1} />
+        {f.cap && (
+          <>
+            <Box p={[0, 0.8, 0]} s={[2.0, 0.07, 2.0]} c={f.cap} />
+            <Box p={[0, 1.4, 0]} s={[1.42, 0.07, 1.42]} c={f.cap} ry={0.6} />
+            <Box p={[0, 1.8, 0]} s={[0.84, 0.07, 0.84]} c={f.cap} ry={1.1} />
+          </>
+        )}
+        {f.blossom &&
+          BLOSSOM_SPOTS.map(([x, y, z], i) => (
+            <Box key={i} p={[x, y, z]} s={[0.16, 0.08, 0.16]} c={f.blossom!} />
+          ))}
       </group>
     </group>
   );
@@ -606,13 +665,16 @@ const ReceptionDesk = ({ len = 3.4 }: { len?: number }) => (
 
 const Sofa = () => (
   <group>
-    <Box p={[0, 0.16, 0]} s={[1.9, 0.3, 0.85]} c={PALETTE.fabric} />
+    <Box p={[0, 0, 0.08]} s={[1.8, 0.16, 0.66]} c={PALETTE.woodDark} />
+    {/* Seat cushion stopping 0.24m ahead of the sit point, like the armchair,
+        so whoever sits here has their legs in front of the sofa, not in it. */}
+    <Box p={[0, 0.16, -0.05]} s={[1.72, SEAT_TOP - 0.16, 0.42]} c={PALETTE.fabric} />
     {/* Backrest on local +z, like every other seat here. It used to be the one
-        exception, which is how people ended up sitting in it back to front. */}
-    <Box p={[0, 0, 0.36]} s={[1.9, 0.92, 0.16]} c={PALETTE.fabric} />
-    <Box p={[-0.94, 0.16, 0]} s={[0.16, 0.4, 0.85]} c="#5a6aa2" />
-    <Box p={[0.94, 0.16, 0]} s={[0.16, 0.4, 0.85]} c="#5a6aa2" />
-    <Box p={[0, 0, 0]} s={[1.8, 0.16, 0.78]} c={PALETTE.woodDark} />
+        exception, which is how people ended up sitting in it back to front.
+        Thick, so the sofa keeps its depth without the seat having it. */}
+    <Box p={[0, 0.16, 0.28]} s={[1.9, 0.76, 0.3]} c={PALETTE.fabric} />
+    <Box p={[-0.94, 0.16, 0.07]} s={[0.16, SEAT_TOP - 0.04, 0.72]} c="#5a6aa2" />
+    <Box p={[0.94, 0.16, 0.07]} s={[0.16, SEAT_TOP - 0.04, 0.72]} c="#5a6aa2" />
   </group>
 );
 
@@ -641,6 +703,24 @@ const Gate = () => (
     <Box p={[1.35, 0.1, 0.5]} s={[0.06, 1.7, 1.0]} c={PALETTE.metalDark} />
   </group>
 );
+
+/** Paving slabs out to the street from a front door: `len` along local +z,
+ *  which the porch points outward. Flat, so nobody walking over it notices. */
+const Path = ({ len = 2.6 }: { len?: number }) => {
+  const slabs = Math.max(2, Math.round(len / 0.65));
+  return (
+    <group>
+      {Array.from({ length: slabs }).map((_, i) => (
+        <Box
+          key={i}
+          p={[0, 0, -len / 2 + (len / slabs) * (i + 0.5)]}
+          s={[1.35, 0.03, len / slabs - 0.06]}
+          c={i % 2 ? "#b9b3a6" : "#c6c0b3"}
+        />
+      ))}
+    </group>
+  );
+};
 
 const Signpost = () => (
   <group>
@@ -727,15 +807,29 @@ const Piano = () => (
   </group>
 );
 
-const Planter = () => (
-  <group>
-    <Box p={[0, 0, 0]} s={[1.8, 0.34, 0.7]} c={PALETTE.wood} />
-    <Box p={[0, 0.34, 0]} s={[1.66, 0.06, 0.58]} c={PALETTE.leafDark} />
-    <Box p={[-0.5, 0.36, 0]} s={[0.42, 0.3, 0.4]} c={PALETTE.leaf} ry={0.4} />
-    <Box p={[0.1, 0.36, 0.04]} s={[0.36, 0.42, 0.36]} c={PALETTE.leaf} />
-    <Box p={[0.58, 0.36, -0.04]} s={[0.34, 0.26, 0.34]} c={PALETTE.leafDark} ry={0.7} />
-  </group>
-);
+const Planter = () => {
+  const { season } = useAtmosphere();
+  const f = FOLIAGE[season];
+  // In winter the bed is put to sleep under snow rather than left green.
+  if (season === "winter") {
+    return (
+      <group>
+        <Box p={[0, 0, 0]} s={[1.8, 0.34, 0.7]} c={PALETTE.wood} />
+        <Box p={[0, 0.34, 0]} s={[1.66, 0.08, 0.58]} c={f.cap ?? PALETTE.paper} />
+      </group>
+    );
+  }
+  return (
+    <group>
+      <Box p={[0, 0, 0]} s={[1.8, 0.34, 0.7]} c={PALETTE.wood} />
+      <Box p={[0, 0.34, 0]} s={[1.66, 0.06, 0.58]} c={PALETTE.leafDark} />
+      <Box p={[-0.5, 0.36, 0]} s={[0.42, 0.3, 0.4]} c={f.light} ry={0.4} />
+      <Box p={[0.1, 0.36, 0.04]} s={[0.36, 0.42, 0.36]} c={season === "autumn" ? f.top : f.light} />
+      <Box p={[0.58, 0.36, -0.04]} s={[0.34, 0.26, 0.34]} c={f.dark} ry={0.7} />
+      {f.blossom && <Box p={[0.1, 0.78, 0.04]} s={[0.14, 0.06, 0.14]} c={f.blossom} />}
+    </group>
+  );
+};
 
 // ── Cafeteria and gym ───────────────────────────────────────────────────────
 
@@ -743,8 +837,13 @@ const CafeCounter = ({ len = 7 }: { len?: number }) => (
   <group>
     <Box p={[0, 0, 0]} s={[len, 1.0, 0.85]} c="#8f9aa6" />
     <Box p={[0, 1.0, 0]} s={[len + 0.15, 0.08, 1.0]} c={PALETTE.metal} />
-    {/* Sneeze guard: the pane is what makes it read as a servery. */}
-    <Box p={[0, 1.35, -0.3]} s={[len - 0.6, 0.5, 0.04]} c="#bcd9e8" />
+    {/* Sneeze guard: the pane is what makes it read as a servery. See-through,
+        because the cook works behind it and the camera looks down through
+        exactly this pane to see them — opaque, it hid everybody in the kitchen. */}
+    <mesh position={[0, 1.6, -0.3]}>
+      <boxGeometry args={[len - 0.6, 0.5, 0.04]} />
+      <meshLambertMaterial color="#cfe6f0" transparent opacity={0.3} depthWrite={false} />
+    </mesh>
     {Array.from({ length: 4 }).map((_, i) => (
       <Box
         key={i}
@@ -764,9 +863,15 @@ const LongTable = ({ len = 8 }: { len?: number }) => {
       <Box p={[0, 0.72, 0]} s={[len, 0.08, 1.1]} c={PALETTE.woodLight} />
       <Box p={[-len / 2 + 0.4, 0, 0]} s={[0.12, 0.72, 0.9]} c={PALETTE.metalDark} />
       <Box p={[len / 2 - 0.4, 0, 0]} s={[0.12, 0.72, 0.9]} c={PALETTE.metalDark} />
-      {/* Benches rather than chairs — faster to read, and true to a canteen. */}
-      <Box p={[0, 0.42, -0.85]} s={[len - 0.6, 0.07, 0.36]} c={PALETTE.wood} />
-      <Box p={[0, 0.42, 0.85]} s={[len - 0.6, 0.07, 0.36]} c={PALETTE.wood} />
+      {/* Benches rather than chairs — faster to read, and true to a canteen.
+          On legs: they used to be two planks floating at seat height. */}
+      {[-0.85, 0.85].map((z) => (
+        <group key={z}>
+          <Box p={[0, SEAT_TOP - 0.07, z]} s={[len - 0.6, 0.07, 0.36]} c={PALETTE.wood} />
+          <Box p={[-len / 2 + 0.55, 0, z]} s={[0.08, SEAT_TOP - 0.07, 0.3]} c={PALETTE.metalDark} />
+          <Box p={[len / 2 - 0.55, 0, z]} s={[0.08, SEAT_TOP - 0.07, 0.3]} c={PALETTE.metalDark} />
+        </group>
+      ))}
       {Array.from({ length: seats }).map((_, i) => (
         <Box
           key={i}
@@ -778,6 +883,126 @@ const LongTable = ({ len = 8 }: { len?: number }) => {
     </group>
   );
 };
+
+// ── The canteen's kitchen and dining room ───────────────────────────────────
+// Everything here stands on the floor with its front on local +z, like every
+// other prop. The kitchen pieces are placed a quarter turn round, facing out
+// from the west wall toward the counter and the cook.
+
+const Stove = () => (
+  <group>
+    <Box p={[0, 0, 0]} s={[1.2, 0.86, 0.6]} c="#aeb5bd" />
+    <Box p={[0, 0.86, 0]} s={[1.22, 0.05, 0.62]} c={PALETTE.metalDark} />
+    {/* Two pots, one of them simmering — the lid is what reads as "kitchen". */}
+    <mesh position={[-0.28, 1.02, 0.02]}>
+      <cylinderGeometry args={[0.17, 0.17, 0.22, 10]} />
+      <meshLambertMaterial color="#c9ccd1" />
+    </mesh>
+    <mesh position={[0.3, 0.99, 0.02]}>
+      <cylinderGeometry args={[0.15, 0.13, 0.16, 10]} />
+      <meshLambertMaterial color="#c2703f" />
+    </mesh>
+    <Box p={[0, 0.3, 0.31]} s={[0.9, 0.36, 0.02]} c="#3a3f47" />
+    <Box p={[0, 0.72, 0.31]} s={[1.0, 0.05, 0.03]} c={PALETTE.metal} />
+  </group>
+);
+
+const Fridge = () => (
+  <group>
+    <Box p={[0, 0, 0]} s={[0.78, 1.85, 0.68]} c="#e7e9ec" />
+    <Box p={[0, 1.2, 0.345]} s={[0.74, 0.02, 0.01]} c="#b9bec5" />
+    <Box p={[0.3, 0.55, 0.36]} s={[0.04, 0.5, 0.04]} c={PALETTE.metal} />
+    <Box p={[0.3, 1.35, 0.36]} s={[0.04, 0.3, 0.04]} c={PALETTE.metal} />
+  </group>
+);
+
+/** A stack of trays at the start of the line, on a little trolley. */
+const TrayRack = () => (
+  <group>
+    <Box p={[0, 0, 0]} s={[0.86, 0.72, 0.46]} c={PALETTE.metal} />
+    {[0, 1, 2, 3, 4].map((i) => (
+      <Box
+        key={i}
+        p={[0, 0.72 + i * 0.045, 0]}
+        s={[0.62, 0.035, 0.4]}
+        c={i % 2 ? "#d0624a" : "#4f7fb8"}
+      />
+    ))}
+  </group>
+);
+
+/** An A-frame chalkboard with today's menu on it, as coloured lines — at this
+ *  size real writing is four pixels of noise. */
+const MenuBoard = () => (
+  <group>
+    <Box p={[-0.28, 0, -0.1]} s={[0.05, 1.3, 0.05]} c={PALETTE.woodDark} />
+    <Box p={[0.28, 0, -0.1]} s={[0.05, 1.3, 0.05]} c={PALETTE.woodDark} />
+    <Box p={[0, 0.45, 0]} s={[0.66, 0.85, 0.05]} c={PALETTE.frame} ry={0} />
+    <Box p={[0, 0.5, 0.03]} s={[0.56, 0.75, 0.02]} c={PALETTE.board} />
+    {[0, 1, 2, 3].map((i) => (
+      <Box
+        key={i}
+        p={[-0.04 + (i % 2) * 0.05, 1.08 - i * 0.15, 0.05]}
+        s={[0.34 - (i % 2) * 0.1, 0.035, 0.01]}
+        c={[PALETTE.paper, "#f2d27a", PALETTE.paper, "#9fd0a8"][i]}
+      />
+    ))}
+  </group>
+);
+
+/** The one thing in the school that glows on its own. */
+const VendingMachine = () => (
+  <group>
+    <Box p={[0, 0, 0]} s={[0.8, 1.85, 0.68]} c="#b8343a" />
+    <mesh position={[-0.08, 1.1, 0.345]}>
+      <boxGeometry args={[0.5, 1.0, 0.02]} />
+      <meshBasicMaterial color="#cfe6ee" />
+    </mesh>
+    {[0, 1, 2, 3].map((row) =>
+      [0, 1, 2].map((col) => (
+        <Box
+          key={`${row}-${col}`}
+          p={[-0.24 + col * 0.16, 0.7 + row * 0.24, 0.35]}
+          s={[0.1, 0.14, 0.03]}
+          c={["#f2c14e", "#4f9d5c", "#4f7fb8", "#e8734a"][(row + col) % 4]}
+        />
+      )),
+    )}
+    <Box p={[0.28, 0.9, 0.35]} s={[0.12, 0.5, 0.02]} c="#2b2f36" />
+    <Box p={[-0.08, 0.2, 0.35]} s={[0.5, 0.2, 0.02]} c="#2b2f36" />
+  </group>
+);
+
+/** A round table for four, stools included — CAFE_STOOL out, at seat height,
+ *  which is where props.ts seats its diners. */
+const CafeTable = () => (
+  <group>
+    <mesh position={[0, 0.74, 0]}>
+      <cylinderGeometry args={[0.48, 0.48, 0.06, 14]} />
+      <meshLambertMaterial color={PALETTE.woodLight} />
+    </mesh>
+    <Box p={[0, 0, 0]} s={[0.1, 0.72, 0.1]} c={PALETTE.metalDark} />
+    <Box p={[0, 0, 0]} s={[0.5, 0.04, 0.5]} c={PALETTE.metalDark} />
+    {/* A tray and a cup, so an empty place still looks like lunch. */}
+    <Box p={[0.14, 0.77, 0.1]} s={[0.3, 0.025, 0.22]} c="#d0624a" />
+    <mesh position={[-0.16, 0.82, -0.12]}>
+      <cylinderGeometry args={[0.05, 0.04, 0.1, 8]} />
+      <meshLambertMaterial color={PALETTE.paper} />
+    </mesh>
+    {[0, 1, 2, 3].map((k) => {
+      const a = (k * Math.PI) / 2;
+      return (
+        <group key={k} position={[Math.sin(a) * CAFE_STOOL, 0, Math.cos(a) * CAFE_STOOL]}>
+          <mesh position={[0, SEAT_TOP - 0.03, 0]}>
+            <cylinderGeometry args={[0.2, 0.18, 0.06, 10]} />
+            <meshLambertMaterial color={k % 2 ? "#4f7fb8" : "#d0624a"} />
+          </mesh>
+          <Box p={[0, 0, 0]} s={[0.06, SEAT_TOP - 0.06, 0.06]} c={PALETTE.metalDark} />
+        </group>
+      );
+    })}
+  </group>
+);
 
 const WallBars = ({ len = 5 }: { len?: number }) => (
   <group>
@@ -852,6 +1077,8 @@ const Scoreboard = () => {
 
 export interface FurnishingsProps {
   props: PropInstance[];
+  /** Rooms bought a moment ago: their furniture pops in once the walls are up. */
+  rising?: ReadonlySet<string>;
   /** Word currently chalked on the classroom board, if any. */
   boardWord?: string | null;
   onBoardTap?: () => void;
@@ -959,16 +1186,32 @@ const PropNode = ({
       return <Planter />;
     case "vault":
       return <Vault />;
+    case "stove":
+      return <Stove />;
+    case "fridge":
+      return <Fridge />;
+    case "trayRack":
+      return <TrayRack />;
+    case "menuBoard":
+      return <MenuBoard />;
+    case "vendingMachine":
+      return <VendingMachine />;
+    case "cafeTable":
+      return <CafeTable />;
+    case "path":
+      return <Path len={p.len} />;
     default:
       return null;
   }
 };
 
-export const Furnishings = ({ props, boardWord, onBoardTap }: FurnishingsProps) => (
+export const Furnishings = ({ props, boardWord, onBoardTap, rising }: FurnishingsProps) => (
   <>
-    {props.map((p) => (
+    {props.map((p, i) => (
       <group key={p.key} position={[p.x, 0, p.z]} rotation={[0, p.ry, 0]}>
-        <PropNode p={p} boardWord={boardWord} onBoardTap={onBoardTap} />
+        <PopIn active={Boolean(rising?.has(p.key.split("-")[0]))} delay={1.05 + (i % 10) * 0.05}>
+          <PropNode p={p} boardWord={boardWord} onBoardTap={onBoardTap} />
+        </PopIn>
       </group>
     ))}
   </>
@@ -976,14 +1219,26 @@ export const Furnishings = ({ props, boardWord, onBoardTap }: FurnishingsProps) 
 
 /** Desks and their chairs, kept separate from Furnishings because they are the
  *  one group of props the player can rearrange. */
-export const Deskware = ({ desks }: { desks: { x: number; z: number; ry: number }[] }) => (
+export const Deskware = ({
+  desks,
+  rising = [],
+}: {
+  desks: { x: number; z: number; ry: number }[];
+  /** Classrooms bought a moment ago, whose desks pop in after the walls. */
+  rising?: { x: number; z: number; w: number; d: number }[];
+}) => (
   <>
     {desks.map((d, i) => (
       <group key={i} position={[d.x, 0, d.z]} rotation={[0, d.ry, 0]}>
-        <Desk />
-        <group position={[0, 0, SEAT_GAP]}>
-          <Chair />
-        </group>
+        <PopIn
+          active={rising.some((r) => d.x > r.x && d.x < r.x + r.w && d.z > r.z && d.z < r.z + r.d)}
+          delay={1.1 + (i % 12) * 0.04}
+        >
+          <Desk />
+          <group position={[0, 0, SEAT_GAP]}>
+            <Chair />
+          </group>
+        </PopIn>
       </group>
     ))}
   </>

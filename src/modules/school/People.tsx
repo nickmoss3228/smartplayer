@@ -21,6 +21,7 @@ import * as THREE from "three";
 import {
   PatrolPerson,
   PeoplePlan,
+  SEAT_TOP,
   SeatedPerson,
   Spot,
   WALK_SPEED,
@@ -28,6 +29,7 @@ import {
 } from "./props";
 import { BlobShadow } from "./Building";
 import { BubblePool, PersonRole, pickLine } from "./bubbles";
+import { usePresencePoint } from "./presence";
 
 export interface PersonLook {
   skin: string;
@@ -51,6 +53,44 @@ export const lookForIndex = (i: number): PersonLook => ({
   trousers: TROUSERS[(i * 7) % TROUSERS.length],
   hat: null,
 });
+
+/** A tracksuit and a cap — the gym's coach. */
+const COACH_LOOK: PersonLook = {
+  skin: "#c98c5b",
+  hair: "#2b2d2f",
+  shirt: "#c43d3d",
+  trousers: "#2e3a58",
+  hat: "#2e3a58",
+};
+
+/** Cardigan and slacks: the adults who work here but do not teach. */
+const STAFF_LOOK: PersonLook = {
+  skin: "#f2c48d",
+  hair: "#8a8a8a",
+  shirt: "#7a8f6a",
+  trousers: "#4a4238",
+  hat: null,
+};
+
+/** Whites, so the person behind the counter reads as kitchen staff at twelve
+ *  pixels tall. The hat is the chef's toque. */
+const COOK_LOOK: PersonLook = {
+  skin: "#e0a870",
+  hair: "#2b2d2f",
+  shirt: "#f1efe8",
+  trousers: "#5b6270",
+  hat: "#ffffff",
+};
+
+/** Overalls and a cap: the caretaker, who has the building to themselves at
+ *  night. */
+const CARETAKER_LOOK: PersonLook = {
+  skin: "#d9a577",
+  hair: "#5a4a3a",
+  shirt: "#3f6b5a",
+  trousers: "#3f6b5a",
+  hat: "#2f4a3a",
+};
 
 const TEACHER_LOOK: PersonLook = {
   skin: "#e8b98a",
@@ -95,30 +135,36 @@ const Limb = ({ len, w, color }: { len: number; w: number; color: string }) => (
 
 const HIP_Y = 0.42;
 const SHOULDER_Y = 0.9;
-const SIT_LIFT = 0.06;
+/** Seated thigh thickness. The thigh's UNDERSIDE rests on SEAT_TOP, so its
+ *  centre is half this above it — not at hip height, which is where it was,
+ *  six centimetres down inside the seat. */
+const THIGH_H = 0.14;
+const KNEE_Y = SEAT_TOP + THIGH_H / 2;
 
 const Body = ({ refs, look, sitting }: { refs: BodyRefs; look: PersonLook; sitting: boolean }) => (
   <group ref={refs.root}>
     <BlobShadow radius={0.3} />
 
     {sitting ? (
-      // Seated: thighs forward along local +z, shins straight down. Not a rig,
-      // just enough of one that a chair looks occupied rather than clipped.
+      // Seated: thighs forward along local +z ON the seat, shins straight down
+      // to the floor from the knee. Every seat in furniture.tsx is built to
+      // SEAT_TOP and keeps its front edge short of where the shins hang, so a
+      // chair looks occupied rather than clipped.
       <>
-        <mesh position={[-0.11, HIP_Y, 0.16]}>
-          <boxGeometry args={[0.16, 0.15, 0.42]} />
+        <mesh position={[-0.11, KNEE_Y, 0.16]}>
+          <boxGeometry args={[0.16, THIGH_H, 0.42]} />
           <meshLambertMaterial color={look.trousers} />
         </mesh>
-        <mesh position={[0.11, HIP_Y, 0.16]}>
-          <boxGeometry args={[0.16, 0.15, 0.42]} />
+        <mesh position={[0.11, KNEE_Y, 0.16]}>
+          <boxGeometry args={[0.16, THIGH_H, 0.42]} />
           <meshLambertMaterial color={look.trousers} />
         </mesh>
-        <mesh position={[-0.11, HIP_Y / 2, 0.34]}>
-          <boxGeometry args={[0.15, HIP_Y, 0.15]} />
+        <mesh position={[-0.11, (KNEE_Y + THIGH_H / 2) / 2, 0.33]}>
+          <boxGeometry args={[0.15, KNEE_Y + THIGH_H / 2, 0.15]} />
           <meshLambertMaterial color={look.trousers} />
         </mesh>
-        <mesh position={[0.11, HIP_Y / 2, 0.34]}>
-          <boxGeometry args={[0.15, HIP_Y, 0.15]} />
+        <mesh position={[0.11, (KNEE_Y + THIGH_H / 2) / 2, 0.33]}>
+          <boxGeometry args={[0.15, KNEE_Y + THIGH_H / 2, 0.15]} />
           <meshLambertMaterial color={look.trousers} />
         </mesh>
       </>
@@ -133,7 +179,9 @@ const Body = ({ refs, look, sitting }: { refs: BodyRefs; look: PersonLook; sitti
       </>
     )}
 
-    <group ref={refs.torso} position={[0, HIP_Y + (sitting ? SIT_LIFT : 0), 0]}>
+    {/* Seated, the torso's base IS the seat top — the person sits on the
+        chair, not in it. */}
+    <group ref={refs.torso} position={[0, sitting ? SEAT_TOP : HIP_Y, 0]}>
       <mesh position={[0, 0.26, 0]}>
         <boxGeometry args={[0.42, 0.52, 0.26]} />
         <meshLambertMaterial color={look.shirt} />
@@ -197,7 +245,12 @@ const Bubble = ({ text }: { text: string }) => (
         padding: "4px 9px",
         fontSize: 12,
         fontWeight: 700,
-        whiteSpace: "nowrap",
+        // Chatter is a few words on one line. A note from the staff repeated
+        // in the room is a whole sentence, and wraps rather than stretching
+        // across half the school.
+        whiteSpace: text.length > 32 ? "normal" : "nowrap",
+        width: text.length > 32 ? 220 : undefined,
+        textAlign: "center",
         boxShadow: "0 2px 0 rgba(43,48,64,0.35)",
         transform: "translateY(-6px)",
       }}
@@ -244,6 +297,8 @@ const POSE_ANIM = {
   desk: { arm: 0.55, speed: 2.3, lean: 0.09 },
   armchair: { arm: 0.12, speed: 1.1, lean: 0.03 },
   booth: { arm: 0.22, speed: 1.6, lean: 0.05 },
+  // Fork to mouth: a big, slow lift of the right arm, in bursts like writing.
+  eat: { arm: 0.85, speed: 1.3, lean: 0.06 },
 } as const;
 
 const Seated = ({
@@ -329,19 +384,31 @@ const Walker = ({
   phase,
   bubble,
   onTap,
-  facesClassWhenIdle,
+  idleFacing,
+  lane,
+  floorY = 0,
+  ball = false,
 }: {
   path: Spot[];
   look: PersonLook;
   phase: number;
   bubble: string | null;
   onTap: () => void;
-  /** Teachers stop and turn to the room; wanderers just keep going. */
-  facesClassWhenIdle?: boolean;
+  /** Which way to face when stopped. Teachers turn to the class; wanderers,
+   *  who leave it undefined, keep facing the way they were going. */
+  idleFacing?: number;
+  /** Right-of-centre offset; see PatrolPerson.lane. */
+  lane?: number;
+  /** Height of whatever they are standing on — the stage. */
+  floorY?: number;
+  /** Bounces a ball as they go. */
+  ball?: boolean;
 }) => {
   const refs = useBodyRefs();
   const hop = useHop();
   const group = useRef<THREE.Group>(null);
+  const ballRef = useRef<THREE.Mesh>(null);
+  const here = usePresencePoint();
 
   useFrame(({ clock }, dt) => {
     if (!group.current || path.length < 2) return;
@@ -353,14 +420,16 @@ const Walker = ({
     // each waypoint was derived from the walker's own phase, so two wanderers
     // took different amounts of time per lap and slowly closed on one another
     // until they were standing in the same doorway, mixed up together.
-    const step = walkerAt(path, clock.elapsedTime);
+    const step = walkerAt(path, clock.elapsedTime, WALK_SPEED, lane);
     const walking = step.walking;
     group.current.position.x = step.x;
     group.current.position.z = step.z;
+    here.x = step.x;
+    here.z = step.z;
 
     // Face the class while stopped, the direction of travel while moving, and
     // ease between the two rather than snapping.
-    const want = walking ? step.heading : facesClassWhenIdle ? Math.PI : step.heading;
+    const want = walking || idleFacing === undefined ? step.heading : idleFacing;
     const cur = group.current.rotation.y;
     let delta = ((want - cur + Math.PI) % (Math.PI * 2)) - Math.PI;
     if (delta < -Math.PI) delta += Math.PI * 2;
@@ -384,11 +453,21 @@ const Walker = ({
       // Bob on the stride, plus any hop from a poke.
       refs.root.current.position.y = (walking ? Math.abs(Math.sin(t)) * 0.045 : 0) + hop.advance(dt);
     }
+    if (ballRef.current) {
+      // Dribbled: down to the floor and back up to the hand, twice a stride.
+      ballRef.current.position.y = 0.12 + Math.abs(Math.sin(t * 0.5)) * 0.5;
+    }
   });
 
   return (
-    <group ref={group} position={[path[0].x, 0, path[0].z]}>
+    <group ref={group} position={[path[0].x, floorY, path[0].z]}>
       <Body refs={refs} look={look} sitting={false} />
+      {ball && (
+        <mesh ref={ballRef} position={[0.3, 0.4, 0.3]}>
+          <sphereGeometry args={[0.12, 8, 6]} />
+          <meshLambertMaterial color="#e0702e" />
+        </mesh>
+      )}
       <HitBox
         onTap={() => {
           hop.trigger();
@@ -435,6 +514,7 @@ const Commuter = ({
   const hop = useHop();
   const group = useRef<THREE.Group>(null);
   const [sitting, setSitting] = useState(true);
+  const here = usePresencePoint();
 
   // seat → waypoints → seat. Walking either way is the same array, reversed.
   const full = useMemo<Spot[]>(() => [seats[0], ...path, seats[1]], [seats, path]);
@@ -455,6 +535,8 @@ const Commuter = ({
     if (sitting) {
       const seat = seats[s.atEnd];
       g.position.set(seat.x, 0, seat.z);
+      here.x = seat.x;
+      here.z = seat.z;
       g.rotation.y = seat.ry;
 
       // Same writing loop the resident students use, so a visitor at a table
@@ -498,6 +580,8 @@ const Commuter = ({
     }
 
     g.position.set(from.x + dx * s.t, 0, from.z + dz * s.t);
+    here.x = g.position.x;
+    here.z = g.position.z;
     const want = Math.atan2(dx, dz);
     const cur = g.rotation.y;
     let delta = ((want - cur + Math.PI) % (Math.PI * 2)) - Math.PI;
@@ -541,11 +625,29 @@ export interface PeopleProps {
   /** Suppress every bubble. Used by the exterior view, where a DOM overlay
    *  would hang in the air over the roof. */
   mute?: boolean;
+  /** Have somebody inside `rect` say `text`, now. A note from the staff that
+   *  the player tapped "show me" on: the person it came from says it again in
+   *  the room, so the card and the school are the same conversation. */
+  announce?: { rect: { x: number; z: number; w: number; d: number }; text: string; nonce: number } | null;
+  /** Somebody was poked — for the page's sound effects. */
+  onTap?: (key: string, role: PersonRole) => void;
 }
 
-export const People = ({ plan, pool, playerLook, interactive = true, mute = false }: PeopleProps) => {
+export const People = ({
+  plan,
+  pool,
+  playerLook,
+  interactive = true,
+  mute = false,
+  announce = null,
+  onTap,
+}: PeopleProps) => {
   const [speaking, setSpeaking] = useState<{ key: string; text: string } | null>(null);
   const timer = useRef<number | null>(null);
+  // Restarts the ambient chatter after a bubble somebody asked for — a poke,
+  // or an announcement — has had its turn. Without it, the first poke ended
+  // the room's chatter for as long as the page stayed open.
+  const resume = useRef<() => void>(() => {});
 
   // Every actor that can hold a bubble, so the scheduler can pick one without
   // caring which kind it is. Each carries its ROLE, which is what decides the
@@ -556,6 +658,7 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
       ...plan.teachers.map((t) => ({ key: t.key, role: t.role })),
       ...plan.wanderers.map((w) => ({ key: w.key, role: w.role })),
       ...plan.commuters.map((c) => ({ key: c.key, role: c.role })),
+      ...plan.roomLoops.map((w) => ({ key: w.key, role: w.role })),
     ];
     if (plan.playerSeat) entries.push({ key: "me", role: "student" });
     return entries;
@@ -585,6 +688,9 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
       }, 2800);
     };
 
+    resume.current = () => {
+      if (!cancelled) timer.current = window.setTimeout(tick, 1400 + Math.random() * 2600);
+    };
     timer.current = window.setTimeout(tick, 1200);
     return () => {
       cancelled = true;
@@ -595,14 +701,42 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
   const tap = useCallback(
     (key: string, role: PersonRole) => {
       if (!interactive) return;
+      onTap?.(key, role);
       // A poke jumps the queue: clear the pending hide so the bubble the player
       // asked for is not cut short by the scheduler's timer.
       if (timer.current) window.clearTimeout(timer.current);
       say(key, role);
-      timer.current = window.setTimeout(() => setSpeaking(null), 2800);
+      timer.current = window.setTimeout(() => {
+        setSpeaking(null);
+        resume.current();
+      }, 2800);
     },
-    [interactive, say],
+    [interactive, say, onTap],
   );
+
+  // Whoever is in the room the note came from — staff before students, since
+  // it is the staff who send the notes.
+  useEffect(() => {
+    if (!announce) return;
+    const { rect, text } = announce;
+    const inside = (p: { x: number; z: number }) =>
+      p.x > rect.x && p.x < rect.x + rect.w && p.z > rect.z && p.z < rect.z + rect.d;
+    const who =
+      plan.teachers.find((t) => inside(t.path[0])) ??
+      plan.roomLoops.find((w) => w.outfit && inside(w.path[0])) ??
+      plan.students.find((s) => s.role !== "student" && inside(s.spot)) ??
+      plan.roomLoops.find((w) => inside(w.path[0])) ??
+      plan.students.find((s) => inside(s.spot));
+    if (!who) return;
+    if (timer.current) window.clearTimeout(timer.current);
+    setSpeaking({ key: who.key, text });
+    timer.current = window.setTimeout(() => {
+      setSpeaking(null);
+      resume.current();
+    }, 6000);
+    // Only a new nonce is a new announcement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [announce?.nonce]);
 
   const bubbleFor = (key: string) =>
     !mute && speaking?.key === key ? speaking.text : null;
@@ -639,7 +773,8 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
           path={t.path}
           look={TEACHER_LOOK}
           phase={i * 2.1}
-          facesClassWhenIdle
+          idleFacing={t.idleFacing}
+          lane={t.lane}
           bubble={bubbleFor(t.key)}
           onTap={() => tap(t.key, t.role)}
         />
@@ -649,8 +784,35 @@ export const People = ({ plan, pool, playerLook, interactive = true, mute = fals
         <Walker
           key={w.key}
           path={w.path}
+          lane={w.lane}
           look={lookForIndex(i + 11)}
           phase={i * 1.9 + 0.6}
+          bubble={bubbleFor(w.key)}
+          onTap={() => tap(w.key, w.role)}
+        />
+      ))}
+
+      {plan.roomLoops.map((w: PatrolPerson, i) => (
+        <Walker
+          key={w.key}
+          path={w.path}
+          lane={w.lane}
+          idleFacing={w.idleFacing}
+          floorY={w.floorY}
+          ball={w.ball}
+          // Staff dress for the job; everybody else is a student.
+          look={
+            w.outfit === "cook"
+              ? COOK_LOOK
+              : w.outfit === "coach"
+                ? COACH_LOOK
+                : w.outfit === "staff"
+                  ? STAFF_LOOK
+                  : w.outfit === "caretaker"
+                    ? CARETAKER_LOOK
+                    : lookForIndex(i + 37)
+          }
+          phase={i * 1.3 + 0.2}
           bubble={bubbleFor(w.key)}
           onTap={() => tap(w.key, w.role)}
         />

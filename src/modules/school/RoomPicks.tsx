@@ -22,7 +22,7 @@ const Pick = ({
 }: {
   room: SchoolRoomRect;
   selected: boolean;
-  label: string;
+  label: string | null;
   onPick?: (roomId: string) => void;
 }) => (
   <group>
@@ -66,6 +66,7 @@ const Pick = ({
         </mesh>
       ))}
 
+    {label !== null && (
     <Html
       position={[room.x + room.w / 2, selected ? 2.4 : 1.6, room.z + room.d / 2]}
       center
@@ -88,6 +89,7 @@ const Pick = ({
         {label}
       </div>
     </Html>
+    )}
   </group>
 );
 
@@ -96,19 +98,23 @@ export const RoomPicks = ({
   selected,
   nameOf,
   onPick,
+  all = false,
 }: {
   rooms: SchoolRoomRect[];
   selected: string | null;
   nameOf: (roomId: string) => string;
   onPick?: (roomId: string) => void;
+  /** "Whole school": every room outlined, because every room is what a pick
+   *  is about to change. No names — twenty labels would bury the school. */
+  all?: boolean;
 }) => (
   <group>
     {rooms.map((room) => (
       <Pick
         key={room.id}
         room={room}
-        selected={selected === room.id}
-        label={nameOf(room.id)}
+        selected={all || selected === room.id}
+        label={all ? null : nameOf(room.id)}
         onPick={onPick}
       />
     ))}

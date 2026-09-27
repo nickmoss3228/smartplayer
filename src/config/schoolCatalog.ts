@@ -69,6 +69,9 @@ export interface RoomSpec {
   rect: Rect;
   grows: RoomGrowth[];
   outdoor: boolean;
+  /** Comes free with this room, and is never sold on its own — see
+   *  `bundledRooms`. The forecourt, which comes with reception. */
+  bundledWith: string | null;
 }
 
 /** Where a room connects to the one you pass through to reach the corridor.
@@ -130,6 +133,7 @@ interface RoomOpts {
   grows?: RoomGrowth[];
   starter?: boolean;
   outdoor?: boolean;
+  bundledWith?: string;
 }
 
 const room = (
@@ -148,6 +152,7 @@ const room = (
   grows: opts.grows ?? [],
   starter: opts.starter ?? false,
   outdoor: opts.outdoor ?? false,
+  bundledWith: opts.bundledWith ?? null,
 });
 
 /** The classroom reaches south to meet the corridor the moment there IS one. */
@@ -186,8 +191,8 @@ const VARIANT_COURTYARD: SchoolVariant = {
     room("lab", "lab", "bitWord", 120, { x: 0, z: 11, w: 8, d: 6 }),
     room("courtyard", "courtyard", "bitPhrase", 60, { x: 8, z: 11, w: 11, d: 9 }, { outdoor: true }),
     room("hall", "hall", "bitWord", 220, { x: -13, z: 0, w: 13, d: 11 }),
-    room("lobby", "lobby", "bitWord", 380, { x: 0, z: 17, w: 8, d: 7 }),
-    room("forecourt", "forecourt", "bitPhrase", 90, { x: 0, z: 24, w: 8, d: 4 }, { outdoor: true }),
+    room("lobby", "lobby", "bitWord", 70, { x: 0, z: 17, w: 8, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 0, { x: 0, z: 24, w: 8, d: 4 }, { outdoor: true, bundledWith: "lobby" }),
     room("classroomB", "classroom", "bitAward", 420, { x: 19, z: 0, w: 9, d: 8 }),
     room("cafeteria", "cafeteria", "bitPhrase", 160, { x: -13, z: 11, w: 13, d: 12 }),
     room("classroomC", "classroom", "bitAward", 700, { x: -24, z: 0, w: 11, d: 11 }),
@@ -266,8 +271,8 @@ const VARIANT_QUAD: SchoolVariant = {
     room("lab", "lab", "bitWord", 120, { x: 12, z: 11, w: 8, d: 7 }),
     room("courtyard", "courtyard", "bitPhrase", 60, { x: 0, z: 11, w: 12, d: 10 }, { outdoor: true }),
     room("hall", "hall", "bitWord", 220, { x: -12, z: 0, w: 12, d: 8 }),
-    room("lobby", "lobby", "bitWord", 380, { x: 0, z: 21, w: 12, d: 7 }),
-    room("forecourt", "forecourt", "bitPhrase", 90, { x: 0, z: 28, w: 12, d: 4 }, { outdoor: true }),
+    room("lobby", "lobby", "bitWord", 70, { x: 0, z: 21, w: 12, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 0, { x: 0, z: 28, w: 12, d: 4 }, { outdoor: true, bundledWith: "lobby" }),
     room("classroomB", "classroom", "bitAward", 420, { x: 20, z: 0, w: 9, d: 8 }),
     room("cafeteria", "cafeteria", "bitPhrase", 160, { x: -12, z: 11, w: 12, d: 10 }),
     room("classroomC", "classroom", "bitAward", 700, { x: -24, z: 0, w: 12, d: 8 }),
@@ -335,8 +340,8 @@ const VARIANT_TERRACE: SchoolVariant = {
     room("lab", "lab", "bitWord", 120, { x: -9, z: 11, w: 9, d: 7 }),
     room("courtyard", "courtyard", "bitPhrase", 60, { x: 0, z: 11, w: 12, d: 9 }, { outdoor: true }),
     room("hall", "hall", "bitWord", 220, { x: 12, z: 0, w: 13, d: 8 }),
-    room("lobby", "lobby", "bitWord", 380, { x: 0, z: 20, w: 12, d: 7 }),
-    room("forecourt", "forecourt", "bitPhrase", 90, { x: 0, z: 27, w: 12, d: 4 }, { outdoor: true }),
+    room("lobby", "lobby", "bitWord", 70, { x: 0, z: 20, w: 12, d: 7 }),
+    room("forecourt", "forecourt", "bitPhrase", 0, { x: 0, z: 27, w: 12, d: 4 }, { outdoor: true, bundledWith: "lobby" }),
     room("classroomB", "classroom", "bitAward", 420, { x: 25, z: 0, w: 9, d: 8 }),
     room("cafeteria", "cafeteria", "bitPhrase", 160, { x: 12, z: 11, w: 13, d: 9 }),
     room("classroomC", "classroom", "bitAward", 700, { x: -21, z: 0, w: 12, d: 8 }),
@@ -392,6 +397,30 @@ export const getRoomSpec = (variantId: string, roomId: string): RoomSpec | null 
 export const starterRoomIds = (variantId: string): string[] =>
   getVariant(variantId).rooms.filter((r) => r.starter).map((r) => r.id);
 
+/**
+ * Rooms that come WITH another rather than on their own. Buying the host grants
+ * them too, in the same purchase, and they are never offered separately.
+ *
+ * The forecourt is the one: reception and the gate out front are a single
+ * thing to a player — the school's front entrance — and selling them as two
+ * purchases, the gate stranded behind a 380-coin reception, is how a campus
+ * could run for weeks with no way in at all.
+ */
+export const bundledRooms = (variantId: string, roomId: string): string[] =>
+  getVariant(variantId).rooms.filter((r) => r.bundledWith === roomId).map((r) => r.id);
+
+/** An owned set with every bundle completed. The server applies this to every
+ *  save it sends; the client needs it to preview what a purchase will add. */
+export function withBundles(variantId: string, ownedIds: readonly string[]): string[] {
+  const owned = Array.isArray(ownedIds) ? [...ownedIds] : [];
+  for (const spec of getVariant(variantId).rooms) {
+    if (spec.bundledWith && owned.includes(spec.bundledWith) && !owned.includes(spec.id)) {
+      owned.push(spec.id);
+    }
+  }
+  return owned;
+}
+
 /** A room's rectangle given what else is owned: the bounding-box union of its
  *  base rect and every growth whose trigger has been bought. */
 function rectOf(spec: RoomSpec, owned: readonly string[]): Rect {
@@ -424,7 +453,7 @@ export function roomsOwned(variantId: string, ownedIds: readonly string[]): Scho
 /** Why a room cannot be bought right now, ignoring the wallet. Null means it
  *  can. `locked` is the parent rule, which keeps an owned set a connected
  *  subtree rooted at the corridor — see the backend copy for why that matters. */
-export type BuyBlocker = "unknown" | "owned" | "locked";
+export type BuyBlocker = "unknown" | "owned" | "locked" | "bundled";
 
 export function buyBlocker(
   variantId: string,
@@ -432,10 +461,13 @@ export function buyBlocker(
   roomId: string,
 ): BuyBlocker | null {
   const owned = Array.isArray(ownedIds) ? ownedIds : [];
-  if (!getRoomSpec(variantId, roomId)) return "unknown";
+  const spec = getRoomSpec(variantId, roomId);
+  if (!spec) return "unknown";
   if (owned.includes(roomId)) return "owned";
   const parent = getVariant(variantId).doors[roomId]?.parent ?? null;
   if (parent && !owned.includes(parent)) return "locked";
+  // Only ever bought as part of its host, never on its own.
+  if (spec.bundledWith) return "bundled";
   return null;
 }
 
@@ -456,7 +488,8 @@ export function buildableRooms(
   ownedIds: readonly string[],
 ): { spec: RoomSpec; blocker: BuyBlocker | null }[] {
   return getVariant(variantId)
-    .rooms.filter((spec) => !ownedIds.includes(spec.id))
+    // A bundled room is part of its host's offer, not an offer of its own.
+    .rooms.filter((spec) => !ownedIds.includes(spec.id) && !spec.bundledWith)
     .map((spec) => ({ spec, blocker: buyBlocker(variantId, ownedIds, spec.id) }));
 }
 
@@ -709,6 +742,97 @@ export function planBounds(rooms: SchoolRoomRect[]) {
   };
 }
 
+// ── The outside of the building ─────────────────────────────────────────────
+// Mirror of the backend. Bought once each and kept; one free style per slot
+// is the look every school had before. What each looks like is in
+// modules/school/exterior.ts — the server has no opinion about it.
+
+export type ExteriorSlot = "facade" | "roof" | "trim";
+
+export const EXTERIOR_SLOTS: ExteriorSlot[] = ["facade", "roof", "trim"];
+
+export interface ExteriorStyle {
+  id: string;
+  slot: ExteriorSlot;
+  currency: Currency;
+  price: number;
+}
+
+const style = (id: string, slot: ExteriorSlot, currency: Currency, price: number): ExteriorStyle => ({
+  id,
+  slot,
+  currency,
+  price,
+});
+
+export const EXTERIOR_STYLES: ExteriorStyle[] = [
+  style("plaster", "facade", "bitAward", 0),
+  style("white-render", "facade", "bitAward", 150),
+  style("terracotta", "facade", "bitPhrase", 250),
+  style("red-brick", "facade", "bitWord", 300),
+  style("yellow-brick", "facade", "bitWord", 300),
+  style("timber", "facade", "bitPhrase", 350),
+  style("stone", "facade", "bitAward", 450),
+
+  style("flat", "roof", "bitAward", 0),
+  style("gravel", "roof", "bitAward", 150),
+  style("green", "roof", "bitPhrase", 350),
+  style("solar", "roof", "bitWord", 400),
+  style("red-tile", "roof", "bitAward", 500),
+  style("slate", "roof", "bitWord", 500),
+
+  style("white", "trim", "bitAward", 0),
+  style("navy", "trim", "bitWord", 80),
+  style("forest", "trim", "bitPhrase", 80),
+  style("oxblood", "trim", "bitAward", 100),
+];
+
+export const DEFAULT_EXTERIOR: Record<ExteriorSlot, string> = { facade: "plaster", roof: "flat", trim: "white" };
+
+export const getExteriorStyle = (id: string): ExteriorStyle | null =>
+  EXTERIOR_STYLES.find((s) => s.id === id) ?? null;
+
+export function canWearStyle(owned: readonly string[], slot: ExteriorSlot, id: string): boolean {
+  const s = getExteriorStyle(id);
+  if (!s || s.slot !== slot) return false;
+  return s.price === 0 || owned.includes(id);
+}
+
+export const SCHOOL_NAME_MAX = 28;
+
+/** Same rule as the server's: letters in any alphabet, digits, spaces and a
+ *  little punctuation, up to SCHOOL_NAME_MAX characters. */
+export function cleanSchoolName(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const name = raw.normalize("NFC").replace(/\s+/gu, " ").trim();
+  if (!name || [...name].length > SCHOOL_NAME_MAX) return null;
+  if (!/^[\p{L}\p{N} .,'’&!?()«»"№#-]+$/u.test(name)) return null;
+  if (!/[\p{L}\p{N}]/u.test(name)) return null;
+  return name;
+}
+
+/** English fallbacks for the style names; the UI reads
+ *  `school.exterior.styles.<id>` first. */
+export const EXTERIOR_LABELS: Record<string, string> = {
+  plaster: "Plaster",
+  "white-render": "White render",
+  terracotta: "Terracotta",
+  "red-brick": "Red brick",
+  "yellow-brick": "Yellow brick",
+  timber: "Timber",
+  stone: "Stone",
+  flat: "Flat",
+  gravel: "Gravel & vents",
+  green: "Green roof",
+  solar: "Solar panels",
+  "red-tile": "Red tiles",
+  slate: "Slate",
+  white: "White",
+  navy: "Navy",
+  forest: "Forest",
+  oxblood: "Oxblood",
+};
+
 // ── Payroll ─────────────────────────────────────────────────────────────────
 //
 // The one thing the school asks of you rather than the other way round. Wages
@@ -778,7 +902,7 @@ export const ROOM_LABELS: Record<string, RoomLabel> = {
   lab: { name: "Listening Lab", blurb: "Booths, headphones, and the same track one more time." },
   courtyard: { name: "Courtyard", blurb: "Open air, one tree, and somewhere to be between lessons." },
   hall: { name: "Assembly Hall", blurb: "A stage, a banner, and a shelf with something to put on it." },
-  lobby: { name: "Reception", blurb: "A front desk, and someone behind it to meet whoever comes in." },
+  lobby: { name: "Reception & entrance", blurb: "A front desk, and the gate out front: the school's real way in." },
   forecourt: { name: "Forecourt", blurb: "The way in off the street, with a gate that says so." },
   classroomB: { name: "Second Classroom", blurb: "Another English room — flags, a globe, the whole alphabet." },
   cafeteria: { name: "Cafeteria", blurb: "Trays, long tables, and the loudest room here." },

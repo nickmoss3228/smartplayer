@@ -165,6 +165,13 @@ function rowToDoc(
       presets: row.schoolPresets ?? {},
       payroll: { lastPaidAt: row.schoolPayrollLastPaidAt ?? undefined },
       variantId: row.schoolVariantId,
+      exterior: {
+        owned: row.schoolExteriorOwned ?? [],
+        facadeId: row.schoolFacadeId ?? null,
+        roofId: row.schoolRoofId ?? null,
+        trimId: row.schoolTrimId ?? null,
+      },
+      name: row.schoolName ?? null,
     },
   };
 
@@ -266,6 +273,11 @@ function docToColumns(doc: UserDoc): Partial<NewUser> {
     schoolPresets: school.presets ?? {},
     schoolPayrollLastPaidAt: toDate(school.payroll?.lastPaidAt),
     schoolVariantId: school.variantId,
+    schoolExteriorOwned: [...(school.exterior?.owned ?? [])],
+    schoolFacadeId: school.exterior?.facadeId ?? null,
+    schoolRoofId: school.exterior?.roofId ?? null,
+    schoolTrimId: school.exterior?.trimId ?? null,
+    schoolName: school.name ?? null,
 
     blockedLoginCount: Number(signals.blockedLoginCount ?? 0),
     lastBlockedAt: toDate(signals.lastBlockedAt),

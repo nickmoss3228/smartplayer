@@ -35,6 +35,21 @@ export interface SchoolState {
    *  preference — it is fixed per player, so visiting someone shows a
    *  different building rather than a recolour of your own. */
   variantId: string;
+  /** The outside of the building: what is worn, and which styles have been
+   *  bought. The server resolves anything unknown or unowned to the free
+   *  default before sending it, so these are always wearable. Optional only
+   *  because an older backend does not send it. */
+  exterior?: SchoolExterior;
+  /** The sign over the gate, already checked by the server. Null: the
+   *  localized default. */
+  name?: string | null;
+}
+
+export interface SchoolExterior {
+  owned: string[];
+  facadeId: string;
+  roofId: string;
+  trimId: string;
 }
 
 export interface WalletBalances {
@@ -108,6 +123,13 @@ export interface SchoolLookPatch {
   layoutId?: string | null;
   wallpaperId?: string | null;
   floorId?: string | null;
+  /** The outside, school-wide only, and only a style that is free or owned. */
+  facadeId?: string;
+  roofId?: string;
+  trimId?: string;
+  /** School-wide only: also take these fields out of every room's own look,
+   *  so the change really does reach every room. */
+  everywhere?: boolean;
 }
 
 // Free preferences — wallpaper, floor, desk arrangement. Still validated
@@ -117,5 +139,28 @@ export const setSchoolLook = async (
   patch: SchoolLookPatch,
 ): Promise<SchoolMutationResponse> => {
   const res = await axios.patch(`${API_BASE}/api/progress/school/look`, patch, auth(token));
+  return res.data;
+};
+
+// Buy a facade, roof or trim, and put it on. Like a room, the body names the
+// style and nothing else; the server reads the price from its own catalog.
+export const buySchoolExterior = async (
+  token: string,
+  styleId: string,
+): Promise<SchoolMutationResponse> => {
+  const res = await axios.post(
+    `${API_BASE}/api/progress/school/exterior`,
+    { styleId },
+    auth(token),
+  );
+  return res.data;
+};
+
+// The name on the sign over the gate. null takes it down.
+export const setSchoolName = async (
+  token: string,
+  name: string | null,
+): Promise<SchoolMutationResponse> => {
+  const res = await axios.patch(`${API_BASE}/api/progress/school/name`, { name }, auth(token));
   return res.data;
 };

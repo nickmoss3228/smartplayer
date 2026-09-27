@@ -21,6 +21,8 @@ import {
   weeksOwed,
   ROOM_LABELS,
   SchoolRoomRect,
+  buildableRooms,
+  bundledRooms,
   buyBlocker,
   canBuy,
   getStage,
@@ -29,7 +31,16 @@ import {
   parentOf,
   roomsOwned,
   starterRoomIds,
+  withBundles,
+  EXTERIOR_STYLES,
+  EXTERIOR_SLOTS,
+  DEFAULT_EXTERIOR,
+  canWearStyle,
+  cleanSchoolName,
 } from './schoolCatalog';
+import { FACADES, ROOFS, TRIMS } from '../modules/school/exterior';
+import enLocale from '../locales/en/translation.json';
+import ruLocale from '../locales/ru/translation.json';
 
 import {
   SCHOOL_STAGES as SERVER_STAGES,
@@ -50,6 +61,14 @@ import {
   PAYROLL_MAX_WEEKS as SERVER_PAYROLL_MAX_WEEKS,
   roomsOwned as serverRoomsOwned,
   starterRoomIds as serverStarterRoomIds,
+  bundledRooms as serverBundledRooms,
+  buyBlocker as serverBuyBlocker,
+  withBundles as serverWithBundles,
+  EXTERIOR_STYLES as SERVER_EXTERIOR_STYLES,
+  EXTERIOR_SLOTS as SERVER_EXTERIOR_SLOTS,
+  DEFAULT_EXTERIOR as SERVER_DEFAULT_EXTERIOR,
+  canWearStyle as serverCanWearStyle,
+  cleanSchoolName as serverCleanSchoolName,
   variantForUserId,
 } from '../../backend/src/config/schoolCatalog.js';
 
@@ -57,13 +76,16 @@ import {
   blockers,
   boardFrameOf,
   buildPlan,
+  castFor,
   classroomsOf,
   commuterSeating,
   deskLayout,
   doorZones,
   footprintOf,
   freeWallRuns,
+  frontDoor,
   peoplePlan,
+  seatBoxes,
   seatOf,
   seatSurfaces,
   stageProps,
@@ -71,6 +93,7 @@ import {
   wallOpenings,
   walkerAt,
 } from '../modules/school/props';
+import type { Box, PeoplePlan, PropInstance, SchoolPlan, Spot } from '../modules/school/props';
 
 /**
  * src/config/schoolCatalog.ts is a hand-maintained mirror of the backend
@@ -104,8 +127,12 @@ function purchaseRun(
     const options = left.filter((id) => canBuy(variantId, owned, id));
     if (!options.length) throw new Error(`${variantId}: stranded with ${left.join(', ')} unreachable`);
     const picked = choose(options);
-    owned.push(picked);
-    left.splice(left.indexOf(picked), 1);
+    // Whatever comes with it arrives in the same purchase: reception brings
+    // the forecourt.
+    for (const id of [picked, ...bundledRooms(variantId, picked)]) {
+      owned.push(id);
+      left.splice(left.indexOf(id), 1);
+    }
     runs.push([...owned]);
   }
   return runs;
@@ -301,9 +328,10 @@ describe('room economy', () => {
         expect(currencies, `${where} has an unknown currency`).toContain(spec.currency);
         expect(Number.isInteger(spec.price), `${where} has a fractional price`).toBe(true);
         expect(spec.price, `${where} has a negative price`).toBeGreaterThanOrEqual(0);
-        // Only a starter room may be free. A purchasable room at zero would sit
-        // in the sheet forever looking like a bug.
-        if (!spec.starter) expect(spec.price, `${where} is free`).toBeGreaterThan(0);
+        // Only a starter room, or one that comes bundled with another, may be
+        // free. A purchasable room at zero would sit in the sheet forever
+        // looking like a bug; a bundled one is never in the sheet at all.
+        if (!spec.starter && !spec.bundledWith) expect(spec.price, `${where} is free`).toBeGreaterThan(0);
       }
     }
   });
@@ -428,6 +456,43 @@ describe('what a player can buy', () => {
         if (!parent || starters.includes(parent) || starters.includes(id)) continue;
         expect(buyBlocker(variantId, starters, id), `${variantId}/${id}`).toBe('locked');
       }
+    }
+  });
+
+  it('sells reception and the forecourt as ONE purchase', () => {
+    // The gate out front used to be a separate room, behind a 380-coin
+    // reception, and a school could run for weeks with no way in. It now comes
+    // with reception, and is never offered on its own.
+    for (const variantId of variantIds) {
+      expect(bundledRooms(variantId, 'lobby'), variantId).toEqual(['forecourt']);
+      expect(serverBundledRooms(variantId, 'lobby'), variantId).toEqual(['forecourt']);
+      for (const run of purchaseRun(variantId, (o) => o[0])) {
+        expect(run.includes('lobby'), `${variantId}: reception without its forecourt`).toBe(run.includes('forecourt'));
+        const offered = buildableRooms(variantId, run).map((o) => o.spec.id);
+        expect(offered, `${variantId}: the forecourt offered on its own`).not.toContain('forecourt');
+      }
+      const withLobby = purchaseRun(variantId, (o) => o[0]).find((r) => r.includes('lobby'))!;
+      const before = withLobby.filter((id) => id !== 'lobby' && id !== 'forecourt');
+      expect(buyBlocker(variantId, [...before, 'lobby'], 'forecourt')).toBe('bundled');
+      expect(serverBuyBlocker(variantId, [...before, 'lobby'], 'forecourt')).toBe('bundled');
+    }
+  });
+
+  it('repairs a save that bought reception before the forecourt came with it', () => {
+    for (const variantId of variantIds) {
+      const old = ['classroom', 'corridor', 'lab', 'courtyard', 'lobby'];
+      expect(withBundles(variantId, old)).toContain('forecourt');
+      expect(serverWithBundles(variantId, old)).toEqual(withBundles(variantId, old));
+      expect(withBundles(variantId, ['classroom'])).toEqual(['classroom']);
+    }
+  });
+
+  it('prices reception so it comes early, not last', () => {
+    // A front desk after a couple of rooms, not after the gym.
+    for (const variantId of variantIds) {
+      const lobby = getVariant(variantId).rooms.find((r) => r.id === 'lobby')!;
+      const lab = getVariant(variantId).rooms.find((r) => r.id === 'lab')!;
+      expect(lobby.price, variantId).toBeLessThanOrEqual(lab.price);
     }
   });
 
@@ -672,6 +737,7 @@ describe('doorways', () => {
         ...cast.commuters.map((c) => ({ key: c.key, pts: [c.seats[0], ...c.path, c.seats[1]] })),
         ...cast.wanderers.map((w) => ({ key: w.key, pts: [...w.path, w.path[0]] })),
         ...cast.teachers.map((t) => ({ key: t.key, pts: [...t.path, t.path[0]] })),
+        ...cast.roomLoops.map((w) => ({ key: w.key, pts: [...w.path, w.path[0]] })),
       ];
 
       for (const route of routes) {
@@ -770,7 +836,17 @@ describe('roaming students keep out of each other', () => {
     // Two of them may still cross paths mid-corridor for a moment, which is
     // what people do; standing merged together is what they must never do.
     for (const { plan, label } of everyPlan()) {
-      const wanderers = peoplePlan(plan, DEFAULT_LAYOUT_ID).wanderers;
+      const cast = peoplePlan(plan, DEFAULT_LAYOUT_ID);
+      // The wanderers, and every queue — a queue is a loop walked by several
+      // people too, and the same arithmetic keeps them out of each other.
+      // Every other shared loop — the canteen queue, the players in the gym.
+      const loops = new Map<string, typeof cast.roomLoops>();
+      for (const w of cast.roomLoops) {
+        if (!w.group) continue;
+        loops.set(w.group, [...(loops.get(w.group) ?? []), w]);
+      }
+      const groups = [cast.wanderers, ...loops.values()];
+      for (const wanderers of groups) {
       if (wanderers.length < 2) continue;
 
       let worst = Infinity;
@@ -779,7 +855,7 @@ describe('roaming students keep out of each other', () => {
       // sampling cannot land on the same phase of a loop again and again and
       // miss the moment two people meet.
       for (let t = 0; t < 1800; t += 1.3) {
-        const at = wanderers.map((w) => walkerAt(w.path, t));
+        const at = wanderers.map((w) => walkerAt(w.path, t, WALK_SPEED, w.lane));
         for (let i = 0; i < at.length; i++) {
           for (let j = i + 1; j < at.length; j++) {
             if (at[i].walking && at[j].walking) continue;
@@ -793,8 +869,9 @@ describe('roaming students keep out of each other', () => {
       }
       // A person is about 0.45m across. Two of them 0.7m apart read as two
       // people passing; any closer and they are one smudge.
-      expect(worst, `${label}: two wanderers ${worst.toFixed(2)}m apart at t=${when}s`)
+      expect(worst, `${label}: two of ${wanderers[0].key}'s loop ${worst.toFixed(2)}m apart at t=${when}s`)
         .toBeGreaterThan(0.7);
+      }
     }
   }, 60_000);
 
@@ -1164,10 +1241,11 @@ describe('nobody walks through anything', () => {
       const solids = blockers(plan);
       const cast = peoplePlan(plan, DEFAULT_LAYOUT_ID);
 
-      const routes: { key: string; pts: { x: number; z: number }[] }[] = [
+      const routes: { key: string; pts: { x: number; z: number }[]; onStage?: boolean }[] = [
         ...cast.commuters.map((c) => ({ key: c.key, pts: [c.seats[0], ...c.path, c.seats[1]] })),
         ...cast.wanderers.map((w) => ({ key: w.key, pts: [...w.path, w.path[0]] })),
         ...cast.teachers.map((t) => ({ key: t.key, pts: [...t.path, t.path[0]] })),
+        ...cast.roomLoops.map((w) => ({ key: w.key, pts: [...w.path, w.path[0]], onStage: Boolean(w.floorY) })),
       ];
       const seats = new Set(cast.commuters.flatMap((c) => c.seats));
 
@@ -1183,6 +1261,8 @@ describe('nobody walks through anything', () => {
           const b = route.pts[i + 1];
           for (const box of solids) {
             if (!hitsBox(a, b, box)) continue;
+            // Standing ON the stage is standing on it, not walking through it.
+            if (route.onStage && box.key.endsWith('-stage')) continue;
             // Sitting down is not walking through. A commuter's route begins
             // and ends ON a chair, a bench or a sofa, so the leg that reaches
             // one is allowed inside that one piece of furniture — and nothing
@@ -1275,6 +1355,246 @@ describe('nobody walks through anything', () => {
       }
     }
   }, 30_000);
+});
+
+/**
+ * Where people are DRAWN, not where their route is written.
+ *
+ * `never routes a person through a piece of furniture` checks each route's
+ * centre line as a zero-width point, and that is not what is on screen:
+ *
+ *   • everybody on a loop walks WALK_LANE to the right of that line;
+ *   • a person is about forty centimetres across, not a point;
+ *   • classroom desks and their chairs are not in `blockers()` at all, and the
+ *     centre-line test only ever looked at the default desk layout;
+ *   • people already sitting down are obstacles too — a commuter heading for a
+ *     canteen bench used to walk the length of the bench line, straight
+ *     through everybody already eating on it.
+ *
+ * Every one of those let people visibly walk through things while the old
+ * test stayed green. This one samples `walkerAt` itself — the function that
+ * positions the figure on screen — against every solid thing in the room, grown
+ * by the body's radius, in every desk layout.
+ */
+describe('nobody is drawn inside anything', () => {
+  /** Half the width of a walking body, shoulders not arms. */
+  const BODY_R = 0.18;
+  /** How much floor a seated person takes up around their seat point. */
+  const SEATED_R = 0.3;
+  /** Getting up and sitting down happen right next to a seat, inside its own
+   *  furniture — that is what a seat is for, not a collision. */
+  const SEAT_REACH = 0.75;
+
+  const grow = (b: Box, by: number): Box => ({
+    key: b.key,
+    x0: b.x0 - by,
+    x1: b.x1 + by,
+    z0: b.z0 - by,
+    z1: b.z1 + by,
+  });
+  const inside = (p: { x: number; z: number }, b: Box) =>
+    p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1;
+  const around = (s: { x: number; z: number }, r: number, key: string): Box => ({
+    key,
+    x0: s.x - r,
+    x1: s.x + r,
+    z0: s.z - r,
+    z1: s.z + r,
+  });
+
+  /** Everything a walker must stay out of, for one plan in one desk layout. */
+  function obstacles(plan: SchoolPlan, layoutId: string, cast: PeoplePlan): Box[] {
+    const out: Box[] = blockers(plan).map((b) => grow(b, BODY_R));
+    // The benches of a canteen table are seats, not part of its footprint —
+    // but you still cannot walk along one.
+    for (const prop of stageProps(plan)) {
+      if (prop.type !== 'longTable') continue;
+      for (const bench of seatBoxes(prop)) out.push(grow({ ...bench, key: `${bench.key}-bench` }, BODY_R));
+    }
+    for (const c of classroomsOf(plan)) {
+      deskLayout(plan, layoutId as never, c.id).forEach((desk, i) => {
+        const seat = seatOf(desk);
+        const desks: PropInstance[] = [
+          { key: `${c.id}-desk${i}`, type: 'desk', x: desk.x, z: desk.z, ry: desk.ry },
+          { key: `${c.id}-deskchair${i}`, type: 'chair', x: seat.x, z: seat.z, ry: desk.ry },
+        ];
+        for (const d of desks) {
+          const box = footprintOf(d);
+          if (box) out.push(grow(box, BODY_R));
+        }
+      });
+    }
+    const seated = [
+      ...(cast.playerSeat ? [{ key: 'player', spot: cast.playerSeat }] : []),
+      ...cast.students.map((x) => ({ key: x.key, spot: x.spot })),
+    ];
+    for (const { key, spot } of seated) out.push(around(spot, SEATED_R + BODY_R, `seated ${key}`));
+    return out;
+  }
+
+  /** One lap of a loop, sampled from the same function that draws it. */
+  function drawnLap(path: Spot[], lane?: number): { x: number; z: number }[] {
+    let total = 0;
+    for (let i = 0; i < path.length; i++) {
+      const a = path[i];
+      const b = path[(i + 1) % path.length];
+      total += Math.hypot(b.x - a.x, b.z - a.z) / WALK_SPEED + (b.hold ?? 0);
+    }
+    const out: { x: number; z: number }[] = [];
+    for (let t = 0; t < total; t += 0.1) out.push(walkerAt(path, t, WALK_SPEED, lane));
+    return out;
+  }
+
+  /** A polyline sampled every 10cm, as a commuter walks it (no lane). */
+  function sampled(pts: { x: number; z: number }[]): { x: number; z: number }[] {
+    const out: { x: number; z: number }[] = [];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i];
+      const b = pts[i + 1];
+      const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.1));
+      for (let k = 0; k < n; k++) out.push({ x: a.x + ((b.x - a.x) * k) / n, z: a.z + ((b.z - a.z) * k) / n });
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+
+  it('never draws a walker inside furniture, a desk or a seated person', () => {
+    const hits: string[] = [];
+    for (const { plan, label } of everyPlan()) {
+      for (const layoutId of layoutIds) {
+        const cast = peoplePlan(plan, layoutId);
+        const solids = obstacles(plan, layoutId, cast);
+
+        // Every wanderer walks the same loop, rotated, so one of them covers
+        // the lot — and the wanderers do not depend on the desk layout, so
+        // they are checked once, in the first.
+        const loops = [
+          ...(layoutId === layoutIds[0] ? [...cast.wanderers.slice(0, 1), ...cast.roomLoops] : []),
+          ...cast.teachers,
+        ];
+        for (const w of loops) {
+          const seen = new Set<string>();
+          for (const p of drawnLap(w.path, w.lane)) {
+            for (const b of solids) {
+              if (!inside(p, b) || seen.has(b.key)) continue;
+              // Standing ON the stage is standing on it, not inside it.
+              if ('floorY' in w && w.floorY && b.key.endsWith('-stage')) continue;
+              seen.add(b.key);
+              hits.push(`${label}/${layoutId}/${w.key} at ${p.x.toFixed(2)},${p.z.toFixed(2)} is inside ${b.key}`);
+            }
+          }
+        }
+
+        if (layoutId !== layoutIds[0]) continue;
+        // Commuters walk the centre line. Their seats are obstacles to everyone
+        // but themselves: at any moment somebody may be sitting in one.
+        const commuterSeats = cast.commuters.flatMap((c) =>
+          c.seats.map((s, i) => ({ owner: c.key, box: around(s, SEATED_R + BODY_R, `seated ${c.key}[${i}]`) })),
+        );
+        for (const c of cast.commuters) {
+          const mine = c.seats;
+          const others = [...solids, ...commuterSeats.filter((s) => s.owner !== c.key).map((s) => s.box)];
+          const seen = new Set<string>();
+          for (const p of sampled([mine[0], ...c.path, mine[1]])) {
+            if (mine.some((s) => Math.hypot(s.x - p.x, s.z - p.z) < SEAT_REACH)) continue;
+            for (const b of others) {
+              if (!inside(p, b) || seen.has(b.key)) continue;
+              seen.add(b.key);
+              hits.push(`${label}/${c.key} at ${p.x.toFixed(2)},${p.z.toFixed(2)} is inside ${b.key}`);
+            }
+          }
+        }
+      }
+    }
+    expect(hits, 'people drawn inside things').toEqual([]);
+  }, 120_000);
+});
+
+describe('the outside of the building', () => {
+  it('sells the same styles at the same prices as the server', () => {
+    expect(EXTERIOR_STYLES).toEqual(SERVER_EXTERIOR_STYLES);
+    expect(EXTERIOR_SLOTS).toEqual(SERVER_EXTERIOR_SLOTS);
+    expect(DEFAULT_EXTERIOR).toEqual(SERVER_DEFAULT_EXTERIOR);
+  });
+
+  it('gives every slot exactly one free style, and it is the default', () => {
+    // The free one is the look every school had before the outside could
+    // change: nobody may be charged to keep it.
+    for (const slot of EXTERIOR_SLOTS) {
+      const free = EXTERIOR_STYLES.filter((x) => x.slot === slot && x.price === 0);
+      expect(free.map((x) => x.id), slot).toEqual([DEFAULT_EXTERIOR[slot]]);
+    }
+  });
+
+  it('draws every style it sells, and names it in both languages', () => {
+    const looks: Record<string, Record<string, unknown>> = { facade: FACADES, roof: ROOFS, trim: TRIMS };
+    type Styles = { school: { exterior: { styles: Record<string, string> } } };
+    for (const x of EXTERIOR_STYLES) {
+      expect(looks[x.slot][x.id], `${x.id} has no look`).toBeDefined();
+      expect((enLocale as unknown as Styles).school.exterior.styles[x.id], `en: ${x.id}`).toBeTruthy();
+      expect((ruLocale as unknown as Styles).school.exterior.styles[x.id], `ru: ${x.id}`).toBeTruthy();
+    }
+  });
+
+  it('only lets a school wear what is free or bought, in the right slot', () => {
+    for (const [owned, slot, id] of [
+      [[], 'roof', 'flat'],
+      [[], 'roof', 'solar'],
+      [['solar'], 'roof', 'solar'],
+      [['solar'], 'facade', 'solar'],
+      [[], 'facade', 'moon-rock'],
+    ] as [string[], string, string][]) {
+      expect(canWearStyle(owned, slot as never, id)).toBe(serverCanWearStyle(owned, slot, id));
+    }
+    expect(canWearStyle([], 'roof', 'solar')).toBe(false);
+    expect(canWearStyle(['solar'], 'roof', 'solar')).toBe(true);
+  });
+
+  it('agrees with the server on what may go on the sign', () => {
+    for (const raw of [
+      'Maple Hill School', '  Школа  №5 ', '!!!', '', 'x'.repeat(29), 'x'.repeat(28),
+      'Emoji \u{1F600}', '<b>bold</b>', "O'Neil & Sons", 42, null,
+    ]) {
+      expect(cleanSchoolName(raw), JSON.stringify(raw)).toBe(serverCleanSchoolName(raw));
+    }
+    expect(cleanSchoolName('  Школа  №5 ')).toBe('Школа №5');
+    expect(cleanSchoolName('<b>bold</b>')).toBeNull();
+    expect(cleanSchoolName('Emoji \u{1F600}')).toBeNull();
+  });
+});
+
+describe('the way in', () => {
+  it('always has a front door, on an outside wall, until the gate is built', () => {
+    // A school always has a way in. Before reception and its forecourt, the
+    // front door sits at the end of the wing that grows toward them — and it
+    // has to open onto the street, not into another room the player owns.
+    for (const { plan, rooms, label } of everyPlan()) {
+      const door = frontDoor(plan);
+      if (plan.owned.includes('forecourt')) {
+        expect(door, `${label}: a front door as well as a gate`).toBeNull();
+        continue;
+      }
+      expect(door, `${label}: no way in`).not.toBeNull();
+      if (!door) continue;
+      const host = rooms.find((r) => r.id === door.roomId);
+      expect(host, `${label}: the front door is on a room nobody owns`).toBeDefined();
+      if (!host) continue;
+      const onSide =
+        door.side === 'south' ? Math.abs(door.z - (host.z + host.d)) < 0.01 && door.x > host.x && door.x < host.x + host.w
+        : door.side === 'north' ? Math.abs(door.z - host.z) < 0.01 && door.x > host.x && door.x < host.x + host.w
+        : door.side === 'west' ? Math.abs(door.x - host.x) < 0.01 && door.z > host.z && door.z < host.z + host.d
+        : Math.abs(door.x - (host.x + host.w)) < 0.01 && door.z > host.z && door.z < host.z + host.d;
+      expect(onSide, `${label}: the front door is not on the ${door.side} wall of ${host.id}`).toBe(true);
+
+      // A metre outside it is open ground, not somebody else's room.
+      const out = { south: [0, 1], north: [0, -1], east: [1, 0], west: [-1, 0] }[door.side];
+      const step = { x: door.x + out[0], z: door.z + out[1] };
+      const inside = rooms.find(
+        (r) => step.x > r.x && step.x < r.x + r.w && step.z > r.z && step.z < r.z + r.d,
+      );
+      expect(inside?.id, `${label}: the front door opens into ${inside?.id}`).toBeUndefined();
+    }
+  });
 });
 
 describe('props', () => {
@@ -1404,5 +1724,58 @@ describe('getStage is total', () => {
     expect(getStage(NaN).index).toBe(0);
     expect(getStage(99).index).toBe(MAX_STAGE);
     expect(getStage(2.7).index).toBe(2);
+  });
+});
+
+describe('the school after hours', () => {
+  const parts = ['morning', 'afterSchool', 'evening', 'night'] as const;
+  const everyone = (c: PeoplePlan) => [
+    ...c.students.map((p) => [p.key, JSON.stringify(p.spot)] as const),
+    ...c.teachers.map((p) => [p.key, JSON.stringify(p.path)] as const),
+    ...c.wanderers.map((p) => [p.key, JSON.stringify(p.path)] as const),
+    ...c.commuters.map((p) => [p.key, JSON.stringify([p.seats, p.path])] as const),
+    ...c.roomLoops.map((p) => [p.key, JSON.stringify(p.path)] as const),
+  ];
+
+  it('only ever sends people home: every hour is a subset of lessons, seat for seat and step for step', () => {
+    // This is the whole safety argument for the quiet hours. Every invariant
+    // above is proven for the full cast; a subset of it, in the same seats and
+    // on the same routes, keeps every one of them.
+    for (const { plan, label } of everyPlan()) {
+      const full = peoplePlan(plan, DEFAULT_LAYOUT_ID);
+      const known = new Map(everyone(full));
+      expect(castFor(plan, full, 'lessons'), label).toBe(full);
+      for (const part of parts) {
+        const some = castFor(plan, full, part);
+        for (const [key, where] of everyone(some)) {
+          expect(known.get(key), `${label} ${part}: ${key}`).toBe(where);
+        }
+        expect(everyone(some).length, `${label} ${part}`).toBeLessThanOrEqual(everyone(full).length);
+      }
+    }
+  });
+
+  it('empties the building as the day goes on, down to the caretaker', () => {
+    for (const { plan, label } of everyPlan()) {
+      const full = peoplePlan(plan, DEFAULT_LAYOUT_ID);
+      const count = (part: (typeof parts)[number]) => everyone(castFor(plan, full, part)).length;
+      expect(count('afterSchool'), label).toBeLessThanOrEqual(everyone(full).length);
+      expect(count('evening'), label).toBeLessThanOrEqual(count('afterSchool'));
+      const night = castFor(plan, full, 'night');
+      expect(night.playerSeat, label).toBeNull();
+      expect(night.teachers.length + night.wanderers.length + night.commuters.length, label).toBe(0);
+      expect(night.students.length, label).toBeLessThanOrEqual(2);
+      // Somebody is always in: the one who locks up.
+      expect(night.roomLoops.map((p) => p.outfit), label).toEqual(['caretaker']);
+      expect(night.roomLoops[0].role, label).toBe('caretaker');
+    }
+  });
+
+  it('keeps the player at their desk through the school day and sends them home in the evening', () => {
+    const plan = buildPlan(roomIdsOf('courtyard'), 'courtyard');
+    const full = peoplePlan(plan, DEFAULT_LAYOUT_ID);
+    expect(castFor(plan, full, 'morning').playerSeat).toBe(full.playerSeat);
+    expect(castFor(plan, full, 'afterSchool').playerSeat).toBe(full.playerSeat);
+    expect(castFor(plan, full, 'evening').playerSeat).toBeNull();
   });
 });

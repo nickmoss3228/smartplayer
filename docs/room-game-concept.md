@@ -429,3 +429,75 @@ put one halfway down the cafeteria's east wall and it takes a long table with it
 while the seating logic went on offering seats at that table. The backstop is
 there to catch a stray plant, not to cover for a door placed through the
 furniture.
+
+## 12. Drawing people honestly, a front door, and the outside (2026-09-27)
+
+**Test what is drawn, not what is written.** Every route check used to walk
+each route's *centre line* as a zero-width point. The screen shows something
+else: everybody on a loop walks `WALK_LANE` to the right of that line, a body is
+about forty centimetres across, classroom desks were missing from `blockers()`,
+and only the default desk layout was ever checked. `never draws a walker inside
+furniture, a desk or a seated person` samples `walkerAt` — the function that
+positions the figure — against every solid footprint grown by the body's
+radius, in all four desk layouts, with seated people as obstacles too. Its first
+run found about 1,200 overlaps, and every reported "walks through things" bug
+was among them: the hall teacher pacing along the stage's front edge, visitors
+walking the length of a bench through the people on it, the Quad's yard tree on
+the door lane, walkers pushed into the corridor lockers by their own lane. A
+lane also fades out on short legs and at a loop's seam, so **a centre line has
+to clear obstacles by itself**; the lane is extra room, never the clearance.
+
+**One seat height.** Seats ran from 0.46 to 0.50 while the seated body put its
+thighs at 0.42, so everyone sat sunk into their chair. `SEAT_TOP` is now shared
+by furniture.tsx and People.tsx, and every seat keeps its front edge within
+~0.24m of the sit point, because the shins hang 0.33m forward — deeper cushions
+put them inside the sofa. Three seats faced the wrong way (the head, the music
+audience, the yard benches) and teachers paused facing the board; teacher
+patrols now live in the board frame with an explicit `idleFacing`.
+
+**Reception and the forecourt are one purchase**, early and cheap
+(`bundledWith`), and **the school always has a way in**: until the forecourt
+exists, `frontDoor` cuts a door where the next room of the chain toward it will
+join, with a porch outside, so the entrance walks outward as the wing grows.
+
+**The outside is bought**, once per style (`EXTERIOR_STYLES`), one free default
+per slot so nobody pays to keep what they had. Economy in both catalogs; looks
+in `modules/school/exterior.ts`. The name on the gate is checked by
+`cleanSchoolName` on both sides because every visitor reads it.
+
+## 13. A day, a plot, one roof (2026-09-28)
+
+**The school keeps hours.** `schoolClock.ts` runs one school day every
+eighteen real minutes: 07:00–21:00 at a school hour per real minute, the night
+squeezed into the last four. It is anchored to real time, so everybody sees
+the same hour and a return visit lands somewhere else in the day. The light is
+eased between keyframes every frame (`DayCycle`), the windows and lamps come on
+at 19:00, the music changes score at night, and the bell rings when lessons
+start and end. Only the season still reads the calendar.
+
+**Fewer people at night, safely.** `castFor(plan, cast, part)` never invents
+anyone: it keeps a subset of `peoplePlan`, same seats and same routes, and at
+night dresses one walker as the caretaker. So none of the six route and seat
+invariants needs a night version — a subset of a cast that keeps them keeps
+them too, and the test for that is a subset test.
+
+**The plot is sized for the finished school.** `groundsLayout.ts` works out
+the fence, the street, the neighbours and the pitch from the *whole* campus,
+so nothing on the grounds ever stands where a room will be built and the plot
+never changes as rooms are bought. Only the way in follows today's rooms: the
+path from the street to `frontDoor` (or the forecourt gate), and the students
+walking it in the morning and after school.
+
+**One roof, from the footprint.** A roof per room was a heap of crossing
+ridges at twenty rooms. `roof.ts` grows every indoor room to its eave, takes
+the union, and makes each point's height its L∞ distance to the outside of that
+union: on axis-aligned rectangles that is exactly a hip roof, with valleys
+where wings meet and slopes down into the courtyards, capped into a flat top on
+big blocks. Flat finishes and roof fittings are laid from the same field on a
+world-fixed lattice, so they run straight across the lines between rooms.
+
+**Decorating is one sheet with three tabs**: the whole school (every room,
+including the ones with a look of their own — `everywhere: true` on
+`PATCH /progress/school/look`), one room, or the outside. It sits at the bottom
+of the screen and the camera frames the school above it, so a change is seen as
+it is made.

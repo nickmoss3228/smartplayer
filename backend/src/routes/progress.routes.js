@@ -38,6 +38,8 @@ import {
   buyRoom,
   paySchoolPayroll,
   setSchoolLook,
+  buyExteriorStyle,
+  setSchoolName,
 } from "../controllers/school.controller.js";
 
 const router = Router();
@@ -79,6 +81,8 @@ router.get("/progress/school/:userId",             authenticateToken, getPlayerS
 router.post("/progress/school/rooms",              authenticateToken, buyRoom);
 router.post("/progress/school/payroll",            authenticateToken, paySchoolPayroll);
 router.patch("/progress/school/look",              authenticateToken, setSchoolLook);
+router.post("/progress/school/exterior",          authenticateToken, buyExteriorStyle);
+router.patch("/progress/school/name",             authenticateToken, setSchoolName);
 
 router.get("/progress/character",                  authenticateToken, getCharacter);
 router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);

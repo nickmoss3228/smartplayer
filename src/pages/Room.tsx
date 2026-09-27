@@ -5,7 +5,7 @@
 //
 // One fullscreen view on every breakpoint. There is no desktop sidebar and no
 // mobile sheet-per-room: the game is the school, and the control surface is a
-// build sheet plus a drawer of swatches. Everything else — panning, zooming,
+// build sheet plus a decorate sheet. Everything else — panning, zooming,
 // poking a student — happens in the scene itself.
 //
 // Build mode puts the rooms you could buy INTO the scene, standing where they
@@ -14,22 +14,35 @@
 // is geometry, and the only chrome is a confirm card for whichever ghost you
 // tapped.
 //
+// None of the chrome floating over the scene uses backdrop-blur. The scene
+// animates every frame (people, furniture), so each blurred card or button
+// had to re-blur what was behind it on every frame, on top of the WebGL work —
+// and at bg-white/90–95 the blur was all but invisible anyway.
+//
 // See docs/room-game-concept.md.
 
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IoBrushOutline,
-  IoColorPaletteOutline,
   IoClose,
   IoHammerOutline,
   IoLockClosed,
-  IoSparkles,
   IoBusinessOutline,
   IoLayersOutline,
+  IoMusicalNotesOutline,
+  IoVolumeHighOutline,
+  IoVolumeMuteOutline,
 } from "react-icons/io5";
 import { SchoolMode } from "../modules/school/SchoolCanvas";
+import { useAmbientMusic } from "../modules/school/ambient";
+import { useSchoolSfx } from "../modules/school/sfx";
+import { ClockBadge } from "../modules/school/ClockBadge";
+import { schoolNow, useDayPart } from "../modules/school/schoolClock";
+import { TeacherNotes } from "../modules/school/TeacherNotes";
+import { OutsidePanel } from "../modules/school/OutsidePanel";
+import { seasonFor } from "../modules/school/atmosphere";
 import { Advice, adviceFor } from "../modules/school/advisor";
 import { CURRENCIES } from "../config/currencies";
 import {
@@ -44,6 +57,7 @@ import {
   SchoolSurface,
   buildableRooms,
   customisable,
+  getVariant,
   lookFor,
   parentOf,
   roomLabel,
@@ -122,7 +136,7 @@ const BuildBar = ({
   const poor = spec ? wallet[spec.currency] < spec.price : false;
 
   return (
-    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden">
+    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 shadow-xl overflow-hidden">
       {spec ? (
         <div className="px-4 pt-3 pb-3">
           <div className="flex items-start justify-between gap-3">
@@ -160,38 +174,46 @@ const BuildBar = ({
 
 // ── Look drawer ─────────────────────────────────────────────────────────────
 
+// A locked swatch says WHICH stage opens it, on the swatch itself. It used to
+// be a hover tooltip, and a phone never hovers — so every locked swatch was a
+// grey square with no explanation.
 const Swatches = ({
   title,
   items,
   currentId,
   stage,
+  busy,
   onPick,
   lockedLabel,
+  stageLabel,
 }: {
   title: string;
   items: SchoolSurface[];
-  currentId: string;
+  currentId: string | null;
   stage: number;
+  busy: boolean;
   onPick: (id: string) => void;
   lockedLabel: (s: number) => string;
+  stageLabel: (s: number) => string;
 }) => (
-  <div className="mb-5">
+  <div className="mb-4">
     <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">{title}</h3>
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-6 gap-1.5">
       {items.map((item) => {
         const locked = item.unlocksAtStage > stage;
         return (
           <button
             key={item.id}
             type="button"
-            disabled={locked}
+            disabled={locked || busy}
             onClick={() => onPick(item.id)}
             title={locked ? lockedLabel(item.unlocksAtStage) : item.name}
+            aria-label={locked ? lockedLabel(item.unlocksAtStage) : item.name}
             className={`relative aspect-square rounded-[3px] border-2 transition-transform ${
               currentId === item.id
                 ? "border-gray-900 scale-105"
                 : "border-black/10 active:scale-95"
-            } ${locked ? "opacity-40" : ""}`}
+            }`}
             style={{
               background: item.alt
                 ? `linear-gradient(135deg, ${item.color} 50%, ${item.alt} 50%)`
@@ -199,11 +221,54 @@ const Swatches = ({
             }}
           >
             {locked && (
-              <IoLockClosed
-                size={14}
-                className="absolute inset-0 m-auto text-black/60 drop-shadow"
-              />
+              <span className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-white/55">
+                <IoLockClosed size={11} className="text-black/60" />
+                <span className="text-[8px] font-bold leading-none text-black/65">
+                  {stageLabel(item.unlocksAtStage)}
+                </span>
+              </span>
             )}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const LayoutPicker = ({
+  title,
+  currentId,
+  stage,
+  busy,
+  onPick,
+  nameOf,
+}: {
+  title: string;
+  currentId: string | null;
+  stage: number;
+  busy: boolean;
+  onPick: (id: string) => void;
+  nameOf: (id: string, fallback: string) => string;
+}) => (
+  <div className="mb-4">
+    <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">{title}</h3>
+    <div className="grid grid-cols-2 gap-2">
+      {SCHOOL_LAYOUTS.map((layout) => {
+        const locked = layout.unlocksAtStage > stage;
+        return (
+          <button
+            key={layout.id}
+            type="button"
+            disabled={locked || busy}
+            onClick={() => onPick(layout.id)}
+            className={`flex items-center justify-center gap-1.5 rounded-[3px] border-2 py-2 text-xs font-bold transition-transform active:scale-95 ${
+              currentId === layout.id
+                ? "border-gray-900 bg-gray-100 text-gray-900"
+                : "border-black/10 text-black/60"
+            } ${locked ? "opacity-40" : ""}`}
+          >
+            {locked && <IoLockClosed size={12} />}
+            {nameOf(layout.id, layout.name)}
           </button>
         );
       })}
@@ -256,7 +321,7 @@ const AdvisorCard = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 6, scale: 0.98 }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
-      className="pointer-events-auto w-[min(17rem,72vw)] rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden"
+      className="pointer-events-auto w-[min(17rem,72vw)] rounded-[3px] bg-white/95 shadow-xl overflow-hidden"
     >
       <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
         <AdvisorFace />
@@ -286,120 +351,198 @@ const AdvisorCard = ({
   );
 };
 
-// ── Customize sheet ─────────────────────────────────────────────────────────
-// The bottom sheet for whichever room you tapped. Only the swatches that room
-// can actually use: a desk layout means nothing outside a classroom, and an
-// outdoor room has grass rather than flooring. Offering a control that visibly
-// does nothing is worse than not offering it.
+// ── Decorate sheet ──────────────────────────────────────────────────────────
+// One place for every change of look, in three tabs, as a sheet along the
+// bottom — so the school stays in view above it and a change can be SEEN as it
+// is made. It replaces two things that had drifted apart: a palette drawer
+// that covered most of the screen and only set the school's default (so any
+// room with a look of its own ignored it, and tapping a swatch seemed to do
+// nothing), and a separate brush mode for one room at a time.
+//
+//   • Whole school — every room outlined, and a pick reaches every one of
+//     them, including rooms that had been given their own look.
+//   • One room — tap a room, change just that one. A school of one room has
+//     it picked already.
+//   • Outside — the name on the sign, and the facade, roof and trim.
 
-const CustomizeSheet = ({
+export type DecorTab = "school" | "room" | "outside";
+
+const DecorateSheet = ({
+  tab,
+  onTab,
+  base,
   room,
   look,
-  level,
+  stage,
   busy,
-  name,
-  hint,
-  closeLabel,
-  resetLabel,
-  lockedLabel,
-  titles,
-  onSet,
-  onReset,
+  roomName,
+  overrides,
+  labels,
+  onSetSchool,
+  onSetRoom,
+  onMatch,
   onClose,
+  outside,
 }: {
+  tab: DecorTab;
+  onTab: (tab: DecorTab) => void;
+  /** The school's own look, which every room without one of its own wears. */
+  base: { wallpaperId: string; floorId: string; layoutId: string };
   room: SchoolRoomRect | null;
   look: RoomLook | null;
-  level: number;
+  stage: number;
   busy: boolean;
-  name: string;
-  hint: string;
-  closeLabel: string;
-  resetLabel: string;
-  lockedLabel: (s: number) => string;
-  titles: { wallpaper: string; floor: string; layout: string };
-  onSet: (patch: SchoolLookPatch) => void;
-  onReset: () => void;
+  roomName: string;
+  /** How many rooms have a look of their own. */
+  overrides: number;
+  labels: {
+    tabs: Record<DecorTab, string>;
+    wallpaper: string;
+    floor: string;
+    layout: string;
+    schoolHint: string;
+    overridesLine: string;
+    pickRoom: string;
+    ownLook: string;
+    sameLook: string;
+    match: string;
+    close: string;
+    lockedLabel: (s: number) => string;
+    stageLabel: (s: number) => string;
+    layoutName: (id: string, fallback: string) => string;
+  };
+  onSetSchool: (patch: SchoolLookPatch) => void;
+  onSetRoom: (patch: SchoolLookPatch) => void;
+  onMatch: () => void;
   onClose: () => void;
+  outside: ReactNode;
 }) => {
   const fields = room ? customisable(room.kind, Boolean(room.outdoor)) : [];
+  const swatchProps = {
+    stage,
+    busy,
+    lockedLabel: labels.lockedLabel,
+    stageLabel: labels.stageLabel,
+  };
 
   return (
-    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 backdrop-blur shadow-xl overflow-hidden">
-      {room && look ? (
-        <div className="px-4 pt-3 pb-1 max-h-[46vh] overflow-y-auto">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-[15px] font-bold text-black/85 leading-tight">{name}</span>
+    <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 shadow-xl overflow-hidden flex flex-col max-h-[52vh]">
+      <div className="px-3 pt-3 pb-2 shrink-0">
+        <div role="tablist" className="flex rounded-[3px] bg-gray-100 p-0.5">
+          {(["school", "room", "outside"] as const).map((id) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => onTab(id)}
+              className={`flex-1 rounded-[3px] px-2 py-1.5 text-xs font-bold transition-colors ${
+                tab === id ? "bg-white text-gray-900 shadow-sm" : "text-black/45"
+              }`}
+            >
+              {labels.tabs[id]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="overflow-y-auto px-4 pb-1">
+        {tab === "outside" ? (
+          outside
+        ) : tab === "school" ? (
+          <>
+            <p className="mb-3 text-[12px] leading-snug text-black/55">
+              {labels.schoolHint}
+              {overrides > 0 && (
+                <span className="block mt-0.5 font-semibold text-black/70">{labels.overridesLine}</span>
+              )}
+            </p>
+            <Swatches
+              title={labels.wallpaper}
+              items={SCHOOL_WALLPAPERS}
+              currentId={base.wallpaperId}
+              onPick={(id) => onSetSchool({ wallpaperId: id, everywhere: true })}
+              {...swatchProps}
+            />
+            <Swatches
+              title={labels.floor}
+              items={SCHOOL_FLOORS}
+              currentId={base.floorId}
+              onPick={(id) => onSetSchool({ floorId: id, everywhere: true })}
+              {...swatchProps}
+            />
+            <LayoutPicker
+              title={labels.layout}
+              currentId={base.layoutId}
+              stage={stage}
+              busy={busy}
+              nameOf={labels.layoutName}
+              onPick={(id) => onSetSchool({ layoutId: id, everywhere: true })}
+            />
+          </>
+        ) : room && look ? (
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-[15px] font-bold leading-tight text-black/85">{roomName}</span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  look.custom ? "bg-[#7c5cd6]/15 text-[#5b3fb0]" : "bg-gray-100 text-black/45"
+                }`}
+              >
+                {look.custom ? labels.ownLook : labels.sameLook}
+              </span>
+            </div>
+            {fields.includes("wallpaperId") && (
+              <Swatches
+                title={labels.wallpaper}
+                items={SCHOOL_WALLPAPERS}
+                currentId={look.wallpaper.id}
+                onPick={(id) => onSetRoom({ roomId: room.id, wallpaperId: id })}
+                {...swatchProps}
+              />
+            )}
+            {fields.includes("floorId") && (
+              <Swatches
+                title={labels.floor}
+                items={SCHOOL_FLOORS}
+                currentId={look.floor.id}
+                onPick={(id) => onSetRoom({ roomId: room.id, floorId: id })}
+                {...swatchProps}
+              />
+            )}
+            {fields.includes("layoutId") && (
+              <LayoutPicker
+                title={labels.layout}
+                currentId={look.layoutId}
+                stage={stage}
+                busy={busy}
+                nameOf={labels.layoutName}
+                onPick={(id) => onSetRoom({ roomId: room.id, layoutId: id })}
+              />
+            )}
             {look.custom && (
               <button
                 type="button"
                 disabled={busy}
-                onClick={onReset}
-                className="shrink-0 rounded-[3px] px-2 py-1 text-[11px] font-bold text-gray-900 bg-gray-100 active:scale-95 disabled:opacity-50"
+                onClick={onMatch}
+                className="mb-3 w-full rounded-[3px] bg-gray-100 py-2 text-[12px] font-bold text-gray-900 active:scale-[0.99] disabled:opacity-50"
               >
-                {resetLabel}
+                {labels.match}
               </button>
             )}
-          </div>
+          </>
+        ) : (
+          <p className="py-3 text-center text-[13px] font-semibold text-black/60">{labels.pickRoom}</p>
+        )}
+      </div>
 
-          {fields.includes("wallpaperId") && (
-            <Swatches
-              title={titles.wallpaper}
-              items={SCHOOL_WALLPAPERS}
-              currentId={look.wallpaper.id}
-              stage={level}
-              lockedLabel={lockedLabel}
-              onPick={(id) => onSet({ roomId: room.id, wallpaperId: id })}
-            />
-          )}
-          {fields.includes("floorId") && (
-            <Swatches
-              title={titles.floor}
-              items={SCHOOL_FLOORS}
-              currentId={look.floor.id}
-              stage={level}
-              lockedLabel={lockedLabel}
-              onPick={(id) => onSet({ roomId: room.id, floorId: id })}
-            />
-          )}
-          {fields.includes("layoutId") && (
-            <div className="mb-4">
-              <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">
-                {titles.layout}
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {SCHOOL_LAYOUTS.map((layout) => {
-                  const locked = layout.unlocksAtStage > level;
-                  return (
-                    <button
-                      key={layout.id}
-                      type="button"
-                      disabled={locked || busy}
-                      onClick={() => onSet({ roomId: room.id, layoutId: layout.id })}
-                      className={`flex items-center justify-center gap-1.5 rounded-[3px] border-2 py-2 text-xs font-bold transition-transform active:scale-95 ${
-                        look.layoutId === layout.id
-                          ? "border-gray-900 bg-gray-100 text-gray-900"
-                          : "border-black/10 text-black/60"
-                      } ${locked ? "opacity-40" : ""}`}
-                    >
-                      {locked && <IoLockClosed size={12} />}
-                      {layout.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="px-4 py-3 text-[13px] font-semibold text-black/60 text-center">{hint}</div>
-      )}
       <button
         type="button"
         onClick={onClose}
-        className="flex w-full items-center justify-center gap-1 border-t border-black/10 py-2 text-[12px] font-bold text-black/45 active:bg-black/5"
+        className="flex w-full shrink-0 items-center justify-center gap-1 border-t border-black/10 py-2 text-[12px] font-bold text-black/45 active:bg-black/5"
       >
         <IoClose size={14} />
-        {closeLabel}
+        {labels.close}
       </button>
     </div>
   );
@@ -410,12 +553,31 @@ const CustomizeSheet = ({
 const Room = () => {
   const { t } = useTranslation();
   const { character, characterLoading } = useCharacter();
-  const { school, wallet, learnedWords, loading, error, buyRoom, payPayroll, setLook } =
-    useSchoolState();
+  const {
+    school,
+    wallet,
+    learnedWords,
+    loading,
+    error,
+    buyRoom,
+    payPayroll,
+    setLook,
+    buyExterior,
+    setName,
+  } = useSchoolState();
+  // The school clock's part of the day: night music at night, and the bell
+  // when lessons start and end. Only the PART re-renders the page — the clock
+  // face ticks inside its own component.
+  const part = useDayPart();
+  const music = useAmbientMusic(part === "night" ? "night" : "day");
+  const sfx = useSchoolSfx();
+  const playSfx = sfx.play;
 
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Which tab of the decorate sheet is open. Outside flips the scene to the
+  // exterior view, so what you are changing is what you are looking at.
+  const [decorTab, setDecorTab] = useState<DecorTab>("school");
   const [mode, setMode] = useState<SchoolMode>("play");
   // Which ghost is tapped. Cleared on leaving build mode, so reopening it does
   // not resume a decision the player walked away from.
@@ -425,11 +587,25 @@ const Room = () => {
   // Set when a room actually appears in the server's answer, so the reveal
   // fires off what was recorded rather than off the tap.
   const [celebrating, setCelebrating] = useState<string | null>(null);
+  // Every room the last purchase added — reception brings its forecourt —
+  // so the scene can raise them all, not just the one the card names.
+  const [justBuilt, setJustBuilt] = useState<string[]>([]);
+  // A note from the staff that the player asked to see: the camera glides to
+  // that room and whoever sent it says it again there.
+  const [announce, setAnnounce] = useState<{ roomId: string; text: string; nonce: number } | null>(null);
   const lastOwned = useRef<string[] | null>(null);
   // What the advisor last said that the player waved away. Keyed on the message
   // rather than a boolean, so dismissing "wages are due" does not also silence
   // "wages are eight weeks behind".
   const [dismissed, setDismissed] = useState<string | null>(null);
+
+  // The bell, when lessons start and when they end.
+  const lastPart = useRef(part);
+  useEffect(() => {
+    if (lastPart.current === part) return;
+    lastPart.current = part;
+    if (part === "lessons" || part === "afterSchool") playSfx("bell");
+  }, [part, playSfx]);
 
   useEffect(() => {
     if (!toast) return;
@@ -456,12 +632,17 @@ const Room = () => {
     // Whichever room is in the new list and was not in the old one. Comparing
     // the lists rather than their lengths means the card can name the room,
     // which is the only thing worth celebrating about a purchase.
-    const added = owned.find((id) => !before.includes(id));
-    if (!added) return;
-    setCelebrating(added);
-    const id = window.setTimeout(() => setCelebrating(null), 3400);
+    const added = owned.filter((id) => !before.includes(id));
+    if (!added.length) return;
+    setCelebrating(added[0]);
+    setJustBuilt(added);
+    playSfx("build");
+    const id = window.setTimeout(() => {
+      setCelebrating(null);
+      setJustBuilt([]);
+    }, 3400);
     return () => window.clearTimeout(id);
-  }, [school]);
+  }, [school, playSfx]);
 
   if (loading || characterLoading) {
     return (
@@ -513,13 +694,19 @@ const Room = () => {
   };
   const roomBlurb = (id: string) => t(`school.rooms.${id}.blurb`, roomLabel(id).blurb);
 
-  const run = async (fn: () => Promise<{ ok: boolean; message?: string }>) => {
-    if (busy) return;
+  const run = async (fn: () => Promise<{ ok: boolean; message?: string }>): Promise<boolean> => {
+    if (busy) return false;
     setBusy(true);
     const result = await fn();
     if (!result.ok && result.message) setToast(result.message);
     setBusy(false);
+    return result.ok;
   };
+  // A change of look, with the sound that says it took.
+  const restyle = (fn: () => Promise<{ ok: boolean; message?: string }>, sound: "paint" | "style") =>
+    run(fn).then((ok) => {
+      if (ok) playSfx(sound);
+    });
 
   const chosen = picked ? offer.find(({ spec }) => spec.id === picked) : undefined;
 
@@ -527,6 +714,7 @@ const Room = () => {
   // the offer. Resolved here rather than in the sheet so the sheet stays a
   // presentation component.
   const built = roomsOwned(school.variantId, school.ownedRoomIds);
+  const overrides = built.filter((r) => lookFor(r.id, school.presets ?? {}, school).custom).length;
   const focused: SchoolRoomRect | null =
     (picked ? built.find((r) => r.id === picked) : undefined) ?? null;
   const focusedLook: RoomLook | null = focused
@@ -548,7 +736,22 @@ const Room = () => {
   const enterMode = (next: SchoolMode) => {
     setExterior(false);
     setPicked(null);
+    setDecorTab("school");
     setMode(next);
+  };
+
+  const openTab = (tab: DecorTab) => {
+    setDecorTab(tab);
+    setExterior(tab === "outside");
+    // A school of one room has nothing to choose between.
+    setPicked(tab === "room" && built.length === 1 ? built[0].id : null);
+  };
+
+  // In the decorate sheet, tapping a room while "whole school" is open is
+  // plainly a wish to change THAT room.
+  const pickRoom = (roomId: string) => {
+    if (mode === "customize" && decorTab !== "room") setDecorTab("room");
+    setPicked(roomId);
   };
 
   const leaveMode = () => {
@@ -564,7 +767,7 @@ const Room = () => {
     for (const field of customisable(focused.kind, Boolean(focused.outdoor))) {
       patch[field] = null;
     }
-    run(() => setLook(patch));
+    restyle(() => setLook(patch), "paint");
   };
 
   return (
@@ -586,23 +789,32 @@ const Room = () => {
           mode={mode}
           wallet={wallet}
           selectedRoomId={picked}
-          onPickRoom={setPicked}
+          onPickRoom={pickRoom}
+          pickScope={decorTab === "school" ? "all" : decorTab === "room" ? "one" : "none"}
+          onPersonTap={sfx.voice}
           roomName={roomName}
           roomNote={roomNote}
+          justBuilt={justBuilt}
+          announce={announce}
+          schoolName={school.name ?? t("school.exterior.defaultName")}
         />
       </Suspense>
 
-      {/* ── Stage badge ──────────────────────────────────────────────── */}
-      <div className="absolute left-3 top-3 pointer-events-none">
-        <div className="bg-white/90 backdrop-blur rounded-full pl-3 pr-3.5 py-1.5 shadow-sm">
+      {/* ── Stage badge, and the school clock under it ─────────────────── */}
+      <div className="absolute left-3 top-3 pointer-events-none flex flex-col items-start gap-2">
+        <div className="bg-white/90 rounded-full pl-3 pr-3.5 py-1.5 shadow-sm">
           <div className="text-[13px] font-bold text-black/80 leading-tight">{stageName(stage)}</div>
           <div className="text-[10px] font-semibold text-black/40 leading-tight">
             {t("school.roomsOf", {
               current: school.ownedRoomIds.length,
-              total: school.ownedRoomIds.length + offer.length,
+              // The whole campus, not owned-plus-offered: a room that comes
+              // bundled with another is never offered on its own, and would
+              // go missing from the total until its host was bought.
+              total: getVariant(school.variantId).rooms.length,
             })}
           </div>
         </div>
+        <ClockBadge />
       </div>
 
       {/* ── View toggle + look drawer trigger ──────────────────────────
@@ -610,45 +822,67 @@ const Room = () => {
           ghosts, and redecorating is a different question from deciding what to
           build next — leaving them there just gives two ways to lose the thing
           you were looking at. */}
-      <div
-        className={`absolute right-3 top-3 flex flex-col gap-2 transition-opacity ${
-          mode === "play" ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-      >
+      <div className="absolute right-3 top-3 flex flex-col gap-2">
+        {/* Music first and outside the fading group: it is the one control
+            that means the same thing in every mode, and hunting for it while
+            the build bar is open would be silly. */}
         <button
           type="button"
-          onClick={() => setExterior((v) => !v)}
-          aria-label={t(exterior ? "school.view.inside" : "school.view.outside")}
-          title={t(exterior ? "school.view.inside" : "school.view.outside")}
-          className={`h-11 w-11 rounded-full backdrop-blur shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
-            exterior ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
+          data-music-toggle
+          onClick={music.toggle}
+          aria-pressed={music.playing}
+          aria-label={t(music.playing ? "school.music.off" : "school.music.on")}
+          title={t(music.playing ? "school.music.off" : "school.music.on")}
+          className={`h-11 w-11 rounded-full shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
+            music.playing ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
           }`}
         >
-          {exterior ? <IoLayersOutline size={21} /> : <IoBusinessOutline size={21} />}
+          <IoMusicalNotesOutline size={21} />
         </button>
+        {/* Sound effects: their own switch, so the music can be off and the
+            knocks and voices still on, or the other way round. */}
         <button
           type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label={t("school.look.open")}
-          title={t("school.look.open")}
-          className="h-11 w-11 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-black/60 active:scale-95 transition-transform"
+          onClick={sfx.toggle}
+          aria-pressed={sfx.enabled}
+          aria-label={t(sfx.enabled ? "school.sfx.off" : "school.sfx.on")}
+          title={t(sfx.enabled ? "school.sfx.off" : "school.sfx.on")}
+          className={`h-11 w-11 rounded-full shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
+            sfx.enabled ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
+          }`}
         >
-          <IoColorPaletteOutline size={21} />
+          {sfx.enabled ? <IoVolumeHighOutline size={21} /> : <IoVolumeMuteOutline size={21} />}
         </button>
-        {/* Customize one room, as against the palette above, which sets the
-            default every room falls back to. Two buttons because they are two
-            different questions — "what does this school look like" and "what
-            does THIS room look like" — and folding them together would mean
-            picking a room before you could change anything at all. */}
-        <button
-          type="button"
-          onClick={() => enterMode("customize")}
-          aria-label={t("school.customizeOpen")}
-          title={t("school.customizeOpen")}
-          className="h-11 w-11 rounded-full bg-white/90 backdrop-blur shadow-sm flex items-center justify-center text-black/60 active:scale-95 transition-transform"
+        <div
+          className={`flex flex-col gap-2 transition-opacity ${
+            mode === "play" ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         >
-          <IoBrushOutline size={21} />
-        </button>
+          <button
+            type="button"
+            onClick={() => setExterior((v) => !v)}
+            aria-label={t(exterior ? "school.view.inside" : "school.view.outside")}
+            title={t(exterior ? "school.view.inside" : "school.view.outside")}
+            className={`h-11 w-11 rounded-full shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
+              exterior ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
+            }`}
+          >
+            {exterior ? <IoLayersOutline size={21} /> : <IoBusinessOutline size={21} />}
+          </button>
+          {/* Decorate: the whole school, one room, or the outside, as three
+              tabs of one sheet. Whole school is the tab it opens on, so the
+              first swatch you tap changes everything — you do not have to
+              pick a room before you can change anything at all. */}
+          <button
+            type="button"
+            onClick={() => enterMode("customize")}
+            aria-label={t("school.decorate.open")}
+            title={t("school.decorate.open")}
+            className="h-11 w-11 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-black/60 active:scale-95 transition-transform"
+          >
+            <IoBrushOutline size={21} />
+          </button>
+        </div>
       </div>
 
       {/* ── Build ────────────────────────────────────────────────────── */}
@@ -657,24 +891,51 @@ const Room = () => {
             finished school ate the customize sheet — the one screen that is
             MORE useful once there is nothing left to build. */}
         {mode === "customize" ? (
-          <CustomizeSheet
+          <DecorateSheet
+            tab={decorTab}
+            onTab={openTab}
+            base={school}
             room={focused}
             look={focusedLook}
-            level={stage.index}
+            stage={stage.index}
             busy={busy}
-            name={picked ? roomName(picked) : ""}
-            hint={t("school.customizePick")}
-            closeLabel={t("school.buildClose")}
-            resetLabel={t("school.customizeReset")}
-            lockedLabel={(s) => t("school.look.lockedUntil", { stage: s + 1 })}
-            titles={{
+            roomName={picked ? roomName(picked) : ""}
+            overrides={overrides}
+            labels={{
+              tabs: {
+                school: t("school.decorate.tabs.school"),
+                room: t("school.decorate.tabs.room"),
+                outside: t("school.decorate.tabs.outside"),
+              },
               wallpaper: t("school.look.wallpaper"),
               floor: t("school.look.floor"),
               layout: t("school.look.layout"),
+              schoolHint: t("school.decorate.schoolHint"),
+              overridesLine: t("school.decorate.overrides", { count: overrides }),
+              pickRoom: t("school.decorate.pickRoom"),
+              ownLook: t("school.decorate.ownLook"),
+              sameLook: t("school.decorate.sameLook"),
+              match: t("school.decorate.match"),
+              close: t("school.buildClose"),
+              lockedLabel: (s) => t("school.look.lockedUntil", { stage: s + 1 }),
+              stageLabel: (s) => t("school.decorate.stage", { n: s + 1 }),
+              layoutName: (id, fallback) => t(`school.layouts.${id}`, fallback),
             }}
-            onSet={(patch) => run(() => setLook(patch))}
-            onReset={resetRoom}
+            onSetSchool={(patch) => restyle(() => setLook(patch), "paint")}
+            onSetRoom={(patch) => restyle(() => setLook(patch), "paint")}
+            onMatch={resetRoom}
             onClose={leaveMode}
+            outside={
+              <OutsidePanel
+                exterior={school.exterior}
+                name={school.name}
+                wallet={wallet}
+                busy={busy}
+                onWear={(slot, id) => restyle(() => setLook({ [`${slot}Id`]: id }), "style")}
+                onBuy={(id) => restyle(() => buyExterior(id), "style")}
+                onName={(name) => run(() => setName(name))}
+              />
+            }
           />
         ) : mode === "build" ? (
           <BuildBar
@@ -689,12 +950,10 @@ const Room = () => {
             onBuy={handleBuy}
             onClose={leaveMode}
           />
-        ) : !offer.length ? (
-          <div className="pointer-events-none flex items-center gap-2 rounded-[3px] bg-white/90 backdrop-blur px-5 py-3 shadow-lg">
-            <IoSparkles size={18} className="text-amber-500" />
-            <span className="text-sm font-bold text-black/70">{t("school.complete")}</span>
-          </div>
-        ) : (
+        ) : !offer.length ? // A finished school says nothing down here. The pill that used to
+          // announce it sat over the scene for good once the last room was
+          // bought, covering the part of the campus nearest the camera.
+          null : (
           <button
             type="button"
             onClick={() => enterMode("build")}
@@ -702,7 +961,7 @@ const Room = () => {
             className={`pointer-events-auto relative flex items-center gap-2 rounded-[3px] px-6 py-3.5 shadow-xl transition-transform active:scale-95 disabled:opacity-60 ${
               canBuildSomething
                 ? "bg-gray-900 shadow-gray-900/30"
-                : "bg-black/55 backdrop-blur shadow-black/20"
+                : "bg-black/65 shadow-black/20"
             }`}
           >
             <IoHammerOutline size={19} className="text-white" />
@@ -718,8 +977,26 @@ const Room = () => {
         )}
       </div>
 
-      {/* ── Advisor ──────────────────────────────────────────────────── */}
+      {/* ── Advisor, and notes from the rest of the staff ─────────────── */}
       <div className="absolute right-3 bottom-24 flex justify-end pointer-events-none">
+        <TeacherNotes
+          // Never over the advisor, a decision in progress or a new room.
+          blocked={mode !== "play" || showAdvisor || celebrating !== null}
+          context={{
+            owned: school.ownedRoomIds,
+            learnedWords,
+            hour: schoolNow().hour,
+            season: seasonFor(new Date()),
+            canBuild: canBuildSomething,
+          }}
+          roomName={roomName}
+          onShow={(roomId, text) => {
+            // Bubbles are hidden from outside, so seeing who said it means
+            // going back in.
+            setExterior(false);
+            setAnnounce({ roomId, text, nonce: Date.now() });
+          }}
+        />
         <AnimatePresence>
           {showAdvisor && (
             <AdvisorCard
@@ -746,100 +1023,14 @@ const Room = () => {
             transition={{ type: "spring", stiffness: 220, damping: 22 }}
             className="absolute inset-x-0 top-1/3 flex justify-center px-6 pointer-events-none"
           >
-            <div className="bg-white/95 backdrop-blur rounded-[3px] px-6 py-4 shadow-xl text-center max-w-xs">
+            <div className="bg-white/95 rounded-[3px] px-6 py-4 shadow-xl text-center max-w-xs">
               <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 mb-1">
-                {t("school.unlocked")}
+                {t("school.built")}
               </div>
               <div className="text-lg font-bold text-black/85">{roomName(celebrating)}</div>
               <div className="text-xs text-black/50 mt-1">{roomBlurb(celebrating)}</div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Look drawer ──────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            <motion.button
-              type="button"
-              aria-label={t("school.look.close")}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDrawerOpen(false)}
-              className="absolute inset-0 bg-black/30 z-30"
-            />
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className="absolute right-0 top-0 bottom-0 w-[min(20rem,85vw)] bg-white shadow-xl z-40 flex flex-col"
-            >
-              <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
-                <h2 className="text-sm font-bold text-black/80">{t("school.look.title")}</h2>
-                <button
-                  type="button"
-                  onClick={() => setDrawerOpen(false)}
-                  aria-label={t("school.look.close")}
-                  className="text-gray-400 hover:text-gray-600 p-1"
-                >
-                  <IoClose size={22} />
-                </button>
-              </div>
-
-              <div className="overflow-y-auto px-4 pb-6">
-                <Swatches
-                  title={t("school.look.wallpaper")}
-                  items={SCHOOL_WALLPAPERS}
-                  currentId={school.wallpaperId}
-                  stage={stage.index}
-                  lockedLabel={(s) => t("school.look.lockedUntil", { stage: s + 1 })}
-                  onPick={(id) => run(() => setLook({ wallpaperId: id }))}
-                />
-                <Swatches
-                  title={t("school.look.floor")}
-                  items={SCHOOL_FLOORS}
-                  currentId={school.floorId}
-                  stage={stage.index}
-                  lockedLabel={(s) => t("school.look.lockedUntil", { stage: s + 1 })}
-                  onPick={(id) => run(() => setLook({ floorId: id }))}
-                />
-
-                <div>
-                  <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-black/40 mb-2">
-                    {t("school.look.layout")}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SCHOOL_LAYOUTS.map((layout) => {
-                      const locked = layout.unlocksAtStage > stage.index;
-                      return (
-                        <button
-                          key={layout.id}
-                          type="button"
-                          disabled={locked}
-                          onClick={() => run(() => setLook({ layoutId: layout.id }))}
-                          className={`flex items-center justify-center gap-1.5 rounded-[3px] border-2 py-2.5 text-xs font-bold transition-transform active:scale-95 ${
-                            school.layoutId === layout.id
-                              ? "border-gray-900 bg-gray-100 text-gray-900"
-                              : "border-black/10 text-black/60"
-                          } ${locked ? "opacity-40" : ""}`}
-                        >
-                          {locked && <IoLockClosed size={12} />}
-                          {t(`school.layouts.${layout.id}`, layout.name)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-black/35 mt-5 leading-relaxed">
-                  {t("school.look.hint")}
-                </p>
-              </div>
-            </motion.div>
-          </>
         )}
       </AnimatePresence>
 

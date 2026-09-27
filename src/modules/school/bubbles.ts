@@ -28,7 +28,9 @@ export type PersonRole =
   | "listener"
   | "diner"
   | "athlete"
-  | "visitor";
+  | "visitor"
+  | "cook"
+  | "caretaker";
 
 const CHATTER: string[] = [
   "Can you repeat that?",
@@ -103,6 +105,16 @@ const CAFETERIA_LINES: string[] = [
   "Anyone want my apple?",
 ];
 
+const COOK_LINES: string[] = [
+  "Next, please!",
+  "Soup or salad?",
+  "Mind, it's hot.",
+  "Trays on the left.",
+  "Pasta's fresh.",
+  "Who wants seconds?",
+  "Enjoy your lunch!",
+];
+
 const GYM_LINES: string[] = [
   "Nice pass!",
   "One more lap.",
@@ -121,10 +133,39 @@ const VISITOR_LINES: string[] = [
   "Big place, isn't it?",
 ];
 
+const CARETAKER_LINES: string[] = [
+  "Lights out soon!",
+  "Who left this here?",
+  "Mind the wet floor.",
+  "All quiet tonight.",
+  "Nearly done.",
+  "Doors locked? Check.",
+];
+
+/** Whoever is still in after dark. The pools above belong to a school in the
+ *  middle of a lesson; at midnight they would be ghosts talking. */
+const LATE_STUDENT_LINES: string[] = [
+  "*yawn*",
+  "Just one more page.",
+  "So quiet in here...",
+  "Is it late already?",
+  "I should go home.",
+];
+
+const LATE_STAFF_LINES: string[] = [
+  "Marking, marking...",
+  "One more report.",
+  "Where did the day go?",
+  "Coffee. Now.",
+];
+
+/** Night by the school's own clock (schoolClock.ts). */
+const isLate = (hour: number) => hour >= 21 || hour < 7;
+
 /** The one line that has to know what time it is. A school that says "Good
  *  morning!" at ten at night is a school nobody is really in. */
 export const greetingForHour = (hour: number): string =>
-  hour < 12 ? "Good morning!" : hour < 18 ? "Good afternoon!" : "Good evening!";
+  isLate(hour) ? "Working late?" : hour < 12 ? "Good morning!" : hour < 18 ? "Good afternoon!" : "Good evening!";
 
 export type BubblePool = Record<PersonRole, string[]>;
 
@@ -148,6 +189,21 @@ export function buildBubblePool(learnedWords: string[], hour: number): BubblePoo
   const greeting = greetingForHour(hour);
   const reception = [greeting, ...RECEPTION_LINES];
 
+  if (isLate(hour)) {
+    return {
+      student: LATE_STUDENT_LINES,
+      teacher: LATE_STAFF_LINES,
+      receptionist: reception,
+      librarian: LATE_STUDENT_LINES,
+      listener: LATE_STUDENT_LINES,
+      diner: LATE_STUDENT_LINES,
+      athlete: LATE_STUDENT_LINES,
+      visitor: VISITOR_LINES,
+      cook: COOK_LINES,
+      caretaker: CARETAKER_LINES,
+    };
+  }
+
   const quoted = learnedWords.map(quote).filter((w): w is string => w !== null);
   if (quoted.length === 0) {
     return {
@@ -159,6 +215,8 @@ export function buildBubblePool(learnedWords: string[], hour: number): BubblePoo
       diner: CAFETERIA_LINES,
       athlete: GYM_LINES,
       visitor: VISITOR_LINES,
+      cook: COOK_LINES,
+      caretaker: CARETAKER_LINES,
     };
   }
 
@@ -180,6 +238,8 @@ export function buildBubblePool(learnedWords: string[], hour: number): BubblePoo
     diner: CAFETERIA_LINES,
     athlete: GYM_LINES,
     visitor: VISITOR_LINES,
+    cook: COOK_LINES,
+    caretaker: CARETAKER_LINES,
   };
 }
 

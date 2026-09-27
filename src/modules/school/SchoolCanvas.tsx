@@ -14,7 +14,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { MapControls } from "@react-three/drei";
+import { Html, MapControls } from "@react-three/drei";
 import * as THREE from "three";
 import { DEFAULT_VARIANT_ID, RoomLook, lookFor, planBounds } from "../../config/schoolCatalog";
 import { SchoolState, WalletBalances } from "../../services/schoolServices";
@@ -23,21 +23,31 @@ import { getCharacterItem } from "../../config/characterCatalog";
 import { Building } from "./Building";
 import { Deskware, Furnishings } from "./furniture";
 import { People, PersonLook } from "./People";
-import { boardWords, buildBubblePool } from "./bubbles";
+import { PersonRole, boardWords, buildBubblePool } from "./bubbles";
 import { SchoolRoomRect } from "../../config/schoolCatalog";
 import {
   GhostRoom,
   SchoolPlan,
   buildPlan,
+  castFor,
   classroomsOf,
   deskLayout,
   ghostBounds,
   ghostRooms,
   peoplePlan,
+  porchProps,
   stageProps,
 } from "./props";
 import { Ghosts } from "./Ghosts";
 import { RoomPicks } from "./RoomPicks";
+import { Presence, PresenceContext } from "./presence";
+import { AtmosphereContext, seasonFor } from "./atmosphere";
+import { DayPart, schoolNow, useDayPart } from "./schoolClock";
+import { outsideLook } from "./exterior";
+import { Grounds } from "./Grounds";
+import { LampPools, NightDriver, Pendants, RoomLights } from "./NightLights";
+import { pendantsFor, roomLights } from "./lampLayout";
+import { arrivals, groundsPlan, wayIn } from "./groundsLayout";
 
 /** Render scale. 0.38 ≈ chunky pixels on a phone; 1 is a crisp modern render. */
 const PIXEL_DPR = 0.38;
@@ -113,12 +123,26 @@ const CameraRig = ({
   plan,
   ghosts,
   focus,
+  glide,
+  land,
+  bottomInset = 0,
 }: {
   plan: SchoolPlan;
   ghosts: GhostRoom[];
   /** One room to frame instead of the whole campus. Customize mode sets it, so
    *  the room being changed is the room you are looking at. */
   focus?: SchoolRoomRect | null;
+  /** A one-off glide to a room — "show me" on a note from the staff. Unlike
+   *  `focus` it leaves the leash on the whole campus, so the player can pan
+   *  straight back out; `nonce` is what makes the same room glide twice. */
+  glide?: { roomId: string; nonce: number } | null;
+  /** The whole plot. The view may be dragged anywhere over it, and zoomed out
+   *  far enough to see all of it: a finished school on its grounds is worth
+   *  looking at whole. */
+  land?: { x0: number; z0: number; x1: number; z1: number };
+  /** How much of the screen, from the bottom, a sheet is covering: the
+   *  school is framed in what is left above it, not behind the sheet. */
+  bottomInset?: number;
 }) => {
   const camera = useThree((s) => s.camera) as THREE.OrthographicCamera;
   const size = useThree((s) => s.size);
@@ -148,26 +172,38 @@ const CameraRig = ({
 
   useEffect(() => {
     const { width, height } = sizeRef.current;
-    const zoom = fitZoom(bounds, width, height);
-    goal.current = { zoom, cx: bounds.fx, cz: bounds.fz };
+    const zoom = fitZoom(bounds, width, height * (1 - bottomInset));
+    // Aim BELOW the school by half the covered strip, so the school sits in
+    // the middle of the part of the screen still showing. Toward the camera
+    // on the ground, (d, 0, d), is straight down the screen, 2d/√6 per unit.
+    const lift = (height * bottomInset) / 2 / zoom;
+    const d = (lift * Math.sqrt(6)) / 2;
+    goal.current = { zoom, cx: bounds.fx + d, cz: bounds.fz + d };
 
     // MapControls mounts after this rig on the first pass, so `controls` is
     // null for one render. Framing then would set the camera but leave the
     // orbit target at the origin, and the campus would sit off-centre for the
     // whole session. Wait for it — the effect re-runs when it appears.
     if (!controls) return;
-    controls.minZoom = zoom * 0.5;
+    // Out far enough to take in the whole plot, where there is one.
+    const whole = land
+      ? (() => {
+          const w = land.x1 - land.x0;
+          const d = land.z1 - land.z0;
+          const pw = (w + d) * Math.SQRT1_2;
+          const ph = (w + d + 2 * WALL_H) / Math.sqrt(6);
+          return Math.min((width * 0.95) / pw, (height * 0.95) / ph);
+        })()
+      : Infinity;
+    controls.minZoom = Math.min(zoom * 0.5, whole);
     controls.maxZoom = zoom * 6;
 
     if (!settled.current) {
-      camera.position.set(
-        bounds.fx + ISO.x * CAM_DISTANCE,
-        TARGET_Y + ISO.y * CAM_DISTANCE,
-        bounds.fz + ISO.z * CAM_DISTANCE,
-      );
+      const { cx, cz } = goal.current;
+      camera.position.set(cx + ISO.x * CAM_DISTANCE, TARGET_Y + ISO.y * CAM_DISTANCE, cz + ISO.z * CAM_DISTANCE);
       camera.zoom = zoom;
       camera.updateProjectionMatrix();
-      controls.target.set(bounds.fx, TARGET_Y, bounds.fz);
+      controls.target.set(cx, TARGET_Y, cz);
       controls.update();
       settled.current = true;
       return;
@@ -176,7 +212,22 @@ const CameraRig = ({
     // A room was bought, or one was picked to customize: glide to it. These are
     // the only things that ever move the camera on its own.
     easing.current = true;
-  }, [bounds, camera, controls]);
+  }, [bounds, camera, controls, land, bottomInset]);
+
+  useEffect(() => {
+    if (!glide || !controls) return;
+    const room = plan.rooms.find((r) => r.id === glide.roomId);
+    if (!room) return;
+    const b = planBounds([room]);
+    const { width, height } = sizeRef.current;
+    // Close enough to see who is talking, not so close the room fills the
+    // screen and the player loses where it is in the school.
+    const zoom = Math.min(controls.maxZoom, fitZoom(b, width, height) * 0.6);
+    goal.current = { zoom: Math.max(zoom, camera.zoom), cx: b.fx, cz: b.fz };
+    easing.current = true;
+    // Only a new nonce means a new glide; the plan changing under it does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glide?.nonce, controls]);
 
   // Touching the camera cancels any pending glide. Without this, buying a room
   // and immediately grabbing the view means fighting the animation for a second.
@@ -216,8 +267,16 @@ const CameraRig = ({
     }
 
     // The leash. Only acts at the very edge, so ordinary panning never feels it.
-    const x = clamp(controls.target.x, bounds.minX - PAN_MARGIN, bounds.maxX + PAN_MARGIN);
-    const z = clamp(controls.target.z, bounds.minZ - PAN_MARGIN, bounds.maxZ + PAN_MARGIN);
+    const x = clamp(
+      controls.target.x,
+      Math.min(bounds.minX - PAN_MARGIN, land?.x0 ?? Infinity),
+      Math.max(bounds.maxX + PAN_MARGIN, land?.x1 ?? -Infinity),
+    );
+    const z = clamp(
+      controls.target.z,
+      Math.min(bounds.minZ - PAN_MARGIN, land?.z0 ?? Infinity),
+      Math.max(bounds.maxZ + PAN_MARGIN, land?.z1 ?? -Infinity),
+    );
     if (x !== controls.target.x || z !== controls.target.z) {
       camera.position.x += x - controls.target.x;
       camera.position.z += z - controls.target.z;
@@ -231,33 +290,107 @@ const CameraRig = ({
 };
 
 // ── Lighting ────────────────────────────────────────────────────────────────
-// Tinted by the player's actual clock. It costs nothing, and a school that is
-// warm at 8am and amber at 7pm quietly rewards coming back at a different time.
+// Follows the school's own clock (schoolClock.ts), which runs a whole day in
+// eighteen minutes — so the light is always on the move: a pink dawn, a pale
+// noon, an amber evening, then blue moonlight. It is the first thing that says
+// what time it is, before anybody reads the clock.
+//
+// Night is darker than it used to be, when the lighting read the real hour
+// once and could not afford to make somebody's evening visit gloomy. Now the
+// night lasts four minutes and ends in a sunrise, so it can look like night —
+// but it stays readable: moonlight, not a blackout.
 
-interface Lighting {
+interface LightKey {
+  /** School hour this key is exact at. */
+  h: number;
   key: string;
   fill: string;
   sky: string;
   ground: string;
   keyI: number;
   hemiI: number;
+  fillI: number;
 }
 
-function lightingForHour(hour: number): Lighting {
-  // Night is lit WARM and bright, not dimmed: the school has its lights on, and
-  // a player checking in after dinner should find somewhere cosy rather than a
-  // dark building. Only the sky behind it goes night-blue.
-  if (hour < 6 || hour >= 21) {
-    return { key: "#ffeacb", fill: "#93a4cc", sky: "#2f3750", ground: "#2a3145", keyI: 1.5, hemiI: 0.95 };
-  }
-  if (hour < 10) {
-    return { key: "#ffe4bd", fill: "#a8bcd0", sky: "#cfe4f2", ground: "#a89a86", keyI: 1.4, hemiI: 1.15 };
-  }
-  if (hour < 17) {
-    return { key: "#fff6e6", fill: "#b7cadb", sky: "#d8ebf6", ground: "#b0a695", keyI: 1.35, hemiI: 1.2 };
-  }
-  return { key: "#ffd9ab", fill: "#9aa6c4", sky: "#e8cbb2", ground: "#a2907d", keyI: 1.45, hemiI: 1.05 };
-}
+const NIGHT: Omit<LightKey, "h"> = {
+  key: "#a9b8f0", fill: "#6a78a8", sky: "#1f2740", ground: "#1d2233", keyI: 0.85, hemiI: 0.85, fillI: 0.3,
+};
+const NOON: Omit<LightKey, "h"> = {
+  key: "#fff6e6", fill: "#b7cadb", sky: "#d8ebf6", ground: "#b0a695", keyI: 1.35, hemiI: 1.2, fillI: 0.45,
+};
+
+/** Around the clock, in order, first and last both at midnight. */
+const LIGHT_KEYS: LightKey[] = [
+  { h: 0, ...NIGHT },
+  { h: 5.5, ...NIGHT },
+  { h: 7, key: "#ffc9a0", fill: "#9aa8c8", sky: "#ecc9b6", ground: "#8d8171", keyI: 1.15, hemiI: 0.95, fillI: 0.4 },
+  { h: 9.5, key: "#ffe4bd", fill: "#a8bcd0", sky: "#cfe4f2", ground: "#a89a86", keyI: 1.4, hemiI: 1.15, fillI: 0.45 },
+  { h: 12, ...NOON },
+  { h: 16.5, ...NOON },
+  { h: 18.5, key: "#ffd9ab", fill: "#9aa6c4", sky: "#e8cbb2", ground: "#a2907d", keyI: 1.45, hemiI: 1.05, fillI: 0.45 },
+  { h: 20, key: "#ffb487", fill: "#7d82b0", sky: "#b98f94", ground: "#6f5f60", keyI: 1.15, hemiI: 0.92, fillI: 0.4 },
+  { h: 21.5, ...NIGHT },
+  { h: 24, ...NIGHT },
+];
+
+/**
+ * The sun, the sky and the fill light, eased between LIGHT_KEYS every frame.
+ * Written straight into the lights rather than through React state: the light
+ * changes continuously, and re-rendering the scene sixty times a second to
+ * move it would be absurd.
+ */
+const DayCycle = () => {
+  const scene = useThree((s) => s.scene);
+  const hemi = useRef<THREE.HemisphereLight>(null);
+  const key = useRef<THREE.DirectionalLight>(null);
+  const fill = useRef<THREE.DirectionalLight>(null);
+  const sky = useMemo(() => new THREE.Color(), []);
+  const b = useMemo(() => new THREE.Color(), []);
+
+  useEffect(() => {
+    const before = scene.background;
+    scene.background = sky;
+    return () => {
+      scene.background = before;
+    };
+  }, [scene, sky]);
+
+  useFrame(() => {
+    const h = schoolNow().hours;
+    let i = 0;
+    while (i < LIGHT_KEYS.length - 2 && LIGHT_KEYS[i + 1].h <= h) i++;
+    const from = LIGHT_KEYS[i];
+    const to = LIGHT_KEYS[i + 1];
+    const t = Math.min(1, Math.max(0, (h - from.h) / (to.h - from.h)));
+    const mix = (x: string, y: string, out: THREE.Color) => out.set(x).lerp(b.set(y), t);
+    const num = (x: number, y: number) => x + (y - x) * t;
+
+    mix(from.sky, to.sky, sky);
+    if (hemi.current) {
+      mix(from.sky, to.sky, hemi.current.color);
+      mix(from.ground, to.ground, hemi.current.groundColor);
+      hemi.current.intensity = num(from.hemiI, to.hemiI);
+    }
+    if (key.current) {
+      mix(from.key, to.key, key.current.color);
+      key.current.intensity = num(from.keyI, to.keyI);
+    }
+    if (fill.current) {
+      mix(from.fill, to.fill, fill.current.color);
+      fill.current.intensity = num(from.fillI, to.fillI);
+    }
+  });
+
+  return (
+    <>
+      <hemisphereLight ref={hemi} />
+      <directionalLight ref={key} position={[14, 22, 10]} />
+      {/* A dim light from behind the camera keeps the two visible walls from
+          going flat black at the bottom of the frame. */}
+      <directionalLight ref={fill} position={[-12, 9, -14]} />
+    </>
+  );
+};
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 
@@ -297,9 +430,61 @@ interface SceneProps {
   roomName?: (roomId: string) => string;
   /** Translated "build X first" for a room that is still locked. */
   roomNote?: (roomId: string) => string | null;
+  /** Rooms that arrived with the last purchase, which rise into place. */
+  justBuilt?: string[];
+  /** Glide to a room and have somebody in it say `text` — a note from the
+   *  staff that the player asked to see. */
+  announce?: { roomId: string; text: string; nonce: number } | null;
+  /** What the sign over the way in says: the player's own name for the school,
+   *  or the localized default. Resolved by the page — the canvas has no i18n. */
+  schoolName?: string;
+  /** Somebody in the school was tapped. The canvas makes no sound itself; the
+   *  page decides what a poke sounds like. */
+  onPersonTap?: (key: string, role: PersonRole) => void;
+  /** Customize mode: tap targets on every room ("one"), every room outlined
+   *  because a change is about to reach them all ("all"), or none at all
+   *  ("none" — the outside, where the rooms are under the roof). */
+  pickScope?: "one" | "all" | "none";
 }
 
+/**
+ * The school's name, on a board over the way in: above the forecourt's gate
+ * once there is one, on the signpost by the front door before that. DOM rather
+ * than a texture, for the same reason the chalkboard word is — at this render
+ * scale painted letters are a smudge.
+ */
+const SchoolSign = ({ position, text }: { position: [number, number, number]; text: string }) => (
+  <Html position={position} center zIndexRange={[15, 0]} style={{ pointerEvents: "none" }}>
+    <div
+      style={{
+        background: "#2f4a3a",
+        color: "#f4e6b8",
+        border: "2px solid #c9a24e",
+        borderRadius: 4,
+        padding: "2px 9px",
+        fontSize: 12,
+        fontWeight: 800,
+        letterSpacing: 0.5,
+        whiteSpace: "nowrap",
+        boxShadow: "0 2px 0 rgba(0,0,0,0.3)",
+      }}
+    >
+      {text}
+    </div>
+  </Html>
+);
+
 const NO_WALLET: WalletBalances = { bitAward: 0, bitWord: 0, bitPhrase: 0 };
+
+/** An hour that stands for each part of the day, for what people say: "Good
+ *  morning!" through lessons, "Good evening!" after dark. */
+const HOUR_OF_PART: Record<DayPart, number> = {
+  morning: 7,
+  lessons: 10,
+  afterSchool: 16,
+  evening: 19,
+  night: 23,
+};
 
 const Scene = ({
   school,
@@ -313,6 +498,11 @@ const Scene = ({
   onPickRoom,
   roomName,
   roomNote,
+  justBuilt,
+  announce = null,
+  schoolName,
+  onPersonTap,
+  pickScope = "one",
 }: SceneProps) => {
   const building = mode === "build";
   const customizing = mode === "customize";
@@ -361,7 +551,43 @@ const Scene = ({
     const outdoors = new Set(plan.rooms.filter((r) => r.outdoor).map((r) => r.id));
     return all.filter((p) => outdoors.has(p.key.split("-")[0]));
   }, [plan, exterior]);
-  const cast = useMemo(() => peoplePlan(plan, layoutOf), [plan, layoutOf]);
+  // Everybody the school holds, then only whoever is in at this hour.
+  const fullCast = useMemo(() => peoplePlan(plan, layoutOf), [plan, layoutOf]);
+  // The front step and path, until there is a forecourt to arrive through.
+  // Outside every room, so outside `stageProps`; hidden while building, when
+  // that ground is a ghost you can tap.
+  const porch = useMemo(() => (building ? [] : porchProps(plan)), [plan, building]);
+  const rising = useMemo(() => new Set(justBuilt ?? []), [justBuilt]);
+  // The school's own lights. Lamps hang in every room (not the ones still
+  // going up); the light they give is only mounted after dark, so the day
+  // pays nothing for it. Lampposts, inside the grounds and out, throw a pool.
+  const pendants = useMemo(
+    () => pendantsFor(plan.rooms).filter((p) => !rising.has(p.roomId)),
+    [plan.rooms, rising],
+  );
+  const lights = useMemo(() => roomLights(plan.rooms), [plan.rooms]);
+  const lampposts = useMemo(
+    () => [...furniture, ...porch].filter((p) => p.type === "lamppost"),
+    [furniture, porch],
+  );
+  const risingRects = useMemo(() => plan.rooms.filter((r) => rising.has(r.id)), [plan.rooms, rising]);
+  const speakUp = useMemo(() => {
+    if (!announce) return null;
+    const rect = plan.rooms.find((r) => r.id === announce.roomId);
+    return rect ? { rect, text: announce.text, nonce: announce.nonce } : null;
+  }, [announce, plan.rooms]);
+  const glide = useMemo(
+    () => (announce ? { roomId: announce.roomId, nonce: announce.nonce } : null),
+    [announce],
+  );
+  const outside = useMemo(() => outsideLook(school.exterior), [school.exterior]);
+  // Over the gate if there is one, else over the porch's signpost.
+  const signAt = useMemo((): [number, number, number] | null => {
+    const court = plan.rooms.find((r) => r.id === "forecourt");
+    if (court) return [court.x + court.w / 2, 3.85, court.z + court.d - 0.2];
+    const post = porch.find((p) => p.type === "signpost");
+    return post ? [post.x, 2.1, post.z] : null;
+  }, [plan.rooms, porch]);
   const ghosts = useMemo(
     () => (building ? ghostRooms(school.variantId ?? DEFAULT_VARIANT_ID, school.ownedRoomIds) : []),
     [building, school.variantId, school.ownedRoomIds],
@@ -375,10 +601,24 @@ const Scene = ({
         : null,
     [customizing, selectedRoomId, plan.rooms],
   );
-  // Same clock the lighting reads, so "Good evening!" and the amber key light
-  // agree with each other.
-  const hour = useMemo(() => new Date().getHours(), []);
+  // The school's own clock, the same one the lighting reads — so "Good
+  // evening!" and the amber light agree with each other. Only the PART of the
+  // day re-renders the scene; the light moves on its own every frame.
+  const part = useDayPart();
+  const hour = HOUR_OF_PART[part];
   const pool = useMemo(() => buildBubblePool(learnedWords, hour), [learnedWords, hour]);
+  // The plot the school stands on, sized for the finished campus; and the way
+  // in from the street, which moves as the front door does.
+  const variantId = school.variantId ?? DEFAULT_VARIANT_ID;
+  const grounds = useMemo(() => groundsPlan(variantId), [variantId]);
+  const way = useMemo(() => wayIn(plan, grounds), [plan, grounds]);
+  const cast = useMemo(() => {
+    const here = castFor(plan, fullCast, part);
+    // Morning and after school, people are coming and going up the path.
+    return part === "morning" || part === "afterSchool"
+      ? { ...here, roomLoops: [...here.roomLoops, ...arrivals(way, grounds)] }
+      : here;
+  }, [plan, fullCast, part, way, grounds]);
   const words = useMemo(() => boardWords(learnedWords), [learnedWords]);
   const playerLook = useMemo(() => playerLookFrom(character), [character]);
 
@@ -387,20 +627,29 @@ const Scene = ({
   const [boardIdx, setBoardIdx] = useState(0);
   const boardWord = words.length ? words[boardIdx % words.length] : null;
 
-  const light = useMemo(() => lightingForHour(hour), [hour]);
+  // Who is walking where, for the doors that open when somebody reaches them.
+  // One set for the life of the scene; the walkers add and remove themselves.
+  const presence = useMemo<Presence>(() => new Set(), []);
+  // The season from the calendar; the lights from the school clock. They go on
+  // at seven in the evening and off at seven in the morning, which are both
+  // edges of a part of the day, so this is exact without ticking.
+  const atmosphere = useMemo(
+    () => ({ season: seasonFor(new Date()), lightsOn: part === "evening" || part === "night" }),
+    [part],
+  );
 
   return (
-    <>
-      <color attach="background" args={[light.sky]} />
-      <hemisphereLight args={[light.sky, light.ground, light.hemiI]} />
-      <directionalLight position={[14, 22, 10]} intensity={light.keyI} color={light.key} />
-      {/* A dim light from behind the camera keeps the two visible walls from
-          going flat black at the bottom of the frame. */}
-      <directionalLight position={[-12, 9, -14]} intensity={0.45} color={light.fill} />
+    <PresenceContext.Provider value={presence}>
+    <AtmosphereContext.Provider value={atmosphere}>
+      <DayCycle />
+      <NightDriver />
+      <Grounds grounds={grounds} way={way} />
 
-      <Building plan={plan} lookFor={lookOf} exterior={exterior} />
+      <Building plan={plan} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
+      {schoolName && signAt && !building && !customizing && <SchoolSign position={signAt} text={schoolName} />}
       <Furnishings
         props={furniture}
+        rising={rising}
         boardWord={exterior || building ? null : boardWord}
         onBoardTap={
           interactive && !exterior && !building && words.length
@@ -408,7 +657,12 @@ const Scene = ({
             : undefined
         }
       />
-      {!exterior && <Deskware desks={desks} />}
+      <Furnishings props={porch} />
+      <LampPools at={lampposts} />
+      {/* Indoors, under the roof from outside: nothing to see there. */}
+      {!exterior && <Pendants pendants={pendants} />}
+      {!exterior && atmosphere.lightsOn && <RoomLights lights={lights} />}
+      {!exterior && <Deskware desks={desks} rising={risingRects} />}
       <People
         plan={cast}
         pool={pool}
@@ -419,10 +673,18 @@ const Scene = ({
         // In build and customize mode they would fight the room labels for the
         // same pixels, and those labels are what you are there to read.
         mute={exterior || building || customizing}
+        announce={speakUp}
+        onTap={onPersonTap}
       />
 
-      {customizing && (
-        <RoomPicks rooms={plan.rooms} selected={selectedRoomId} onPick={onPickRoom} nameOf={roomName ?? ((id) => id)} />
+      {customizing && pickScope !== "none" && (
+        <RoomPicks
+          rooms={plan.rooms}
+          selected={selectedRoomId}
+          onPick={onPickRoom}
+          nameOf={roomName ?? ((id) => id)}
+          all={pickScope === "all"}
+        />
       )}
 
       {building && (
@@ -436,8 +698,17 @@ const Scene = ({
         />
       )}
 
-      <CameraRig plan={plan} ghosts={ghosts} focus={focusRect} />
-    </>
+      <CameraRig
+        plan={plan}
+        ghosts={ghosts}
+        focus={focusRect}
+        glide={glide}
+        land={grounds.tile}
+        // The decorate sheet covers the bottom half, near enough.
+        bottomInset={customizing ? 0.45 : 0}
+      />
+    </AtmosphereContext.Provider>
+    </PresenceContext.Provider>
   );
 };
 

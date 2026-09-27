@@ -7,6 +7,8 @@ import {
   buySchoolRoom as apiBuyRoom,
   paySchoolPayroll as apiPayPayroll,
   setSchoolLook as apiSetLook,
+  buySchoolExterior as apiBuyExterior,
+  setSchoolName as apiSetName,
 } from "../../services/schoolServices";
 import { fetchLearnedWords } from "../../services/vocabProgressServices";
 import { useWallet } from "../../context/WalletContext";
@@ -26,6 +28,8 @@ interface UseSchoolStateResult {
   buyRoom: (roomId: string) => Promise<SchoolActionResult>;
   payPayroll: () => Promise<SchoolActionResult>;
   setLook: (patch: SchoolLookPatch) => Promise<SchoolActionResult>;
+  buyExterior: (styleId: string) => Promise<SchoolActionResult>;
+  setName: (name: string | null) => Promise<SchoolActionResult>;
 }
 
 const EMPTY_WALLET: WalletBalances = { bitAward: 0, bitWord: 0, bitPhrase: 0 };
@@ -126,5 +130,26 @@ export function useSchoolState(): UseSchoolStateResult {
     [run],
   );
 
-  return { school, wallet, learnedWords, loading, error, buyRoom, payPayroll, setLook };
+  const buyExterior = useCallback(
+    (styleId: string) => run((t) => apiBuyExterior(t, styleId), "Could not buy that"),
+    [run],
+  );
+
+  const setName = useCallback(
+    (name: string | null) => run((t) => apiSetName(t, name), "Could not change the name"),
+    [run],
+  );
+
+  return {
+    school,
+    wallet,
+    learnedWords,
+    loading,
+    error,
+    buyRoom,
+    payPayroll,
+    setLook,
+    buyExterior,
+    setName,
+  };
 }

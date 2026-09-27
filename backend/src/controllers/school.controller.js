@@ -26,6 +26,7 @@ import {
   DEFAULT_VARIANT_ID,
   LEGACY_STAGE_ROOMS,
   buyBlocker,
+  bundledRooms,
   getRoomSpec,
   customisable,
   levelFor,
@@ -36,6 +37,13 @@ import {
   LOOK_FIELDS,
   starterRoomIds,
   variantForUserId,
+  withBundles,
+  EXTERIOR_SLOTS,
+  EXTERIOR_STYLES,
+  DEFAULT_EXTERIOR,
+  getExteriorStyle,
+  canWearStyle,
+  cleanSchoolName,
 } from "../config/schoolCatalog.js";
 
 // What the client actually gets.
@@ -54,6 +62,28 @@ export function serializeSchool(school) {
     presets: knownPresets(school?.variantId, school?.presets),
     variantId: knownVariant(school?.variantId),
     payroll: serializePayroll(school),
+    exterior: knownExterior(school?.exterior),
+    // Re-checked on the way out as well as on the way in: it is shown to
+    // every visitor, and a value that no longer passes is simply not shown.
+    name: cleanSchoolName(school?.name ?? null),
+  };
+}
+
+// The outside of the building, as it may actually be worn. Purchases of styles
+// the catalog no longer has are dropped, and a worn id that is unknown, in the
+// wrong slot or not owned falls back to that slot's free default — the look
+// the school had before, which is never wrong.
+function knownExterior(exterior) {
+  const owned = (Array.isArray(exterior?.owned) ? exterior.owned : []).filter((id) => {
+    const style = getExteriorStyle(id);
+    return style && style.price > 0;
+  });
+  const wear = (slot, id) => (typeof id === "string" && canWearStyle(owned, slot, id) ? id : DEFAULT_EXTERIOR[slot]);
+  return {
+    owned,
+    facadeId: wear("facade", exterior?.facadeId),
+    roofId: wear("roof", exterior?.roofId),
+    trimId: wear("trim", exterior?.trimId),
   };
 }
 
@@ -108,13 +138,15 @@ function knownVariant(id) {
 // A room id the catalog no longer has would be counted toward the level and
 // then never drawn, so it is dropped on the way out rather than trusted. The
 // starter rooms are unioned in because a player must always have somewhere to
-// stand, even if their save predates them.
+// stand, even if their save predates them — and every bundle is completed, so
+// a player who bought reception before the forecourt came with it has the
+// forecourt too.
 function knownRooms(variantId, ids) {
   const variant = knownVariant(variantId);
   const list = Array.isArray(ids) ? ids : [];
   const real = new Set(list.filter((id) => getRoomSpec(variant, id)));
   for (const id of starterRoomIds(variant)) real.add(id);
-  return [...real];
+  return withBundles(variant, [...real]);
 }
 
 // A level floor out of range would unlock looks that do not exist, so it is
@@ -212,6 +244,10 @@ export async function resetSchool(userId) {
       presets: {},
       variantId,
       payroll: { lastPaidAt: new Date() },
+      // Bought styles stay bought — they were paid for — but the building goes
+      // back to its plain look, and the sign over the gate is taken down.
+      exterior: { ...(user.school?.exterior ?? {}), facadeId: null, roofId: null, trimId: null },
+      name: null,
     };
     await user.save(tx);
     return user;
@@ -288,14 +324,19 @@ export async function buyRoom(req, res) {
       if (blocker === "locked") {
         return { status: 400, body: { message: "Build the room it opens off first" } };
       }
+      if (blocker === "bundled") {
+        return { status: 400, body: { message: "That comes with another room" } };
+      }
 
       const wallet = await spendFrom(userId, spec.currency, spec.price, tx);
       if (!wallet) {
         return { status: 400, body: { message: "Not enough coins yet" } };
       }
 
+      // The room, and whatever comes with it: reception brings the forecourt.
       const stored = Array.isArray(user.school.ownedRoomIds) ? user.school.ownedRoomIds : [];
-      user.school.ownedRoomIds = stored.includes(roomId) ? stored : [...stored, roomId];
+      const adding = [roomId, ...bundledRooms(variantId, roomId)].filter((id) => !stored.includes(id));
+      user.school.ownedRoomIds = [...stored, ...adding];
       await user.save(tx);
 
       return { status: 200, body: { school: serializeSchool(user.school), wallet } };
@@ -358,7 +399,7 @@ export async function paySchoolPayroll(req, res) {
   }
 }
 
-// PATCH /progress/school/look   { roomId?, layoutId?, wallpaperId?, floorId? }
+// PATCH /progress/school/look   { roomId?, layoutId?, wallpaperId?, floorId?, everywhere? }
 //
 // Free, so there is no wallet in the response — but not unvalidated. A look is
 // only selectable once its level has been reached, and that check lives here
@@ -368,10 +409,20 @@ export async function paySchoolPayroll(req, res) {
 // school's default, which every room that has not overridden it falls through
 // to. An explicit null clears a field back to the default, and that is the only
 // way back — a preset you could set and not unset is a trap.
+//
+// `everywhere: true` (school-wide only) is "every room, really": it sets the
+// default AND takes those same fields out of every room's own preset, so a room
+// that had been given its own wallpaper gets the new one too. Without it, a
+// school-wide change skips every room that has its own look, which is exactly
+// what made the old palette drawer look as if it had done nothing.
 export async function setSchoolLook(req, res) {
   try {
     const userId = req.user._id;
     const { roomId } = req.body ?? {};
+    const everywhere = req.body?.everywhere === true;
+    if (everywhere && roomId !== undefined) {
+      return res.status(400).json({ message: "Everywhere means every room, not one" });
+    }
 
     if (!(await ensureSchool(userId))) {
       return res.status(404).json({ message: "User not found" });
@@ -402,6 +453,23 @@ export async function setSchoolLook(req, res) {
         allowed = customisable(spec.kind, spec.outdoor);
       }
 
+      // The outside: facade, roof and trim. School-wide only (a room has no
+      // outside of its own), and only a style that is free or already bought.
+      const EXTERIOR_FIELDS = { facadeId: "facade", roofId: "roof", trimId: "trim" };
+      const wearing = {};
+      for (const [field, slot] of Object.entries(EXTERIOR_FIELDS)) {
+        const value = req.body?.[field];
+        if (value === undefined) continue;
+        if (roomId !== undefined) {
+          return { status: 400, body: { message: "A room has no outside of its own" } };
+        }
+        const owned = knownExterior(user.school?.exterior).owned;
+        if (typeof value !== "string" || !canWearStyle(owned, slot, value)) {
+          return { status: 400, body: { message: "You have not bought that yet" } };
+        }
+        wearing[field] = value;
+      }
+
       const set = {};
       const clear = [];
       for (const [field, lookup] of LOOK_FIELDS) {
@@ -424,12 +492,27 @@ export async function setSchoolLook(req, res) {
         set[field] = value;
       }
 
-      if (!Object.keys(set).length && !clear.length) {
+      if (!Object.keys(set).length && !clear.length && !Object.keys(wearing).length) {
         return { status: 400, body: { message: "Nothing to change" } };
       }
 
       if (roomId === undefined) {
-        user.school = { ...user.school, ...set };
+        let presets = user.school.presets ?? {};
+        if (everywhere && Object.keys(set).length) {
+          // Sparse, as ever: a room left with nothing of its own is dropped.
+          presets = {};
+          for (const [id, preset] of Object.entries(user.school.presets ?? {})) {
+            const kept = { ...preset };
+            for (const field of Object.keys(set)) delete kept[field];
+            if (Object.keys(kept).length) presets[id] = kept;
+          }
+        }
+        user.school = {
+          ...user.school,
+          ...set,
+          presets,
+          exterior: { ...knownExterior(user.school?.exterior), ...wearing },
+        };
       } else {
         // Presets stay SPARSE: a field cleared is removed, and a room left
         // with nothing overridden is removed entirely rather than stored as {}.
@@ -452,6 +535,86 @@ export async function setSchoolLook(req, res) {
   }
 }
 
+// POST /progress/school/exterior   { styleId }   [one currency, named by the style]
+//
+// Buys a facade, a roof or a trim, and puts it on. Like a room: the body names
+// the style and nothing else, and the price is read from the catalog here.
+// Bought once, kept for good — changing back to it later is free.
+export async function buyExteriorStyle(req, res) {
+  try {
+    const userId = req.user._id;
+    const styleId = typeof req.body?.styleId === "string" ? req.body.styleId : null;
+    if (!styleId) return res.status(400).json({ message: "No style named" });
+    const style = getExteriorStyle(styleId);
+    if (!style) return res.status(404).json({ message: "No such style" });
+    if (style.price === 0) return res.status(400).json({ message: "That one is free" });
+
+    if (!(await ensureSchool(userId))) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check, charge and record under the user's row lock — the same shape as
+    // buyRoom, and for the same reason: a double tap waits for the first to
+    // commit, finds the style owned, and is refused before it is charged.
+    const { status, body } = await db().transaction(async (tx) => {
+      const user = await userDocs.loadUser(userId, { lock: true }, tx);
+      if (!user) return { status: 404, body: { message: "User not found" } };
+
+      const exterior = knownExterior(user.school?.exterior);
+      if (exterior.owned.includes(styleId)) {
+        return { status: 409, body: { message: "You already have that" } };
+      }
+      const wallet = await spendFrom(userId, style.currency, style.price, tx);
+      if (!wallet) return { status: 400, body: { message: "Not enough coins yet" } };
+
+      user.school = {
+        ...user.school,
+        exterior: {
+          ...exterior,
+          owned: [...exterior.owned, styleId],
+          [`${style.slot}Id`]: styleId,
+        },
+      };
+      await user.save(tx);
+      return { status: 200, body: { school: serializeSchool(user.school), wallet } };
+    });
+
+    res.status(status).json(body);
+  } catch (error) {
+    console.error("buyExteriorStyle error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// PATCH /progress/school/name   { name }   (null takes the sign down)
+//
+// The name on the sign over the gate. Free, and seen by every visitor, which is
+// why it goes through cleanSchoolName rather than being stored as sent.
+export async function setSchoolName(req, res) {
+  try {
+    const userId = req.user._id;
+    const raw = req.body?.name;
+    const name = raw === null ? null : cleanSchoolName(raw);
+    if (raw !== null && name === null) {
+      return res.status(400).json({ message: "That name will not fit on the sign" });
+    }
+    if (!(await ensureSchool(userId))) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const { status, body } = await db().transaction(async (tx) => {
+      const user = await userDocs.loadUser(userId, { lock: true }, tx);
+      if (!user) return { status: 404, body: { message: "User not found" } };
+      user.school = { ...user.school, name };
+      await user.save(tx);
+      return { status: 200, body: { school: serializeSchool(user.school) } };
+    });
+    res.status(status).json(body);
+  } catch (error) {
+    console.error("setSchoolName error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
 // GET /progress/school/catalog
 // Lets the hand-maintained frontend mirror be checked against the server, and
 // lets a future client drop its copy entirely. These are the numbers actually
@@ -464,5 +627,6 @@ export async function getSchoolCatalog(_req, res) {
     layouts: SCHOOL_LAYOUTS,
     wallpapers: SCHOOL_WALLPAPERS,
     floors: SCHOOL_FLOORS,
+    exterior: { slots: EXTERIOR_SLOTS, styles: EXTERIOR_STYLES, defaults: DEFAULT_EXTERIOR },
   });
 }

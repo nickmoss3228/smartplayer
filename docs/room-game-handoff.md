@@ -1,7 +1,78 @@
-# Dream School — where things stand (2026-09-08, all five phases)
+# Dream School — where things stand (2026-09-28, third round)
 
 Working notes for picking this up again. The design itself is in
 `room-game-concept.md`; this file is only "what is done, what is not".
+
+## 2026-09-28: the third round
+
+Five asks from the user; §13 of the concept doc has the reasoning.
+
+- **Sound effects** (`sfx.ts`, Web Audio, its own context): knocks and a bell
+  arpeggio when a room is built, a brush for a new look, a bell for a new
+  facade or roof, the school bell, and a babble voice per person when tapped
+  (pitched by role, varied by key). Its own on/off button under the music one,
+  on by default, remembered as `school.sfx`.
+- **The school grounds** (`groundsLayout.ts` + `Grounds.tsx`): a diorama plot
+  sized for the finished campus — fence, pavement, road with two cars, bus
+  stop, lamps, a row of houses behind, and a pitch, playground and car park in
+  whatever space the finished school leaves. The camera may pan over and zoom
+  out to the whole plot.
+- **One Decorate sheet** replaces the palette drawer and the brush mode: Whole
+  school (every room, via `everywhere: true`), One room (a one-room school has
+  it picked already), Outside. Locked swatches say which stage opens them.
+- **School time** (`schoolClock.ts`, `ClockBadge.tsx`): an 18-minute day, the
+  light eased every frame, fewer people after school and almost nobody at night
+  (`castFor`, a strict subset of the cast), students walking in and out up the
+  front path, night music, and the wall clock telling the same time.
+  `?clock=HH:MM` pins it in development.
+- **One roof** (`roof.ts`): a hip roof over the whole footprint instead of a
+  prism per room; flat finishes and fittings laid across room lines.
+
+Files named apart on purpose: `groundsLayout.ts`/`Grounds.tsx` and
+`schoolClock.ts`/`ClockBadge.tsx`. Windows resolves imports case-insensitively,
+and `Grounds.ts` next to `grounds.ts` broke the type-check.
+
+## 2026-09-27: the second overhaul
+
+Asked for by the user in one list; §12 of the concept doc has the reasoning.
+
+- **Music**: `ambient.ts` generates it in the browser (Web Audio: pad, music
+  box, bass). Toggle top-right, remembered, never autoplays past the browser.
+- **Doors open** from outside: `presence.ts` registry, hinged leaves, a dark
+  lobby behind so an open door is not a peephole.
+- **No "school is built" pill** once the offer is empty.
+- **Nobody is drawn inside anything** — the sixth invariant, see below — and
+  everybody sits ON their seat (`SEAT_TOP`).
+- **The canteen** is a kitchen, a cook, a queue, café tables and long tables
+  (`cafeteriaLayout`). Gym players with a ball and a coach, a librarian, a
+  rehearsal on the hall stage and two students chatting in the yard are
+  `roomLoops`. `PatrolPerson.group` names a shared loop so the spacing test
+  holds it to the wanderers' promise.
+- **Reception + forecourt** are one early purchase (70 BitWord); old saves get
+  the forecourt on read (`withBundles` in `knownRooms`). **`frontDoor`** gives
+  every campus a way in before that.
+- **The outside is bought**: facade, roof (flat finishes or pitched), trim;
+  `POST /progress/school/exterior`, worn via `PATCH /progress/school/look`.
+  Migration `0003_school_exterior` (additive only). **The school name** on the
+  gate: `PATCH /progress/school/name`, visitors see it.
+- **Build animation** (`Arrival.tsx`), **night windows and seasons**
+  (`atmosphere.ts`), **teacher notes** every 5 minutes (`staffNotes.ts`,
+  `TeacherNotes.tsx`) with "Show me" gliding the camera to them.
+
+The sixth invariant: `never draws a walker inside furniture, a desk or a seated
+person`. It samples `walkerAt` (lane included) against footprints grown by the
+body radius, in all four desk layouts. Do not relax it to the centre line.
+
+Open from this round:
+
+- (Done 2026-09-27: the API tests for the bundle, the exterior and the name
+  have run and pass.)
+- The study hall still is not a commuter destination: its route crosses
+  classroomC's desks, not only the hall's chairs, so a hall lane alone would
+  not have been enough.
+- Nothing moderates a school name beyond `cleanSchoolName`; an admin "clear
+  name" (without a full school reset, which also clears it) would be the next
+  step if a bad one ever appears.
 
 ## State: green
 

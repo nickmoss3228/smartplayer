@@ -188,6 +188,18 @@ export const users = pgTable(
     // school.controller.js sets it on first read so a new player is not born in
     // arrears. Do not give it a default.
     schoolPayrollLastPaidAt: ts("school_payroll_last_paid_at"),
+    // The outside of the building. `owned` lists the exterior styles bought
+    // (EXTERIOR_STYLES in config/schoolCatalog.js); the three ids are what is
+    // being worn, and NULL means the free default for that slot — the look
+    // every school had before the exterior could change, so existing rows need
+    // no backfill.
+    schoolExteriorOwned: text("school_exterior_owned").array().notNull().default([]),
+    schoolFacadeId: text("school_facade_id"),
+    schoolRoofId: text("school_roof_id"),
+    schoolTrimId: text("school_trim_id"),
+    // The sign over the gate. NULL shows a localized default; checked by
+    // cleanSchoolName because every visitor reads it.
+    schoolName: text("school_name"),
 
     // The retired office-decorator save (`room`), still read and written by the
     // /progress/room/* endpoints. Whole-object jsonb, as in Mongo. NULL means
@@ -532,6 +544,23 @@ export const storyPart = pgTable(
     // Per-marker help clips.
     helpAudio: text("help_audio").array().notNull().default([]),
     comicUrl: text("comic_url"),
+    // The "before you listen" card on the level page, in both locales. Rule 3:
+    // written by one Builder panel and read by one dialog, always whole, never
+    // queried by field. NULL means nothing has been written; the level page
+    // then builds the card from the part's title, the story description and
+    // the comic page. Shape: PartIntro in repos/stories.repo.ts.
+    //
+    // Not called `preview`: that word already means the timed audio sample a
+    // non-owner hears (story.preview_seconds, and the `preview: true` flag the
+    // public story endpoint sets on such a part), which would overwrite it.
+    intro: jsonb("intro").$type<{
+      title: { en: string; ru: string };
+      description: { en: string; ru: string };
+      grammar: { en: string[]; ru: string[] };
+      tip: { en: string; ru: string };
+      imageUrl: string | null;
+      durationSeconds: number | null;
+    }>(),
   },
   (t) => [uniqueIndex("story_part_story_number_key").on(t.storyPk, t.partNumber)],
 );

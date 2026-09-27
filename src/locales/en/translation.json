@@ -805,7 +805,9 @@
     "hideDetails": "Hide details",
     "grammarAndTips": "Grammar and tips",
     "back": "Back",
-    "startListening": "Start listening"
+    "startListening": "Start listening",
+    "durationSeconds": "~{{s}} sec",
+    "durationMinutes": "~{{m}} min {{s}} sec"
   },
   "player": {
     "vocabulary": "Vocabulary",
@@ -854,6 +856,82 @@
     }
   },
   "storyPreviews": {
+    "easy-news-roland-garros-1": {
+      "title": "Roland Garros 2026",
+      "difficulty": "Easy",
+      "duration": "~2 min 14 sec",
+      "description": "A news report: Mirra Andreeva wins the French Open and becomes the youngest Russian champion since Maria Sharapova. Facts, dates and numbers — the kind of listening where one missed word changes the answer.",
+      "grammar": [
+        "Past Simple for reporting events (she won, she defeated, she became)",
+        "Superlatives (the youngest, the first)",
+        "Numbers, dates and ages spoken aloud",
+        "Present Perfect for records that still stand (only three have won)"
+      ],
+      "topics": [
+        "Sport",
+        "News",
+        "Records & achievements",
+        "Tennis"
+      ],
+      "tip": "Numbers are where this one is won or lost. Listen for her age and the prize money — both come up again in the discussion."
+    },
+    "easy-news-roland-garros-2": {
+      "title": "Talking about Roland Garros",
+      "difficulty": "Easy",
+      "duration": "~3 min 08 sec",
+      "description": "Now the friends react to the same news. One of them does not follow tennis at all, they try to guess the prize money, and the conversation turns to whether it is fair. Natural speech, interruptions and opinions.",
+      "grammar": [
+        "Asking for and giving opinions (I think, do you really believe)",
+        "Guessing and estimating (take a guess, it must be about)",
+        "Agreeing and disagreeing (you are kidding, that is insane)",
+        "Comparatives for fairness (more than, less than, harder than)"
+      ],
+      "topics": [
+        "Opinions",
+        "Money & fairness",
+        "Friends talking",
+        "Sport"
+      ],
+      "tip": "You already heard the facts in part 1. Here, listen for how people react to them — the useful language is the reaction, not the number."
+    },
+    "easy-news-grazing-board-1": {
+      "title": "Grazing Board: Italian Antipasti",
+      "difficulty": "Easy",
+      "duration": "~5 min 53 sec",
+      "description": "How to build a grazing board: what to buy, how to cut it and how to arrange it. Almost every sentence carries a food word, so this is vocabulary listening more than story listening.",
+      "grammar": [
+        "Imperatives for instructions (slice, peel, arrange, put out)",
+        "Countable and uncountable food nouns (grapes, honey, cheese)",
+        "Sequencing (first, then, after that)",
+        "Quantities (a handful of, a few, some)"
+      ],
+      "topics": [
+        "Food & cooking",
+        "Shopping",
+        "Hosting guests",
+        "Italian food"
+      ],
+      "tip": "The food nouns are the whole challenge here. Play the vocabulary chips first, then listen — you will catch far more the second time."
+    },
+    "easy-news-grazing-board-2": {
+      "title": "What Should We Order?",
+      "difficulty": "Easy",
+      "duration": "~2 min 55 sec",
+      "description": "Katrin, Evelyn and Igor cannot agree on what to eat. Pizza is easy, but someone is tired of it, someone is on a tight budget, and someone wants to make everything from scratch. A real disagreement, at speed.",
+      "grammar": [
+        "Making suggestions (why do not we, we could, how about)",
+        "Objecting politely (I am tired of it, that is a bit expensive)",
+        "be + adjective + preposition (tired of, good at, on a budget)",
+        "Phrasal verbs in speech (warm up, take out, put together, go back)"
+      ],
+      "topics": [
+        "Food & cooking",
+        "Making plans",
+        "Disagreeing",
+        "Money"
+      ],
+      "tip": "Three voices talking quickly. On the first listen just work out who wants what — the details come on the replay."
+    },
     "easy-leo-1": {
       "title": "Leo's Life",
       "difficulty": "Easy",
@@ -1478,14 +1556,11 @@
       "bitPhrase": "BitPhrase"
     },
     "look": {
-      "title": "Change the look",
-      "open": "Change the look",
       "close": "Close",
       "wallpaper": "Walls",
       "floor": "Floor",
       "layout": "Desks",
-      "lockedUntil": "Unlocks at stage {{stage}}",
-      "hint": "Free to change, as often as you like. More options open up with every stage."
+      "lockedUntil": "Unlocks at stage {{stage}}"
     },
     "layouts": {
       "rows": "Rows",
@@ -1569,8 +1644,8 @@
         "blurb": "A stage, a banner, and a shelf with something to put on it."
       },
       "lobby": {
-        "name": "Reception",
-        "blurb": "A front desk, and someone behind it to meet whoever comes in."
+        "name": "Reception & entrance",
+        "blurb": "A front desk, and the gate out front: the school's real way in."
       },
       "forecourt": {
         "name": "Forecourt",
@@ -1627,11 +1702,125 @@
     },
     "buildPick": "Tap a room to see what it costs",
     "buildDone": "Build it here",
-    "customizeOpen": "Customize a room",
-    "customizePick": "Tap a room to change how it looks",
-    "customizeReset": "Reset",
     "payroll": {
       "pay": "Pay {{amount}}"
+    },
+    "music": {
+      "on": "Play background music",
+      "off": "Turn the music off"
+    },
+    "built": "Just built",
+    "notes": {
+      "show": "Show me",
+      "names": {
+        "parker": "Ms Parker",
+        "hughes": "Mr Hughes",
+        "okafor": "Ms Okafor",
+        "novak": "Mr Novak",
+        "lindqvist": "Ms Lindqvist",
+        "head": "Dr Whitfield, the head",
+        "cook": "Mrs Doyle, the cook",
+        "coach": "Coach Reyes",
+        "librarian": "Mr Abernathy, the librarian",
+        "music": "Ms Clarke, music",
+        "gardener": "Mr Finch, the gardener"
+      },
+      "lines": {
+        "welcome": "Welcome to our school! Every room here was built with what you learned.",
+        "word": "Word of the day on my board: “{{word}}”. Can you use it in a sentence?",
+        "listenTwice": "Tip: listen to a part twice before the quiz. The second time you hear twice as much.",
+        "quizCoins": "Every quiz you pass keeps this school running. Thank you!",
+        "slowDown": "Clear beats fast. Nobody needs you to speak quickly.",
+        "accents": "Every accent is a new song. Keep your ears open.",
+        "everyDay": "Ten minutes of listening every day beats an hour once a week.",
+        "rewind": "Missed a word? Rewind. Nobody is counting.",
+        "ownWords": "Try saying the new words out loud, in your own sentences.",
+        "morning": "Good morning! Lessons start in five minutes.",
+        "afternoon": "Good afternoon! The school is busy today.",
+        "evening": "Working late? The lights are on for you.",
+        "autumn": "Leaves all over the yard — autumn is here.",
+        "winter": "Snow on the roof! There's hot tea in the staff room.",
+        "spring": "The garden is waking up. Spring at last!",
+        "summer": "Too hot for grammar. Let's listen to a story instead.",
+        "proud": "I'm proud of this school. {{rooms}} rooms — who would have thought?",
+        "grown": "Visitors keep asking how we grew so fast. I tell them: one story at a time.",
+        "anotherRoom": "We have enough saved for another room. Just saying.",
+        "lunch": "Lunch is ready! Soup, fresh bread and apple pie.",
+        "queue": "The queue is long today. Must be the pie.",
+        "pie": "Nobody leaves my canteen hungry. Not on my watch.",
+        "training": "The team is training hard. Fancy joining the next game?",
+        "laps": "Three more laps, everybody! Then we practise passing.",
+        "quiet": "Shh — and please bring your books back on time.",
+        "newBooks": "New books on the second shelf. Mostly adventure stories.",
+        "piano": "Someone has been practising the piano all morning. It's getting better!",
+        "sing": "Singing is listening with your whole body. Come and try.",
+        "garden": "The beds are looking lovely. Mind the flowers on your way out."
+      }
+    },
+    "exterior": {
+      "name": "Name on the gate",
+      "namePlaceholder": "Name your school",
+      "nameSave": "Save",
+      "nameClear": "Take the sign down",
+      "nameRule": "Letters, numbers and spaces, up to {{max}} characters. Visitors will see it.",
+      "defaultName": "Our School",
+      "slots": {
+        "facade": "Walls",
+        "roof": "Roof",
+        "trim": "Windows & doors"
+      },
+      "buy": "Buy",
+      "hint": "Bought once, yours to keep — switching back to a style you own is free.",
+      "styles": {
+        "plaster": "Plaster",
+        "white-render": "White render",
+        "terracotta": "Terracotta",
+        "red-brick": "Red brick",
+        "yellow-brick": "Yellow brick",
+        "timber": "Timber",
+        "stone": "Stone",
+        "flat": "Flat",
+        "gravel": "Gravel & vents",
+        "green": "Green roof",
+        "solar": "Solar panels",
+        "red-tile": "Red tiles",
+        "slate": "Slate",
+        "white": "White",
+        "navy": "Navy",
+        "forest": "Forest",
+        "oxblood": "Oxblood"
+      }
+    },
+    "sfx": {
+      "on": "Turn sound effects on",
+      "off": "Turn sound effects off"
+    },
+    "clock": {
+      "label": "School time {{time}}, {{part}}",
+      "hint": "School time runs fast: a whole school day goes by in 18 minutes.",
+      "parts": {
+        "morning": "Morning",
+        "lessons": "Lessons",
+        "afterSchool": "After school",
+        "evening": "Evening",
+        "night": "Night"
+      }
+    },
+    "decorate": {
+      "open": "Decorate",
+      "tabs": {
+        "school": "Whole school",
+        "room": "One room",
+        "outside": "Outside"
+      },
+      "schoolHint": "Changes every room at once. Free, as often as you like.",
+      "overrides_one": "{{count}} room has its own look — this changes it too.",
+      "overrides_other": "{{count}} rooms have their own look — this changes them too.",
+      "pickRoom": "Tap a room to change just that room.",
+      "ownLook": "Own look",
+      "sameLook": "Same as the school",
+      "match": "Match the whole school",
+      "stage": "Stage {{n}}"
     }
   },
   "paywall": {

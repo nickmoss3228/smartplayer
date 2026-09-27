@@ -13,6 +13,7 @@ import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { IoChevronBack } from "react-icons/io5";
+import { ClockBadge } from "../modules/school/ClockBadge";
 import { usePlayerSchool } from "../modules/players/usePlayerSchool";
 import { buildableRooms, stageFor } from "../config/schoolCatalog";
 
@@ -62,24 +63,32 @@ const PlayerRoom = () => {
           character={character}
           learnedWords={[]}
           interactive={false}
+          // Their sign over their gate — the one thing about a school its
+          // owner writes for other people to read.
+          schoolName={school.name ?? t("school.exterior.defaultName")}
         />
       </Suspense>
 
       <button
         onClick={() => navigate("/players")}
         title={t("players.back")}
-        className="absolute left-3 top-3 flex items-center gap-1 text-xs font-semibold text-black/70 bg-white/90 backdrop-blur rounded-full pl-2 pr-3 py-2 shadow-sm active:scale-95 transition-transform"
+        className="absolute left-3 top-3 flex items-center gap-1 text-xs font-semibold text-black/70 bg-white/90 rounded-full pl-2 pr-3 py-2 shadow-sm active:scale-95 transition-transform"
       >
         <IoChevronBack className="w-4 h-4" />
         {t("players.back")}
       </button>
 
-      <div className="absolute right-3 top-3 bg-white/90 backdrop-blur rounded-[3px] px-3.5 py-1.5 shadow-sm text-right pointer-events-none">
-        <div className="text-[13px] font-bold text-black/80 leading-tight">{nickname}</div>
-        <div className="text-[10px] font-semibold text-black/40 leading-tight">
-          {t(`school.stages.${stage.id}.name`, stage.name)} ·{" "}
-          {t("school.roomsOf", { current: school.ownedRoomIds.length, total })}
+      <div className="absolute right-3 top-3 flex flex-col items-end gap-2 pointer-events-none">
+        <div className="bg-white/90 rounded-[3px] px-3.5 py-1.5 shadow-sm text-right">
+          <div className="text-[13px] font-bold text-black/80 leading-tight">{nickname}</div>
+          <div className="text-[10px] font-semibold text-black/40 leading-tight">
+            {t(`school.stages.${stage.id}.name`, stage.name)} ·{" "}
+            {t("school.roomsOf", { current: school.ownedRoomIds.length, total })}
+          </div>
         </div>
+        {/* School time is the same for everybody, so a visitor sees the
+            hour their host does. */}
+        <ClockBadge />
       </div>
     </div>
   );

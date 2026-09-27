@@ -15,6 +15,7 @@ import { CHARACTER_CATALOG as CHARACTER_ITEMS } from "../../src/config/character
 import { QUIZ_PASS_BITAWARD } from "../../src/config/currency.js";
 import {
   buyBlocker,
+  getExteriorStyle,
   getRoomSpec,
   getVariant,
 } from "../../src/config/schoolCatalog.js";
@@ -500,6 +501,137 @@ describe("school", () => {
     }
   });
 
+  /** Every room on the way in to `roomId`, walking the door tree up to the
+   *  corridor — the smallest owned set that lets `roomId` be bought. */
+  function wayTo(variantId, roomId) {
+    const doors = getVariant(variantId).doors;
+    const chain = [];
+    let at = doors[roomId]?.parent ?? null;
+    while (at) {
+      chain.push(at);
+      at = doors[at]?.parent ?? null;
+    }
+    return ["classroom", ...chain.reverse()];
+  }
+
+  it("reception brings the forecourt with it, in one purchase, at one price", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const variantId = (await userRow(u.id)).schoolVariantId;
+    await setUserColumns(u.id, { schoolOwnedRoomIds: wayTo(variantId, "lobby") });
+    await fundWallet(u.id, { bitAward: 5000, bitWord: 5000, bitPhrase: 5000 });
+
+    // Never sold on its own: before reception there is no way in to it.
+    const early = await api("POST", "/api/progress/school/rooms", { token: u.token, body: { roomId: "forecourt" } });
+    assert.equal(early.status, 400);
+
+    const lobby = getRoomSpec(variantId, "lobby");
+    const res = await api("POST", "/api/progress/school/rooms", { token: u.token, body: { roomId: "lobby" } });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.ok(res.body.school.ownedRoomIds.includes("lobby"));
+    assert.ok(res.body.school.ownedRoomIds.includes("forecourt"));
+
+    const row = await userRow(u.id);
+    assert.ok(row.schoolOwnedRoomIds.includes("forecourt"), "the forecourt was not stored");
+    assert.equal(row[lobby.currency], 5000 - lobby.price, "charged for more than reception");
+    // bitPhrase untouched: the forecourt used to be priced in it.
+    if (lobby.currency !== "bitPhrase") assert.equal(row.bitPhrase, 5000);
+  });
+
+  it("gives an old save its forecourt, and will not sell it twice", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const variantId = (await userRow(u.id)).schoolVariantId;
+    // Bought reception before the forecourt came with it.
+    await setUserColumns(u.id, { schoolOwnedRoomIds: [...wayTo(variantId, "lobby"), "lobby"] });
+    await fundWallet(u.id, { bitPhrase: 5000 });
+
+    const school = (await api("GET", "/api/progress/school", { token: u.token })).body.school;
+    assert.ok(school.ownedRoomIds.includes("forecourt"));
+    const again = await api("POST", "/api/progress/school/rooms", { token: u.token, body: { roomId: "forecourt" } });
+    assert.equal(again.status, 409);
+    assert.equal((await userRow(u.id)).bitPhrase, 5000);
+  });
+
+  it("buys an outside style once, at the catalog price, and puts it on", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    await fundWallet(u.id, { bitAward: 5000, bitWord: 5000, bitPhrase: 5000 });
+    const brick = getExteriorStyle("red-brick");
+
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        api("POST", "/api/progress/school/exterior", { token: u.token, body: { styleId: "red-brick" } }),
+      ),
+    );
+    assert.equal(results.filter((r) => r.status === 200).length, 1, "bought more than once");
+    assert.ok(results.filter((r) => r.status !== 200).every((r) => r.status === 409));
+
+    const ok = results.find((r) => r.status === 200);
+    assert.equal(ok.body.school.exterior.facadeId, "red-brick", "bought but not worn");
+    assert.ok(ok.body.school.exterior.owned.includes("red-brick"));
+    const row = await userRow(u.id);
+    assert.equal(row[brick.currency], 5000 - brick.price);
+    assert.deepEqual(row.schoolExteriorOwned, ["red-brick"]);
+  });
+
+  it("refuses free, unknown and unaffordable styles, and never takes a price from the client", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const post = (body) => api("POST", "/api/progress/school/exterior", { token: u.token, body });
+    assert.equal((await post({})).status, 400);
+    assert.equal((await post({ styleId: "flat" })).status, 400, "the free default is not for sale");
+    assert.equal((await post({ styleId: "moon-rock" })).status, 404);
+
+    const before = await userRow(u.id);
+    const broke = await post({ styleId: "solar", price: 0, currency: "bitAward" });
+    assert.equal(broke.status, 400, "bought with a price the client named");
+    const after = await userRow(u.id);
+    assert.deepEqual(after.schoolExteriorOwned, []);
+    assert.equal(after.bitWord, before.bitWord);
+  });
+
+  it("wears only what is free or already bought, and swapping back costs nothing", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const look = (body) => api("PATCH", "/api/progress/school/look", { token: u.token, body });
+
+    assert.equal((await look({ roofId: "solar" })).status, 400, "wore a roof nobody bought");
+    assert.equal((await look({ roofId: "flat" })).status, 200);
+    assert.equal((await look({ roomId: "classroom", facadeId: "plaster" })).status, 400, "a room has no outside");
+
+    await fundWallet(u.id, { bitWord: 1000 });
+    assert.equal(
+      (await api("POST", "/api/progress/school/exterior", { token: u.token, body: { styleId: "solar" } })).status,
+      200,
+    );
+    assert.equal((await look({ roofId: "flat" })).body.school.exterior.roofId, "flat");
+    const back = await look({ roofId: "solar" });
+    assert.equal(back.status, 200);
+    assert.equal(back.body.school.exterior.roofId, "solar");
+    assert.equal((await userRow(u.id)).bitWord, 1000 - getExteriorStyle("solar").price, "charged twice");
+  });
+
+  it("names the school, refuses what will not fit on the sign, and shows it to visitors", async () => {
+    const u = await registerUser();
+    const visitor = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const name = (value) => api("PATCH", "/api/progress/school/name", { token: u.token, body: { name: value } });
+
+    const ok = await name("  Maple   Hill  ");
+    assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    assert.equal(ok.body.school.name, "Maple Hill");
+    for (const bad of ["x".repeat(29), "<b>bold</b>", "!!!", "", 42]) {
+      assert.equal((await name(bad)).status, 400, JSON.stringify(bad));
+    }
+    const seen = await api("GET", `/api/progress/school/${u.id}`, { token: visitor.token });
+    assert.equal(seen.body.school.name, "Maple Hill");
+
+    const cleared = await name(null);
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.school.name, null);
+  });
+
   it("payroll: nothing owed for a new school, and weeks owed are charged once", async () => {
     const u = await registerUser();
     await api("GET", "/api/progress/school", { token: u.token });
@@ -525,6 +657,35 @@ describe("school", () => {
       const res = await api("PATCH", "/api/progress/school/look", { token: u.token, body });
       assert.ok([400, 404].includes(res.status), `${JSON.stringify(body)} -> ${res.status}`);
     }
+  });
+
+  it("looks: 'everywhere' reaches the rooms that had their own, and leaves the rest of their look alone", async () => {
+    const u = await registerUser();
+    await api("GET", "/api/progress/school", { token: u.token });
+    const variantId = (await userRow(u.id)).schoolVariantId;
+    const owned = [...new Set(wayTo(variantId, "lobby"))];
+    await setUserColumns(u.id, { schoolOwnedRoomIds: owned });
+    const other = owned.find((id) => id !== "classroom");
+    assert.ok(other, "needs a second room");
+    const look = (body) => api("PATCH", "/api/progress/school/look", { token: u.token, body });
+
+    assert.equal((await look({ roomId: "classroom", wallpaperId: "mint", floorId: "lino" })).status, 200);
+    assert.equal((await look({ roomId: other, wallpaperId: "mint" })).status, 200);
+
+    const all = await look({ wallpaperId: "chalk", everywhere: true });
+    assert.equal(all.status, 200, JSON.stringify(all.body));
+    assert.equal(all.body.school.wallpaperId, "chalk");
+    // The classroom keeps its own floor; the other room had nothing else of
+    // its own and is back to the school's look entirely.
+    assert.deepEqual(all.body.school.presets, { classroom: { floorId: "lino" } });
+
+    // Without it, a school-wide change leaves rooms with their own look alone.
+    assert.equal((await look({ roomId: other, floorId: "parquet" })).status, 200);
+    const plain = await look({ floorId: "lino" });
+    assert.equal(plain.body.school.presets[other].floorId, "parquet");
+
+    assert.equal((await look({ roomId: "classroom", wallpaperId: "mint", everywhere: true })).status, 400);
+    assert.equal((await look({ wallpaperId: "cocoa", everywhere: true })).status, 400, "a locked look, everywhere");
   });
 
   it("another player's school is visible without their wallet", async () => {

@@ -155,6 +155,29 @@ const Ghost = ({
           </mesh>
         ))}
 
+      {/* Whatever comes in the same purchase — reception's forecourt. Always
+          drawn, and tappable like the room itself: it is part of the offer,
+          not a side effect of it. */}
+      {ghost.extra.map((x) => (
+        <group key={x.id}>
+          <mesh
+            position={[x.x + x.w / 2, 0.06, x.z + x.d / 2]}
+            onClick={
+              onPick && ghost.blocker === null
+                ? (e) => {
+                    e.stopPropagation();
+                    onPick(ghost.spec.id);
+                  }
+                : undefined
+            }
+          >
+            <boxGeometry args={[x.w - 0.3, 0.12, x.d - 0.3]} />
+            <meshBasicMaterial color={color} transparent opacity={base * 0.8} depthWrite={false} />
+          </mesh>
+          <Outline rect={x} color={color} opacity={dim ? 0.3 : selected ? 0.8 : 0.4} height={BAND_H} />
+        </group>
+      ))}
+
       {/* What the corridor (or whatever else) does when this arrives. Only for
           the selected ghost: drawn for all of them at once it is a mess of
           overlapping bands, and it is only ever a question about one room. */}
