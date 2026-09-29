@@ -1,7 +1,6 @@
 // components/Dashboard/ProfileEditor.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { IoPencil, IoClose } from "react-icons/io5";
 import { UserProfile } from "../../types/Dashboard";
 import { useCharacter } from "../../context/CharacterContext";
@@ -18,7 +17,6 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
   onProfileUpdate,
 }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { character } = useCharacter();
   const portrait = useCharacterPortrait(character);
   const [editingNickname, setEditingNickname] = useState(false);
@@ -58,10 +56,12 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({
     <div className="flex items-center gap-4">
       {/* Avatar */}
       <div className="relative">
-        {/* Editing lives in Room's Character tab (single source of truth for
-            customization UI) — this is a read-only preview that deep-links there. */}
+        {/* The character is made in the creator card further down this page;
+            the portrait is a photo of it, and a way down to it. */}
         <button
-          onClick={() => navigate("/room?tab=character")}
+          onClick={() =>
+            document.getElementById("character")?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
           className="group relative w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] rounded-full ring-2 ring-black/10 overflow-hidden flex-shrink-0 transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-black/40 focus:ring-offset-2"
           title={t("dashboard.profile.changeAvatar")}
         >

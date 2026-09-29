@@ -1,5 +1,5 @@
 // components/Dashboard/Dashboard.tsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { IoLogOutOutline, IoChevronForward } from "react-icons/io5";
@@ -21,6 +21,10 @@ import AccuracyTrendChart from "./charts/AccuracyTrendChart";
 import WeeklyActivityChart from "./charts/WeeklyActivityChart";
 import { buildWeeklySeries } from "./charts/progressChartData";
 import { useProfile } from "../../context/ProfileContext";
+
+// The character creator has its own three.js canvas; the rest of the
+// dashboard should not wait for, or pay for, 3D.
+const CharacterCreator = lazy(() => import("../../modules/character/CharacterCreator"));
 
 const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -170,6 +174,13 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* ── Your character ── */}
+        <Suspense
+          fallback={<div className="bg-white rounded-card border border-line h-80 mb-4 sm:mb-6 animate-pulse" />}
+        >
+          <CharacterCreator />
+        </Suspense>
 
         {/* ── Difficulty progress + Achievements ── */}
         {progressLoading ? (

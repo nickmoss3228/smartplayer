@@ -155,6 +155,7 @@ function rowToDoc(
         outfit: row.characterEquippedOutfit,
         hat: row.characterEquippedHat,
       },
+      look: row.characterLook ?? null,
     },
     school: {
       ownedRoomIds: row.schoolOwnedRoomIds,
@@ -264,6 +265,7 @@ function docToColumns(doc: UserDoc): Partial<NewUser> {
     characterEquippedHairstyle: equipped.hairstyle ?? null,
     characterEquippedOutfit: equipped.outfit ?? null,
     characterEquippedHat: equipped.hat ?? null,
+    characterLook: character.look ?? null,
 
     schoolOwnedRoomIds: [...(school.ownedRoomIds ?? [])],
     schoolStage: Number(school.stage ?? 0),

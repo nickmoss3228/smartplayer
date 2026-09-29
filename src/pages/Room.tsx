@@ -23,6 +23,7 @@
 
 import { lazy, ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IoBrushOutline,
@@ -31,7 +32,9 @@ import {
   IoLockClosed,
   IoBusinessOutline,
   IoLayersOutline,
+  IoLocateOutline,
   IoMusicalNotesOutline,
+  IoShirtOutline,
   IoVolumeHighOutline,
   IoVolumeMuteOutline,
 } from "react-icons/io5";
@@ -44,6 +47,7 @@ import { TeacherNotes } from "../modules/school/TeacherNotes";
 import { OutsidePanel } from "../modules/school/OutsidePanel";
 import { seasonFor } from "../modules/school/atmosphere";
 import { Advice, adviceFor } from "../modules/school/advisor";
+import { usePhraseBook } from "../modules/school/phraseBook";
 import { CURRENCIES } from "../config/currencies";
 import {
   BuyBlocker,
@@ -66,6 +70,7 @@ import {
 } from "../config/schoolCatalog";
 import { useSchoolState } from "../modules/school/useSchoolState";
 import { useCharacter } from "../context/CharacterContext";
+import { useProfile } from "../context/ProfileContext";
 import { SchoolLookPatch, WalletBalances } from "../services/schoolServices";
 
 // three.js and the whole scene are ~500kB that only this page needs, and even
@@ -297,6 +302,7 @@ const AdvisorFace = () => (
 
 const AdvisorCard = ({
   advice,
+  text,
   busy,
   payLabel,
   buildLabel,
@@ -306,6 +312,8 @@ const AdvisorCard = ({
   onDismiss,
 }: {
   advice: Advice;
+  /** What the advice says, in the player's language. */
+  text: string;
   busy: boolean;
   payLabel: string;
   buildLabel: string;
@@ -325,7 +333,7 @@ const AdvisorCard = ({
     >
       <div className="flex items-start gap-2.5 px-3 pt-3 pb-2">
         <AdvisorFace />
-        <p className="text-[12px] leading-snug text-black/75 font-medium flex-1">{advice.text}</p>
+        <p className="text-[12px] leading-snug text-black/75 font-medium flex-1">{text}</p>
         <button
           type="button"
           onClick={onDismiss}
@@ -552,7 +560,10 @@ const DecorateSheet = ({
 
 const Room = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { character, characterLoading } = useCharacter();
+  const { profile } = useProfile();
   const {
     school,
     wallet,
@@ -572,6 +583,8 @@ const Room = () => {
   const music = useAmbientMusic(part === "night" ? "night" : "day");
   const sfx = useSchoolSfx();
   const playSfx = sfx.play;
+  // What the people in the school say, in the language the page is in.
+  const phrases = usePhraseBook();
 
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -598,6 +611,17 @@ const Room = () => {
   // rather than a boolean, so dismissing "wages are due" does not also silence
   // "wages are eight weeks behind".
   const [dismissed, setDismissed] = useState<string | null>(null);
+  // "Find me": a new number glides the camera to the player's own desk.
+  const [seekMe, setSeekMe] = useState(0);
+  // The nudge to go and make a character, for anybody who has not — until
+  // they do, or wave it away.
+  const [hintGone, setHintGone] = useState(() => {
+    try {
+      return localStorage.getItem("school.characterHint") === "gone";
+    } catch {
+      return false;
+    }
+  });
 
   // The bell, when lessons start and when they end.
   const lastPart = useRef(part);
@@ -606,6 +630,13 @@ const Room = () => {
     lastPart.current = part;
     if (part === "lessons" || part === "afterSchool") playSfx("bell");
   }, [part, playSfx]);
+
+  const wantsMe = params.get("me") === "1";
+  useEffect(() => {
+    if (!wantsMe || !school) return;
+    setSeekMe(Date.now());
+    setParams({}, { replace: true });
+  }, [wantsMe, school, setParams]);
 
   useEffect(() => {
     if (!toast) return;
@@ -682,11 +713,12 @@ const Room = () => {
     canBuild: canBuildSomething,
     rooms: school.ownedRoomIds.length,
   });
+  const adviceText = t(`school.advisor.${advice.line}`, advice.params);
   // The idle line has nothing to act on and no deadline, so it does not get to
   // occupy a corner of the screen; the advisor appears when there is something
   // to say. It also stays out of the way while you are building or decorating.
   const showAdvisor =
-    mode === "play" && advice.kind !== "idle" && dismissed !== advice.text && !celebrating;
+    mode === "play" && advice.kind !== "idle" && dismissed !== adviceText && !celebrating;
 
   const roomNote = (id: string) => {
     const parent = parentOf(school.variantId, id);
@@ -759,6 +791,26 @@ const Room = () => {
     setPicked(null);
   };
 
+  // After dark the player has gone home with everybody else (castFor), so
+  // there is nobody to find — say so rather than glide to an empty desk.
+  const findMe = () => {
+    if (part === "evening" || part === "night") {
+      setToast(t("school.findMe.home"));
+      return;
+    }
+    setExterior(false);
+    setSeekMe(Date.now());
+  };
+
+  const dropHint = () => {
+    setHintGone(true);
+    try {
+      localStorage.setItem("school.characterHint", "gone");
+    } catch {
+      // Gone for this visit, then.
+    }
+  };
+
   // Clearing every field this room kind could have set is what "reset" means:
   // the room falls back to the school's own look, and the preset disappears.
   const resetRoom = () => {
@@ -784,6 +836,7 @@ const Room = () => {
           school={school}
           character={character}
           learnedWords={learnedWords}
+          phrases={phrases}
           interactive
           exterior={exterior}
           mode={mode}
@@ -797,6 +850,8 @@ const Room = () => {
           justBuilt={justBuilt}
           announce={announce}
           schoolName={school.name ?? t("school.exterior.defaultName")}
+          playerName={profile?.nickname || t("school.findMe.you")}
+          seekMe={seekMe}
         />
       </Suspense>
 
@@ -815,6 +870,30 @@ const Room = () => {
           </div>
         </div>
         <ClockBadge />
+        {/* Never made a character: the one at the front desk is a stranger
+            wearing the default. Point at where to change that. */}
+        {character && !character.look && !hintGone && mode === "play" && (
+          <div className="pointer-events-auto flex items-stretch rounded-[3px] bg-white/95 shadow-xl overflow-hidden max-w-[15rem]">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard#character")}
+              className="flex items-center gap-2 pl-3 pr-2 py-2 text-left active:bg-black/5"
+            >
+              <IoShirtOutline size={18} className="shrink-0 text-black/70" />
+              <span className="text-[12px] font-semibold leading-snug text-black/75">
+                {t("school.findMe.makeCharacter")}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={dropHint}
+              aria-label={t("school.look.close")}
+              className="px-2 text-black/30 active:text-black/60"
+            >
+              <IoClose size={15} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── View toggle + look drawer trigger ──────────────────────────
@@ -858,6 +937,15 @@ const Room = () => {
             mode === "play" ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
+          <button
+            type="button"
+            onClick={findMe}
+            aria-label={t("school.findMe.button")}
+            title={t("school.findMe.button")}
+            className="h-11 w-11 rounded-full bg-white/90 shadow-sm flex items-center justify-center text-black/60 active:scale-95 transition-transform"
+          >
+            <IoLocateOutline size={21} />
+          </button>
           <button
             type="button"
             onClick={() => setExterior((v) => !v)}
@@ -1001,13 +1089,14 @@ const Room = () => {
           {showAdvisor && (
             <AdvisorCard
               advice={advice}
+              text={adviceText}
               busy={busy}
               payLabel={t("school.payroll.pay", { amount: school.payroll?.due ?? 0 })}
               buildLabel={t("school.buildOpen")}
               dismissLabel={t("school.look.close")}
               onPay={() => run(payPayroll)}
               onBuild={() => enterMode("build")}
-              onDismiss={() => setDismissed(advice.text)}
+              onDismiss={() => setDismissed(adviceText)}
             />
           )}
         </AnimatePresence>

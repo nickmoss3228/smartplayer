@@ -440,6 +440,62 @@ describe("character shop", () => {
   });
 });
 
+describe("character creator", () => {
+  const LOOK = {
+    skin: "#C98C5B",
+    hair: "ponytail",
+    hairColor: "#a83232",
+    top: "shirt",
+    topColor: "#f1efe8",
+    bottom: "skirt",
+    bottomColor: "#2e3a58",
+    glasses: "glasses",
+    hat: "none",
+    hatColor: "#d64a4a",
+  };
+
+  it("saves a whole character for free, and a visitor sees it", async () => {
+    const u = await registerUser();
+    const before = await api("GET", "/api/progress/character", { token: u.token });
+    assert.equal(before.body.character.look, null, "nobody has made one yet");
+
+    const saved = await api("PUT", "/api/progress/character/look", { token: u.token, body: { look: LOOK } });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    assert.deepEqual(saved.body.character.look, { ...LOOK, skin: "#c98c5b" });
+    assert.equal((await userRow(u.id)).bitAward, 0, "and it cost nothing");
+
+    const got = await api("GET", "/api/progress/character", { token: u.token });
+    assert.equal(got.body.character.look.hair, "ponytail");
+
+    const visitor = await registerUser();
+    const visit = await api("GET", `/api/progress/room/${u.id}`, { token: visitor.token });
+    assert.equal(visit.status, 200);
+    assert.equal(visit.body.character.look.top, "shirt");
+  });
+
+  it("refuses anything that is not a character the creator could have made", async () => {
+    const u = await registerUser();
+    const put = (look) => api("PUT", "/api/progress/character/look", { token: u.token, body: { look } });
+    const { hat: _hat, ...missing } = LOOK;
+    for (const look of [
+      null,
+      "ponytail",
+      [LOOK],
+      missing,
+      { ...LOOK, extra: "x" },
+      { ...LOOK, hair: "mohawk" },
+      { ...LOOK, hat: "chef" },
+      { ...LOOK, skin: "brown" },
+      { ...LOOK, topColor: "#12345" },
+      { ...LOOK, glasses: 1 },
+    ]) {
+      assert.equal((await put(look)).status, 400, JSON.stringify(look));
+    }
+    assert.equal((await api("GET", "/api/progress/character", { token: u.token })).body.character.look, null);
+    assert.equal((await api("PUT", "/api/progress/character/look", { body: { look: LOOK } })).status, 401);
+  });
+});
+
 describe("school", () => {
   /** The first room a fresh school can buy, and its price. */
   async function buyableRoom(u) {

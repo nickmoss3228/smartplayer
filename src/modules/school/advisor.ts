@@ -11,6 +11,9 @@
 // state. Same reasoning too — a message chosen at random on every render
 // flickers, and one chosen from a seed the player can feel (what they own, what
 // they owe) reads as somebody paying attention.
+//
+// Like staffNotes.ts it returns a translation KEY and its parameters, not
+// English: the page says it in the player's language (`school.advisor.*`).
 
 import { PAYROLL_MAX_WEEKS } from "../../config/schoolCatalog";
 
@@ -28,7 +31,10 @@ export type AdviceKind =
 
 export interface Advice {
   kind: AdviceKind;
-  text: string;
+  /** A key under `school.advisor`. */
+  line: string;
+  /** Its parameters. `count` is there for the plural forms. */
+  params: Record<string, number>;
   /** Present only when there is something to press. */
   action: "pay" | "build" | null;
 }
@@ -53,17 +59,7 @@ export interface SchoolMood {
  * room count rather than at random, so it changes when the school does and not
  * while you are reading it.
  */
-const IDLE = [
-  "Quiet week. Everyone turned up.",
-  "The corridor's been busy. Good sign.",
-  "Nothing to report — which is the report.",
-  "Staff are happy. Keep it that way.",
-  "Somebody asked about the timetable. I said we'd think about it.",
-  "The place is running itself today.",
-  "All present. All paid.",
-];
-
-const SMALL = "Small school, but it's ours.";
+const IDLE = ["idle0", "idle1", "idle2", "idle3", "idle4", "idle5", "idle6"];
 
 export function adviceFor(mood: SchoolMood): Advice {
   const { weeksOwed, due, morale, canBuild, rooms } = mood;
@@ -71,35 +67,34 @@ export function adviceFor(mood: SchoolMood): Advice {
   if (weeksOwed >= PAYROLL_MAX_WEEKS) {
     return {
       kind: "payroll-heavy",
-      text: `Wages are ${weeksOwed} weeks behind. That's as far back as it goes — ${due} to clear it.`,
+      line: "payrollHeavy",
+      params: { count: weeksOwed, due },
       action: "pay",
     };
   }
   if (weeksOwed >= 2) {
     return {
       kind: "payroll-due",
-      text: `${weeksOwed} weeks of wages outstanding. ${due} clears it.`,
+      line: "payrollBehind",
+      params: { count: weeksOwed, due },
       action: "pay",
     };
   }
   if (weeksOwed === 1) {
-    return { kind: "payroll-due", text: `Wages are due — ${due} this week.`, action: "pay" };
+    return { kind: "payroll-due", line: "payrollDue", params: { due }, action: "pay" };
   }
   // Only once payroll is clear, because "the place feels quiet" while wages are
   // owed is a diagnosis the player already has.
   if (morale < 70) {
-    return {
-      kind: "morale-low",
-      text: "It's been quiet since the wages went out late. They'll come round.",
-      action: null,
-    };
+    return { kind: "morale-low", line: "moraleLow", params: {}, action: null };
   }
   if (canBuild) {
-    return { kind: "can-build", text: "There's enough put by for another room.", action: "build" };
+    return { kind: "can-build", line: "canBuild", params: {}, action: "build" };
   }
   return {
     kind: "idle",
-    text: rooms <= 2 ? SMALL : IDLE[rooms % IDLE.length],
+    line: rooms <= 2 ? "small" : IDLE[rooms % IDLE.length],
+    params: {},
     action: null,
   };
 }

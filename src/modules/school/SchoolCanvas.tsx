@@ -5,8 +5,10 @@
 // nearest-neighbour. That upscale IS the pixel art — there are no sprites
 // anywhere in this game.
 //
-// Set PIXEL_DPR to 1 and the same scene renders crisp. When the designer's
-// models land, that is the switch (docs/room-game-concept.md §6).
+// The fraction comes from renderScale.ts: chunky on a desktop, finer on a
+// phone, whose screen is too small to spend pixels that freely. Pin it at 1
+// and the same scene renders crisp everywhere. When the designer's models
+// land, that is the switch (docs/room-game-concept.md §6).
 //
 // The camera never rotates. Rotation turns an isometric scene into "a 3D app"
 // and invites the player to fight the camera instead of looking at the room;
@@ -19,11 +21,11 @@ import * as THREE from "three";
 import { DEFAULT_VARIANT_ID, RoomLook, lookFor, planBounds } from "../../config/schoolCatalog";
 import { SchoolState, WalletBalances } from "../../services/schoolServices";
 import { CharacterState } from "../../types/Character";
-import { getCharacterItem } from "../../config/characterCatalog";
+import { resolveLook } from "../character/look";
 import { Building } from "./Building";
 import { Deskware, Furnishings } from "./furniture";
-import { People, PersonLook } from "./People";
-import { PersonRole, boardWords, buildBubblePool } from "./bubbles";
+import { People } from "./People";
+import { PersonRole, PhraseBook, boardWords, buildBubblePool } from "./bubbles";
 import { SchoolRoomRect } from "../../config/schoolCatalog";
 import {
   GhostRoom,
@@ -48,9 +50,7 @@ import { Grounds } from "./Grounds";
 import { LampPools, NightDriver, Pendants, RoomLights } from "./NightLights";
 import { pendantsFor, roomLights } from "./lampLayout";
 import { arrivals, groundsPlan, wayIn } from "./groundsLayout";
-
-/** Render scale. 0.38 ≈ chunky pixels on a phone; 1 is a crisp modern render. */
-const PIXEL_DPR = 0.38;
+import { useRenderScale } from "./renderScale";
 
 // True isometric: equal parts x, y and z, which is what makes a tile grid
 // project to a clean 2:1 diamond.
@@ -124,6 +124,7 @@ const CameraRig = ({
   ghosts,
   focus,
   glide,
+  seek,
   land,
   bottomInset = 0,
 }: {
@@ -136,6 +137,10 @@ const CameraRig = ({
    *  `focus` it leaves the leash on the whole campus, so the player can pan
    *  straight back out; `nonce` is what makes the same room glide twice. */
   glide?: { roomId: string; nonce: number } | null;
+  /** A one-off glide to a point — the player's own desk. Only a new `nonce`
+   *  moves the camera; the point coming and going with the time of day does
+   *  not. */
+  seek?: { at: { x: number; z: number } | null; nonce: number };
   /** The whole plot. The view may be dragged anywhere over it, and zoomed out
    *  far enough to see all of it: a finished school on its grounds is worth
    *  looking at whole. */
@@ -228,6 +233,19 @@ const CameraRig = ({
     // Only a new nonce means a new glide; the plan changing under it does not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [glide?.nonce, controls]);
+
+  useEffect(() => {
+    if (!seek?.nonce || !seek.at || !controls) return;
+    // Close in on one desk: near enough to see the face, with the desks
+    // around it still in the frame.
+    const { width, height } = sizeRef.current;
+    const b = planBounds([{ x: seek.at.x - 2.5, z: seek.at.z - 2.5, w: 5, d: 5 } as SchoolRoomRect]);
+    const zoom = Math.min(controls.maxZoom, fitZoom(b, width, height));
+    goal.current = { zoom: Math.max(zoom, camera.zoom), cx: b.cx, cz: b.cz };
+    easing.current = true;
+    // Only a new nonce is a new "find me".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seek?.nonce, controls]);
 
   // Touching the camera cancels any pending glide. Without this, buying a room
   // and immediately grabbing the view means fighting the animation for a second.
@@ -394,21 +412,6 @@ const DayCycle = () => {
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 
-function playerLookFrom(character: Pick<CharacterState, "skinTone" | "equipped"> | null): PersonLook {
-  const swatch = (slot: "hairstyle" | "outfit" | "hat") => {
-    const id = character?.equipped?.[slot];
-    return id ? getCharacterItem(id)?.swatch : undefined;
-  };
-  const outfit = swatch("outfit");
-  return {
-    skin: character?.skinTone ?? "#f2c48d",
-    hair: swatch("hairstyle")?.color ?? "#3b2a1e",
-    shirt: outfit?.color ?? "#4a7fd6",
-    trousers: outfit?.accent ?? "#3d4557",
-    hat: swatch("hat")?.color ?? null,
-  };
-}
-
 /** What the scene is FOR right now. "play" is the school; "build" swaps the
  *  people for the rooms you could add. Not a boolean because customize mode
  *  lands in the same slot next. */
@@ -416,8 +419,10 @@ export type SchoolMode = "play" | "build" | "customize";
 
 interface SceneProps {
   school: SchoolState;
-  character: Pick<CharacterState, "skinTone" | "equipped"> | null;
+  character: Pick<CharacterState, "skinTone" | "equipped" | "look"> | null;
   learnedWords: string[];
+  /** Everything the people say, in the player's language (phraseBook.ts). */
+  phrases: PhraseBook;
   interactive: boolean;
   /** Whole building from outside instead of the cutaway. */
   exterior?: boolean;
@@ -445,6 +450,11 @@ interface SceneProps {
    *  because a change is about to reach them all ("all"), or none at all
    *  ("none" — the outside, where the rooms are under the roof). */
   pickScope?: "one" | "all" | "none";
+  /** The name over the player's own head, so they can pick themselves out of
+   *  the class. None when visiting: that figure is the host. */
+  playerName?: string;
+  /** "Find me": a new number glides the camera to the player's desk. */
+  seekMe?: number;
 }
 
 /**
@@ -490,6 +500,7 @@ const Scene = ({
   school,
   character,
   learnedWords,
+  phrases,
   interactive,
   exterior = false,
   mode = "play",
@@ -503,6 +514,8 @@ const Scene = ({
   schoolName,
   onPersonTap,
   pickScope = "one",
+  playerName,
+  seekMe = 0,
 }: SceneProps) => {
   const building = mode === "build";
   const customizing = mode === "customize";
@@ -576,10 +589,6 @@ const Scene = ({
     const rect = plan.rooms.find((r) => r.id === announce.roomId);
     return rect ? { rect, text: announce.text, nonce: announce.nonce } : null;
   }, [announce, plan.rooms]);
-  const glide = useMemo(
-    () => (announce ? { roomId: announce.roomId, nonce: announce.nonce } : null),
-    [announce],
-  );
   const outside = useMemo(() => outsideLook(school.exterior), [school.exterior]);
   // Over the gate if there is one, else over the porch's signpost.
   const signAt = useMemo((): [number, number, number] | null => {
@@ -606,7 +615,7 @@ const Scene = ({
   // day re-renders the scene; the light moves on its own every frame.
   const part = useDayPart();
   const hour = HOUR_OF_PART[part];
-  const pool = useMemo(() => buildBubblePool(learnedWords, hour), [learnedWords, hour]);
+  const pool = useMemo(() => buildBubblePool(learnedWords, hour, phrases), [learnedWords, hour, phrases]);
   // The plot the school stands on, sized for the finished campus; and the way
   // in from the street, which moves as the front door does.
   const variantId = school.variantId ?? DEFAULT_VARIANT_ID;
@@ -619,8 +628,15 @@ const Scene = ({
       ? { ...here, roomLoops: [...here.roomLoops, ...arrivals(way, grounds)] }
       : here;
   }, [plan, fullCast, part, way, grounds]);
+  const glide = useMemo(
+    () => (announce ? { roomId: announce.roomId, nonce: announce.nonce } : null),
+    [announce],
+  );
+  // "Find me": the player's desk, whenever they are in (not after dark).
+  const seek = useMemo(() => ({ at: cast.playerSeat, nonce: seekMe }), [cast.playerSeat, seekMe]);
   const words = useMemo(() => boardWords(learnedWords), [learnedWords]);
-  const playerLook = useMemo(() => playerLookFrom(character), [character]);
+  // The player's own character, as they made it in the dashboard.
+  const playerLook = useMemo(() => resolveLook(character), [character]);
 
   // Tapping the board chalks up the next word you have learned. It is the only
   // prop with state, and it deliberately holds none of it on the server.
@@ -675,6 +691,7 @@ const Scene = ({
         mute={exterior || building || customizing}
         announce={speakUp}
         onTap={onPersonTap}
+        playerName={playerName}
       />
 
       {customizing && pickScope !== "none" && (
@@ -703,6 +720,7 @@ const Scene = ({
         ghosts={ghosts}
         focus={focusRect}
         glide={glide}
+        seek={seek}
         land={grounds.tile}
         // The decorate sheet covers the bottom half, near enough.
         bottomInset={customizing ? 0.45 : 0}
@@ -718,7 +736,9 @@ export interface SchoolCanvasProps extends SceneProps {
   className?: string;
 }
 
-export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) => (
+export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) => {
+  const scale = useRenderScale();
+  return (
   <div className={`relative ${className}`}>
     {/* The nearest-neighbour upscale has to be applied to the <canvas> itself,
         which R3F owns — hence a rule rather than a style prop. */}
@@ -727,7 +747,7 @@ export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) =>
       className="school-canvas"
       orthographic
       flat
-      dpr={PIXEL_DPR}
+      dpr={scale}
       gl={{ antialias: false, powerPreference: "low-power" }}
       camera={{ position: [40, 40, 40], zoom: 40, near: 0.1, far: 400 }}
       style={{ touchAction: "none" }}
@@ -745,6 +765,7 @@ export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) =>
       />
     </Canvas>
   </div>
-);
+  );
+};
 
 export default SchoolCanvas;

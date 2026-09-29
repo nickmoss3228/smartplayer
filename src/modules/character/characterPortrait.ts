@@ -1,68 +1,42 @@
-import { getCharacterItem } from "../../config/characterCatalog";
-import { CharacterState } from "../../types/Character";
+import { CharacterLook } from "./look";
 
 const SIZE = 64;
-const DEFAULT_SHIRT_COLOR = "#4a7fd6";
 
-// A small, deliberately simple 2D identity icon derived from the same
-// customization data as the 3D CharacterRig — not a pixel-accurate portrait
-// of the voxel model, just enough (skin tone + hair/outfit/hat colors) to be
-// recognizable at Navbar/Dashboard size. Avoids standing up an off-screen
-// Three.js render pipeline for a 32px image (see the character-creation
-// plan's reasoning for this tradeoff).
-export function drawCharacterPortrait(
-  character: Pick<CharacterState, "skinTone" | "equipped">,
-): string {
+// The stand-in portrait, shown for the moment it takes portrait.ts to render
+// the real one on a device that has never seen this look. A flat front view of
+// the same boxes the 3D figure is made of — skin, hair, shirt — drawn in 2D so
+// it needs nothing loaded. Once the 3D picture exists it is cached, and this
+// is not drawn again for that look.
+export function drawCharacterPortrait(look: CharacterLook): string {
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
+  const u = SIZE / 16;
+  const rect = (x: number, y: number, w: number, h: number, c: string) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x * u, y * u, w * u, h * u);
+  };
 
-  const outfitItem = character.equipped.outfit ? getCharacterItem(character.equipped.outfit) : null;
-  const hairItem = character.equipped.hairstyle ? getCharacterItem(character.equipped.hairstyle) : null;
-  const hatItem = character.equipped.hat ? getCharacterItem(character.equipped.hat) : null;
-
-  // Background
-  ctx.fillStyle = "#f4f4f5";
+  ctx.fillStyle = "#d8ebf6";
   ctx.beginPath();
   ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Shoulders / outfit collar
-  ctx.fillStyle = outfitItem?.swatch.color ?? DEFAULT_SHIRT_COLOR;
-  ctx.beginPath();
-  ctx.moveTo(SIZE * 0.15, SIZE);
-  ctx.quadraticCurveTo(SIZE * 0.5, SIZE * 0.62, SIZE * 0.85, SIZE);
-  ctx.closePath();
-  ctx.fill();
-
-  // Head
-  ctx.fillStyle = character.skinTone;
-  ctx.beginPath();
-  ctx.arc(SIZE / 2, SIZE * 0.44, SIZE * 0.28, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Hair
-  if (hairItem) {
-    ctx.fillStyle = hairItem.swatch.color;
-    ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE * 0.34, SIZE * 0.3, Math.PI, Math.PI * 2);
-    ctx.fill();
-    if (hairItem.swatch.shape === "hair-long") {
-      ctx.fillRect(SIZE * 0.18, SIZE * 0.34, SIZE * 0.1, SIZE * 0.28);
-      ctx.fillRect(SIZE * 0.72, SIZE * 0.34, SIZE * 0.1, SIZE * 0.28);
-    }
+  rect(3, 12, 10, 4, look.topColor);
+  rect(5, 4, 6, 7, look.skin);
+  rect(4.5, 3, 7, 2.5, look.hairColor);
+  if (look.hair === "long" || look.hair === "bob") {
+    rect(4.5, 5, 1, 5, look.hairColor);
+    rect(10.5, 5, 1, 5, look.hairColor);
   }
-
-  // Hat
-  if (hatItem) {
-    ctx.fillStyle = hatItem.swatch.color;
-    ctx.beginPath();
-    ctx.ellipse(SIZE / 2, SIZE * 0.24, SIZE * 0.3, SIZE * 0.16, 0, Math.PI, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(SIZE * 0.22, SIZE * 0.16, SIZE * 0.56, SIZE * 0.1);
+  if (look.glasses !== "none") rect(5.5, 6.5, 5, 1.4, look.glasses === "shades" ? "#17191d" : "#2b2b2b");
+  else {
+    rect(6.3, 6.8, 0.9, 0.9, "#2b2b2b");
+    rect(8.8, 6.8, 0.9, 0.9, "#2b2b2b");
   }
+  if (look.hat !== "none") rect(4.3, 2, 7.4, 2, look.hatColor);
 
   return canvas.toDataURL();
 }

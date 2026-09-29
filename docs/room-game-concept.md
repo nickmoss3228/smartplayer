@@ -207,8 +207,9 @@ makes an isometric scene read as "a 3D app" and invites people to fight the
 camera. Flat, low-saturation palette. **Rendered at ~35% resolution and upscaled
 with nearest-neighbour**, which is what makes it pixelated.
 
-The pixelation is one number (`PIXEL_DPR` in `SchoolCanvas.tsx`). Set it to 1
-and the same scene renders crisp. That is the intended path when the real art
+The pixelation is one function (`renderScale` in `modules/school/renderScale.ts`):
+0.38 on a desktop, finer on a phone (§14). Pin it at 1 and the same scene
+renders crisp. That is the intended path when the real art
 arrives.
 
 **The camera is yours once you touch it.** It frames the whole campus on load
@@ -263,7 +264,7 @@ arrive. Here the models drop into place.
    refs in `useFrame`. Swap that for drei's `useAnimations` and play the named
    clip the NPC's state machine already picks (`idle` / `write` / `walk` /
    `talk`) — the state machine stays, only the thing it drives changes.
-4. Set `PIXEL_DPR = 1` and turn antialiasing on in `SchoolCanvas.tsx`.
+4. Pin `renderScale` at 1 and turn antialiasing on in `SchoolCanvas.tsx`.
 5. Preload what stage 0 needs (`useGLTF.preload(...)`) and let later stages load
    on unlock, so the first paint stays fast.
 
@@ -501,3 +502,40 @@ including the ones with a look of their own — `everywhere: true` on
 `PATCH /progress/school/look`), one room, or the outside. It sits at the bottom
 of the screen and the camera frames the school above it, so a change is seen as
 it is made.
+
+## 14. You, in your school (2026-09-29)
+
+**One figure for everybody.** The character a player makes on the dashboard is
+not an avatar model beside the school's people; it is one of them.
+`figureParts.ts` describes a person as boxes hung on the joints `People.tsx`
+already animates — hips, shoulders, head — and everything that draws a person
+reads it: every student, the staff, the player at the front desk, the model
+turning in the creator, the portrait in the navbar. A ponytail cannot look one
+way in the school and another on the dashboard, because there is only one
+ponytail. The tests on it are about what a person must never be: hair over the
+eyes, anything through a hat, anybody below the floor or sitting in the seat
+rather than on it.
+
+**Seven draw calls a person.** `figureGeometry.ts` merges each joint's boxes
+into one mesh with the colours in the vertices, cached per look and shared by
+everybody wearing it. A person with glasses and a hoodie costs the same as one
+without. That saving is what pays for the next point.
+
+**Finer pixels on a phone.** One fixed render scale made a desktop chunky and a
+phone a smear: a student nine pixels tall. `renderScale.ts` keys the scale to
+the screen's short side — unchanged from a small laptop up, close to one art
+pixel per CSS pixel on a phone — so it is still pixel art, just pixels a phone
+can afford to show. The short side, because it is the one that does not change
+when the address bar slides away mid-pan.
+
+**The school talks in your language.** What people say lives in the locale
+files (`school.speech.*`, `school.advisor.*`) and reaches the canvas as a
+phrase book; the canvas still has no i18n of its own. The words a player has
+learned are quoted as they are — they are the English the player is here for.
+
+**Free, and saved whole.** A look is ten fields, all chosen together, so it is
+stored and sent as one (`PUT /progress/character/look`, a jsonb column). The
+server checks each style against a closed list, because each is geometry, and
+each colour only for being a colour, so the palettes can grow without a deploy.
+Nobody is made to make one: until they do, they are dressed from what the old
+item shop had them wearing, and a card in the school points to the dashboard.

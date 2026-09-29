@@ -23,7 +23,7 @@ async function start() {
   // otherwise.
   assertPaymentsSafeForEnvironment();
 
-  app.listen(config.port, async () => {
+  const server = app.listen(config.port, async () => {
     console.log(`Server is running on http://localhost:${config.port}`);
     console.log('🚀 Starting application...');
     // Background sweeps live here rather than in app.js: app.js builds the
@@ -44,6 +44,19 @@ async function start() {
           );
       }
     }
+  });
+
+  // The port is taken: almost always a second `npm run dev` still running from
+  // another terminal. Under `tsx watch` both restart on every save and the one
+  // that binds second dies here, so say that instead of an unhandled 'error'
+  // event and a stack trace.
+  server.on("error", (error) => {
+    if (error.code !== "EADDRINUSE") throw error;
+    console.error(
+      `[server] Port ${config.port} is already in use — another backend is probably still running ` +
+        `(a second "npm run dev"?). Stop it, then save any backend file to restart this one.`,
+    );
+    process.exit(1);
   });
 }
 start();

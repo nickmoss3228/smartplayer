@@ -1544,6 +1544,67 @@
       "tip": "This is the most emotionally layered episode in the entire Hard series. Listen for the final line Daniel writes in his notebook — it reframes everything he has said across all ten stories."
     }
   },
+  "character": {
+    "eyebrow": "Your character",
+    "title": "This is you",
+    "titleNew": "Make yourself",
+    "intro": "You sit at the front desk of your first classroom, among the other students.",
+    "introNew": "Make a character that looks like you. They'll sit among the students in your school — free, and you can change it any time.",
+    "dragHint": "Drag to turn",
+    "tabs": {
+      "skin": "Skin",
+      "hair": "Hair",
+      "clothes": "Clothes",
+      "extras": "Extras"
+    },
+    "skin": "Skin tone",
+    "style": "Style",
+    "colourLabel": "Colour",
+    "colour": "Colour {{n}}",
+    "top": "Top",
+    "bottom": "Bottom",
+    "glassesLabel": "Glasses",
+    "hatLabel": "Hat",
+    "hair": {
+      "short": "Short",
+      "buzz": "Buzz cut",
+      "spiky": "Spiky",
+      "curly": "Curly",
+      "bob": "Bob",
+      "long": "Long",
+      "ponytail": "Ponytail",
+      "bun": "Bun"
+    },
+    "tops": {
+      "tee": "T-shirt",
+      "sweater": "Sweater",
+      "hoodie": "Hoodie",
+      "shirt": "Shirt & tie"
+    },
+    "bottoms": {
+      "trousers": "Trousers",
+      "shorts": "Shorts",
+      "skirt": "Skirt"
+    },
+    "glasses": {
+      "none": "None",
+      "glasses": "Glasses",
+      "shades": "Sunglasses"
+    },
+    "hats": {
+      "none": "None",
+      "cap": "Cap",
+      "beanie": "Beanie",
+      "headband": "Headband"
+    },
+    "random": "Surprise me",
+    "undo": "Undo",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "saveFailed": "Couldn't save your character. Try again.",
+    "seeInSchool": "See me in school"
+  },
   "school": {
     "title": "Your Dream School",
     "loadFailed": "Could not load your school.",
@@ -1805,6 +1866,151 @@
         "evening": "Evening",
         "night": "Night"
       }
+    },
+    "findMe": {
+      "button": "Find me",
+      "you": "You",
+      "home": "You've gone home for the night — back at 07:00 school time.",
+      "makeCharacter": "That's you at the front desk. Make them look like you →"
+    },
+    "speech": {
+      "quote": "\"{{word}}\"",
+      "greeting": {
+        "morning": "Good morning!",
+        "afternoon": "Good afternoon!",
+        "evening": "Good evening!",
+        "late": "Working late?"
+      },
+      "chatter": [
+        "Can you repeat that?",
+        "I think I got it!",
+        "How do you spell it?",
+        "Wait, one more time...",
+        "Nice work!",
+        "What does that mean?",
+        "Let's listen again.",
+        "Almost had it.",
+        "Say it slower?",
+        "Oh — now I hear it.",
+        "Is this on the test?",
+        "I like this one.",
+        "My turn?",
+        "Shh, listening.",
+        "That's a new word.",
+        "Got it, thanks!",
+        "Hmm..."
+      ],
+      "teacher": [
+        "Listen first, then repeat.",
+        "Anyone want to try?",
+        "Good — say it again.",
+        "Open your notebooks.",
+        "Let's take it from the top.",
+        "Nice pronunciation!",
+        "Who remembers this one?",
+        "Slowly now.",
+        "Everyone together."
+      ],
+      "reception": [
+        "Welcome!",
+        "Welcome to the school!",
+        "How can I help?",
+        "Are you here for the tour?",
+        "Sign in here, please.",
+        "Take a seat — someone will be down.",
+        "First day? You'll like it here.",
+        "Straight down the corridor."
+      ],
+      "library": [
+        "Shh — reading.",
+        "This chapter is good.",
+        "Two weeks, please.",
+        "Have you read this one?",
+        "It's quiet in here.",
+        "Third shelf along.",
+        "Just one more page."
+      ],
+      "lab": [
+        "Headphones on.",
+        "Playing it again.",
+        "I heard it that time!",
+        "Track two, please.",
+        "One more listen.",
+        "Wait — rewind a bit.",
+        "That accent is tricky."
+      ],
+      "cafeteria": [
+        "Is it pizza today?",
+        "Save me a seat!",
+        "Lunch already?",
+        "Pass the salt?",
+        "This is actually good.",
+        "Five minutes left!",
+        "Anyone want my apple?"
+      ],
+      "cook": [
+        "Next, please!",
+        "Soup or salad?",
+        "Mind, it's hot.",
+        "Trays on the left.",
+        "Pasta's fresh.",
+        "Who wants seconds?",
+        "Enjoy your lunch!"
+      ],
+      "gym": [
+        "Nice pass!",
+        "One more lap.",
+        "Warm up first!",
+        "My turn!",
+        "Good game.",
+        "Two points!",
+        "Catch!"
+      ],
+      "visitor": [
+        "Nice school.",
+        "I'm a bit early.",
+        "Waiting for my class.",
+        "Is this the way in?",
+        "Big place, isn't it?"
+      ],
+      "caretaker": [
+        "Lights out soon!",
+        "Who left this here?",
+        "Mind the wet floor.",
+        "All quiet tonight.",
+        "Nearly done.",
+        "Doors locked? Check."
+      ],
+      "lateStudent": [
+        "*yawn*",
+        "Just one more page.",
+        "So quiet in here...",
+        "Is it late already?",
+        "I should go home."
+      ],
+      "lateStaff": [
+        "Marking, marking...",
+        "One more report.",
+        "Where did the day go?",
+        "Coffee. Now."
+      ]
+    },
+    "advisor": {
+      "payrollHeavy_one": "Wages are {{count}} week behind. That's as far back as it goes — {{due}} to clear it.",
+      "payrollHeavy_other": "Wages are {{count}} weeks behind. That's as far back as it goes — {{due}} to clear it.",
+      "payrollBehind_one": "{{count}} week of wages outstanding. {{due}} clears it.",
+      "payrollBehind_other": "{{count}} weeks of wages outstanding. {{due}} clears it.",
+      "payrollDue": "Wages are due — {{due}} this week.",
+      "moraleLow": "It's been quiet since the wages went out late. They'll come round.",
+      "canBuild": "There's enough put by for another room.",
+      "small": "Small school, but it's ours.",
+      "idle0": "Quiet week. Everyone turned up.",
+      "idle1": "The corridor's been busy. Good sign.",
+      "idle2": "Nothing to report — which is the report.",
+      "idle3": "Staff are happy. Keep it that way.",
+      "idle4": "Somebody asked about the timetable. I said we'd think about it.",
+      "idle5": "The place is running itself today.",
+      "idle6": "All present. All paid."
     },
     "decorate": {
       "open": "Decorate",

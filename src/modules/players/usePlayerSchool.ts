@@ -5,7 +5,7 @@ import { CharacterState } from "../../types/Character";
 
 interface UsePlayerSchoolResult {
   school: SchoolState | null;
-  character: Pick<CharacterState, "skinTone" | "equipped"> | null;
+  character: Pick<CharacterState, "skinTone" | "equipped" | "look"> | null;
   nickname: string;
   loading: boolean;
   error: string | null;
@@ -20,7 +20,7 @@ interface UsePlayerSchoolResult {
 // avatar in it is still worth looking at, which is the whole point of visiting.
 export function usePlayerSchool(userId: string | undefined): UsePlayerSchoolResult {
   const [school, setSchool] = useState<SchoolState | null>(null);
-  const [character, setCharacter] = useState<Pick<CharacterState, "skinTone" | "equipped"> | null>(null);
+  const [character, setCharacter] = useState<Pick<CharacterState, "skinTone" | "equipped" | "look"> | null>(null);
   const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,11 @@ export function usePlayerSchool(userId: string | undefined): UsePlayerSchoolResu
 
       try {
         const room = await fetchPlayerRoom(token, userId);
-        setCharacter({ skinTone: room.character.skinTone, equipped: room.character.equipped });
+        setCharacter({
+          skinTone: room.character.skinTone,
+          equipped: room.character.equipped,
+          look: room.character.look ?? null,
+        });
         if (room.nickname) setNickname(room.nickname);
       } catch {
         setCharacter(null);

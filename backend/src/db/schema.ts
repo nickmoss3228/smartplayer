@@ -161,6 +161,10 @@ export const users = pgTable(
     characterEquippedHairstyle: text("character_equipped_hairstyle"),
     characterEquippedOutfit: text("character_equipped_outfit"),
     characterEquippedHat: text("character_equipped_hat"),
+    // The character made in the dashboard's creator (config/characterLook.js):
+    // ten fields, read and written whole, so jsonb. NULL means "never made
+    // one" — the client then dresses them from the old item columns above.
+    characterLook: jsonb("character_look").$type<Record<string, string>>(),
 
     // ── school (the live save) ──
     // text[] rather than a child table: a set of catalog slugs read whole on

@@ -13,6 +13,12 @@
 // should not be quoting them half the time, and at 200 the generic lines
 // should have mostly faded out. The weight below does that with one ratio and
 // no state.
+//
+// The lines themselves are not here. They live in the locale files under
+// `school.speech`, one list per pool, and arrive as a PhraseBook in the
+// player's language (phraseBook.ts) — so a Russian-speaking player hears the
+// school in Russian. The learned words are quoted as they are: those are the
+// English the player is here to learn.
 
 /**
  * What a person is here to do. Drives which pool they speak from, and it is
@@ -32,150 +38,51 @@ export type PersonRole =
   | "cook"
   | "caretaker";
 
-const CHATTER: string[] = [
-  "Can you repeat that?",
-  "I think I got it!",
-  "How do you spell it?",
-  "Wait, one more time...",
-  "Nice work!",
-  "What does that mean?",
-  "Let's listen again.",
-  "Almost had it.",
-  "Say it slower?",
-  "Oh — now I hear it.",
-  "Is this on the test?",
-  "I like this one.",
-  "My turn?",
-  "Shh, listening.",
-  "That's a new word.",
-  "Got it, thanks!",
-  "Hmm...",
-];
+/** Every list of lines, by its key under `school.speech` in the locales. */
+export const PHRASE_POOLS = [
+  "chatter",
+  "teacher",
+  "reception",
+  "library",
+  "lab",
+  "cafeteria",
+  "cook",
+  "gym",
+  "visitor",
+  "caretaker",
+  /** Whoever is still in after dark. The pools above belong to a school in
+   *  the middle of a lesson; at midnight they would be ghosts talking. */
+  "lateStudent",
+  "lateStaff",
+] as const;
+export type PhrasePool = (typeof PHRASE_POOLS)[number];
 
-const TEACHER_LINES: string[] = [
-  "Listen first, then repeat.",
-  "Anyone want to try?",
-  "Good — say it again.",
-  "Open your notebooks.",
-  "Let's take it from the top.",
-  "Nice pronunciation!",
-  "Who remembers this one?",
-  "Slowly now.",
-  "Everyone together.",
-];
+export type GreetingTime = "morning" | "afternoon" | "evening" | "late";
 
-const RECEPTION_LINES: string[] = [
-  "Welcome!",
-  "Welcome to the school!",
-  "How can I help?",
-  "Are you here for the tour?",
-  "Sign in here, please.",
-  "Take a seat — someone will be down.",
-  "First day? You'll like it here.",
-  "Straight down the corridor.",
-];
-
-const LIBRARY_LINES: string[] = [
-  "Shh — reading.",
-  "This chapter is good.",
-  "Two weeks, please.",
-  "Have you read this one?",
-  "It's quiet in here.",
-  "Third shelf along.",
-  "Just one more page.",
-];
-
-const LAB_LINES: string[] = [
-  "Headphones on.",
-  "Playing it again.",
-  "I heard it that time!",
-  "Track two, please.",
-  "One more listen.",
-  "Wait — rewind a bit.",
-  "That accent is tricky.",
-];
-
-const CAFETERIA_LINES: string[] = [
-  "Is it pizza today?",
-  "Save me a seat!",
-  "Lunch already?",
-  "Pass the salt?",
-  "This is actually good.",
-  "Five minutes left!",
-  "Anyone want my apple?",
-];
-
-const COOK_LINES: string[] = [
-  "Next, please!",
-  "Soup or salad?",
-  "Mind, it's hot.",
-  "Trays on the left.",
-  "Pasta's fresh.",
-  "Who wants seconds?",
-  "Enjoy your lunch!",
-];
-
-const GYM_LINES: string[] = [
-  "Nice pass!",
-  "One more lap.",
-  "Warm up first!",
-  "My turn!",
-  "Good game.",
-  "Two points!",
-  "Catch!",
-];
-
-const VISITOR_LINES: string[] = [
-  "Nice school.",
-  "I'm a bit early.",
-  "Waiting for my class.",
-  "Is this the way in?",
-  "Big place, isn't it?",
-];
-
-const CARETAKER_LINES: string[] = [
-  "Lights out soon!",
-  "Who left this here?",
-  "Mind the wet floor.",
-  "All quiet tonight.",
-  "Nearly done.",
-  "Doors locked? Check.",
-];
-
-/** Whoever is still in after dark. The pools above belong to a school in the
- *  middle of a lesson; at midnight they would be ghosts talking. */
-const LATE_STUDENT_LINES: string[] = [
-  "*yawn*",
-  "Just one more page.",
-  "So quiet in here...",
-  "Is it late already?",
-  "I should go home.",
-];
-
-const LATE_STAFF_LINES: string[] = [
-  "Marking, marking...",
-  "One more report.",
-  "Where did the day go?",
-  "Coffee. Now.",
-];
+/** Everything the school can say, in one language. */
+export type PhraseBook = Record<PhrasePool, string[]> & {
+  greeting: Record<GreetingTime, string>;
+  /** A learned word as somebody says it: "journey" in English, «journey» in
+   *  Russian. */
+  quote: (word: string) => string;
+};
 
 /** Night by the school's own clock (schoolClock.ts). */
 const isLate = (hour: number) => hour >= 21 || hour < 7;
 
 /** The one line that has to know what time it is. A school that says "Good
  *  morning!" at ten at night is a school nobody is really in. */
-export const greetingForHour = (hour: number): string =>
-  isLate(hour) ? "Working late?" : hour < 12 ? "Good morning!" : hour < 18 ? "Good afternoon!" : "Good evening!";
+export const greetingFor = (hour: number): GreetingTime =>
+  isLate(hour) ? "late" : hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
 
 export type BubblePool = Record<PersonRole, string[]>;
 
-/** Formats a learned word as something a person would actually say about it,
- *  rather than dropping a bare noun into a speech bubble. */
-const quote = (word: string) => {
+/** Keeps a learned word only if it fits in a bubble, as a word somebody would
+ *  say rather than a bare noun dropped into one. */
+const quotable = (book: PhraseBook) => (word: string) => {
   const w = word.trim();
-  if (!w) return null;
-  if (w.length > 22) return null;
-  return `"${w}"`;
+  if (!w || w.length > 22) return null;
+  return book.quote(w);
 };
 
 /**
@@ -185,43 +92,42 @@ const quote = (word: string) => {
  * never below zero when there is nothing learned yet. The service roles keep
  * their own voice: a receptionist reciting vocabulary is a bug, not a feature.
  */
-export function buildBubblePool(learnedWords: string[], hour: number): BubblePool {
-  const greeting = greetingForHour(hour);
-  const reception = [greeting, ...RECEPTION_LINES];
+export function buildBubblePool(learnedWords: string[], hour: number, book: PhraseBook): BubblePool {
+  const reception = [book.greeting[greetingFor(hour)], ...book.reception];
 
   if (isLate(hour)) {
     return {
-      student: LATE_STUDENT_LINES,
-      teacher: LATE_STAFF_LINES,
+      student: book.lateStudent,
+      teacher: book.lateStaff,
       receptionist: reception,
-      librarian: LATE_STUDENT_LINES,
-      listener: LATE_STUDENT_LINES,
-      diner: LATE_STUDENT_LINES,
-      athlete: LATE_STUDENT_LINES,
-      visitor: VISITOR_LINES,
-      cook: COOK_LINES,
-      caretaker: CARETAKER_LINES,
+      librarian: book.lateStudent,
+      listener: book.lateStudent,
+      diner: book.lateStudent,
+      athlete: book.lateStudent,
+      visitor: book.visitor,
+      cook: book.cook,
+      caretaker: book.caretaker,
     };
   }
 
-  const quoted = learnedWords.map(quote).filter((w): w is string => w !== null);
+  const quoted = learnedWords.map(quotable(book)).filter((w): w is string => w !== null);
   if (quoted.length === 0) {
     return {
-      student: CHATTER,
-      teacher: TEACHER_LINES,
+      student: book.chatter,
+      teacher: book.teacher,
       receptionist: reception,
-      librarian: LIBRARY_LINES,
-      listener: LAB_LINES,
-      diner: CAFETERIA_LINES,
-      athlete: GYM_LINES,
-      visitor: VISITOR_LINES,
-      cook: COOK_LINES,
-      caretaker: CARETAKER_LINES,
+      librarian: book.library,
+      listener: book.lab,
+      diner: book.cafeteria,
+      athlete: book.gym,
+      visitor: book.visitor,
+      cook: book.cook,
+      caretaker: book.caretaker,
     };
   }
 
   // One learned entry per generic line, capped so the pool stays half chatter.
-  const take = Math.min(quoted.length, CHATTER.length);
+  const take = Math.min(quoted.length, Math.max(1, book.chatter.length));
   // Deterministic rotation instead of a shuffle: the pool is rebuilt whenever
   // the word list changes, and a real shuffle would reorder everything on every
   // rebuild for no visible gain.
@@ -230,16 +136,16 @@ export function buildBubblePool(learnedWords: string[], hour: number): BubblePoo
   const half = picked.slice(0, Math.ceil(take / 2));
 
   return {
-    student: [...CHATTER, ...picked],
-    teacher: [...TEACHER_LINES, ...half],
+    student: [...book.chatter, ...picked],
+    teacher: [...book.teacher, ...half],
     receptionist: reception,
-    librarian: LIBRARY_LINES,
-    listener: [...LAB_LINES, ...half],
-    diner: CAFETERIA_LINES,
-    athlete: GYM_LINES,
-    visitor: VISITOR_LINES,
-    cook: COOK_LINES,
-    caretaker: CARETAKER_LINES,
+    librarian: book.library,
+    listener: [...book.lab, ...half],
+    diner: book.cafeteria,
+    athlete: book.gym,
+    visitor: book.visitor,
+    cook: book.cook,
+    caretaker: book.caretaker,
   };
 }
 

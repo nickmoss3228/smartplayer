@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { IoChevronBack } from "react-icons/io5";
 import { ClockBadge } from "../modules/school/ClockBadge";
+import { usePhraseBook } from "../modules/school/phraseBook";
 import { usePlayerSchool } from "../modules/players/usePlayerSchool";
 import { buildableRooms, stageFor } from "../config/schoolCatalog";
 
@@ -26,6 +27,8 @@ const PlayerRoom = () => {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { school, character, nickname, loading, error } = usePlayerSchool(userId);
+  // Their school, but it talks in YOUR language.
+  const phrases = usePhraseBook();
 
   if (loading) {
     return (
@@ -62,10 +65,13 @@ const PlayerRoom = () => {
           school={school}
           character={character}
           learnedWords={[]}
+          phrases={phrases}
           interactive={false}
           // Their sign over their gate — the one thing about a school its
           // owner writes for other people to read.
           schoolName={school.name ?? t("school.exterior.defaultName")}
+          // The figure at the front desk is the host, as they made themselves.
+          playerName={nickname || undefined}
         />
       </Suspense>
 

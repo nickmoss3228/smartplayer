@@ -30,6 +30,7 @@ import {
   purchaseCharacterItem,
   equipCharacterItem,
   setSkinTone,
+  setCharacterLook,
 } from "../controllers/progress.controller.js";
 import {
   getSchool,
@@ -88,6 +89,7 @@ router.get("/progress/character",                  authenticateToken, getCharact
 router.post("/progress/character/purchase",        authenticateToken, purchaseCharacterItem);
 router.post("/progress/character/equip",           authenticateToken, equipCharacterItem);
 router.patch("/progress/character/skin-tone",      authenticateToken, setSkinTone);
+router.put("/progress/character/look",             authenticateToken, setCharacterLook);
 router.get("/progress/:difficulty",                authenticateToken, getProgress);
 
 export default router;

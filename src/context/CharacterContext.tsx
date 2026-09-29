@@ -14,8 +14,10 @@ import {
   purchaseCharacterItem,
   equipCharacterItem,
   setSkinTone as setSkinToneRequest,
+  saveCharacterLook,
 } from "../services/characterServices";
 import { CharacterState } from "../types/Character";
+import type { CharacterLook } from "../modules/character/look";
 
 interface ActionResult {
   ok: boolean;
@@ -29,6 +31,8 @@ interface CharacterContextValue {
   buy: (itemId: string) => Promise<ActionResult>;
   equip: (itemId: string) => Promise<ActionResult>;
   setSkinTone: (skinTone: string) => Promise<ActionResult>;
+  /** Saves the character made in the dashboard's creator. */
+  saveLook: (look: CharacterLook) => Promise<ActionResult>;
 }
 
 const CharacterContext = createContext<CharacterContextValue>({
@@ -38,6 +42,7 @@ const CharacterContext = createContext<CharacterContextValue>({
   buy: async () => ({ ok: false }),
   equip: async () => ({ ok: false }),
   setSkinTone: async () => ({ ok: false }),
+  saveLook: async () => ({ ok: false }),
 });
 
 // Mounted once above the Router (see App.tsx, alongside ProfileProvider and
@@ -138,9 +143,25 @@ export const CharacterProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  const saveLook = useCallback(async (look: CharacterLook): Promise<ActionResult> => {
+    const token = localStorage.getItem("token");
+    if (!token) return { ok: false, message: "Not logged in" };
+    const seq = ++requestSeq.current;
+    try {
+      const data = await saveCharacterLook(token, look);
+      if (seq === requestSeq.current) setCharacter(data.character);
+      return { ok: true };
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not save your character";
+      return { ok: false, message };
+    }
+  }, []);
+
   return (
     <CharacterContext.Provider
-      value={{ character, characterLoading, refreshCharacter: loadCharacter, buy, equip, setSkinTone }}
+      value={{ character, characterLoading, refreshCharacter: loadCharacter, buy, equip, setSkinTone, saveLook }}
     >
       {children}
     </CharacterContext.Provider>

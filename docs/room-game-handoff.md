@@ -1,7 +1,44 @@
-# Dream School — where things stand (2026-09-28, third round)
+# Dream School — where things stand (2026-09-29, fourth round)
 
 Working notes for picking this up again. The design itself is in
 `room-game-concept.md`; this file is only "what is done, what is not".
+
+## 2026-09-29: the fourth round — you, in your school
+
+Five asks from the user; §14 of the concept doc has the reasoning.
+
+- **Sharper on phones** (`renderScale.ts`): the render scale follows the
+  screen's short side — 0.38 from a small laptop up (unchanged), rising to
+  about 0.93 on a 390-pixel phone. Still pixel art, just finer pixels.
+- **Every line is translated.** Speech bubbles now come from
+  `school.speech.*` in the locales, handed to the canvas as a `PhraseBook`
+  (`phraseBook.ts`, a required `phrases` prop); the deputy head's lines are
+  keys under `school.advisor.*` with Russian plurals. Learned words stay in
+  English — «journey» in Russian, "journey" in English.
+- **A character creator on the dashboard** (`modules/character/`): free; skin,
+  8 hairstyles, 4 tops, 3 bottoms, glasses, hats, colours. Its own small
+  three.js canvas, lazy-loaded. Saved whole with `PUT
+  /progress/character/look` into `users.character_look` (jsonb, migration
+  `0004_character_look`, additive; validated by `config/characterLook.js`).
+  Anybody who has not made one is drawn from the old item shop's columns
+  (`lookFromLegacy`).
+- **One figure for everybody** (`figureParts.ts` → `figureGeometry.ts` →
+  `Figure.tsx`): the player, every student, the staff, the creator's model
+  and the navbar portrait are the same boxes. Each joint's boxes are merged
+  into one vertex-coloured mesh, so a person is seven draw calls instead of
+  about thirteen — that is what pays for the finer phone render. Students now
+  have varied hair, tops and skirts (`crowdLook`).
+- **The navbar portrait** is a photo of the 3D figure (`portrait.ts`, loaded on
+  demand), cached in memory and the last six in localStorage (`portrait.v1`);
+  a flat 2D stand-in shows for the moment it takes the first time.
+- **You in the school**: the front desk of the first classroom (as before),
+  now with your nickname over your head, a "Find me" button that glides the
+  camera there (a toast after dark: you have gone home), and a card pointing
+  to the dashboard until you have made a character. `/room?me=1` glides on
+  arrival — the creator's "See me in school" uses it.
+
+The old item shop's endpoints (`/progress/character/purchase|equip|skin-tone`)
+are still there and unused by the UI.
 
 ## 2026-09-28: the third round
 
@@ -287,7 +324,7 @@ All five planned phases are in. Nothing is queued.
 
 ## Odds and ends
 
-- `PIXEL_DPR = 0.38` in `SchoolCanvas.tsx` is the pixelation; `MIN_READABLE_ZOOM
+- `renderScale.ts` is the pixelation (0.38 on a desktop, finer on a phone); `MIN_READABLE_ZOOM
   = 15` is the zoom floor (chosen so the widest variant, Terrace at 55 tiles,
   still fits a desktop at stage 9).
 - **Deployed 2026-08-23** (commit `a57a293`, both CI workflows green). The

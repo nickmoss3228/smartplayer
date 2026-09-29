@@ -2,7 +2,10 @@
 //
 // Everyone in the school. Bodies are boxes on refs, driven every frame — see
 // docs/room-game-concept.md §6 for how this becomes useAnimations + named glTF
-// clips without touching the state machine above it.
+// clips without touching the state machine above it. What a body IS — which
+// boxes, in what colours — lives in modules/character (figureParts.ts), shared
+// with the character the player builds in the dashboard: the player at the
+// front desk is drawn by the same code as the student next to them.
 //
 // Two rules keep it from looking mechanical:
 //
@@ -27,209 +30,81 @@ import {
   WALK_SPEED,
   walkerAt,
 } from "./props";
-import { BlobShadow } from "./Building";
 import { BubblePool, PersonRole, pickLine } from "./bubbles";
 import { usePresencePoint } from "./presence";
+import { Figure } from "../character/Figure";
+import { BodyRefs, useBodyRefs } from "../character/bodyRefs";
+import { CharacterLook, DEFAULT_LOOK, crowdLook } from "../character/look";
 
-export interface PersonLook {
-  skin: string;
-  hair: string;
-  shirt: string;
-  trousers: string;
-  hat?: string | null;
-}
-
-// Stable palettes for background students. Indexed, never random, so a student
-// does not change shirt colour when the layout preset is swapped.
-const SKINS = ["#f2c48d", "#e0a870", "#c98c5b", "#a9714a", "#8a5a3b", "#f7d7b5"];
-const HAIRS = ["#3b2a1e", "#6b4423", "#2b2d2f", "#a83232", "#e8c873", "#5a5a5a"];
-const SHIRTS = ["#4a7fd6", "#d64a4a", "#4a9d5c", "#c9a227", "#7b4fa3", "#3f9aa8", "#d97a4a"];
-const TROUSERS = ["#3d4557", "#5a4636", "#454b3f", "#4a3f57"];
-
-export const lookForIndex = (i: number): PersonLook => ({
-  skin: SKINS[i % SKINS.length],
-  hair: HAIRS[(i * 3 + 1) % HAIRS.length],
-  shirt: SHIRTS[(i * 5 + 2) % SHIRTS.length],
-  trousers: TROUSERS[(i * 7) % TROUSERS.length],
-  hat: null,
-});
+/** What somebody in the school looks like — the same shape as the player's
+ *  own character. */
+export type PersonLook = CharacterLook;
 
 /** A tracksuit and a cap — the gym's coach. */
 const COACH_LOOK: PersonLook = {
+  ...DEFAULT_LOOK,
   skin: "#c98c5b",
-  hair: "#2b2d2f",
-  shirt: "#c43d3d",
-  trousers: "#2e3a58",
-  hat: "#2e3a58",
+  hair: "short",
+  hairColor: "#2b2d2f",
+  top: "hoodie",
+  topColor: "#c43d3d",
+  bottomColor: "#2e3a58",
+  hat: "cap",
+  hatColor: "#2e3a58",
 };
 
 /** Cardigan and slacks: the adults who work here but do not teach. */
 const STAFF_LOOK: PersonLook = {
+  ...DEFAULT_LOOK,
   skin: "#f2c48d",
-  hair: "#8a8a8a",
-  shirt: "#7a8f6a",
-  trousers: "#4a4238",
-  hat: null,
+  hair: "bob",
+  hairColor: "#8a8a8a",
+  top: "sweater",
+  topColor: "#7a8f6a",
+  bottomColor: "#4a4238",
+  glasses: "glasses",
 };
 
 /** Whites, so the person behind the counter reads as kitchen staff at twelve
  *  pixels tall. The hat is the chef's toque. */
 const COOK_LOOK: PersonLook = {
+  ...DEFAULT_LOOK,
   skin: "#e0a870",
-  hair: "#2b2d2f",
-  shirt: "#f1efe8",
-  trousers: "#5b6270",
-  hat: "#ffffff",
+  hairColor: "#2b2d2f",
+  top: "sweater",
+  topColor: "#f1efe8",
+  bottomColor: "#5b6270",
+  hat: "chef",
+  hatColor: "#ffffff",
 };
 
 /** Overalls and a cap: the caretaker, who has the building to themselves at
  *  night. */
 const CARETAKER_LOOK: PersonLook = {
+  ...DEFAULT_LOOK,
   skin: "#d9a577",
-  hair: "#5a4a3a",
-  shirt: "#3f6b5a",
-  trousers: "#3f6b5a",
-  hat: "#2f4a3a",
+  hairColor: "#5a4a3a",
+  top: "sweater",
+  topColor: "#3f6b5a",
+  bottomColor: "#3f6b5a",
+  hat: "cap",
+  hatColor: "#2f4a3a",
 };
 
+/** Shirt and tie: whoever is at the front of the class. */
 const TEACHER_LOOK: PersonLook = {
+  ...DEFAULT_LOOK,
   skin: "#e8b98a",
-  hair: "#4a3b2f",
-  shirt: "#5c6b8a",
-  trousers: "#3a4152",
-  hat: null,
+  hairColor: "#4a3b2f",
+  top: "shirt",
+  topColor: "#5c6b8a",
+  bottomColor: "#3a4152",
 };
 
 // ── Body ────────────────────────────────────────────────────────────────────
 
-interface BodyRefs {
-  root: React.RefObject<THREE.Group | null>;
-  torso: React.RefObject<THREE.Group | null>;
-  head: React.RefObject<THREE.Group | null>;
-  armL: React.RefObject<THREE.Group | null>;
-  armR: React.RefObject<THREE.Group | null>;
-  legL: React.RefObject<THREE.Group | null>;
-  legR: React.RefObject<THREE.Group | null>;
-}
-
-function useBodyRefs(): BodyRefs {
-  return {
-    root: useRef<THREE.Group>(null),
-    torso: useRef<THREE.Group>(null),
-    head: useRef<THREE.Group>(null),
-    armL: useRef<THREE.Group>(null),
-    armR: useRef<THREE.Group>(null),
-    legL: useRef<THREE.Group>(null),
-    legR: useRef<THREE.Group>(null),
-  };
-}
-
-const Limb = ({ len, w, color }: { len: number; w: number; color: string }) => (
-  // Offset down by half its length so the group's origin is the joint — that is
-  // what lets a rotation on the group read as a shoulder or a hip.
-  <mesh position={[0, -len / 2, 0]}>
-    <boxGeometry args={[w, len, w]} />
-    <meshLambertMaterial color={color} />
-  </mesh>
-);
-
-const HIP_Y = 0.42;
-const SHOULDER_Y = 0.9;
-/** Seated thigh thickness. The thigh's UNDERSIDE rests on SEAT_TOP, so its
- *  centre is half this above it — not at hip height, which is where it was,
- *  six centimetres down inside the seat. */
-const THIGH_H = 0.14;
-const KNEE_Y = SEAT_TOP + THIGH_H / 2;
-
 const Body = ({ refs, look, sitting }: { refs: BodyRefs; look: PersonLook; sitting: boolean }) => (
-  <group ref={refs.root}>
-    <BlobShadow radius={0.3} />
-
-    {sitting ? (
-      // Seated: thighs forward along local +z ON the seat, shins straight down
-      // to the floor from the knee. Every seat in furniture.tsx is built to
-      // SEAT_TOP and keeps its front edge short of where the shins hang, so a
-      // chair looks occupied rather than clipped.
-      <>
-        <mesh position={[-0.11, KNEE_Y, 0.16]}>
-          <boxGeometry args={[0.16, THIGH_H, 0.42]} />
-          <meshLambertMaterial color={look.trousers} />
-        </mesh>
-        <mesh position={[0.11, KNEE_Y, 0.16]}>
-          <boxGeometry args={[0.16, THIGH_H, 0.42]} />
-          <meshLambertMaterial color={look.trousers} />
-        </mesh>
-        <mesh position={[-0.11, (KNEE_Y + THIGH_H / 2) / 2, 0.33]}>
-          <boxGeometry args={[0.15, KNEE_Y + THIGH_H / 2, 0.15]} />
-          <meshLambertMaterial color={look.trousers} />
-        </mesh>
-        <mesh position={[0.11, (KNEE_Y + THIGH_H / 2) / 2, 0.33]}>
-          <boxGeometry args={[0.15, KNEE_Y + THIGH_H / 2, 0.15]} />
-          <meshLambertMaterial color={look.trousers} />
-        </mesh>
-      </>
-    ) : (
-      <>
-        <group ref={refs.legL} position={[-0.11, HIP_Y, 0]}>
-          <Limb len={HIP_Y} w={0.16} color={look.trousers} />
-        </group>
-        <group ref={refs.legR} position={[0.11, HIP_Y, 0]}>
-          <Limb len={HIP_Y} w={0.16} color={look.trousers} />
-        </group>
-      </>
-    )}
-
-    {/* Seated, the torso's base IS the seat top — the person sits on the
-        chair, not in it. */}
-    <group ref={refs.torso} position={[0, sitting ? SEAT_TOP : HIP_Y, 0]}>
-      <mesh position={[0, 0.26, 0]}>
-        <boxGeometry args={[0.42, 0.52, 0.26]} />
-        <meshLambertMaterial color={look.shirt} />
-      </mesh>
-
-      <group ref={refs.armL} position={[-0.27, SHOULDER_Y - HIP_Y, 0]}>
-        <Limb len={0.4} w={0.12} color={look.shirt} />
-        <mesh position={[0, -0.44, 0]}>
-          <boxGeometry args={[0.12, 0.12, 0.12]} />
-          <meshLambertMaterial color={look.skin} />
-        </mesh>
-      </group>
-      <group ref={refs.armR} position={[0.27, SHOULDER_Y - HIP_Y, 0]}>
-        <Limb len={0.4} w={0.12} color={look.shirt} />
-        <mesh position={[0, -0.44, 0]}>
-          <boxGeometry args={[0.12, 0.12, 0.12]} />
-          <meshLambertMaterial color={look.skin} />
-        </mesh>
-      </group>
-
-      <group ref={refs.head} position={[0, 0.56, 0]}>
-        <mesh position={[0, 0.16, 0]}>
-          <boxGeometry args={[0.3, 0.32, 0.3]} />
-          <meshLambertMaterial color={look.skin} />
-        </mesh>
-        <mesh position={[0, 0.3, -0.02]}>
-          <boxGeometry args={[0.33, 0.14, 0.33]} />
-          <meshLambertMaterial color={look.hair} />
-        </mesh>
-        {/* Eyes on the +z face, so which way someone faces is legible even when
-            the whole figure is twelve pixels tall. */}
-        <mesh position={[-0.07, 0.18, 0.152]}>
-          <boxGeometry args={[0.05, 0.05, 0.01]} />
-          <meshBasicMaterial color="#2b2b2b" />
-        </mesh>
-        <mesh position={[0.07, 0.18, 0.152]}>
-          <boxGeometry args={[0.05, 0.05, 0.01]} />
-          <meshBasicMaterial color="#2b2b2b" />
-        </mesh>
-        {look.hat && (
-          <mesh position={[0, 0.4, 0]}>
-            <boxGeometry args={[0.36, 0.14, 0.36]} />
-            <meshLambertMaterial color={look.hat} />
-          </mesh>
-        )}
-      </group>
-    </group>
-  </group>
+  <Figure refs={refs} look={look} sitting={sitting} seatTop={SEAT_TOP} />
 );
 
 // ── Bubble ──────────────────────────────────────────────────────────────────
@@ -253,6 +128,31 @@ const Bubble = ({ text }: { text: string }) => (
         textAlign: "center",
         boxShadow: "0 2px 0 rgba(43,48,64,0.35)",
         transform: "translateY(-6px)",
+      }}
+    >
+      {text}
+    </div>
+  </Html>
+);
+
+/** The player's name over their own head, so they can find themselves in a
+ *  class of look-alikes. Gold, like the ring at their feet. */
+const NameTag = ({ text }: { text: string }) => (
+  <Html position={[0, 1.62, 0]} center style={{ pointerEvents: "none" }} zIndexRange={[18, 0]}>
+    <div
+      style={{
+        background: "#f4c04a",
+        color: "#1f2430",
+        border: "2px solid #2b3040",
+        borderRadius: 6,
+        padding: "1px 7px",
+        fontSize: 11,
+        fontWeight: 800,
+        whiteSpace: "nowrap",
+        maxWidth: 140,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        boxShadow: "0 2px 0 rgba(43,48,64,0.35)",
       }}
     >
       {text}
@@ -309,6 +209,7 @@ const Seated = ({
   bubble,
   onTap,
   ring,
+  tag,
 }: {
   spot: Spot;
   pose: SeatedPerson["pose"];
@@ -318,6 +219,8 @@ const Seated = ({
   onTap: () => void;
   /** The player's own avatar gets a marker so they can find themselves. */
   ring?: boolean;
+  /** …and their name over their head, unless they are saying something. */
+  tag?: string | null;
 }) => {
   const refs = useBodyRefs();
   const hop = useHop();
@@ -371,7 +274,7 @@ const Seated = ({
           <meshBasicMaterial color="#f4c04a" transparent opacity={0.9} depthWrite={false} />
         </mesh>
       )}
-      {bubble && <Bubble text={bubble} />}
+      {bubble ? <Bubble text={bubble} /> : tag ? <NameTag text={tag} /> : null}
     </group>
   );
 };
@@ -631,6 +534,8 @@ export interface PeopleProps {
   announce?: { rect: { x: number; z: number; w: number; d: number }; text: string; nonce: number } | null;
   /** Somebody was poked — for the page's sound effects. */
   onTap?: (key: string, role: PersonRole) => void;
+  /** Shown over the player's head. */
+  playerName?: string;
 }
 
 export const People = ({
@@ -641,6 +546,7 @@ export const People = ({
   mute = false,
   announce = null,
   onTap,
+  playerName,
 }: PeopleProps) => {
   const [speaking, setSpeaking] = useState<{ key: string; text: string } | null>(null);
   const timer = useRef<number | null>(null);
@@ -750,6 +656,7 @@ export const People = ({
           look={playerLook}
           phase={0.4}
           ring
+          tag={mute ? null : playerName}
           bubble={bubbleFor("me")}
           onTap={() => tap("me", "student")}
         />
@@ -760,7 +667,7 @@ export const People = ({
           key={s.key}
           spot={s.spot}
           pose={s.pose}
-          look={lookForIndex(i)}
+          look={crowdLook(i)}
           phase={i * 1.37}
           bubble={bubbleFor(s.key)}
           onTap={() => tap(s.key, s.role)}
@@ -785,7 +692,7 @@ export const People = ({
           key={w.key}
           path={w.path}
           lane={w.lane}
-          look={lookForIndex(i + 11)}
+          look={crowdLook(i + 11)}
           phase={i * 1.9 + 0.6}
           bubble={bubbleFor(w.key)}
           onTap={() => tap(w.key, w.role)}
@@ -810,7 +717,7 @@ export const People = ({
                   ? STAFF_LOOK
                   : w.outfit === "caretaker"
                     ? CARETAKER_LOOK
-                    : lookForIndex(i + 37)
+                    : crowdLook(i + 37)
           }
           phase={i * 1.3 + 0.2}
           bubble={bubbleFor(w.key)}
@@ -823,7 +730,7 @@ export const People = ({
           key={c.key}
           seats={c.seats}
           path={c.path}
-          look={lookForIndex(i + 23)}
+          look={crowdLook(i + 23)}
           phase={i * 2.7 + 1.3}
           bubble={bubbleFor(c.key)}
           onTap={() => tap(c.key, c.role)}

@@ -21,6 +21,7 @@ import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { getShopItem } from "../config/shopCatalog.js";
 import { getCharacterItem } from "../config/characterCatalog.js";
+import { sanitizeLook } from "../config/characterLook.js";
 import {
   FLOOR_SLOTS,
   WALL_SLOTS,
@@ -902,6 +903,25 @@ export async function equipCharacterItem(req, res) {
     res.status(status).json(body);
   } catch (error) {
     console.error("Equip character item error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// PUT /progress/character/look  { look }
+// The character from the dashboard's creator, saved whole. Free: it is who the
+// player is, not a thing they bought (config/characterLook.js).
+export async function setCharacterLook(req, res) {
+  try {
+    const look = sanitizeLook(req.body?.look);
+    if (!look) return res.status(400).json({ message: "That is not a character we can draw" });
+
+    await usersRepo.update(req.user._id, { characterLook: look });
+    const user = await userDocs.loadUser(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ character: user.character });
+  } catch (error) {
+    console.error("Set character look error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }
