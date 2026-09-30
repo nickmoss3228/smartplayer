@@ -441,6 +441,17 @@
       "intermediate": "Выше среднего",
       "advanced": "Продвинутый"
     },
+    "rankModal": {
+      "title": "Ранги",
+      "subtitle": "Твой общий прогресс: {{progress}}%",
+      "toNext": "Ещё {{points}}% до ранга «{{rank}}»",
+      "maxRank": "Это высший ранг",
+      "current": "Ты здесь",
+      "reached": "Получен",
+      "unlockAt": "С {{progress}}%",
+      "open": "Показать все ранги",
+      "close": "Закрыть"
+    },
     "difficulty": {
       "easy": "Легкий",
       "medium": "Средний",

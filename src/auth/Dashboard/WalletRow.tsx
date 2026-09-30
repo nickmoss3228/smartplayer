@@ -5,7 +5,12 @@ import { fetchWallet } from "../../services/walletServices";
 import { Wallet } from "../../types/Wallet";
 import { CURRENCIES } from "../../config/currencies";
 
-const WalletRow: React.FC = () => {
+interface WalletRowProps {
+  /** Inline chips for the Dashboard header instead of the full card grid */
+  compact?: boolean;
+}
+
+const WalletRow: React.FC<WalletRowProps> = ({ compact = false }) => {
   const { t } = useTranslation();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +31,33 @@ const WalletRow: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  if (compact) {
+    return (
+      <ul
+        className="flex flex-wrap items-center gap-2"
+        aria-label={t("dashboard.wallet.title")}
+      >
+        {CURRENCIES.map(({ key, label, icon: Icon, chipClasses }) => (
+          <li
+            key={key}
+            title={label}
+            className={`flex items-center gap-1.5 h-9 pl-2 pr-3 rounded-[3px] ${chipClasses}`}
+          >
+            <Icon size={16} />
+            {loading ? (
+              <span className="w-6 h-3.5 rounded-[3px] bg-current opacity-20 animate-pulse" />
+            ) : (
+              <span className="text-sm font-extrabold tabular-nums">
+                {wallet?.[key] ?? 0}
+              </span>
+            )}
+            <span className="sr-only">{label}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
 
   if (loading) {
     return (

@@ -441,6 +441,17 @@
       "intermediate": "Intermediate",
       "advanced": "Advanced"
     },
+    "rankModal": {
+      "title": "Ranks",
+      "subtitle": "Your overall progress: {{progress}}%",
+      "toNext": "{{points}}% more to reach {{rank}}",
+      "maxRank": "You have reached the highest rank",
+      "current": "You are here",
+      "reached": "Reached",
+      "unlockAt": "From {{progress}}%",
+      "open": "Show all ranks",
+      "close": "Close"
+    },
     "difficulty": {
       "easy": "Easy",
       "medium": "Medium",

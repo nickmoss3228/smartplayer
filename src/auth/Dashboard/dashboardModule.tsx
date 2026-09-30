@@ -27,15 +27,19 @@ export const getTotalLevels = (overviewData: OverviewData | null): number => {
   return Object.values(overviewData).reduce((sum, diff) => sum + diff.total, 0);
 };
 
-export const getRank = (progress: number): RankInfo => {
-  // The rank card is one ink panel for every rank (design manifest: colour
-  // means a level or a state) — the icon and the title tell the ranks apart.
-  if (progress >= 90) return { title: 'advanced', icon: IoRibbonOutline };
-  if (progress >= 70) return { title: 'intermediate', icon: IoTrophyOutline };
-  if (progress >= 50) return { title: 'preintermediate', icon: IoMedalOutline };
-  if (progress >= 25) return { title: 'elementary', icon: IoSchoolOutline };
-  return { title: 'beginner', icon: IoLeafOutline };
-}
+// Lowest first. The rank card is one ink panel for every rank (design
+// manifest: colour means a level or a state) — the icon and the title tell the
+// ranks apart.
+export const RANKS: RankInfo[] = [
+  { title: 'beginner', icon: IoLeafOutline, minProgress: 0 },
+  { title: 'elementary', icon: IoSchoolOutline, minProgress: 25 },
+  { title: 'preintermediate', icon: IoMedalOutline, minProgress: 50 },
+  { title: 'intermediate', icon: IoTrophyOutline, minProgress: 70 },
+  { title: 'advanced', icon: IoRibbonOutline, minProgress: 90 },
+];
+
+export const getRank = (progress: number): RankInfo =>
+  [...RANKS].reverse().find((r) => progress >= r.minProgress) ?? RANKS[0];
 
 export const getProgressPercentage = (completed: number, total: number): number => {
   return total > 0 ? Math.round((completed / total) * 100) : 0;

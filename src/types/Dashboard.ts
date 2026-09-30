@@ -48,6 +48,8 @@ export interface DetailedProgressMap {
 export interface RankInfo {
   title: string;
   icon: IconType;
+  /** Overall progress % at which this rank is reached */
+  minProgress: number;
 }
 
 export type LevelStatus = "completed" | "current" | "available" | "locked";

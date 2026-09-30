@@ -15,6 +15,7 @@ import {
 import { OverviewData, DetailedProgressMap } from "../../types/Dashboard";
 import ProfileEditor from "./ProfileEditor";
 import DifficultyModal from "./DifficultyModal";
+import RankModal from "./RankModal";
 import AchievementsRow from "./AchievementsRow";
 import WalletRow from "./WalletRow";
 import AccuracyTrendChart from "./charts/AccuracyTrendChart";
@@ -39,6 +40,7 @@ const Dashboard: React.FC = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
   );
+  const [rankModalOpen, setRankModalOpen] = useState(false);
 
   // Load dashboard data
   useEffect(() => {
@@ -85,10 +87,13 @@ const Dashboard: React.FC = () => {
     [detailedProgress, i18n.language]
   );
 
-  // Close modal on Escape
+  // Close modals on Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelectedDifficulty(null);
+      if (e.key === "Escape") {
+        setSelectedDifficulty(null);
+        setRankModalOpen(false);
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -143,9 +148,13 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* ── Rank badge ── */}
-            <div
-              className={`flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-card p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0`}
+            {/* ── Rank badge — opens the full rank ladder ── */}
+            <button
+              type="button"
+              onClick={() => setRankModalOpen(true)}
+              aria-haspopup="dialog"
+              title={t("dashboard.rankModal.open")}
+              className="flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-card p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0 text-left hover:bg-ink/90 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2"
             >
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-tile bg-white/10 flex items-center justify-center flex-shrink-0">
                 <RankIcon size={20} className="text-white" />
@@ -161,13 +170,14 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-white/75 font-medium flex-shrink-0">
                 {overallProgress}%
               </p>
-            </div>
+            </button>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-line flex justify-end">
+          <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3">
+            <WalletRow compact />
             <button
               onClick={signOut}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95 ml-auto"
             >
               <IoLogOutOutline size={16} />
               {t("dashboard.signOut")}
@@ -245,6 +255,11 @@ const Dashboard: React.FC = () => {
                 })}
             </div>
 
+            {/* ── Achievements ── */}
+            <div className="animate-fade-in-delay-2">
+              <AchievementsRow />
+            </div>
+
             {/* ── Progress charts ── */}
             <div className="mb-6 animate-fade-in-delay-2">
               <h2 className="font-mono text-[10px] text-black/40 mb-3 uppercase tracking-[0.16em]">
@@ -261,16 +276,6 @@ const Dashboard: React.FC = () => {
                 />
               </div>
             </div>
-
-            {/* ── Wallet ── */}
-            <div className="animate-fade-in-delay-2">
-              <WalletRow />
-            </div>
-
-            {/* ── Achievements ── */}
-            <div className="animate-fade-in-delay-2">
-              <AchievementsRow />
-            </div>
           </>
         )}
       </div>
@@ -280,6 +285,13 @@ const Dashboard: React.FC = () => {
           difficulty={selectedDifficulty}
           overview={overviewData[selectedDifficulty as keyof OverviewData]}
           onClose={() => setSelectedDifficulty(null)}
+        />
+      )}
+
+      {rankModalOpen && (
+        <RankModal
+          progress={overallProgress}
+          onClose={() => setRankModalOpen(false)}
         />
       )}
     </div>
