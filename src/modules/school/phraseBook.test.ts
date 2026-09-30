@@ -40,6 +40,45 @@ describe("what the school says", () => {
     expect(buildBubblePool([], 23, book).receptionist[0]).toBe("Засиделись допоздна?");
   });
 
+  it("gives every kind of person something to say, day and night, in both languages", async () => {
+    for (const lng of ["en", "ru"] as const) {
+      const book = phraseBookFrom(await translator(lng));
+      for (const hour of [7, 10, 17, 23]) {
+        for (const [role, lines] of Object.entries(buildBubblePool(["journey"], hour, book))) {
+          expect(lines.length, `${lng} ${hour}h ${role}`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it("does not have the head, the coach or the librarian talk like everybody else", async () => {
+    const pool = buildBubblePool([], 10, phraseBookFrom(await translator("en")));
+    const apart: [keyof typeof pool, keyof typeof pool][] = [
+      ["head", "teacher"],
+      ["staff", "teacher"],
+      ["director", "teacher"],
+      ["coach", "athlete"],
+      ["footballer", "athlete"],
+      ["librarian", "reader"],
+      ["researcher", "reader"],
+      ["reviser", "reader"],
+      ["musician", "student"],
+      ["performer", "student"],
+      ["friend", "student"],
+      ["walker", "student"],
+      ["kid", "student"],
+      ["keeper", "footballer"],
+    ];
+    for (const [a, b] of apart) {
+      const shared = pool[a].filter((line) => pool[b].includes(line));
+      expect(shared, `${a} and ${b}`).toEqual([]);
+    }
+    // Up the path in the morning, back down it after school.
+    const book = phraseBookFrom(await translator("en"));
+    expect(buildBubblePool([], 7, book).arriving).toEqual(book.arriving);
+    expect(buildBubblePool([], 16, book).arriving).toEqual(book.leaving);
+  });
+
   it("gives the deputy head a line for every situation, in both languages", async () => {
     for (const lng of ["en", "ru"] as const) {
       const t = await translator(lng);

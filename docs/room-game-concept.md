@@ -539,3 +539,28 @@ server checks each style against a closed list, because each is geometry, and
 each colour only for being a colour, so the palettes can grow without a deploy.
 Nobody is made to make one: until they do, they are dressed from what the old
 item shop had them wearing, and a card in the school points to the dashboard.
+
+## 15. The grounds in use, and a voice for everybody (2026-09-30)
+
+**The chalkboard word is for people looking at the board.** It is DOM text so
+it stays legible at the scene's low render scale, which also made it the same
+size at every zoom: over a zoomed-out campus it hung far larger than the board
+it was written on. It now appears only once the board is big enough on screen
+to be read from, and grows with it.
+
+**Who you tap decides what you hear.** Roles used to be a handful — a head
+behind the office desk was a "teacher", a teacher in a staff-room armchair
+too, and so was the one directing the play in the hall. Every kind of person
+now has a role of their own, and every role its own lines in both languages:
+the head worries about inspections, the staff room about who took the mug, the
+coach shouts "Knees up!". The room still decides the role; there are simply
+more rooms with something particular to say.
+
+**The grounds are used before and after school.** The pitch and the playground
+were scenery; now there is a kickabout on one and children on the swings, the
+slide, in the sandpit and playing tag on the other, in the morning, after
+school and in the evening under floodlights. Like everybody indoors, where they
+are is a pure function of the clock (`playLayout.ts`) — the game drifts up and
+down the pitch with every player keeping a place in it, the ball is passed
+along a fixed schedule — so a test can play a whole game through and check
+that nobody runs into a goal, a swing or another child.

@@ -15,6 +15,7 @@
 //     faces back into it — which is what puts the whole class's eyes on the
 //     board no matter which layout preset is picked.
 
+import type { PlayCast } from "./playLayout";
 import {
   BuyBlocker,
   DoorNode,
@@ -1948,26 +1949,32 @@ export interface PatrolPerson {
 
 /** Who somebody is, given where they are. The room IS the role — which is why
  *  tapping the person behind the front desk gets you "Welcome!" and tapping
- *  the one on the gym bench gets you "Nice pass!". */
+ *  the one on the gym bench gets you "Nice pass!". Each room its own voice: a
+ *  reader in the library does not sound like somebody revising in the study
+ *  hall, and neither sounds like the head. */
 export function roleForRoom(roomId: string): PersonRole {
   switch (roomId) {
     case "lobby":
       return "visitor";
     case "library":
+      return "reader";
     case "archive":
+      return "researcher";
     case "studyHall":
-      return "librarian";
+      return "reviser";
     case "lab":
       return "listener";
     case "cafeteria":
       return "diner";
     case "gym":
       return "athlete";
-    // The staff room and the head's office are where the adults are, and a
-    // teacher in an armchair should still sound like a teacher.
     case "staffRoom":
+      return "staff";
     case "office":
-      return "teacher";
+      return "head";
+    case "courtyard":
+    case "garden":
+      return "friend";
     default:
       return "student";
   }
@@ -1995,6 +2002,10 @@ export interface PeoplePlan {
    * everybody on it — a test samples a single wanderer and trusts it for all.
    */
   roomLoops: PatrolPerson[];
+  /** Out on the grounds before and after school: the kickabout on the pitch
+   *  and the playground (playLayout.ts). Never set by `peoplePlan` — the page
+   *  adds it for the hours the grounds are in use. */
+  play?: PlayCast;
 }
 
 // ── Routing ─────────────────────────────────────────────────────────────────
@@ -2664,7 +2675,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
         key: `${staff.id}-t${i}`,
         spot: sitOn(chair),
         pose: "armchair",
-        role: "teacher",
+        role: "staff",
       });
     });
   }
@@ -2675,7 +2686,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
       // On the piano stool, which musicProps puts 0.9 south of the piano.
       spot: sitOn({ x: music.x + 1.7, z: music.z + 1.9, ry: 0 }),
       pose: "desk",
-      role: "student",
+      role: "musician",
     });
     // Two of the chairs, never all of them — a full house every time you look
     // is a diorama, not a room.
@@ -2684,7 +2695,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
         key: `${music.id}-l${i}`,
         spot: sitOn(chair),
         pose: "desk",
-        role: "student",
+        role: "musician",
       });
     });
   }
@@ -2693,7 +2704,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
       key: `${office.id}-head`,
       spot: sitOn(officeSeat(office, plan.doors[office.id]?.x ?? office.x + office.w / 2)),
       pose: "desk",
-      role: "teacher",
+      role: "head",
     });
   }
   // The canteen: diners at the tables, a cook behind the counter, a queue in
@@ -2770,7 +2781,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
     }
     roomLoops.push({
       key: `${gym.id}-coach`,
-      role: "athlete",
+      role: "coach",
       lane: 0,
       outfit: "coach",
       // Facing the court from its west side.
@@ -2805,7 +2816,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
     const cx = stageHall.x + stageHall.w / 2;
     roomLoops.push({
       key: "hall-rehearse",
-      role: "student",
+      role: "performer",
       lane: 0,
       floorY: STAGE_TOP,
       idleFacing: 0,
@@ -2823,7 +2834,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
     [yard.x + 2.4, yard.x + 3.2].forEach((x, i) => {
       roomLoops.push({
         key: `${yard.id}-chat${i}`,
-        role: "student",
+        role: "friend",
         lane: 0,
         idleFacing: i === 0 ? Math.PI / 2 : -Math.PI / 2,
         path: [
@@ -2887,7 +2898,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
   if (hall && stage.teachers > 1) {
     teachers.push({
       key: "t1",
-      role: "teacher",
+      role: "director",
       // Facing the rows, not the stage behind them.
       idleFacing: 0,
       lane: 0,
@@ -2981,7 +2992,7 @@ export function peoplePlan(plan: SchoolPlan, layout: LayoutChoice): PeoplePlan {
     for (let i = 0; i < roaming; i++) {
       wanderers.push({
         key: `w${i}`,
-        role: "student",
+        role: "walker",
         path: spaceOut(paced, (i * span) / Math.max(1, roaming)),
         // Pacing a bare corridor, the two directions are only 1.1m apart, and
         // a full lane either side would put the two streams shoulder to
@@ -3090,7 +3101,9 @@ export function castFor(plan: SchoolPlan, cast: PeoplePlan, part: DayPart): Peop
       : [];
     // The head working late, and one reader who has lost track of time.
     const head = cast.students.find((s) => s.key.endsWith("-head"));
-    const reader = cast.students.find((s) => s.pose === "armchair" && s.role === "librarian");
+    const reader = cast.students.find(
+      (s) => s.pose === "armchair" && (s.role === "reader" || s.role === "researcher" || s.role === "reviser"),
+    );
     return {
       playerSeat: null,
       students: [head, reader].filter((s): s is SeatedPerson => Boolean(s)),

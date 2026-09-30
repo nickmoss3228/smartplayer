@@ -1922,13 +1922,143 @@
         "Straight down the corridor."
       ],
       "library": [
+        "Books back by Friday, please.",
+        "Third shelf along.",
+        "Shh, please.",
+        "New arrivals on the cart.",
+        "Two weeks, then renew.",
+        "Mind the spines!",
+        "Who folded this page?"
+      ],
+      "reader": [
         "Shh — reading.",
         "This chapter is good.",
-        "Two weeks, please.",
         "Have you read this one?",
-        "It's quiet in here.",
-        "Third shelf along.",
-        "Just one more page."
+        "Just one more page.",
+        "Plot twist!",
+        "I can't put it down.",
+        "Who wrote this?"
+      ],
+      "archive": [
+        "These are older than my gran.",
+        "Careful — it's fragile.",
+        "Found it: 1964!",
+        "It smells of old paper.",
+        "Where's the index?",
+        "Look at this handwriting."
+      ],
+      "studyHall": [
+        "Revising. Don't talk to me.",
+        "Exam tomorrow...",
+        "Can I borrow a pen?",
+        "Two more chapters.",
+        "Quiz me?",
+        "Flashcards, flashcards..."
+      ],
+      "coach": [
+        "Hustle, hustle!",
+        "Water break!",
+        "Knees up!",
+        "Great effort, team!",
+        "Eyes on the ball!",
+        "The whistle means stop!"
+      ],
+      "head": [
+        "My door is always open.",
+        "Who's been running in the corridor?",
+        "Inspection next week — tidy up!",
+        "Budget meeting at three.",
+        "Proud of every one of you.",
+        "Sign here, please.",
+        "This school is growing fast."
+      ],
+      "staffRoom": [
+        "The kettle's just boiled.",
+        "Who took my mug?",
+        "Marking all weekend...",
+        "Staff meeting at four.",
+        "Biscuit?",
+        "Five minutes' peace."
+      ],
+      "music": [
+        "From the top!",
+        "A little softer...",
+        "Who's got the sheet music?",
+        "Tuning up.",
+        "One, two, three, four!",
+        "That chord again."
+      ],
+      "performer": [
+        "To be or not to be...",
+        "What's my next line?",
+        "Is this mic on?",
+        "Can they hear me at the back?",
+        "Ta-da!",
+        "I'm so nervous."
+      ],
+      "director": [
+        "Projection, please!",
+        "From scene two!",
+        "Face the audience.",
+        "Lovely — once more.",
+        "Places, everyone!"
+      ],
+      "yard": [
+        "Nice day for it!",
+        "Did you do the homework?",
+        "See you at lunch!",
+        "Race you to the door!",
+        "Look at that cloud.",
+        "Want half my sandwich?"
+      ],
+      "corridor": [
+        "Late, late, late!",
+        "Which room is it?",
+        "Wait for me!",
+        "No running — I know!",
+        "Where's the lab again?",
+        "Has anyone seen my bag?"
+      ],
+      "arriving": [
+        "Morning!",
+        "Is the bus late?",
+        "Oh no, my homework's at home...",
+        "First lesson's English!",
+        "So sleepy...",
+        "Did you do the reading?"
+      ],
+      "leaving": [
+        "See you tomorrow!",
+        "Home time!",
+        "Finally!",
+        "Who's got football practice?",
+        "Don't forget the homework!",
+        "Wait for the bus with me?"
+      ],
+      "football": [
+        "Pass! Pass!",
+        "Man on!",
+        "Goal!",
+        "Offside!",
+        "Kick it here!",
+        "Nice one!",
+        "Shoot!"
+      ],
+      "keeper": [
+        "Saved!",
+        "Not past me!",
+        "Watch the corner!",
+        "My ball!",
+        "Too slow!"
+      ],
+      "playground": [
+        "Push me higher!",
+        "Wheee!",
+        "Tag — you're it!",
+        "My turn on the slide!",
+        "Can't catch me!",
+        "Look, no hands!",
+        "I'm building a castle."
       ],
       "lab": [
         "Headphones on.",

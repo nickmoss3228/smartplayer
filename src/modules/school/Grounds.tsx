@@ -12,15 +12,13 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Furnishings } from "./furniture";
-import { GroundFeature, GroundsPlan, House, WayIn, busStopX } from "./groundsLayout";
+import { GROUND_Y, GroundFeature, GroundsPlan, House, WayIn, busStopX } from "./groundsLayout";
 import { PropInstance } from "./props";
 import { Season, WINDOW_DAY, WINDOW_LIT, useAtmosphere } from "./atmosphere";
 import { grassTexture } from "./textures";
 import { LampPools } from "./NightLights";
-
-/** The top of the land: a hair under the rooms' base slabs, which then read
- *  as the low plinth the school is built on. */
-const GROUND_Y = -0.04;
+import { glowMaterials } from "./glowMaterials";
+import { playgroundKit } from "./playLayout";
 
 const Box = ({
   p,
@@ -306,6 +304,66 @@ const Fence = ({ g, gateX }: { g: GroundsPlan; gateX: number | null }) => {
 
 // ── The school's own grounds ────────────────────────────────────────────────
 
+const FLOOD_POOL = new THREE.PlaneGeometry(1, 1);
+
+/**
+ * A mast at each corner of the pitch, with a lamp head turned on the grass.
+ * They come on with every other light in the school (the clock's `nightness`,
+ * via the shared glow materials), which is when the evening's game is on: two
+ * wide pools of light, one over each half.
+ */
+const Floodlights = ({ f }: { f: GroundFeature }) => {
+  const g = glowMaterials();
+  const { x0, z0, x1, z1 } = f.rect;
+  const cx = (x0 + x1) / 2;
+  const cz = (z0 + z1) / 2;
+  const masts: [number, number][] = [
+    [x0 - 0.9, z0 - 0.9],
+    [x1 + 0.9, z0 - 0.9],
+    [x0 - 0.9, z1 + 0.9],
+    [x1 + 0.9, z1 + 0.9],
+  ];
+  const halfLong = (f.alongX ? x1 - x0 : z1 - z0) / 2;
+  const halfShort = (f.alongX ? z1 - z0 : x1 - x0) / 2;
+  const r = Math.max(halfShort + 1.5, halfLong * 0.75);
+  const pools: [number, number][] = f.alongX
+    ? [
+        [cx - halfLong / 2, cz],
+        [cx + halfLong / 2, cz],
+      ]
+    : [
+        [cx, cz - halfLong / 2],
+        [cx, cz + halfLong / 2],
+      ];
+  return (
+    <group>
+      {masts.map(([x, z]) => (
+        <group key={`${x},${z}`} position={[x, GROUND_Y, z]} rotation={[0, Math.atan2(cx - x, cz - z), 0]}>
+          <Box p={[0, 0, 0]} s={[0.14, 6, 0.14]} c="#8d949c" />
+          <mesh position={[0, 6.05, 0.12]} rotation={[0.5, 0, 0]}>
+            <boxGeometry args={[0.8, 0.12, 0.45]} />
+            <meshLambertMaterial color="#5b6270" />
+          </mesh>
+          <mesh position={[0, 5.98, 0.16]} rotation={[0.5, 0, 0]} material={g.bulb}>
+            <boxGeometry args={[0.7, 0.04, 0.36]} />
+          </mesh>
+        </group>
+      ))}
+      {pools.map(([x, z]) => (
+        <mesh
+          key={`${x},${z}`}
+          geometry={FLOOD_POOL}
+          material={g.pool}
+          position={[x, 0.03, z]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={[r * 2, r * 2, 1]}
+          renderOrder={1}
+        />
+      ))}
+    </group>
+  );
+};
+
 const Pitch = ({ f }: { f: GroundFeature }) => {
   const { season } = useAtmosphere();
   const { x0, z0, x1, z1 } = f.rect;
@@ -343,6 +401,7 @@ const Pitch = ({ f }: { f: GroundFeature }) => {
         <ringGeometry args={[1.6, 1.72, 24]} />
         <meshLambertMaterial color={line} />
       </mesh>
+      <Floodlights f={f} />
       {/* A goal at each end. */}
       {[-1, 1].map((end) => {
         const gx = f.alongX ? cx + end * (w / 2 - 0.4) : cx;
@@ -361,17 +420,22 @@ const Pitch = ({ f }: { f: GroundFeature }) => {
   );
 };
 
-const Playground = ({ f }: { f: GroundFeature }) => {
+/** The swings, the slide and the sandpit, where playLayout.ts says they stand
+ *  — the children playing on them (Playtime.tsx) read the same kit. While
+ *  they play, the swing seats are theirs: they swing with the child on them,
+ *  so only the frame is drawn here. */
+const Playground = ({ f, playing }: { f: GroundFeature; playing: boolean }) => {
   const { x0, z0, x1, z1 } = f.rect;
   const cx = (x0 + x1) / 2;
   const cz = (z0 + z1) / 2;
   const w = x1 - x0;
   const d = z1 - z0;
+  const kit = playgroundKit(f);
   return (
     <group>
       <Box p={[cx, GROUND_Y, cz]} s={[w, 0.03, d]} c="#c98a5e" />
       {/* Swings: an A-frame and two seats. */}
-      <group position={[x0 + 2.4, GROUND_Y, z0 + 2]}>
+      <group position={[kit.swings.x, GROUND_Y, kit.swings.z]}>
         {[-1.4, 1.4].map((x) => (
           <group key={x}>
             <Box p={[x, 0, -0.5]} s={[0.1, 2.1, 0.1]} c="#3d6fc4" />
@@ -379,27 +443,32 @@ const Playground = ({ f }: { f: GroundFeature }) => {
           </group>
         ))}
         <Box p={[0, 2.05, 0]} s={[3, 0.12, 0.12]} c="#3d6fc4" />
-        {[-0.6, 0.6].map((x) => (
-          <group key={x}>
-            <Box p={[x, 0.55, 0]} s={[0.5, 0.06, 0.25]} c="#e0b43d" />
-            <Box p={[x - 0.22, 0.6, 0]} s={[0.02, 1.45, 0.02]} c="#5b6270" />
-            <Box p={[x + 0.22, 0.6, 0]} s={[0.02, 1.45, 0.02]} c="#5b6270" />
-          </group>
-        ))}
+        {!playing &&
+          kit.swings.seats.map((x) => (
+            <group key={x}>
+              <Box p={[x, 0.55, 0]} s={[0.5, 0.06, 0.25]} c="#e0b43d" />
+              <Box p={[x - 0.22, 0.6, 0]} s={[0.02, 1.45, 0.02]} c="#5b6270" />
+              <Box p={[x + 0.22, 0.6, 0]} s={[0.02, 1.45, 0.02]} c="#5b6270" />
+            </group>
+          ))}
       </group>
       {/* A slide: a platform, its ladder, and the chute. */}
-      <group position={[x1 - 2.2, GROUND_Y, z0 + 2.2]}>
+      <group position={[kit.slide.x, GROUND_Y, kit.slide.z]}>
         <Box p={[0, 0, 0]} s={[1.1, 1.4, 1.1]} c="#c43d3d" />
         <Box p={[0, 1.4, 0]} s={[1.3, 0.1, 1.3]} c="#e0b43d" />
+        {/* Rungs up the back, where the children climb. */}
+        {[0.3, 0.65, 1.0].map((y) => (
+          <Box key={y} p={[0, y, -0.58]} s={[0.7, 0.06, 0.06]} c="#e0b43d" />
+        ))}
         <mesh position={[0, 0.72, 1.55]} rotation={[0.72, 0, 0]}>
           <boxGeometry args={[0.7, 0.08, 2.4]} />
           <meshLambertMaterial color="#4f8a54" />
         </mesh>
       </group>
       {/* A sandpit. */}
-      <group position={[cx, GROUND_Y, z1 - 1.8]}>
-        <Box p={[0, 0, 0]} s={[2.6, 0.25, 2]} c="#8a5a34" />
-        <Box p={[0, 0.02, 0]} s={[2.3, 0.25, 1.7]} c="#e8d39a" />
+      <group position={[kit.sandpit.x, GROUND_Y, kit.sandpit.z]}>
+        <Box p={[0, 0, 0]} s={[kit.sandpit.w, 0.25, kit.sandpit.d]} c="#8a5a34" />
+        <Box p={[0, 0.02, 0]} s={[kit.sandpit.w - 0.3, 0.25, kit.sandpit.d - 0.3]} c="#e8d39a" />
       </group>
     </group>
   );
@@ -507,7 +576,17 @@ const Paving = ({ path }: { path: { x: number; z: number }[] }) => (
 
 // ── All of it ───────────────────────────────────────────────────────────────
 
-export const Grounds = ({ grounds, way }: { grounds: GroundsPlan; way: WayIn | null }) => {
+export const Grounds = ({
+  grounds,
+  way,
+  playing = false,
+}: {
+  grounds: GroundsPlan;
+  way: WayIn | null;
+  /** Children are out on the playground (Playtime.tsx) and the swings are
+   *  theirs to draw. */
+  playing?: boolean;
+}) => {
   const gateX = way?.gateX ?? null;
   // Trees, bushes and street lamps are the school's own props, so they follow
   // the season and light up at night the same way the ones in the yard do.
@@ -531,7 +610,13 @@ export const Grounds = ({ grounds, way }: { grounds: GroundsPlan; way: WayIn | n
       {way && <Paving path={way.path} />}
       {gateX !== null && <BusStop x={busStopX(grounds, gateX)} z={(grounds.pavement.z0 + grounds.pavement.z1) / 2 + 0.2} />}
       {grounds.features.map((f, i) =>
-        f.kind === "pitch" ? <Pitch key={i} f={f} /> : f.kind === "playground" ? <Playground key={i} f={f} /> : <CarPark key={i} f={f} />,
+        f.kind === "pitch" ? (
+          <Pitch key={i} f={f} />
+        ) : f.kind === "playground" ? (
+          <Playground key={i} f={f} playing={playing} />
+        ) : (
+          <CarPark key={i} f={f} />
+        ),
       )}
       {grounds.houses.map((h, i) => (
         <HouseModel key={i} h={h} />

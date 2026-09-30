@@ -32,6 +32,10 @@ import {
 } from "./props";
 import { BubblePool, PersonRole, pickLine } from "./bubbles";
 import { usePresencePoint } from "./presence";
+import { Bubble, HitBox } from "./personBits";
+import { useHop } from "./hop";
+import { Playtime } from "./Playtime";
+import { playersOf } from "./playLayout";
 import { Figure } from "../character/Figure";
 import { BodyRefs, useBodyRefs } from "../character/bodyRefs";
 import { CharacterLook, DEFAULT_LOOK, crowdLook } from "../character/look";
@@ -109,32 +113,6 @@ const Body = ({ refs, look, sitting }: { refs: BodyRefs; look: PersonLook; sitti
 
 // ── Bubble ──────────────────────────────────────────────────────────────────
 
-const Bubble = ({ text }: { text: string }) => (
-  <Html position={[0, 1.75, 0]} center style={{ pointerEvents: "none" }} zIndexRange={[20, 0]}>
-    <div
-      style={{
-        background: "rgba(255,255,255,0.96)",
-        color: "#1f2430",
-        border: "2px solid #2b3040",
-        borderRadius: 10,
-        padding: "4px 9px",
-        fontSize: 12,
-        fontWeight: 700,
-        // Chatter is a few words on one line. A note from the staff repeated
-        // in the room is a whole sentence, and wraps rather than stretching
-        // across half the school.
-        whiteSpace: text.length > 32 ? "normal" : "nowrap",
-        width: text.length > 32 ? 220 : undefined,
-        textAlign: "center",
-        boxShadow: "0 2px 0 rgba(43,48,64,0.35)",
-        transform: "translateY(-6px)",
-      }}
-    >
-      {text}
-    </div>
-  </Html>
-);
-
 /** The player's name over their own head, so they can find themselves in a
  *  class of look-alikes. Gold, like the ring at their feet. */
 const NameTag = ({ text }: { text: string }) => (
@@ -159,37 +137,6 @@ const NameTag = ({ text }: { text: string }) => (
     </div>
   </Html>
 );
-
-// A hit target big enough for a thumb. The body is a stack of thin boxes with
-// gaps between the limbs, so tapping the actual geometry misses about half the
-// time on a phone.
-const HitBox = ({ onTap }: { onTap: () => void }) => (
-  <mesh
-    position={[0, 0.75, 0]}
-    onClick={(e) => {
-      e.stopPropagation();
-      onTap();
-    }}
-  >
-    <boxGeometry args={[0.75, 1.5, 0.75]} />
-    <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-  </mesh>
-);
-
-/** Shared poke response: a short hop, decaying. Returns a getter the caller
- *  folds into whatever y offset its pose already uses. */
-function useHop() {
-  const t = useRef(0);
-  const trigger = useCallback(() => {
-    t.current = 1;
-  }, []);
-  const advance = (dt: number) => {
-    if (t.current <= 0) return 0;
-    t.current = Math.max(0, t.current - dt * 2.2);
-    return Math.sin((1 - t.current) * Math.PI) * 0.18;
-  };
-  return { trigger, advance };
-}
 
 // ── Seated student ──────────────────────────────────────────────────────────
 
@@ -565,6 +512,7 @@ export const People = ({
       ...plan.wanderers.map((w) => ({ key: w.key, role: w.role })),
       ...plan.commuters.map((c) => ({ key: c.key, role: c.role })),
       ...plan.roomLoops.map((w) => ({ key: w.key, role: w.role })),
+      ...(plan.play ? playersOf(plan.play) : []),
     ];
     if (plan.playerSeat) entries.push({ key: "me", role: "student" });
     return entries;
@@ -724,6 +672,8 @@ export const People = ({
           onTap={() => tap(w.key, w.role)}
         />
       ))}
+
+      {plan.play && <Playtime play={plan.play} say={bubbleFor} tap={tap} />}
 
       {plan.commuters.map((c, i) => (
         <Commuter

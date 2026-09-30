@@ -21,6 +21,11 @@
 import { SchoolRoomRect, getVariant, planBounds, starterRoomIds } from "../../config/schoolCatalog";
 import { PatrolPerson, SchoolPlan, Spot, buildPlan, frontDoor, spaceOut } from "./props";
 
+/** The top of the land: a hair under the rooms' base slabs, which then read
+ *  as the low plinth the school is built on. Grounds.tsx draws the land here,
+ *  and whoever stands on it (Playtime.tsx) stands here. */
+export const GROUND_Y = -0.04;
+
 export interface Rect {
   x0: number;
   z0: number;
@@ -399,7 +404,7 @@ export function arrivals(wi: WayIn | null, grounds: GroundsPlan, count = 3): Pat
   }
   return Array.from({ length: count }, (_, i) => ({
     key: `arrive${i}`,
-    role: "student" as const,
+    role: "arriving" as const,
     path: spaceOut(loop, (i * span) / count),
     group: "arrivals",
   }));

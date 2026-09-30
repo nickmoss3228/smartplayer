@@ -30,13 +30,42 @@ export type PersonRole =
   | "student"
   | "teacher"
   | "receptionist"
+  /** The librarian proper: the one shelving books. Readers are "reader". */
   | "librarian"
+  | "reader"
+  /** Reading in the archive, among the old stacks. */
+  | "researcher"
+  /** Revising in the study hall. */
+  | "reviser"
   | "listener"
   | "diner"
   | "athlete"
+  | "coach"
   | "visitor"
   | "cook"
-  | "caretaker";
+  | "caretaker"
+  /** Behind the desk in the head's office. */
+  | "head"
+  /** An armchair in the staff room: a teacher off duty. */
+  | "staff"
+  /** At the piano, or waiting a turn in the music room. */
+  | "musician"
+  /** Rehearsing on the hall's stage… */
+  | "performer"
+  /** …and the teacher in front of it, running the rehearsal. */
+  | "director"
+  /** Out in the courtyard or the garden, with a friend. */
+  | "friend"
+  /** On the move along the corridors between lessons. */
+  | "walker"
+  /** On the path from the bus stop: arriving in the morning, going home after
+   *  school. */
+  | "arriving"
+  /** On the pitch before and after school. */
+  | "footballer"
+  | "keeper"
+  /** On the swings, the slide, in the sandpit. */
+  | "kid";
 
 /** Every list of lines, by its key under `school.speech` in the locales. */
 export const PHRASE_POOLS = [
@@ -44,12 +73,28 @@ export const PHRASE_POOLS = [
   "teacher",
   "reception",
   "library",
+  "reader",
+  "archive",
+  "studyHall",
   "lab",
   "cafeteria",
   "cook",
   "gym",
+  "coach",
   "visitor",
   "caretaker",
+  "head",
+  "staffRoom",
+  "music",
+  "performer",
+  "director",
+  "yard",
+  "corridor",
+  "arriving",
+  "leaving",
+  "football",
+  "keeper",
+  "playground",
   /** Whoever is still in after dark. The pools above belong to a school in
    *  the middle of a lesson; at midnight they would be ghosts talking. */
   "lateStudent",
@@ -96,56 +141,80 @@ export function buildBubblePool(learnedWords: string[], hour: number, book: Phra
   const reception = [book.greeting[greetingFor(hour)], ...book.reception];
 
   if (isLate(hour)) {
+    // After dark only a handful are in (castFor): the adults sound tired, and
+    // anybody younger sounds like they should be at home.
+    const young = book.lateStudent;
+    const tired = book.lateStaff;
     return {
-      student: book.lateStudent,
-      teacher: book.lateStaff,
+      student: young,
+      teacher: tired,
       receptionist: reception,
-      librarian: book.lateStudent,
-      listener: book.lateStudent,
-      diner: book.lateStudent,
-      athlete: book.lateStudent,
+      librarian: tired,
+      reader: young,
+      researcher: young,
+      reviser: young,
+      listener: young,
+      diner: young,
+      athlete: young,
+      coach: tired,
       visitor: book.visitor,
       cook: book.cook,
       caretaker: book.caretaker,
+      head: tired,
+      staff: tired,
+      musician: young,
+      performer: young,
+      director: tired,
+      friend: young,
+      walker: young,
+      arriving: young,
+      footballer: young,
+      keeper: young,
+      kid: young,
     };
   }
 
   const quoted = learnedWords.map(quotable(book)).filter((w): w is string => w !== null);
-  if (quoted.length === 0) {
-    return {
-      student: book.chatter,
-      teacher: book.teacher,
-      receptionist: reception,
-      librarian: book.library,
-      listener: book.lab,
-      diner: book.cafeteria,
-      athlete: book.gym,
-      visitor: book.visitor,
-      cook: book.cook,
-      caretaker: book.caretaker,
-    };
-  }
-
   // One learned entry per generic line, capped so the pool stays half chatter.
   const take = Math.min(quoted.length, Math.max(1, book.chatter.length));
   // Deterministic rotation instead of a shuffle: the pool is rebuilt whenever
   // the word list changes, and a real shuffle would reorder everything on every
   // rebuild for no visible gain.
   const start = quoted.length % Math.max(1, take);
-  const picked = [...quoted.slice(start), ...quoted.slice(0, start)].slice(0, take);
-  const half = picked.slice(0, Math.ceil(take / 2));
+  const picked = quoted.length ? [...quoted.slice(start), ...quoted.slice(0, start)].slice(0, take) : [];
+  const half = picked.slice(0, Math.ceil(picked.length / 2));
 
+  // Every kind of person in its own voice: the head does not sound like a
+  // pupil, the coach does not sound like the librarian. Learned words go only
+  // where somebody would plausibly be saying them — a lesson, the listening
+  // lab, a student revising.
   return {
     student: [...book.chatter, ...picked],
     teacher: [...book.teacher, ...half],
     receptionist: reception,
     librarian: book.library,
+    reader: book.reader,
+    researcher: book.archive,
+    reviser: [...book.studyHall, ...half],
     listener: [...book.lab, ...half],
     diner: book.cafeteria,
     athlete: book.gym,
+    coach: book.coach,
     visitor: book.visitor,
     cook: book.cook,
     caretaker: book.caretaker,
+    head: book.head,
+    staff: book.staffRoom,
+    musician: book.music,
+    performer: book.performer,
+    director: book.director,
+    friend: book.yard,
+    walker: book.corridor,
+    // Up the path in the morning, back down it after school.
+    arriving: hour < 12 ? book.arriving : book.leaving,
+    footballer: book.football,
+    keeper: book.keeper,
+    kid: book.playground,
   };
 }
 

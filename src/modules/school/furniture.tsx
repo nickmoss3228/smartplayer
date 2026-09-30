@@ -25,7 +25,7 @@
 // exception, and people sat in it back to front.
 
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { BOOTH_STOOL, CAFE_STOOL, DOOR_WIDTH, PropInstance, SEAT_GAP, SEAT_TOP } from "./props";
@@ -124,6 +124,73 @@ const TeacherDesk = () => (
 // ── The board ───────────────────────────────────────────────────────────────
 // Interactive: tapping it chalks up a word you have learned.
 
+/** On-screen board widths, in CSS pixels, over which the chalked word fades
+ *  in: nothing below the first, fully there from the second. A five-metre
+ *  board reaches them at a zoom of about 37 and 48 — a classroom filling a
+ *  good part of the screen. */
+const CHALK_FROM_PX = 130;
+const CHALK_FULL_PX = 170;
+
+/**
+ * The word chalked on a board, as DOM text rather than a texture: the scene
+ * renders at a fraction of the screen's resolution and the isometric shear
+ * puts a letter at maybe four pixels wide — a word painted into the 3D scene
+ * is a smudge, not a word. The speech bubbles solve it the same way.
+ *
+ * DOM text, though, is the same size at every zoom, so zoomed out over a
+ * whole campus the word hung over the school far bigger than the board it was
+ * written on. It now shows only once the board is big enough on screen to be
+ * read from — zoomed in on a classroom — grows with the board from there, and
+ * fades out again as you zoom away. Written straight into the element's style
+ * every frame the zoom changes, never through React state.
+ */
+const ChalkWord = ({ word, len }: { word: string; len: number }) => {
+  const camera = useThree((s) => s.camera);
+  const el = useRef<HTMLDivElement>(null);
+  const shown = useRef({ opacity: -1, size: -1 });
+
+  useFrame(() => {
+    const div = el.current;
+    if (!div) return;
+    // The board's width on screen. Under the fixed isometric camera a wall of
+    // either orientation is foreshortened by the same 1/√2.
+    const px = len * camera.zoom * Math.SQRT1_2;
+    const opacity = Math.round(Math.min(1, Math.max(0, (px - CHALK_FROM_PX) / (CHALK_FULL_PX - CHALK_FROM_PX))) * 20) / 20;
+    const size = Math.round(Math.min(44, Math.max(14, px * 0.11)));
+    if (opacity !== shown.current.opacity) {
+      div.style.opacity = String(opacity * 0.94);
+      div.style.visibility = opacity > 0 ? "visible" : "hidden";
+      shown.current.opacity = opacity;
+    }
+    if (size !== shown.current.size) {
+      div.style.fontSize = `${size}px`;
+      shown.current.size = size;
+    }
+  });
+
+  return (
+    <Html position={[0, 1.62, 0.12]} center style={{ pointerEvents: "none" }} zIndexRange={[10, 0]}>
+      <div
+        ref={el}
+        style={{
+          color: "#f4f7f0",
+          fontFamily: "'Bradley Hand', 'Segoe Script', 'Comic Sans MS', cursive",
+          fontSize: 20,
+          fontWeight: 700,
+          letterSpacing: 1,
+          whiteSpace: "nowrap",
+          textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+          opacity: 0,
+          visibility: "hidden",
+          transition: "opacity 0.25s ease",
+        }}
+      >
+        {word}
+      </div>
+    </Html>
+  );
+};
+
 const Board = ({
   len = 5,
   word,
@@ -146,28 +213,7 @@ const Board = ({
     <Box p={[0, 1.0, 0]} s={[len + 0.2, 1.35, 0.08]} c={PALETTE.frame} />
     <Box p={[0, 1.08, 0.05]} s={[len, 1.15, 0.04]} c={PALETTE.board} />
     <Box p={[0, 0.94, 0.12]} s={[len, 0.07, 0.14]} c={PALETTE.chalkTray} />
-    {word && (
-      // DOM, not a texture on the board. The scene renders at ~38% resolution
-      // and the isometric shear puts a letter at maybe four pixels wide — a
-      // chalked word painted into the 3D scene is a smudge, not a word. The
-      // speech bubbles already solved this the same way.
-      <Html position={[0, 1.62, 0.12]} center style={{ pointerEvents: "none" }} zIndexRange={[10, 0]}>
-        <div
-          style={{
-            color: "#f4f7f0",
-            fontFamily: "'Bradley Hand', 'Segoe Script', 'Comic Sans MS', cursive",
-            fontSize: 20,
-            fontWeight: 700,
-            letterSpacing: 1,
-            whiteSpace: "nowrap",
-            textShadow: "0 1px 2px rgba(0,0,0,0.45)",
-            opacity: 0.94,
-          }}
-        >
-          {word}
-        </div>
-      </Html>
-    )}
+    {word && <ChalkWord word={word} len={len} />}
   </group>
 );
 

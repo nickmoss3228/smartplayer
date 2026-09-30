@@ -1,7 +1,61 @@
-# Dream School — where things stand (2026-09-29, fourth round)
+# Dream School — where things stand (2026-09-30, fifth round)
 
 Working notes for picking this up again. The design itself is in
 `room-game-concept.md`; this file is only "what is done, what is not".
+
+## 2026-09-30: the fifth round — the grounds in use
+
+Three asks from the user; §15 of the concept doc has the reasoning.
+
+- **Board words only when zoomed in** (`ChalkWord` in `furniture.tsx`): the
+  word fades in once the board is 130–170 CSS pixels wide on screen (a zoom of
+  about 37–48 for a five-metre board) and grows with it, capped at 44px.
+  Written into the element's style per frame, not React state.
+- **A voice per kind of person** (`bubbles.ts`, `school.speech.*`): new roles
+  `head`, `staff`, `coach`, `musician`, `performer`, `director`, `reader`
+  (the librarian is now only the one shelving), `researcher` (archive),
+  `reviser` (study hall), `friend` (courtyard, garden), `walker` (corridors),
+  `arriving` (morning lines up the path, going-home lines after school),
+  `footballer`, `keeper`, `kid`. `roleForRoom` and the placements in
+  `peoplePlan` hand them out; `roles.test.ts` pins who is who.
+- **The grounds in use** (`playLayout.ts` pure + `Playtime.tsx`): a kickabout
+  on the pitch (two or three a side, a keeper in each goal, passes timed by
+  distance) and, where there is a playground, two on the swings, one on the
+  slide, one in the sandpit and two playing tag. Morning, after school and
+  evening (`outdoors` in `SchoolCanvas`), never in lessons or at night.
+  Positions are pure functions of the clock and tested: nobody leaves the
+  pitch or enters a goal, nobody comes within 0.9m of anybody, the ball never
+  jumps, tag keeps clear of the equipment. The pitch has floodlight masts
+  whose pools come on with the school's other lights (19:00).
+- `Bubble`/`HitBox` moved to `personBits.tsx`, `useHop` to `hop.ts`, and
+  `GROUND_Y` to `groundsLayout.ts`, so `Playtime.tsx` can share them.
+
+The Courtyard campus has a pitch but no playground (its plot has no room for
+one), so it only gets the kickabout.
+
+- **Double-tap to zoom** (`CameraRig`, touch only): twice as close, the tapped
+  spot staying under the finger (ray onto the target plane, centre scaled
+  toward it by old/new zoom, then leashed); at max zoom it glides back to the
+  opening framing. A second finger, a move over 10px or a press over 300ms
+  make it not a tap.
+
+### Performance, measured 2026-09-30 (not yet acted on)
+
+Headless Chromium on SwiftShader, so milliseconds are only relative; counts
+are exact. A full campus (all three variants alike) draws **~3,200–4,000
+draw calls a frame for ~65–75k triangles**: one per box. ~3,770 meshes, of
+which only ~560 move (people, doors, swings, ball); 3,212 material objects
+for 142 distinct looks. One first room is 192 calls and runs at 60fps.
+A CPU profile puts >95% of the busy time in three.js's per-object loop
+(projectObject, setProgram, renderBufferDirect, updateMatrixWorld); the
+game's own code is under 1%.
+
+Experiments in the harness (not in the code):
+- Merging every still mesh into one per material: 3,767 → 735 calls,
+  render CPU 29ms → 7ms, frame 70ms → 27ms. Looked identical.
+- Sharing materials only: 3,212 → 333 materials, render CPU −12%.
+- Night, with 16 point lights: after merging, render CPU is 4ms but the frame
+  is still 66ms — the cost moves to per-pixel lighting.
 
 ## 2026-09-29: the fourth round — you, in your school
 

@@ -27,15 +27,30 @@ const midi = (n: number) => 440 * Math.pow(2, (n - 69) / 12);
 
 /** Base pitch of each kind of person's voice, in Hz. */
 const VOICE_PITCH: Record<string, number> = {
+  kid: 470,
+  footballer: 400,
+  keeper: 380,
+  friend: 390,
+  arriving: 390,
+  walker: 380,
   student: 380,
+  performer: 390,
+  reader: 370,
+  reviser: 370,
+  musician: 360,
   listener: 360,
+  researcher: 350,
   diner: 390,
   athlete: 340,
   visitor: 320,
   receptionist: 300,
   librarian: 280,
+  coach: 250,
+  director: 240,
+  staff: 230,
   teacher: 220,
   cook: 230,
+  head: 195,
   caretaker: 175,
 };
 

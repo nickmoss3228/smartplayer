@@ -12,7 +12,8 @@
 //
 // The camera never rotates. Rotation turns an isometric scene into "a 3D app"
 // and invites the player to fight the camera instead of looking at the room;
-// one finger pans, two fingers zoom, and that is the whole interaction.
+// one finger pans, two fingers zoom, a double-tap zooms in, and that is the
+// whole interaction.
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -51,6 +52,7 @@ import { LampPools, NightDriver, Pendants, RoomLights } from "./NightLights";
 import { pendantsFor, roomLights } from "./lampLayout";
 import { arrivals, groundsPlan, wayIn } from "./groundsLayout";
 import { useRenderScale } from "./renderScale";
+import { playCast } from "./playLayout";
 
 // True isometric: equal parts x, y and z, which is what makes a tile grid
 // project to a clean 2:1 diamond.
@@ -169,6 +171,23 @@ const CameraRig = ({
     [plan, ghosts, focus],
   );
 
+  // The leash: how far the view centre may go — the campus plus a margin, or
+  // the whole plot where there is one.
+  const leash = (x: number, z: number) => ({
+    x: clamp(
+      x,
+      Math.min(bounds.minX - PAN_MARGIN, land?.x0 ?? Infinity),
+      Math.max(bounds.maxX + PAN_MARGIN, land?.x1 ?? -Infinity),
+    ),
+    z: clamp(
+      z,
+      Math.min(bounds.minZ - PAN_MARGIN, land?.z0 ?? Infinity),
+      Math.max(bounds.maxZ + PAN_MARGIN, land?.z1 ?? -Infinity),
+    ),
+  });
+  const leashRef = useRef(leash);
+  leashRef.current = leash;
+
   // Deliberately NOT keyed on `size`: a mobile browser fires a resize every
   // time the address bar collapses, and re-framing there would yank the view
   // out from under a finger mid-pan.
@@ -258,6 +277,83 @@ const CameraRig = ({
     return () => controls.removeEventListener("start", stop);
   }, [controls]);
 
+  // Double-tap to zoom in, the way a map does: twice as close, with the spot
+  // you tapped staying under your finger. Already as close as it goes, it
+  // glides back out to the whole school instead, so the gesture never just
+  // does nothing. Touch only — a mouse has its wheel, and a double-click is
+  // two taps on whatever it lands on.
+  const dom = useThree((s) => s.gl.domElement);
+  useEffect(() => {
+    if (!controls) return;
+    const down = new Map<number, { x: number; y: number; t: number }>();
+    let multi = false;
+    let lastTap: { x: number; y: number; t: number } | null = null;
+    const ray = new THREE.Raycaster();
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -TARGET_Y);
+    const hit = new THREE.Vector3();
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") return;
+      down.set(e.pointerId, { x: e.clientX, y: e.clientY, t: e.timeStamp });
+      // A second finger makes it a pinch, and nothing in it is a tap.
+      if (down.size > 1) multi = true;
+    };
+    const onUp = (e: PointerEvent) => {
+      const start = down.get(e.pointerId);
+      down.delete(e.pointerId);
+      if (!start) return;
+      const wasMulti = multi;
+      if (down.size === 0) multi = false;
+      const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+      if (wasMulti || moved > 10 || e.timeStamp - start.t > 300) {
+        lastTap = null;
+        return;
+      }
+      const tap = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+      const prev = lastTap;
+      const double = prev && tap.t - prev.t < 320 && Math.hypot(tap.x - prev.x, tap.y - prev.y) < 36;
+      lastTap = double ? null : tap;
+      if (!double) return;
+
+      if (camera.zoom >= controls.maxZoom * 0.98) {
+        // Back out to the framing the scene opened with.
+        const { width, height } = sizeRef.current;
+        goal.current = { zoom: fitZoom(bounds, width, height), cx: bounds.fx, cz: bounds.fz };
+        easing.current = true;
+        return;
+      }
+      const rect = dom.getBoundingClientRect();
+      ray.setFromCamera(
+        new THREE.Vector2(((tap.x - rect.left) / rect.width) * 2 - 1, -((tap.y - rect.top) / rect.height) * 2 + 1),
+        camera,
+      );
+      if (!ray.ray.intersectPlane(plane, hit)) return;
+      const zoom = Math.min(controls.maxZoom, camera.zoom * 2);
+      // In an orthographic view the tapped point's offset from the centre
+      // shrinks in proportion to the zoom, so this keeps it where it was.
+      const keep = camera.zoom / zoom;
+      const c = leashRef.current(
+        hit.x + (controls.target.x - hit.x) * keep,
+        hit.z + (controls.target.z - hit.z) * keep,
+      );
+      goal.current = { zoom, cx: c.x, cz: c.z };
+      easing.current = true;
+    };
+    const onCancel = (e: PointerEvent) => {
+      down.delete(e.pointerId);
+      if (down.size === 0) multi = false;
+      lastTap = null;
+    };
+    dom.addEventListener("pointerdown", onDown);
+    dom.addEventListener("pointerup", onUp);
+    dom.addEventListener("pointercancel", onCancel);
+    return () => {
+      dom.removeEventListener("pointerdown", onDown);
+      dom.removeEventListener("pointerup", onUp);
+      dom.removeEventListener("pointercancel", onCancel);
+    };
+  }, [controls, camera, dom, bounds]);
+
   useFrame((_, dt) => {
     if (!controls) return;
 
@@ -285,16 +381,7 @@ const CameraRig = ({
     }
 
     // The leash. Only acts at the very edge, so ordinary panning never feels it.
-    const x = clamp(
-      controls.target.x,
-      Math.min(bounds.minX - PAN_MARGIN, land?.x0 ?? Infinity),
-      Math.max(bounds.maxX + PAN_MARGIN, land?.x1 ?? -Infinity),
-    );
-    const z = clamp(
-      controls.target.z,
-      Math.min(bounds.minZ - PAN_MARGIN, land?.z0 ?? Infinity),
-      Math.max(bounds.maxZ + PAN_MARGIN, land?.z1 ?? -Infinity),
-    );
+    const { x, z } = leash(controls.target.x, controls.target.z);
     if (x !== controls.target.x || z !== controls.target.z) {
       camera.position.x += x - controls.target.x;
       camera.position.z += z - controls.target.z;
@@ -621,13 +708,21 @@ const Scene = ({
   const variantId = school.variantId ?? DEFAULT_VARIANT_ID;
   const grounds = useMemo(() => groundsPlan(variantId), [variantId]);
   const way = useMemo(() => wayIn(plan, grounds), [plan, grounds]);
+  // The grounds in use: a kickabout and a busy playground before school,
+  // after it, and into the evening under the floodlights — never in lesson
+  // time, and never at night.
+  const play = useMemo(() => playCast(grounds), [grounds]);
+  const outdoors = part === "morning" || part === "afterSchool" || part === "evening";
   const cast = useMemo(() => {
     const here = castFor(plan, fullCast, part);
     // Morning and after school, people are coming and going up the path.
-    return part === "morning" || part === "afterSchool"
-      ? { ...here, roomLoops: [...here.roomLoops, ...arrivals(way, grounds)] }
-      : here;
-  }, [plan, fullCast, part, way, grounds]);
+    const coming = part === "morning" || part === "afterSchool";
+    return {
+      ...here,
+      roomLoops: coming ? [...here.roomLoops, ...arrivals(way, grounds)] : here.roomLoops,
+      play: outdoors ? play : undefined,
+    };
+  }, [plan, fullCast, part, way, grounds, play, outdoors]);
   const glide = useMemo(
     () => (announce ? { roomId: announce.roomId, nonce: announce.nonce } : null),
     [announce],
@@ -659,7 +754,7 @@ const Scene = ({
     <AtmosphereContext.Provider value={atmosphere}>
       <DayCycle />
       <NightDriver />
-      <Grounds grounds={grounds} way={way} />
+      <Grounds grounds={grounds} way={way} playing={outdoors} />
 
       <Building plan={plan} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
       {schoolName && signAt && !building && !customizing && <SchoolSign position={signAt} text={schoolName} />}
