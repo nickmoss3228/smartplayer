@@ -39,6 +39,33 @@ one), so it only gets the kickabout.
   opening framing. A second finger, a move over 10px or a press over 300ms
   make it not a tap.
 
+### 2026-10-01: wallet, build preview, less text, walking
+
+- **Wallet on screen** (`WalletBadge.tsx`): all three balances under the
+  clock, every mode; a figure pops when it changes.
+- **Build preview**: tap a buyable ghost and `Scene` draws `shown` — the
+  plan as if bought (`buildPlan` of owned + room + bundle, in catalog order)
+  — for the building, furniture, desks and lamps. People stay on the real
+  plan, so the new room is empty. The ghost keeps only a floor-level frame.
+  Locked ghosts are tappable; the card says what they wait for.
+- **Less text in build mode**: ghost labels are a price chip (or a lock);
+  no names, no "build X first" in the scene. The card is name + price +
+  one button (no blurb). Hint is "Tap a room". Page chrome is z-30, above
+  drei Html labels (z 10-20).
+- **Walking (first try)**: walk button (`IoWalkOutline`) in play mode.
+  `walkGrid.ts` = 0.25m grid, open inside rooms 0.3m off walls, through
+  `boundaryOpenings` doorways that lead into another room, closed round
+  `blockers` (+0.18m); A* + string-pulling. `avatar.ts` = mutable
+  `AvatarState` + pure `stepAvatar` (2.4 m/s, keys cancel a path, slides
+  along obstacles) + `keysToGround` (screen up = -x,-z). `Walking.tsx` =
+  invisible `FloorCatcher` (tap, ignores drags >8px) + `WalkTarget` ring;
+  `walkKeys.ts` = arrows/WASD. People draws `WalkingPlayer` instead of the
+  seated player; it registers presence so doors open. CameraRig `follow`:
+  closes in once, then drifts after the character past 1.5m slack; any pan
+  lets go until the next tap/key. Tests: `walkGrid.test.ts` (every room
+  reachable in every campus; no path through furniture or a wall),
+  `avatar.test.ts`.
+
 ### Windows, 2026-09-30
 
 The user: windows were plain squares, and indoors they sat "a bit randomly"

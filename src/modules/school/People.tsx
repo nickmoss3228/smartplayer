@@ -39,6 +39,8 @@ import { playersOf } from "./playLayout";
 import { Figure } from "../character/Figure";
 import { BodyRefs, useBodyRefs } from "../character/bodyRefs";
 import { CharacterLook, DEFAULT_LOOK, crowdLook } from "../character/look";
+import { AvatarState, stepAvatar } from "./avatar";
+import { WalkGrid } from "./walkGrid";
 
 /** What somebody in the school looks like — the same shape as the player's
  *  own character. */
@@ -330,6 +332,78 @@ const Walker = ({
 };
 
 
+// ── The player, walking ─────────────────────────────────────────────────────
+
+/**
+ * The player's own character, up from their desk and going where they send it
+ * (avatar.ts). Walks like everybody else — the same stride, the same bob — and
+ * counts as somebody at a door, so the front door swings open for it too.
+ */
+const WalkingPlayer = ({
+  state,
+  grid,
+  look,
+  tag,
+  bubble,
+  onTap,
+}: {
+  state: AvatarState;
+  grid: WalkGrid;
+  look: PersonLook;
+  tag: string | null;
+  bubble: string | null;
+  onTap: () => void;
+}) => {
+  const refs = useBodyRefs();
+  const hop = useHop();
+  const group = useRef<THREE.Group>(null);
+  const here = usePresencePoint();
+  const stride = useRef(0);
+
+  useFrame((_, dt) => {
+    const g = group.current;
+    if (!g) return;
+    const walking = stepAvatar(state, grid, dt);
+    g.position.x = state.x;
+    g.position.z = state.z;
+    here.x = state.x;
+    here.z = state.z;
+
+    let delta = ((state.heading - g.rotation.y + Math.PI) % (Math.PI * 2)) - Math.PI;
+    if (delta < -Math.PI) delta += Math.PI * 2;
+    g.rotation.y += delta * Math.min(1, dt * 10);
+
+    // The stride runs on distance walked, not on the clock, so the feet keep
+    // pace with the ground whatever the frame rate.
+    if (walking) stride.current += dt * 9;
+    const swing = walking ? Math.sin(stride.current) : 0;
+    if (refs.legL.current) refs.legL.current.rotation.x = swing * 0.65;
+    if (refs.legR.current) refs.legR.current.rotation.x = -swing * 0.65;
+    if (refs.armL.current) refs.armL.current.rotation.x = -swing * 0.5;
+    if (refs.armR.current) refs.armR.current.rotation.x = swing * 0.5;
+    if (refs.root.current) {
+      refs.root.current.position.y = (walking ? Math.abs(Math.sin(stride.current)) * 0.05 : 0) + hop.advance(dt);
+    }
+  });
+
+  return (
+    <group ref={group} position={[state.x, 0, state.z]} rotation={[0, state.heading, 0]}>
+      <Body refs={refs} look={look} sitting={false} />
+      <HitBox
+        onTap={() => {
+          hop.trigger();
+          onTap();
+        }}
+      />
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.36, 0.46, 16]} />
+        <meshBasicMaterial color="#f4c04a" transparent opacity={0.9} depthWrite={false} />
+      </mesh>
+      {bubble ? <Bubble text={bubble} /> : tag ? <NameTag text={tag} /> : null}
+    </group>
+  );
+};
+
 // ── Commuter (walks between rooms and sits down at each end) ────────────────
 
 /**
@@ -483,6 +557,9 @@ export interface PeopleProps {
   onTap?: (key: string, role: PersonRole) => void;
   /** Shown over the player's head. */
   playerName?: string;
+  /** The player has got up and is walking round (avatar.ts): drawn there,
+   *  not at their desk. */
+  walker?: { state: AvatarState; grid: WalkGrid } | null;
 }
 
 export const People = ({
@@ -494,6 +571,7 @@ export const People = ({
   announce = null,
   onTap,
   playerName,
+  walker = null,
 }: PeopleProps) => {
   const [speaking, setSpeaking] = useState<{ key: string; text: string } | null>(null);
   const timer = useRef<number | null>(null);
@@ -514,9 +592,9 @@ export const People = ({
       ...plan.roomLoops.map((w) => ({ key: w.key, role: w.role })),
       ...(plan.play ? playersOf(plan.play) : []),
     ];
-    if (plan.playerSeat) entries.push({ key: "me", role: "student" });
+    if (plan.playerSeat || walker) entries.push({ key: "me", role: "student" });
     return entries;
-  }, [plan]);
+  }, [plan, walker]);
 
   const say = useCallback(
     (key: string, role: PersonRole) => {
@@ -597,7 +675,17 @@ export const People = ({
 
   return (
     <group>
-      {plan.playerSeat && (
+      {walker && (
+        <WalkingPlayer
+          state={walker.state}
+          grid={walker.grid}
+          look={playerLook}
+          tag={mute ? null : (playerName ?? null)}
+          bubble={bubbleFor("me")}
+          onTap={() => tap("me", "student")}
+        />
+      )}
+      {plan.playerSeat && !walker && (
         <Seated
           spot={plan.playerSeat}
           pose="desk"

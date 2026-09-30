@@ -19,7 +19,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, MapControls } from "@react-three/drei";
 import * as THREE from "three";
-import { DEFAULT_VARIANT_ID, RoomLook, lookFor, planBounds } from "../../config/schoolCatalog";
+import { DEFAULT_VARIANT_ID, RoomLook, getVariant, lookFor, planBounds } from "../../config/schoolCatalog";
 import { SchoolState, WalletBalances } from "../../services/schoolServices";
 import { CharacterState } from "../../types/Character";
 import { resolveLook } from "../character/look";
@@ -54,6 +54,10 @@ import { pendantsFor, roomLights } from "./lampLayout";
 import { arrivals, groundsPlan, wayIn } from "./groundsLayout";
 import { useRenderScale } from "./renderScale";
 import { playCast } from "./playLayout";
+import { walkGrid, nearestStandable } from "./walkGrid";
+import { AvatarState, newAvatar } from "./avatar";
+import { FloorCatcher, WalkTarget } from "./Walking";
+import { useWalkKeys } from "./walkKeys";
 
 // True isometric: equal parts x, y and z, which is what makes a tile grid
 // project to a clean 2:1 diamond.
@@ -130,6 +134,7 @@ const CameraRig = ({
   seek,
   land,
   bottomInset = 0,
+  follow = null,
 }: {
   plan: SchoolPlan;
   ghosts: GhostRoom[];
@@ -151,6 +156,9 @@ const CameraRig = ({
   /** How much of the screen, from the bottom, a sheet is covering: the
    *  school is framed in what is left above it, not behind the sheet. */
   bottomInset?: number;
+  /** The player's character, out for a walk: close in on it, then keep it in
+   *  view — unless the player pans away, until they next send it somewhere. */
+  follow?: AvatarState | null;
 }) => {
   const camera = useThree((s) => s.camera) as THREE.OrthographicCamera;
   const size = useThree((s) => s.size);
@@ -267,12 +275,28 @@ const CameraRig = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seek?.nonce, controls]);
 
+  // Close in on the character when it gets up: near enough to see it walk.
+  const followRef = useRef(follow);
+  followRef.current = follow;
+  useEffect(() => {
+    if (!follow || !controls) return;
+    const { width, height } = sizeRef.current;
+    const b = planBounds([{ x: follow.x - 5, z: follow.z - 5, w: 10, d: 10 } as SchoolRoomRect]);
+    const zoom = Math.min(controls.maxZoom, fitZoom(b, width, height));
+    goal.current = { zoom: Math.max(zoom, camera.zoom), cx: follow.x, cz: follow.z };
+    easing.current = true;
+    // Only a new walk closes in; the character moving does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [follow, controls]);
+
   // Touching the camera cancels any pending glide. Without this, buying a room
   // and immediately grabbing the view means fighting the animation for a second.
+  // It also lets go of the character: panning away means "let me look".
   useEffect(() => {
     if (!controls) return;
     const stop = () => {
       easing.current = false;
+      if (followRef.current) followRef.current.follow = false;
     };
     controls.addEventListener("start", stop);
     return () => controls.removeEventListener("start", stop);
@@ -379,6 +403,25 @@ const CameraRig = ({
         easing.current = false;
       }
       return;
+    }
+
+    // Keeping the walking character in view: the view drifts after it once it
+    // is more than a couple of metres off centre, so a step or two does not
+    // swing the whole school about.
+    const f = followRef.current;
+    if (f?.follow) {
+      const dx = f.x - controls.target.x;
+      const dz = f.z - controls.target.z;
+      const d = Math.hypot(dx, dz);
+      const slack = 1.5;
+      if (d > slack) {
+        const k = Math.min(1, dt * 3) * (1 - slack / d);
+        controls.target.x += dx * k;
+        controls.target.z += dz * k;
+        camera.position.x += dx * k;
+        camera.position.z += dz * k;
+        controls.update();
+      }
     }
 
     // The leash. Only acts at the very edge, so ordinary panning never feels it.
@@ -521,8 +564,6 @@ interface SceneProps {
   onPickRoom?: (roomId: string) => void;
   /** Translated room name; falls back to the id so the canvas needs no i18n. */
   roomName?: (roomId: string) => string;
-  /** Translated "build X first" for a room that is still locked. */
-  roomNote?: (roomId: string) => string | null;
   /** Rooms that arrived with the last purchase, which rise into place. */
   justBuilt?: string[];
   /** Glide to a room and have somebody in it say `text` — a note from the
@@ -541,8 +582,11 @@ interface SceneProps {
   /** The name over the player's own head, so they can pick themselves out of
    *  the class. None when visiting: that figure is the host. */
   playerName?: string;
-  /** "Find me": a new number glides the camera to the player's desk. */
+  /** "Find me": a new number glides the camera to the player's desk — or,
+   *  while walking, back onto the player wherever they are. */
   seekMe?: number;
+  /** The player is up and walking round the school (Walking.tsx). */
+  walking?: boolean;
 }
 
 /**
@@ -596,7 +640,6 @@ const Scene = ({
   selectedRoomId = null,
   onPickRoom,
   roomName,
-  roomNote,
   justBuilt,
   announce = null,
   schoolName,
@@ -604,6 +647,7 @@ const Scene = ({
   pickScope = "one",
   playerName,
   seekMe = 0,
+  walking = false,
 }: SceneProps) => {
   const building = mode === "build";
   const customizing = mode === "customize";
@@ -640,18 +684,46 @@ const Scene = ({
   // and so the students sit at the desks that room actually has.
   const layoutOf = useCallback((roomId: string) => lookOf(roomId).layoutId, [lookOf]);
 
+  const ghosts = useMemo(
+    () => (building ? ghostRooms(school.variantId ?? DEFAULT_VARIANT_ID, school.ownedRoomIds) : []),
+    [building, school.variantId, school.ownedRoomIds],
+  );
+  // The build preview: tap a room you could buy and the school is drawn as it
+  // would be with it — its walls in the school's wallpaper, its floor, its
+  // furniture, and whatever else it changes (the corridor stretching to meet
+  // it, the forecourt reception brings). People still come from the school you
+  // HAVE, so the new room stands empty: that is how it reads as a preview.
+  const previewing = useMemo(
+    () =>
+      building && selectedRoomId
+        ? (ghosts.find((g) => g.spec.id === selectedRoomId && g.blocker === null) ?? null)
+        : null,
+    [building, selectedRoomId, ghosts],
+  );
+  const shown = useMemo(() => {
+    if (!previewing) return plan;
+    const want = new Set([...school.ownedRoomIds, previewing.spec.id, ...previewing.extra.map((r) => r.id)]);
+    const vid = school.variantId ?? DEFAULT_VARIANT_ID;
+    return buildPlan(
+      getVariant(vid).rooms.map((r) => r.id).filter((id) => want.has(id)),
+      vid,
+      school.levelFloor,
+      school.payroll?.morale ?? 100,
+    );
+  }, [previewing, plan, school.ownedRoomIds, school.variantId, school.levelFloor, school.payroll?.morale]);
+
   const desks = useMemo(
-    () => classroomsOf(plan).flatMap((c) => deskLayout(plan, layoutOf(c.id), c.id)),
-    [plan, layoutOf],
+    () => classroomsOf(shown).flatMap((c) => deskLayout(shown, layoutOf(c.id), c.id)),
+    [shown, layoutOf],
   );
   // From outside, only what stands on open ground is still visible; everything
   // indoors is behind a wall and a roof, so drawing it is pure waste.
   const furniture = useMemo(() => {
-    const all = stageProps(plan);
+    const all = stageProps(shown);
     if (!exterior) return all;
-    const outdoors = new Set(plan.rooms.filter((r) => r.outdoor).map((r) => r.id));
+    const outdoors = new Set(shown.rooms.filter((r) => r.outdoor).map((r) => r.id));
     return all.filter((p) => outdoors.has(p.key.split("-")[0]));
-  }, [plan, exterior]);
+  }, [shown, exterior]);
   // Everybody the school holds, then only whoever is in at this hour.
   const fullCast = useMemo(() => peoplePlan(plan, layoutOf), [plan, layoutOf]);
   // The front step and path, until there is a forecourt to arrive through.
@@ -663,10 +735,10 @@ const Scene = ({
   // going up); the light they give is only mounted after dark, so the day
   // pays nothing for it. Lampposts, inside the grounds and out, throw a pool.
   const pendants = useMemo(
-    () => pendantsFor(plan.rooms).filter((p) => !rising.has(p.roomId)),
-    [plan.rooms, rising],
+    () => pendantsFor(shown.rooms).filter((p) => !rising.has(p.roomId)),
+    [shown.rooms, rising],
   );
-  const lights = useMemo(() => roomLights(plan.rooms), [plan.rooms]);
+  const lights = useMemo(() => roomLights(shown.rooms), [shown.rooms]);
   const lampposts = useMemo(
     () => [...furniture, ...porch].filter((p) => p.type === "lamppost"),
     [furniture, porch],
@@ -685,10 +757,6 @@ const Scene = ({
     const post = porch.find((p) => p.type === "signpost");
     return post ? [post.x, 2.1, post.z] : null;
   }, [plan.rooms, porch]);
-  const ghosts = useMemo(
-    () => (building ? ghostRooms(school.variantId ?? DEFAULT_VARIANT_ID, school.ownedRoomIds) : []),
-    [building, school.variantId, school.ownedRoomIds],
-  );
   // Framed only while customizing. In build mode the selected room is a ghost
   // and the point is to see it in context, not to fill the screen with it.
   const focusRect = useMemo(
@@ -728,8 +796,48 @@ const Scene = ({
     () => (announce ? { roomId: announce.roomId, nonce: announce.nonce } : null),
     [announce],
   );
+  // Walking round the school: a grid of where a body can stand, built only
+  // while it is wanted, and the character itself, which starts from the
+  // player's desk (or the corridor, after dark, when there is no desk to be
+  // at) and keeps its place if the school changes under it.
+  const walkable = walking && mode === "play" && !exterior;
+  const grid = useMemo(() => (walkable ? walkGrid(plan) : null), [walkable, plan]);
+  const [avatar, setAvatar] = useState<AvatarState | null>(null);
+  useEffect(() => {
+    if (!grid) {
+      setAvatar(null);
+      return;
+    }
+    setAvatar((prev) => {
+      const hub = plan.rooms.find((r) => r.id === "corridor") ?? plan.rooms[0];
+      const from = prev ?? cast.playerSeat ?? { x: hub.x + hub.w / 2, z: hub.z + hub.d / 2 };
+      const at = nearestStandable(grid, from, 8);
+      if (!at) return null;
+      if (prev) {
+        prev.x = at.x;
+        prev.z = at.z;
+        prev.path = [];
+        prev.target = null;
+        return prev;
+      }
+      // Stand up facing the way the chair did.
+      return newAvatar(at, cast.playerSeat ? cast.playerSeat.ry + Math.PI : 0);
+    });
+    // The seat only matters at the moment the character gets up.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grid]);
+  useWalkKeys(avatar);
+  const walker = useMemo(() => (avatar && grid ? { state: avatar, grid } : null), [avatar, grid]);
+  // "Find me" while walking: back onto the character, wherever it has got to.
+  useEffect(() => {
+    if (seekMe && avatar) avatar.follow = true;
+  }, [seekMe, avatar]);
+
   // "Find me": the player's desk, whenever they are in (not after dark).
-  const seek = useMemo(() => ({ at: cast.playerSeat, nonce: seekMe }), [cast.playerSeat, seekMe]);
+  const seek = useMemo(
+    () => ({ at: walker ? null : cast.playerSeat, nonce: seekMe }),
+    [cast.playerSeat, seekMe, walker],
+  );
   const words = useMemo(() => boardWords(learnedWords), [learnedWords]);
   // The player's own character, as they made it in the dashboard.
   const playerLook = useMemo(() => resolveLook(character), [character]);
@@ -760,7 +868,7 @@ const Scene = ({
       <Baked>
         <Grounds grounds={grounds} way={way} playing={outdoors} />
 
-        <Building plan={plan} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
+        <Building plan={shown} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
         <Furnishings
           props={furniture}
           rising={rising}
@@ -792,7 +900,14 @@ const Scene = ({
         announce={speakUp}
         onTap={onPersonTap}
         playerName={playerName}
+        walker={walker}
       />
+      {walker && (
+        <>
+          <FloorCatcher land={grounds.tile} state={walker.state} grid={walker.grid} />
+          <WalkTarget state={walker.state} />
+        </>
+      )}
 
       {customizing && pickScope !== "none" && (
         <RoomPicks
@@ -805,14 +920,7 @@ const Scene = ({
       )}
 
       {building && (
-        <Ghosts
-          ghosts={ghosts}
-          wallet={wallet}
-          selectedRoomId={selectedRoomId}
-          nameOf={roomName ?? ((id) => id)}
-          noteOf={roomNote}
-          onPick={onPickRoom}
-        />
+        <Ghosts ghosts={ghosts} wallet={wallet} selectedRoomId={selectedRoomId} onPick={onPickRoom} />
       )}
 
       <CameraRig
@@ -824,6 +932,7 @@ const Scene = ({
         land={grounds.tile}
         // The decorate sheet covers the bottom half, near enough.
         bottomInset={customizing ? 0.45 : 0}
+        follow={avatar}
       />
     </AtmosphereContext.Provider>
     </PresenceContext.Provider>

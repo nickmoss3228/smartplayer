@@ -37,11 +37,13 @@ import {
   IoShirtOutline,
   IoVolumeHighOutline,
   IoVolumeMuteOutline,
+  IoWalkOutline,
 } from "react-icons/io5";
 import { SchoolMode } from "../modules/school/SchoolCanvas";
 import { useAmbientMusic } from "../modules/school/ambient";
 import { useSchoolSfx } from "../modules/school/sfx";
 import { ClockBadge } from "../modules/school/ClockBadge";
+import { WalletBadge } from "../modules/school/WalletBadge";
 import { schoolNow, useDayPart } from "../modules/school/schoolClock";
 import { TeacherNotes } from "../modules/school/TeacherNotes";
 import { OutsidePanel } from "../modules/school/OutsidePanel";
@@ -119,7 +121,7 @@ const BuildBar = ({
   wallet,
   busy,
   name,
-  blurb,
+  note,
   hint,
   done,
   closeLabel,
@@ -130,7 +132,10 @@ const BuildBar = ({
   wallet: WalletBalances;
   busy: boolean;
   name: string;
-  blurb: string;
+  /** Why a locked room cannot be built yet — "build the gym first". It used to
+   *  hang over every locked room in the scene at once; now it is said only
+   *  about the one you tapped. */
+  note: string | null;
   hint: string;
   done: string;
   closeLabel: string;
@@ -138,29 +143,37 @@ const BuildBar = ({
   onClose: () => void;
 }) => {
   const spec = chosen?.spec;
+  const locked = chosen ? chosen.blocker !== null : false;
   const poor = spec ? wallet[spec.currency] < spec.price : false;
 
+  // Name, price, one button. The blurb that used to sit under the name was a
+  // second paragraph on top of a scene already full of labels, and the room
+  // itself now stands in the scene to say what it is (the build preview).
   return (
     <div className="pointer-events-auto w-full max-w-sm rounded-[3px] bg-white/95 shadow-xl overflow-hidden">
       {spec ? (
         <div className="px-4 pt-3 pb-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[15px] font-bold text-black/85 leading-tight">{name}</div>
-              <div className="text-[11px] text-black/50 leading-snug mt-0.5">{blurb}</div>
-            </div>
-            <PriceTag currency={spec.currency} price={spec.price} wallet={wallet} />
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 text-[15px] font-bold text-black/85 leading-tight truncate">{name}</div>
+            {!locked && <PriceTag currency={spec.currency} price={spec.price} wallet={wallet} />}
           </div>
-          <button
-            type="button"
-            disabled={busy || poor}
-            onClick={() => onBuy(spec)}
-            className={`mt-2.5 w-full rounded-[3px] py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50 ${
-              poor ? "bg-black/40" : "bg-gray-900"
-            }`}
-          >
-            {done}
-          </button>
+          {locked ? (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-black/50">
+              <IoLockClosed size={12} className="shrink-0" />
+              {note}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={busy || poor}
+              onClick={() => onBuy(spec)}
+              className={`mt-2.5 w-full rounded-[3px] py-2.5 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:opacity-50 ${
+                poor ? "bg-black/40" : "bg-gray-900"
+              }`}
+            >
+              {done}
+            </button>
+          )}
         </div>
       ) : (
         <div className="px-4 py-3 text-[13px] font-semibold text-black/60 text-center">{hint}</div>
@@ -613,6 +626,9 @@ const Room = () => {
   const [dismissed, setDismissed] = useState<string | null>(null);
   // "Find me": a new number glides the camera to the player's own desk.
   const [seekMe, setSeekMe] = useState(0);
+  // The player up from their desk and walking round the school. A first try
+  // at the character being yours to move, rather than a figure at a desk.
+  const [walking, setWalking] = useState(false);
   // The nudge to go and make a character, for anybody who has not — until
   // they do, or wave it away.
   const [hintGone, setHintGone] = useState(() => {
@@ -767,6 +783,7 @@ const Room = () => {
   // being asked to tap.
   const enterMode = (next: SchoolMode) => {
     setExterior(false);
+    setWalking(false);
     setPicked(null);
     setDecorTab("school");
     setMode(next);
@@ -794,12 +811,26 @@ const Room = () => {
   // After dark the player has gone home with everybody else (castFor), so
   // there is nobody to find — say so rather than glide to an empty desk.
   const findMe = () => {
+    // Out walking, the player is wherever they walked to, at any hour.
+    if (walking) {
+      setSeekMe(Date.now());
+      return;
+    }
     if (part === "evening" || part === "night") {
       setToast(t("school.findMe.home"));
       return;
     }
     setExterior(false);
     setSeekMe(Date.now());
+  };
+
+  const toggleWalk = () => {
+    const next = !walking;
+    setWalking(next);
+    if (next) {
+      setExterior(false);
+      setToast(t("school.walk.hint"));
+    }
   };
 
   const dropHint = () => {
@@ -846,17 +877,17 @@ const Room = () => {
           pickScope={decorTab === "school" ? "all" : decorTab === "room" ? "one" : "none"}
           onPersonTap={sfx.voice}
           roomName={roomName}
-          roomNote={roomNote}
           justBuilt={justBuilt}
           announce={announce}
           schoolName={school.name ?? t("school.exterior.defaultName")}
           playerName={profile?.nickname || t("school.findMe.you")}
           seekMe={seekMe}
+          walking={walking}
         />
       </Suspense>
 
       {/* ── Stage badge, and the school clock under it ─────────────────── */}
-      <div className="absolute left-3 top-3 pointer-events-none flex flex-col items-start gap-2">
+      <div className="absolute left-3 top-3 z-30 pointer-events-none flex flex-col items-start gap-2">
         <div className="bg-white/90 rounded-full pl-3 pr-3.5 py-1.5 shadow-sm">
           <div className="text-[13px] font-bold text-black/80 leading-tight">{stageName(stage)}</div>
           <div className="text-[10px] font-semibold text-black/40 leading-tight">
@@ -870,6 +901,7 @@ const Room = () => {
           </div>
         </div>
         <ClockBadge />
+        <WalletBadge wallet={wallet} />
         {/* Never made a character: the one at the front desk is a stranger
             wearing the default. Point at where to change that. */}
         {character && !character.look && !hintGone && mode === "play" && (
@@ -901,7 +933,7 @@ const Room = () => {
           ghosts, and redecorating is a different question from deciding what to
           build next — leaving them there just gives two ways to lose the thing
           you were looking at. */}
-      <div className="absolute right-3 top-3 flex flex-col gap-2">
+      <div className="absolute right-3 top-3 z-30 flex flex-col gap-2">
         {/* Music first and outside the fading group: it is the one control
             that means the same thing in every mode, and hunting for it while
             the build bar is open would be silly. */}
@@ -937,6 +969,19 @@ const Room = () => {
             mode === "play" ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
+          {/* Walk: the player's character gets up and goes where you tap. */}
+          <button
+            type="button"
+            onClick={toggleWalk}
+            aria-pressed={walking}
+            aria-label={t(walking ? "school.walk.stop" : "school.walk.start")}
+            title={t(walking ? "school.walk.stop" : "school.walk.start")}
+            className={`h-11 w-11 rounded-full shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
+              walking ? "bg-gray-900 text-white" : "bg-white/90 text-black/60"
+            }`}
+          >
+            <IoWalkOutline size={21} />
+          </button>
           <button
             type="button"
             onClick={findMe}
@@ -948,7 +993,11 @@ const Room = () => {
           </button>
           <button
             type="button"
-            onClick={() => setExterior((v) => !v)}
+            onClick={() => {
+              // From outside there is no floor to walk on.
+              if (!exterior) setWalking(false);
+              setExterior((v) => !v);
+            }}
             aria-label={t(exterior ? "school.view.inside" : "school.view.outside")}
             title={t(exterior ? "school.view.inside" : "school.view.outside")}
             className={`h-11 w-11 rounded-full shadow-sm flex items-center justify-center active:scale-95 transition-transform ${
@@ -974,7 +1023,7 @@ const Room = () => {
       </div>
 
       {/* ── Build ────────────────────────────────────────────────────── */}
-      <div className="absolute inset-x-0 bottom-5 flex justify-center px-4 pointer-events-none">
+      <div className="absolute inset-x-0 bottom-5 z-30 flex justify-center px-4 pointer-events-none">
         {/* Mode first, then the state of the offer. The other way round, a
             finished school ate the customize sheet — the one screen that is
             MORE useful once there is nothing left to build. */}
@@ -1031,7 +1080,7 @@ const Room = () => {
             wallet={wallet}
             busy={busy}
             name={picked ? roomName(picked) : ""}
-            blurb={picked ? roomBlurb(picked) : ""}
+            note={picked ? roomNote(picked) : null}
             hint={t("school.buildPick")}
             done={t("school.buildDone")}
             closeLabel={t("school.buildClose")}
@@ -1066,7 +1115,7 @@ const Room = () => {
       </div>
 
       {/* ── Advisor, and notes from the rest of the staff ─────────────── */}
-      <div className="absolute right-3 bottom-24 flex justify-end pointer-events-none">
+      <div className="absolute right-3 bottom-24 z-30 flex justify-end pointer-events-none">
         <TeacherNotes
           // Never over the advisor, a decision in progress or a new room.
           blocked={mode !== "play" || showAdvisor || celebrating !== null}

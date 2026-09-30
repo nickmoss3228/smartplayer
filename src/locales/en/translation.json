@@ -1795,7 +1795,7 @@
         "blurb": "The far corner — its board hangs on the west wall."
       }
     },
-    "buildPick": "Tap a room to see what it costs",
+    "buildPick": "Tap a room",
     "buildDone": "Build it here",
     "payroll": {
       "pay": "Pay {{amount}}"
@@ -2191,6 +2191,14 @@
       "sameLook": "Same as the school",
       "match": "Match the whole school",
       "stage": "Stage {{n}}"
+    },
+    "wallet": {
+      "label": "What the school has to spend"
+    },
+    "walk": {
+      "start": "Walk around",
+      "stop": "Sit back down",
+      "hint": "Tap the floor to walk there"
     }
   },
   "paywall": {

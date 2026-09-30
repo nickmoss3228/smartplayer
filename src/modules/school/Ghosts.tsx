@@ -9,11 +9,20 @@
 // rectangles `Building.tsx` will draw for real, at a third of the opacity.
 //
 // Everything here is deliberately NOT the real building: flat colour rather
-// than the wallpaper, a knee-high band rather than walls, no floor texture.
-// A ghost that looked like a room would be a room you thought you owned.
+// than the wallpaper, a knee-high band rather than walls, no floor texture —
+// until you tap one. The one you tap is shown as the real room instead (walls,
+// floor, furniture: see `previewPlan` in SchoolCanvas), and all that is left
+// of its ghost is a bright frame round its floor, so it still reads as "the
+// one you are looking at" rather than as a room you already own.
+//
+// The labels say as little as they can: a price on the rooms you could buy, a
+// lock on the ones you cannot yet. The name, and what a locked room is
+// waiting for, are on the card for the one you tapped. Fourteen labels each
+// with a name and a sentence were most of what build mode looked like.
 
 import { useMemo } from "react";
 import { Html } from "@react-three/drei";
+import { IoLockClosed } from "react-icons/io5";
 import { GhostRoom } from "./props";
 import { CURRENCIES } from "../../config/currencies";
 import { Currency, SchoolRoomRect } from "../../config/schoolCatalog";
@@ -93,41 +102,35 @@ const Ghost = ({
   ghost,
   affordable,
   selected,
-  label,
-  note,
   price,
   onPick,
 }: {
   ghost: GhostRoom;
   affordable: boolean;
   selected: boolean;
-  label: string;
-  /** Why it cannot be bought yet, for the ones that cannot. A grey box with a
-   *  name on it says where the gym goes but not how to get it. */
-  note: string | null;
   price: number;
   onPick?: (roomId: string) => void;
 }) => {
   const { color, dim } = lookFor(ghost, affordable);
   const { rect } = ghost;
-  // The selected ghost has to be obvious from across the campus, because the
-  // card at the bottom of the screen names a room and the player has to find it.
-  const base = dim ? 0.16 : selected ? 0.62 : 0.26;
+  const base = dim ? 0.16 : 0.26;
   const Icon = iconFor(ghost.spec.currency);
+  // Locked rooms can be tapped too: the card is where you find out what they
+  // are waiting for, now that the scene no longer says it over every one.
+  const pick = onPick
+    ? (e: { stopPropagation: () => void }) => {
+        e.stopPropagation();
+        onPick(ghost.spec.id);
+      }
+    : undefined;
+  // What the tapped room will actually look like is drawn by the scene; the
+  // ghost keeps only a frame round its floor, low enough not to cut across the
+  // walls being previewed. Tapping it again still has to land on something.
+  const previewing = selected && ghost.blocker === null;
 
   return (
     <group>
-      <mesh
-        position={[rect.x + rect.w / 2, 0.06, rect.z + rect.d / 2]}
-        onClick={
-          onPick && ghost.blocker === null
-            ? (e) => {
-                e.stopPropagation();
-                onPick(ghost.spec.id);
-              }
-            : undefined
-        }
-      >
+      <mesh position={[rect.x + rect.w / 2, 0.06, rect.z + rect.d / 2]} onClick={pick} visible={!previewing}>
         <boxGeometry args={[rect.w - 0.3, 0.12, rect.d - 0.3]} />
         <meshBasicMaterial color={color} transparent opacity={base} depthWrite={false} />
       </mesh>
@@ -135,23 +138,17 @@ const Ghost = ({
       <Outline
         rect={rect}
         color={color}
-        opacity={dim ? 0.3 : selected ? 0.95 : 0.5}
-        height={selected ? BAND_H * 1.6 : BAND_H}
+        opacity={dim ? 0.3 : previewing ? 0.95 : 0.5}
+        height={previewing ? 0.14 : selected ? BAND_H * 1.6 : BAND_H}
       />
       {/* Corner posts, so a footprint still reads as a room from across the
           campus once the band is too small to see. */}
       {!dim &&
+        !previewing &&
         CORNERS.map(([ax, az]) => (
-          <mesh
-            key={`${ax}${az}`}
-            position={[
-              rect.x + ax * rect.w,
-              (selected ? POST_H * 1.45 : POST_H) / 2,
-              rect.z + az * rect.d,
-            ]}
-          >
-            <boxGeometry args={[selected ? 0.3 : 0.22, selected ? POST_H * 1.45 : POST_H, selected ? 0.3 : 0.22]} />
-            <meshBasicMaterial color={color} transparent opacity={selected ? 0.8 : 0.4} depthWrite={false} />
+          <mesh key={`${ax}${az}`} position={[rect.x + ax * rect.w, POST_H / 2, rect.z + az * rect.d]}>
+            <boxGeometry args={[0.22, POST_H, 0.22]} />
+            <meshBasicMaterial color={color} transparent opacity={0.4} depthWrite={false} />
           </mesh>
         ))}
 
@@ -160,80 +157,64 @@ const Ghost = ({
           not a side effect of it. */}
       {ghost.extra.map((x) => (
         <group key={x.id}>
-          <mesh
-            position={[x.x + x.w / 2, 0.06, x.z + x.d / 2]}
-            onClick={
-              onPick && ghost.blocker === null
-                ? (e) => {
-                    e.stopPropagation();
-                    onPick(ghost.spec.id);
-                  }
-                : undefined
-            }
-          >
+          <mesh position={[x.x + x.w / 2, 0.06, x.z + x.d / 2]} onClick={pick} visible={!previewing}>
             <boxGeometry args={[x.w - 0.3, 0.12, x.d - 0.3]} />
             <meshBasicMaterial color={color} transparent opacity={base * 0.8} depthWrite={false} />
           </mesh>
-          <Outline rect={x} color={color} opacity={dim ? 0.3 : selected ? 0.8 : 0.4} height={BAND_H} />
+          <Outline
+            rect={x}
+            color={color}
+            opacity={dim ? 0.3 : previewing ? 0.9 : 0.4}
+            height={previewing ? 0.14 : BAND_H}
+          />
         </group>
       ))}
 
       {/* What the corridor (or whatever else) does when this arrives. Only for
           the selected ghost: drawn for all of them at once it is a mess of
-          overlapping bands, and it is only ever a question about one room. */}
+          overlapping bands, and it is only ever a question about one room.
+          While previewing, the grown corridor is itself drawn, so a floor
+          frame is all it needs. */}
       {selected &&
         ghost.grows.map((g) => (
-          <Outline key={g.id} rect={g} color={color} opacity={0.4} height={0.5} />
+          <Outline key={g.id} rect={g} color={color} opacity={0.4} height={previewing ? 0.14 : 0.5} />
         ))}
 
-      <Html
-        position={[
-          rect.x + rect.w / 2,
-          (selected ? POST_H * 1.45 : POST_H) + 0.4,
-          rect.z + rect.d / 2,
-        ]}
-        center
-        // The label is the only part that has to survive being behind a wall:
-        // a ghost you cannot read is a ghost you cannot choose.
-        zIndexRange={[20, 10]}
-        style={{ pointerEvents: "none", userSelect: "none" }}
-      >
-        <div
-          style={{
-            whiteSpace: "nowrap",
-            fontSize: 11,
-            fontWeight: 700,
-            padding: "3px 7px",
-            borderRadius: 8,
-            background: selected ? color : dim ? "rgba(30,34,40,0.55)" : "rgba(20,24,30,0.82)",
-            color: dim ? "rgba(255,255,255,0.55)" : "#fff",
-            transform: selected ? "scale(1.12)" : "none",
-            boxShadow: selected ? "0 2px 10px rgba(0,0,0,0.45)" : "none",
-          }}
+      {/* The tapped room's own label goes: the card at the bottom names it,
+          and a chip floating over the walls being previewed only hides them. */}
+      {!previewing && (
+        <Html
+          position={[rect.x + rect.w / 2, POST_H + 0.4, rect.z + rect.d / 2]}
+          center
+          // Behind the page's own chrome (z-30), in front of the scene.
+          zIndexRange={[20, 10]}
+          style={{ pointerEvents: "none", userSelect: "none" }}
         >
-          {label}
-          {dim && note && (
-            <span style={{ fontWeight: 500, opacity: 0.8 }}>
-              {" · "}
-              {note}
-            </span>
-          )}
-          {!dim && (
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 3,
-                marginLeft: 6,
-                color: affordable ? "#fff" : "#ffb4b4",
-              }}
-            >
-              <Icon size={11} />
-              {price}
-            </span>
-          )}
-        </div>
-      </Html>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+              whiteSpace: "nowrap",
+              fontSize: 11,
+              fontWeight: 700,
+              padding: dim ? "3px 5px" : "3px 7px",
+              borderRadius: 8,
+              background: selected ? color : dim ? "rgba(30,34,40,0.45)" : "rgba(20,24,30,0.82)",
+              color: dim ? "rgba(255,255,255,0.6)" : affordable ? "#fff" : "#ffb4b4",
+            }}
+          >
+            {dim ? (
+              <IoLockClosed size={10} />
+            ) : (
+              <>
+                <Icon size={11} />
+                {price}
+              </>
+            )}
+          </div>
+        </Html>
+      )}
     </group>
   );
 };
@@ -242,21 +223,10 @@ export interface GhostsProps {
   ghosts: GhostRoom[];
   wallet: Record<Currency, number>;
   selectedRoomId: string | null;
-  /** Room id -> display name, already translated. */
-  nameOf: (roomId: string) => string;
-  /** Room id -> why it is still locked, already translated. Null when it is not. */
-  noteOf?: (roomId: string) => string | null;
   onPick?: (roomId: string) => void;
 }
 
-export const Ghosts = ({
-  ghosts,
-  wallet,
-  selectedRoomId,
-  nameOf,
-  noteOf,
-  onPick,
-}: GhostsProps) => {
+export const Ghosts = ({ ghosts, wallet, selectedRoomId, onPick }: GhostsProps) => {
   // Locked rooms first, so the ones you can actually buy draw over them where
   // two labels land in the same place.
   const ordered = useMemo(
@@ -272,8 +242,6 @@ export const Ghosts = ({
           ghost={g}
           affordable={wallet[g.spec.currency] >= g.spec.price}
           selected={selectedRoomId === g.spec.id}
-          label={nameOf(g.spec.id)}
-          note={g.blocker === "locked" ? (noteOf?.(g.spec.id) ?? null) : null}
           price={g.spec.price}
           onPick={onPick}
         />
