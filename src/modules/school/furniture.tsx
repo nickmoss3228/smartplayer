@@ -30,6 +30,9 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { BOOTH_STOOL, CAFE_STOOL, DOOR_WIDTH, PropInstance, SEAT_GAP, SEAT_TOP } from "./props";
 import { FOLIAGE, useAtmosphere } from "./atmosphere";
+import { LIVE } from "./bake";
+import { Baked } from "./Baked";
+import { SchoolWindow } from "./windowModel";
 import { PopIn } from "./Arrival";
 import { schoolNow } from "./schoolClock";
 
@@ -272,13 +275,11 @@ const Banner = ({ len = 5 }: { len?: number }) => (
   </group>
 );
 
+/** The same window the facade has (windowModel.tsx), from the room's side.
+ *  The prop's pivot is 5cm off the wall; the model is authored from its face. */
 const Window = () => (
-  <group>
-    <Box p={[0, 1.05, 0]} s={[1.5, 1.3, 0.06]} c={PALETTE.frame} />
-    <Box p={[0, 1.13, 0.04]} s={[1.32, 1.08, 0.02]} c={PALETTE.glass} />
-    <Box p={[0, 1.13, 0.06]} s={[0.06, 1.08, 0.02]} c={PALETTE.frame} />
-    <Box p={[0, 1.66, 0.06]} s={[1.32, 0.06, 0.02]} c={PALETTE.frame} />
-    <Box p={[0, 0.98, 0.1]} s={[1.6, 0.08, 0.2]} c={PALETTE.frame} />
+  <group position={[0, 0, -0.05]}>
+    <SchoolWindow face="in" frame={PALETTE.frame} />
   </group>
 );
 
@@ -326,13 +327,13 @@ const Clock = () => {
         <meshLambertMaterial color={PALETTE.paper} />
       </mesh>
       {/* Each hand hangs from the centre, so it turns about its own end. */}
-      <group ref={hourHand} position={[0, 2.3, 0.14]}>
+      <group ref={hourHand} position={[0, 2.3, 0.14]} userData={LIVE}>
         <mesh position={[0, 0.07, 0]}>
           <boxGeometry args={[0.06, 0.15, 0.02]} />
           <meshLambertMaterial color={PALETTE.metalDark} />
         </mesh>
       </group>
-      <group ref={minuteHand} position={[0, 2.3, 0.15]}>
+      <group ref={minuteHand} position={[0, 2.3, 0.15]} userData={LIVE}>
         <mesh position={[0, 0.1, 0]}>
           <boxGeometry args={[0.035, 0.22, 0.02]} />
           <meshLambertMaterial color={PALETTE.metalDark} />
@@ -540,7 +541,9 @@ const Tree = () => {
   return (
     <group>
       <Box p={[0, 0, 0]} s={[0.4, 1.7, 0.4]} c={PALETTE.woodDark} />
-      <group ref={canopy} position={[0, 1.7, 0]}>
+      {/* Sways, so it is merged on its own: one draw per tree, not six. */}
+      <group ref={canopy} position={[0, 1.7, 0]} userData={LIVE}>
+        <Baked>
         <Box p={[0, 0, 0]} s={[2.1, 0.8, 2.1]} c={f.dark} />
         <Box p={[0, 0.7, 0]} s={[1.5, 0.7, 1.5]} c={f.light} ry={0.6} />
         <Box p={[0, 1.3, 0]} s={[0.9, 0.5, 0.9]} c={f.top} ry={1.1} />
@@ -555,6 +558,7 @@ const Tree = () => {
           BLOSSOM_SPOTS.map(([x, y, z], i) => (
             <Box key={i} p={[x, y, z]} s={[0.16, 0.08, 0.16]} c={f.blossom!} />
           ))}
+        </Baked>
       </group>
     </group>
   );
@@ -578,7 +582,7 @@ const Fountain = () => {
         <cylinderGeometry args={[0.92, 0.92, 0.06, 12]} />
         <meshLambertMaterial color={PALETTE.water} />
       </mesh>
-      <mesh ref={jet} position={[0, 0.45, 0]}>
+      <mesh ref={jet} position={[0, 0.45, 0]} userData={LIVE}>
         <cylinderGeometry args={[0.1, 0.16, 0.7, 8]} />
         <meshLambertMaterial color="#a8d4e2" />
       </mesh>
@@ -615,7 +619,7 @@ const Globe = () => {
         <meshLambertMaterial color={PALETTE.woodDark} />
       </mesh>
       <Box p={[0, 0.1, 0]} s={[0.06, 0.42, 0.06]} c={PALETTE.metalDark} />
-      <mesh ref={ball} position={[0, 0.78, 0]}>
+      <mesh ref={ball} position={[0, 0.78, 0]} userData={LIVE}>
         <sphereGeometry args={[0.28, 10, 8]} />
         <meshLambertMaterial color="#4a86b8" />
       </mesh>
@@ -644,7 +648,7 @@ const Computer = () => {
         <boxGeometry args={[0.78, 0.5, 0.05]} />
         <meshLambertMaterial color={PALETTE.metalDark} />
       </mesh>
-      <mesh position={[0, 1.14, -0.02]}>
+      <mesh position={[0, 1.14, -0.02]} userData={LIVE}>
         <boxGeometry args={[0.7, 0.42, 0.02]} />
         <meshLambertMaterial ref={screen} color="#3f7fa8" />
       </mesh>
@@ -664,7 +668,7 @@ const Flag = ({ tint = "#2b4c8c" }: { tint?: string }) => {
   return (
     <group>
       <Box p={[0, 1.5, 0.06]} s={[0.05, 0.85, 0.05]} c={PALETTE.woodDark} />
-      <group ref={cloth} position={[0.02, 2.3, 0.08]}>
+      <group ref={cloth} position={[0.02, 2.3, 0.08]} userData={LIVE}>
         <mesh position={[0.26, -0.16, 0]}>
           <boxGeometry args={[0.52, 0.34, 0.02]} />
           <meshLambertMaterial color={tint} />
@@ -809,7 +813,7 @@ const WaterCooler = () => {
         <cylinderGeometry args={[0.19, 0.16, 0.55, 10]} />
         <meshLambertMaterial color="#a9d6e5" transparent opacity={0.85} />
       </mesh>
-      <mesh ref={bubble} position={[0, 1.05, 0]}>
+      <mesh ref={bubble} position={[0, 1.05, 0]} userData={LIVE}>
         <sphereGeometry args={[0.07, 6, 5]} />
         <meshLambertMaterial color="#ffffff" />
       </mesh>
@@ -1107,11 +1111,11 @@ const Scoreboard = () => {
     <group>
       <Box p={[0, 2.0, 0]} s={[1.7, 0.95, 0.12]} c={PALETTE.metalDark} />
       <Box p={[0, 2.08, 0.07]} s={[1.5, 0.75, 0.02]} c="#1d2733" />
-      <mesh ref={home} position={[-0.36, 2.45, 0.1]}>
+      <mesh ref={home} position={[-0.36, 2.45, 0.1]} userData={LIVE}>
         <boxGeometry args={[0.28, 0.4, 0.02]} />
         <meshBasicMaterial color="#e8734a" />
       </mesh>
-      <mesh ref={away} position={[0.36, 2.45, 0.1]}>
+      <mesh ref={away} position={[0.36, 2.45, 0.1]} userData={LIVE}>
         <boxGeometry args={[0.28, 0.4, 0.02]} />
         <meshBasicMaterial color="#4ac4e8" />
       </mesh>

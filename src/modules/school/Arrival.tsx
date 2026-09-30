@@ -12,6 +12,7 @@ import { ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Rect } from "../../config/schoolCatalog";
+import { LIVE, STILL } from "./bake";
 
 /** How long the walls take to rise, and the scaffold to clear after. */
 const RISE_S = 1.1;
@@ -121,9 +122,12 @@ export const Rise = ({
 
   return (
     <group>
-      <group ref={body}>{children}</group>
+      {/* Moving while it rises; merged with the rest once it is up. */}
+      <group ref={body} userData={active ? LIVE : STILL}>
+        {children}
+      </group>
       {active && (
-        <group ref={extras}>
+        <group ref={extras} userData={LIVE}>
           {poles.map(([x, z]) => (
             <mesh key={`${x},${z}`} position={[x, H / 2, z]} material={scaffold}>
               <boxGeometry args={[0.12, H, 0.12]} />
@@ -189,5 +193,9 @@ export const PopIn = ({
     const k = Math.min(1, Math.max(0, (clock.elapsedTime - start.current - delay) / 0.35));
     g.current.scale.setScalar(Math.max(0.001, k === 0 ? 0 : easeOutBack(k)));
   });
-  return <group ref={g}>{children}</group>;
+  return (
+    <group ref={g} userData={active ? LIVE : STILL}>
+      {children}
+    </group>
+  );
 };

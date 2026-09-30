@@ -31,6 +31,7 @@ import {
   stageFor,
 } from "../../config/schoolCatalog";
 import { PersonRole } from "./bubbles";
+import { WINDOW, windowSpots } from "./windowLayout";
 import type { DayPart } from "./schoolClock";
 
 /**
@@ -640,6 +641,19 @@ function hang(
  * board hangs on the west wall needs the same protection there, or the window
  * loop punches straight through it.
  */
+/** The wall each window takes up, curtains included, for whatever is hung
+ *  after it to keep clear of. */
+function windowAvoid(props: PropInstance[]): Reserved {
+  const out: Reserved = {};
+  for (const w of props) {
+    if (w.type !== "window") continue;
+    const side = Math.abs(Math.sin(w.ry)) < 0.5 ? "north" : "west";
+    const at = side === "north" ? w.x : w.z;
+    out[side] = [...(out[side] ?? []), [at - WINDOW.dressed / 2, at + WINDOW.dressed / 2]];
+  }
+  return out;
+}
+
 function windowsOn(
   plan: SchoolPlan,
   r: SchoolRoomRect,
@@ -650,14 +664,14 @@ function windowsOn(
 
   for (const side of sides) {
     const taken = reserved[side] ?? [];
-    const clear = (at: number) => !taken.some(([s, e]) => at > s && at < e);
     for (const [s, e] of freeWallRuns(plan, r, side)) {
-      for (let at = s + 1.2; at < e - 1.0; at += 2.2) {
-        if (!clear(at)) continue;
+      // On the school's one grid (windowLayout.ts), the same one the facade
+      // uses — not every so often from wherever this room's wall starts.
+      for (const at of windowSpots(s, e, taken)) {
         out.push(
           side === "north"
-            ? { key: `win-n${at.toFixed(1)}`, type: "window", x: at, z: r.z + 0.16, ry: 0 }
-            : { key: `win-w${at.toFixed(1)}`, type: "window", x: r.x + 0.16, z: at, ry: Math.PI / 2 },
+            ? { key: `win-n${at.toFixed(1)}`, type: "window", x: at, z: r.z + 0.16, ry: 0, len: WINDOW.width }
+            : { key: `win-w${at.toFixed(1)}`, type: "window", x: r.x + 0.16, z: at, ry: Math.PI / 2, len: WINDOW.width },
         );
       }
     }
@@ -767,6 +781,18 @@ function classroomProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
     reserved[side] = [...(reserved[side] ?? []), [at - len / 2 - pad, at + len / 2 + pad]];
   };
 
+  // The windows go up next, on the school's grid, around the board only —
+  // then the clock and the posters find room between them. The other way
+  // round, a clock and a poster on a board wall left the grid nowhere to land,
+  // and a classroom could end up with no windows at all. Both drawn walls,
+  // not just the north one: a classroom set back from the campus edge may
+  // have its only outside wall on the west.
+  const windows = windowsOn(plan, r, ["north", "west"], reserved);
+  p.push(...windows);
+  for (const [side, spans] of Object.entries(windowAvoid(windows)) as ["north" | "west", [number, number][]][]) {
+    reserved[side] = [...(reserved[side] ?? []), ...spans];
+  }
+
   const clock = hang(plan, r, { key: "clock", type: "clock" }, {
     len: 0.7,
     inset: 0.24,
@@ -795,9 +821,6 @@ function classroomProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
     nail({ key: "poster1", type: "poster", tint: "#d98b6a" }, 0.9, 0.2);
   }
 
-  // Both drawn walls, not just the north one: a classroom set back from the
-  // campus edge may have its only outside wall on the west.
-  p.push(...windowsOn(plan, r, ["north", "west"], reserved));
   return p;
 }
 
@@ -1317,6 +1340,7 @@ function staffProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
     inset: 0.14,
     north: r.x + r.w - 2.4,
     west: r.z + r.d - 2.4,
+    avoid: windowAvoid(p),
   });
   if (notice) p.push(notice);
   return p;
@@ -1380,6 +1404,7 @@ function officeProps(plan: SchoolPlan, r: SchoolRoomRect, doorX: number): PropIn
     inset: 0.14,
     north: r.x + 1.6,
     west: r.z + 1.6,
+    avoid: windowAvoid(p),
   });
   if (poster) p.push(poster);
   return p;
@@ -1454,6 +1479,7 @@ function musicProps(plan: SchoolPlan, r: SchoolRoomRect): PropInstance[] {
     inset: 0.12,
     north: r.x + r.w / 2,
     west: r.z + r.d / 2,
+    avoid: windowAvoid(p),
   });
   if (banner) p.push(banner);
   return p;
@@ -1585,7 +1611,40 @@ export function stageProps(plan: SchoolPlan): PropInstance[] {
     // to produce distinct keys, and the exterior view filters on this prefix.
     out.push(...furnish(plan, r, doorX).map((p) => ({ ...p, key: `${r.id}-${p.key}` })));
   }
-  return clearDoorways(out, doorZones(plan));
+  return clearDoorways(clearWindows(out), doorZones(plan));
+}
+
+/** Things hung on a wall at window height, and how wide the ones that carry
+ *  no `len` of their own are. */
+export const HUNG = new Set<PropType>(["clock", "poster", "board", "banner", "noticeboard", "scoreboard", "alphabet", "flag", "menuBoard"]);
+const HUNG_WIDTH: Partial<Record<PropType, number>> = { clock: 0.7, poster: 0.9 };
+/** How much wall a hung prop covers. */
+export const hungWidth = (p: PropInstance) => p.len ?? HUNG_WIDTH[p.type] ?? 1;
+
+/**
+ * Drops any window that something else hung on the same wall would overlap,
+ * curtains included. Classrooms hang their windows last, around the board and
+ * the clock; other rooms hang theirs first and nail things up after, and now
+ * that windows keep to the school's grid rather than to each room, a
+ * noticeboard can land on one. Losing that one window keeps the rest of the
+ * wall's rhythm; moving it would break it.
+ */
+function clearWindows(props: PropInstance[]): PropInstance[] {
+  const hung = props.filter((p) => HUNG.has(p.type));
+  const northish = (ry: number) => Math.abs(Math.sin(ry)) < 0.5;
+  return props.filter((w) => {
+    if (w.type !== "window") return true;
+    const room = w.key.split("-")[0];
+    const north = northish(w.ry);
+    const at = north ? w.x : w.z;
+    return !hung.some((h) => {
+      if (h.key.split("-")[0] !== room || northish(h.ry) !== north) return false;
+      if (Math.abs(north ? h.z - w.z : h.x - w.x) > 0.5) return false;
+      const hat = north ? h.x : h.z;
+      const half = hungWidth(h) / 2;
+      return hat + half > at - WINDOW.dressed / 2 && hat - half < at + WINDOW.dressed / 2;
+    });
+  });
 }
 
 

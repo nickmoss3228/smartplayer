@@ -19,11 +19,14 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { LIVE } from "./bake";
+import { windowSpots } from "./windowLayout";
+import { SchoolWindow } from "./windowModel";
 import * as THREE from "three";
 import { SchoolRoomRect, SchoolSurface } from "../../config/schoolCatalog";
 import { SchoolPlan, WALL_T, WallOpening, WallSide, boundaryOpenings } from "./props";
 import { nearest, usePresence } from "./presence";
-import { WINDOW_DAY, WINDOW_LIT, useAtmosphere } from "./atmosphere";
+import { useAtmosphere } from "./atmosphere";
 import { Rise } from "./Arrival";
 import { FacadeLook, OutsideLook, RoofLook, outsideLook } from "./exterior";
 import { NEON } from "./lampLayout";
@@ -48,12 +51,6 @@ const DOOR_H = 2.1;
 const ROOF = "#6f7683";
 const ROOF_EDGE = "#575d68";
 
-/** Window positions along a facade run, inset from both ends. */
-function facadeWindows(from: number, to: number): number[] {
-  const out: number[] = [];
-  for (let at = from + 1.6; at < to - 1.2; at += 2.6) out.push(Number(at.toFixed(2)));
-  return out;
-}
 
 interface Segment {
   from: number;
@@ -349,13 +346,13 @@ const FrontDoor = ({
         <meshBasicMaterial color="#1c2130" />
       </mesh>
       {/* Two leaves, each on its own jamb. */}
-      <group ref={left} position={axis === "x" ? [-half, 0, 0] : [0, 0, -half]}>
+      <group ref={left} position={axis === "x" ? [-half, 0, 0] : [0, 0, -half]} userData={LIVE}>
         <mesh position={axis === "x" ? [leafW / 2, h / 2, 0] : [0, h / 2, leafW / 2]}>
           <boxGeometry args={leafSize} />
           <meshLambertMaterial color={leafColor} />
         </mesh>
       </group>
-      <group ref={right} position={axis === "x" ? [half, 0, 0] : [0, 0, half]}>
+      <group ref={right} position={axis === "x" ? [half, 0, 0] : [0, 0, half]} userData={LIVE}>
         <mesh position={axis === "x" ? [-leafW / 2, h / 2, 0] : [0, h / 2, -leafW / 2]}>
           <boxGeometry args={leafSize} />
           <meshLambertMaterial color={leafColor} />
@@ -426,9 +423,6 @@ const Shell = ({
   const wallColor = facade.color ?? wallpaper.color;
   const sides: Side[] = ["north", "south", "west", "east"];
   const height = room.outdoor ? GARDEN_H : WALL_H;
-  // After dark the school has its lights on, and from outside that is what
-  // says so: every window glows.
-  const { lightsOn } = useAtmosphere();
 
   return (
     <group>
@@ -496,38 +490,17 @@ const Shell = ({
                 elevation reads as a slab rather than a school, and putting them
                 on all four sides would be geometry nobody ever looks at. */}
             {!room.outdoor && (side === "south" || side === "east") &&
-              facadeWindows(seg.from, seg.to).map((at) => (
-                <group key={at}>
-                  {/* The frame, in the trim colour, standing just proud of the
-                      wall behind the glass. */}
-                  <mesh
-                    position={
-                      g.axis === "x"
-                        ? [at, 1.55, g.fixed + WALL_T / 2 + 0.02]
-                        : [g.fixed + WALL_T / 2 + 0.02, 1.55, at]
-                    }
-                  >
-                    <boxGeometry
-                      args={g.axis === "x" ? [1.36, 1.36, 0.04] : [0.04, 1.36, 1.36]}
-                    />
-                    <meshLambertMaterial color={outside.trim.frame} />
-                  </mesh>
-                  <mesh
-                    position={
-                      g.axis === "x"
-                        ? [at, 1.55, g.fixed + WALL_T / 2 + 0.04]
-                        : [g.fixed + WALL_T / 2 + 0.04, 1.55, at]
-                    }
-                  >
-                    <boxGeometry
-                      args={g.axis === "x" ? [1.15, 1.15, 0.06] : [0.06, 1.15, 1.15]}
-                    />
-                    {lightsOn ? (
-                      <meshBasicMaterial color={WINDOW_LIT} />
-                    ) : (
-                      <meshLambertMaterial color={WINDOW_DAY} />
-                    )}
-                  </mesh>
+              // On the school's one grid, so these are the same columns the
+              // rooms' own windows stand in (windowLayout.ts).
+              windowSpots(seg.from, seg.to).map((at) => (
+                <group
+                  key={at}
+                  position={
+                    g.axis === "x" ? [at, 0, g.fixed + WALL_T / 2] : [g.fixed + WALL_T / 2, 0, at]
+                  }
+                  rotation={[0, g.axis === "x" ? 0 : Math.PI / 2, 0]}
+                >
+                  <SchoolWindow face="out" frame={outside.trim.frame} />
                 </group>
               ))}
           </group>

@@ -39,6 +39,7 @@ import {
   cleanSchoolName,
 } from './schoolCatalog';
 import { FACADES, ROOFS, TRIMS } from '../modules/school/exterior';
+import { WINDOW, onWindowGrid } from '../modules/school/windowLayout';
 import enLocale from '../locales/en/translation.json';
 import ruLocale from '../locales/ru/translation.json';
 
@@ -89,6 +90,8 @@ import {
   seatOf,
   seatSurfaces,
   stageProps,
+  HUNG,
+  hungWidth,
   WALK_SPEED,
   wallOpenings,
   walkerAt,
@@ -966,6 +969,48 @@ describe('nothing hangs in mid-air', () => {
           runs.some(([s, e]) => at - len / 2 > s - 0.35 && at + len / 2 < e + 0.35),
           `${label}: ${prop.key} is ${len}m wide and overhangs its wall`,
         ).toBe(true);
+      }
+    }
+  });
+
+  it('lines every window up on the one grid the facade uses', () => {
+    // Indoors used to count from wherever each room's wall began, so the same
+    // school had tidy rows outside and windows bunched into corners inside.
+    for (const { plan, label } of everyPlan()) {
+      const windows = stageProps(plan).filter((p) => p.type === 'window');
+      const byWall = new Map<string, number[]>();
+      for (const w of windows) {
+        const north = Math.abs(Math.sin(w.ry)) < 0.5;
+        const wall = `${w.key.split('-')[0]}:${north ? 'n' : 'w'}`;
+        byWall.set(wall, [...(byWall.get(wall) ?? []), north ? w.x : w.z]);
+      }
+      for (const [wall, spots] of byWall) {
+        // A wall's only window may sit in its middle instead; two or more are
+        // always on the grid.
+        if (spots.length < 2) continue;
+        for (const at of spots) expect(onWindowGrid(at), `${label}: ${wall} window at ${at}`).toBe(true);
+      }
+    }
+  });
+
+  it('hangs nothing over a window', () => {
+    for (const { plan, label } of everyPlan()) {
+      const props = stageProps(plan);
+      const hung = props.filter((p) => HUNG.has(p.type));
+      for (const w of props.filter((p) => p.type === 'window')) {
+        const north = Math.abs(Math.sin(w.ry)) < 0.5;
+        const at = north ? w.x : w.z;
+        for (const h of hung) {
+          if (h.key.split('-')[0] !== w.key.split('-')[0]) continue;
+          if ((Math.abs(Math.sin(h.ry)) < 0.5) !== north) continue;
+          if (Math.abs(north ? h.z - w.z : h.x - w.x) > 0.5) continue;
+          const hat = north ? h.x : h.z;
+          const half = hungWidth(h) / 2;
+          expect(
+            hat + half <= at - WINDOW.dressed / 2 + 1e-6 || hat - half >= at + WINDOW.dressed / 2 - 1e-6,
+            `${label}: ${h.key} hangs over ${w.key}`,
+          ).toBe(true);
+        }
       }
     }
   });

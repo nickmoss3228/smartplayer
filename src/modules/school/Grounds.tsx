@@ -19,6 +19,8 @@ import { grassTexture } from "./textures";
 import { LampPools } from "./NightLights";
 import { glowMaterials } from "./glowMaterials";
 import { playgroundKit } from "./playLayout";
+import { LIVE } from "./bake";
+import { Baked } from "./Baked";
 
 const Box = ({
   p,
@@ -209,8 +211,11 @@ const Traffic = ({ g }: { g: GroundsPlan }) => {
             cars.current[i] = el;
           }}
           rotation={[0, lane.dir > 0 ? 0 : Math.PI, 0]}
+          userData={LIVE}
         >
-          <Car color={CAR_COLOURS[i * 3]} lit={lightsOn} />
+          <Baked>
+            <Car color={CAR_COLOURS[i * 3]} lit={lightsOn} />
+          </Baked>
         </group>
       ))}
     </group>

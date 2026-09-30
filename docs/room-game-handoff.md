@@ -39,7 +39,31 @@ one), so it only gets the kickabout.
   opening framing. A second finger, a move over 10px or a press over 300ms
   make it not a tap.
 
-### Performance, measured 2026-09-30 (not yet acted on)
+### Windows, 2026-09-30
+
+The user: windows were plain squares, and indoors they sat "a bit randomly"
+while outside they ran in a straight line. They were placed by two rules
+(indoors every 2.2m from each wall run's start, outdoors every 2.6m from each
+facade segment's start) at two heights and two sizes.
+
+- `windowLayout.ts`: one size (1.3m, sill 0.9, head 2.3), one grid for the
+  whole school in world metres (pitch 2.2, centres 1.1 + 2.2k). Rooms
+  (`windowsOn`) and the facade (`Shell`) both call `windowSpots`, so windows
+  line up room to room and with the building's columns. A run the grid misses
+  entirely gets one centred window; a grid spot blocked by a board is just
+  left out.
+- `windowModel.tsx` (`SchoolWindow`): frame, mullion + transom (top light),
+  sill, glint by day; indoors curtains on a rail and dark panes at night,
+  outdoors a lintel and a lit pane at night.
+- Classrooms hang windows right after the board, THEN the clock and posters
+  (the other order left classrooms with none). Staff room, office and music
+  room pass `windowAvoid(p)` to their `hang` calls. `clearWindows` in
+  `stageProps` drops any window a hung prop still overlaps (`hungWidth`).
+- Tests: `windowLayout.test.ts`; catalog "lines every window up on the one
+  grid" and "hangs nothing over a window". Full campuses: courtyard 11 (was
+  10), quad 16 (13), terrace 16 (19).
+
+### Performance, measured 2026-09-30
 
 Headless Chromium on SwiftShader, so milliseconds are only relative; counts
 are exact. A full campus (all three variants alike) draws **~3,200–4,000
@@ -56,6 +80,36 @@ Experiments in the harness (not in the code):
 - Sharing materials only: 3,212 → 333 materials, render CPU −12%.
 - Night, with 16 point lights: after merging, render CPU is 4ms but the frame
   is still 66ms — the cost moves to per-pixel lighting.
+
+**Done the same day: the scenery is merged** (`bake.ts` pure + tested,
+`Baked.tsx`). User's calls: merge yes; keep the 16 room lights for now; no
+30fps cap on phones for now, measure first.
+
+- One `<Baked>` in `Scene` wraps grounds, building, furniture, porch, lamp
+  pools, pendants and desks. People, ghosts, room picks, the sign and the
+  room lights are outside it.
+- The originals stay (React owns them) but are hidden and frozen
+  (`matrixAutoUpdate = false`). After every commit — Baked also reads the
+  atmosphere context, the one context the scenery re-renders on — a walk
+  fingerprints the still meshes; only a different fingerprint re-merges.
+- JSX-made materials (tagged `__r3f`) are grouped by everything but colour,
+  colour going into a vertex attribute. Materials passed in as objects (neon
+  tubes, bulbs, lamp pools) keep their identity, so NightDriver's fading
+  still reaches the merge.
+- **Anything moved or recoloured by a frame loop must carry
+  `userData={LIVE}`**, or it freezes: clock hands, tree canopies, fountain
+  jet, globe, computer screens, flags, cooler bubble, scoreboard, front-door
+  leaves, street cars; `Rise`/`PopIn` are LIVE only while `active`. Trees and
+  cars have a `<Baked>` of their own inside (one draw each while moving).
+- Tapping the board still works on the hidden original (R3F raycasts
+  regardless of `visible`).
+
+After (same harness): full campus by day 715–921 draw calls (was
+3,600–4,000), frame ~27–32ms (was ~70); night 180 calls; exterior 880 (was
+1,696). What is left by day is almost all people (~560 moving meshes) —
+instancing them is the next lever. A full re-merge is 35–60ms on a desktop
+CPU (4,900 objects → 42 meshes), paid on purchase, repaint, and at 07:00/19:00;
+the per-commit walk is ~5ms. On a phone expect ~3–4× both.
 
 ## 2026-09-29: the fourth round — you, in your school
 

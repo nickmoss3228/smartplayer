@@ -42,6 +42,7 @@ import {
   stageProps,
 } from "./props";
 import { Ghosts } from "./Ghosts";
+import { Baked } from "./Baked";
 import { RoomPicks } from "./RoomPicks";
 import { Presence, PresenceContext } from "./presence";
 import { AtmosphereContext, seasonFor } from "./atmosphere";
@@ -754,26 +755,30 @@ const Scene = ({
     <AtmosphereContext.Provider value={atmosphere}>
       <DayCycle />
       <NightDriver />
-      <Grounds grounds={grounds} way={way} playing={outdoors} />
+      {/* Everything that stands still, drawn as a few merged meshes instead of
+          one per box (bake.ts). What moves inside it is marked LIVE. */}
+      <Baked>
+        <Grounds grounds={grounds} way={way} playing={outdoors} />
 
-      <Building plan={plan} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
+        <Building plan={plan} lookFor={lookOf} exterior={exterior} rising={rising} outside={outside} />
+        <Furnishings
+          props={furniture}
+          rising={rising}
+          boardWord={exterior || building ? null : boardWord}
+          onBoardTap={
+            interactive && !exterior && !building && words.length
+              ? () => setBoardIdx((i) => i + 1)
+              : undefined
+          }
+        />
+        <Furnishings props={porch} />
+        <LampPools at={lampposts} />
+        {/* Indoors, under the roof from outside: nothing to see there. */}
+        {!exterior && <Pendants pendants={pendants} />}
+        {!exterior && <Deskware desks={desks} rising={risingRects} />}
+      </Baked>
       {schoolName && signAt && !building && !customizing && <SchoolSign position={signAt} text={schoolName} />}
-      <Furnishings
-        props={furniture}
-        rising={rising}
-        boardWord={exterior || building ? null : boardWord}
-        onBoardTap={
-          interactive && !exterior && !building && words.length
-            ? () => setBoardIdx((i) => i + 1)
-            : undefined
-        }
-      />
-      <Furnishings props={porch} />
-      <LampPools at={lampposts} />
-      {/* Indoors, under the roof from outside: nothing to see there. */}
-      {!exterior && <Pendants pendants={pendants} />}
       {!exterior && atmosphere.lightsOn && <RoomLights lights={lights} />}
-      {!exterior && <Deskware desks={desks} rising={risingRects} />}
       <People
         plan={cast}
         pool={pool}
