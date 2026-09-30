@@ -19,6 +19,7 @@ export async function getProfile(req, res) {
       username: user.username,
       email: user.email,
       nickname: user.nickname ?? user.username,
+      passwordChangedAt: user.passwordChangedAt ?? null,
     });
   } catch (error) {
     console.error("Get profile error:", error);
@@ -51,6 +52,7 @@ export async function updateProfile(req, res) {
       username: user.username,
       email: user.email ?? undefined,
       nickname: user.nickname ?? user.username,
+      passwordChangedAt: user.passwordChangedAt ?? null,
     });
   } catch (error) {
     console.error("Update profile error:", error);

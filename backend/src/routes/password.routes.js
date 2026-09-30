@@ -1,10 +1,15 @@
 import { Router } from "express";
 import { 
   requestPasswordReset, 
-  resetPassword 
+  resetPassword,
+  changePassword,
 } from "../controllers/password.controller.js";
 
-import { passwordResetLimiter } from "../middleware/rateLimit.js";
+import { authenticateToken } from "../middleware/auth.js";
+import {
+  passwordResetLimiter,
+  passwordChangeLimiter,
+} from "../middleware/rateLimit.js";
 
 const router = Router();
 
@@ -14,5 +19,7 @@ router.post("/request-reset", passwordResetLimiter, requestPasswordReset);
 // to throttle, and a strict tier here would let one attacker lock a genuine
 // user out of finishing their own reset.
 router.post("/reset", resetPassword);
+// The limiter keys by user, so it must come AFTER authenticateToken.
+router.post("/change-password", authenticateToken, passwordChangeLimiter, changePassword);
 
 export default router;

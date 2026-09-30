@@ -7,7 +7,7 @@ import { CharacterState } from "../types/Character";
 const authHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
 });
-import { API_BASE } from "./apiClient";
+import { API_BASE, api } from "./apiClient";
 
 export const fetchProfile = async (token: string): Promise<UserProfile> => {
   const res = await axios.get(`${API_BASE}/api/user/profile`, {
@@ -23,6 +23,24 @@ export const updateProfile = async (
   const res = await axios.patch(`${API_BASE}/api/user/profile`, updates, {
     headers: authHeaders(token),
   });
+  return res.data;
+};
+
+/**
+ * Change my own password. Every other device is signed out; this one stays.
+ *
+ * Through `api`, not bare axios: a genuinely dead session should still sign
+ * the user out. A wrong current password is a 400 with code WRONG_PASSWORD,
+ * never a 401, so it cannot trip that.
+ */
+export const changePassword = async (
+  currentPassword: string,
+  newPassword: string
+): Promise<{ passwordChangedAt: string }> => {
+  const res = await api.post<{ passwordChangedAt: string }>(
+    "/api/change-password",
+    { currentPassword, newPassword }
+  );
   return res.data;
 };
 

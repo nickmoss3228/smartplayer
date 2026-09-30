@@ -7,7 +7,11 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  // Fast Refresh is off under Vitest: in a jsdom test file the plugin treats
+  // the module as browser code and injects an import of its /@react-refresh
+  // dev-server runtime, which does not exist outside `vite dev`, so the suite
+  // fails to load. Node-environment tests are unaffected either way (SSR).
+  plugins: [react({ fastRefresh: !process.env.VITEST }), tailwindcss()],
   test: {
     // backend/ is a separate package with its own runner: its tests are
     // written against node:test and run via `npm test` in backend/. Vitest

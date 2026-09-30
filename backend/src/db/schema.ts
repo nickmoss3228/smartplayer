@@ -117,6 +117,10 @@ export const users = pgTable(
 
     passwordResetToken: text("password_reset_token"),
     passwordResetExpires: ts("password_reset_expires"),
+    // Set by a change from the Dashboard and by a completed reset. NULL means
+    // "not changed since this was recorded", not "never changed" — accounts
+    // older than the column have no honest value to put here.
+    passwordChangedAt: ts("password_changed_at"),
 
     createdAt: ts("created_at").notNull().defaultNow(),
     lastActiveAt: ts("last_active_at").notNull().defaultNow(),

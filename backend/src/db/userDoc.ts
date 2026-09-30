@@ -104,6 +104,7 @@ function rowToDoc(
     createdAt: row.createdAt,
     passwordResetToken: row.passwordResetToken ?? undefined,
     passwordResetExpires: row.passwordResetExpires ?? undefined,
+    passwordChangedAt: row.passwordChangedAt ?? undefined,
     avatar: row.avatar,
     nickname: row.nickname,
     lastActiveAt: row.lastActiveAt,
@@ -240,6 +241,7 @@ function docToColumns(doc: UserDoc): Partial<NewUser> {
     // is what keeps that working against a timestamptz column.
     passwordResetToken: doc.passwordResetToken ?? null,
     passwordResetExpires: toDate(doc.passwordResetExpires),
+    passwordChangedAt: toDate(doc.passwordChangedAt),
 
     avatar: doc.avatar ?? "cat",
     nickname: doc.nickname ?? null,

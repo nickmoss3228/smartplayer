@@ -63,4 +63,6 @@ export interface UserProfile {
   username: string;
   email: string;
   nickname: string;
+  /** ISO time of the last change or reset; null if none since it was recorded */
+  passwordChangedAt?: string | null;
 }

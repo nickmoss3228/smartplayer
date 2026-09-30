@@ -36,6 +36,13 @@
       "when": 1790665004761,
       "tag": "0004_character_look",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790801003615,
+      "tag": "0005_password_changed_at",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { sessions, userDocs } from "../db/index.js";
+import { sessions, userDocs, users as usersRepo } from "../db/index.js";
 import { sendPasswordResetEmail } from "../services/email.service.js";
 
 export async function requestPasswordReset(req, res) {
@@ -123,6 +123,7 @@ export async function resetPassword(req, res) {
     user.password = hashedPassword;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.passwordChangedAt = new Date();
     await user.save();
 
     // Every device is signed out, including the one doing the reset. Until
@@ -141,6 +142,87 @@ export async function resetPassword(req, res) {
     });
   } catch (error) {
     console.error("Password reset error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /api/change-password — the signed-in user changes their own password.
+//
+// Every refusal here is a 400, never 401/403. The frontend's apiClient treats
+// 401/403 on an authenticated call as "this session is dead" and signs the
+// user out, so answering a mistyped current password with 401 would log them
+// out for a typo. `code` is what the Dashboard branches on for its message.
+export async function changePassword(req, res) {
+  try {
+    const { currentPassword, newPassword } = req.body ?? {};
+
+    if (
+      typeof currentPassword !== "string" || !currentPassword ||
+      typeof newPassword !== "string" || !newPassword
+    ) {
+      return res.status(400).json({
+        message: "Current and new password are required",
+        code: "PASSWORD_FIELDS_REQUIRED",
+      });
+    }
+
+    // Same rule as signup and reset.
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long",
+        code: "PASSWORD_TOO_SHORT",
+      });
+    }
+
+    const user = await usersRepo.findByIdWithPassword(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // The current password is asked for even though the caller holds a valid
+    // session: a session is exactly what a borrowed phone or an unlocked
+    // school computer hands over, and without this check it would be enough
+    // to take the account over for good.
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(400).json({
+        message: "Current password is incorrect",
+        code: "WRONG_PASSWORD",
+      });
+    }
+
+    if (await bcrypt.compare(newPassword, user.password)) {
+      return res.status(400).json({
+        message: "The new password must differ from the current one",
+        code: "SAME_PASSWORD",
+      });
+    }
+
+    const passwordChangedAt = new Date();
+    await usersRepo.update(user.id, {
+      password: await bcrypt.hash(newPassword, 10),
+      passwordChangedAt,
+      // A reset link already sitting in the mailbox would otherwise still
+      // work for its remaining hour and undo this change.
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    });
+
+    // Every OTHER device is signed out; this one stays, so the person is not
+    // bounced to the login form for doing the right thing. As with the reset,
+    // after the save, so a failure here cannot leave the old password in place
+    // with the sessions already gone. With no session row behind this token
+    // there is nothing to keep, and every row goes.
+    const keepDeviceId = req.session?.deviceId;
+    if (keepDeviceId) {
+      await sessions.removeAllExcept(user.id, keepDeviceId);
+    } else {
+      await sessions.removeAll(user.id);
+    }
+
+    res.status(200).json({
+      message: "Password has been changed",
+      passwordChangedAt,
+    });
+  } catch (error) {
+    console.error("Password change error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

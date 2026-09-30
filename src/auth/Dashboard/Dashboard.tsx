@@ -2,7 +2,7 @@
 import React, { lazy, Suspense, useState, useEffect, useMemo } from "react";
 import { Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { IoLogOutOutline, IoChevronForward } from "react-icons/io5";
+import { IoLogOutOutline, IoChevronForward, IoKeyOutline } from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
 import { fetchAllDashboardData } from "../../services/dashboardServices";
 import {
@@ -16,6 +16,7 @@ import { OverviewData, DetailedProgressMap } from "../../types/Dashboard";
 import ProfileEditor from "./ProfileEditor";
 import DifficultyModal from "./DifficultyModal";
 import RankModal from "./RankModal";
+import ChangePasswordModal from "./ChangePasswordModal";
 import AchievementsRow from "./AchievementsRow";
 import WalletRow from "./WalletRow";
 import AccuracyTrendChart from "./charts/AccuracyTrendChart";
@@ -41,6 +42,7 @@ const Dashboard: React.FC = () => {
     null
   );
   const [rankModalOpen, setRankModalOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   // Load dashboard data
   useEffect(() => {
@@ -93,6 +95,7 @@ const Dashboard: React.FC = () => {
       if (e.key === "Escape") {
         setSelectedDifficulty(null);
         setRankModalOpen(false);
+        setPasswordModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -175,13 +178,23 @@ const Dashboard: React.FC = () => {
 
           <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3">
             <WalletRow compact />
-            <button
-              onClick={signOut}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95 ml-auto"
-            >
-              <IoLogOutOutline size={16} />
-              {t("dashboard.signOut")}
-            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => setPasswordModalOpen(true)}
+                aria-haspopup="dialog"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
+              >
+                <IoKeyOutline size={16} />
+                {t("dashboard.password.open")}
+              </button>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
+              >
+                <IoLogOutOutline size={16} />
+                {t("dashboard.signOut")}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -292,6 +305,16 @@ const Dashboard: React.FC = () => {
         <RankModal
           progress={overallProgress}
           onClose={() => setRankModalOpen(false)}
+        />
+      )}
+
+      {passwordModalOpen && (
+        <ChangePasswordModal
+          passwordChangedAt={profile?.passwordChangedAt}
+          onChanged={(passwordChangedAt) => {
+            if (profile) setProfileDirect({ ...profile, passwordChangedAt });
+          }}
+          onClose={() => setPasswordModalOpen(false)}
         />
       )}
     </div>

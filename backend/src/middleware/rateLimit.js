@@ -136,6 +136,16 @@ export const orderLimiter = make("payment-order", 60 * MINUTE, 30, {
   keyGenerator: byUser,
 });
 
+// POST /api/change-password checks the CURRENT password, so without a ceiling
+// a borrowed session could guess it at line speed and then lock the owner out.
+// Keyed by user for the same reason as the minting limiters: the account is
+// what is being attacked, whatever network the guesses come from. Only
+// failures count, so someone changing their password twice is never blocked.
+export const passwordChangeLimiter = make("password-change", 15 * MINUTE, 5, {
+  keyGenerator: byUser,
+  skipSuccessfulRequests: true,
+});
+
 // Spam surface — an unmoderated row straight into Mongo.
 export const feedbackLimiter = make("feedback", 60 * MINUTE, 5);
 
