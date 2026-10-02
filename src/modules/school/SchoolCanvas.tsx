@@ -901,6 +901,7 @@ const Scene = ({
         onTap={onPersonTap}
         playerName={playerName}
         walker={walker}
+        playerQuiet={part === "night"}
       />
       {walker && (
         <>

@@ -39,6 +39,17 @@ one), so it only gets the kickabout.
   opening framing. A second finger, a move over 10px or a press over 300ms
   make it not a tap.
 
+### 2026-10-02: the night is the caretaker's
+
+The user: students and teachers kept talking at night, when nobody is in.
+`castFor("night")` is now the caretaker alone (no head working late, no
+reader). The player's own character, out walking at night, keeps quiet
+(`People` `playerQuiet`). Staff note cards between 21:00 and 07:00 come only
+from `nightSpeaker` in `staffNotes.ts` — Mr Grant, security, the caretaker's
+face, rooms "corridor" (or "classroom" before there is one), lines
+`rounds`/`lockedUp`/`lightsLeft`/`allQuiet` in both locales. The evening
+(19–21) still belongs to the staff.
+
 ### 2026-10-01: wallet, build preview, less text, walking
 
 - **Wallet on screen** (`WalletBadge.tsx`): all three balances under the

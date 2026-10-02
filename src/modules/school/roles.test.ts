@@ -35,12 +35,17 @@ describe("who is who in a finished school", () => {
     }
   });
 
-  it("still keeps one reader in at night, whatever library they are in", () => {
+  it("leaves only the caretaker in at night, so only he says anything", () => {
     for (const { id, plan, cast } of full) {
       const night = castFor(plan, cast, "night");
-      const readers = night.students.filter((s) => s.pose === "armchair");
-      expect(readers.length, id).toBe(1);
-      expect(["reader", "researcher", "reviser"], id).toContain(readers[0].role);
+      const roles = [
+        ...night.students,
+        ...night.teachers,
+        ...night.wanderers,
+        ...night.commuters,
+        ...night.roomLoops,
+      ].map((p) => p.role);
+      expect(roles, id).toEqual(["caretaker"]);
     }
   });
 });

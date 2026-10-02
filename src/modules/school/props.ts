@@ -3158,14 +3158,14 @@ export function castFor(plan: SchoolPlan, cast: PeoplePlan, part: DayPart): Peop
     const caretaker: PatrolPerson[] = walker
       ? [{ ...walker, role: "caretaker", outfit: "caretaker" }]
       : [];
-    // The head working late, and one reader who has lost track of time.
-    const head = cast.students.find((s) => s.key.endsWith("-head"));
-    const reader = cast.students.find(
-      (s) => s.pose === "armchair" && (s.role === "reader" || s.role === "researcher" || s.role === "reviser"),
-    );
+    // Nobody else. There used to be the head working late and a reader who
+    // had lost track of time, and between them they kept up a day's worth of
+    // chatter in an empty school at three in the morning. At night the
+    // building is the caretaker's: he is the one who is in, and the one who
+    // speaks.
     return {
       playerSeat: null,
-      students: [head, reader].filter((s): s is SeatedPerson => Boolean(s)),
+      students: [],
       teachers: [],
       wanderers: [],
       commuters: [],

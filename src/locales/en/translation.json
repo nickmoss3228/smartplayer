@@ -1818,7 +1818,8 @@
         "coach": "Coach Reyes",
         "librarian": "Mr Abernathy, the librarian",
         "music": "Ms Clarke, music",
-        "gardener": "Mr Finch, the gardener"
+        "gardener": "Mr Finch, the gardener",
+        "caretaker": "Mr Grant, security"
       },
       "lines": {
         "welcome": "Welcome to our school! Every room here was built with what you learned.",
@@ -1849,7 +1850,11 @@
         "newBooks": "New books on the second shelf. Mostly adventure stories.",
         "piano": "Someone has been practising the piano all morning. It's getting better!",
         "sing": "Singing is listening with your whole body. Come and try.",
-        "garden": "The beds are looking lovely. Mind the flowers on your way out."
+        "garden": "The beds are looking lovely. Mind the flowers on your way out.",
+        "rounds": "Doing my rounds. Everything's in its place.",
+        "lockedUp": "All locked up for the night. See you in the morning!",
+        "lightsLeft": "Somebody left a light on again. I'll get it.",
+        "allQuiet": "All quiet tonight. Just me and the clock."
       }
     },
     "exterior": {

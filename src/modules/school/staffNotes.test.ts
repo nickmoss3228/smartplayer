@@ -54,11 +54,28 @@ describe('notes from the staff', () => {
     expect(noteRota({ ...ctx, canBuild: true }).some((n) => n.line === 'anotherRoom')).toBe(true);
   });
 
+  it('leaves the night to the security officer, and nobody else', () => {
+    for (const hour of [21, 23, 2, 6]) {
+      const rota = noteRota({ ...base, owned: everyRoom, learnedWords: ['journey'], hour, canBuild: true });
+      expect(rota.length, `${hour}:00`).toBeGreaterThan(0);
+      expect(new Set(rota.map((n) => n.speaker.id)), `${hour}:00`).toEqual(new Set(['caretaker']));
+    }
+    // Even in the very first school, where he does his rounds of the classroom.
+    expect(noteAt({ ...base, hour: 23 }, 0)?.speaker.roomId).toBe('classroom');
+    expect(noteAt({ ...base, owned: everyRoom, hour: 23 }, 0)?.speaker.roomId).toBe('corridor');
+  });
+
+  it('still hears from the staff in the evening, before the building closes', () => {
+    const ids = new Set(noteRota({ ...base, owned: everyRoom, hour: 20 }).map((n) => n.speaker.id));
+    expect(ids.has('caretaker')).toBe(false);
+    expect(ids.has('parker')).toBe(true);
+  });
+
   it('has every line and every name in both languages', () => {
     const lines = new Set<string>();
     const names = new Set<string>();
     for (const season of ['winter', 'spring', 'summer', 'autumn'] as const) {
-      for (const hour of [8, 14, 20]) {
+      for (const hour of [8, 14, 20, 23]) {
         for (const n of noteRota({ owned: everyRoom, learnedWords: ['word'], hour, season, canBuild: true })) {
           lines.add(n.line);
           names.add(n.speaker.id);

@@ -1809,7 +1809,9 @@ describe('the school after hours', () => {
       const night = castFor(plan, full, 'night');
       expect(night.playerSeat, label).toBeNull();
       expect(night.teachers.length + night.wanderers.length + night.commuters.length, label).toBe(0);
-      expect(night.students.length, label).toBeLessThanOrEqual(2);
+      // Nobody sitting anywhere: no head working late, no reader, nobody to
+      // keep up a day's chatter in an empty building.
+      expect(night.students.length, label).toBe(0);
       // Somebody is always in: the one who locks up.
       expect(night.roomLoops.map((p) => p.outfit), label).toEqual(['caretaker']);
       expect(night.roomLoops[0].role, label).toBe('caretaker');

@@ -560,6 +560,9 @@ export interface PeopleProps {
   /** The player has got up and is walking round (avatar.ts): drawn there,
    *  not at their desk. */
   walker?: { state: AvatarState; grid: WalkGrid } | null;
+  /** The player keeps quiet: out walking at night, when the only one in the
+   *  building with anything to say is the caretaker. */
+  playerQuiet?: boolean;
 }
 
 export const People = ({
@@ -572,6 +575,7 @@ export const People = ({
   onTap,
   playerName,
   walker = null,
+  playerQuiet = false,
 }: PeopleProps) => {
   const [speaking, setSpeaking] = useState<{ key: string; text: string } | null>(null);
   const timer = useRef<number | null>(null);
@@ -592,9 +596,9 @@ export const People = ({
       ...plan.roomLoops.map((w) => ({ key: w.key, role: w.role })),
       ...(plan.play ? playersOf(plan.play) : []),
     ];
-    if (plan.playerSeat || walker) entries.push({ key: "me", role: "student" });
+    if ((plan.playerSeat || walker) && !playerQuiet) entries.push({ key: "me", role: "student" });
     return entries;
-  }, [plan, walker]);
+  }, [plan, walker, playerQuiet]);
 
   const say = useCallback(
     (key: string, role: PersonRole) => {
@@ -682,7 +686,7 @@ export const People = ({
           look={playerLook}
           tag={mute ? null : (playerName ?? null)}
           bubble={bubbleFor("me")}
-          onTap={() => tap("me", "student")}
+          onTap={() => (playerQuiet ? undefined : tap("me", "student"))}
         />
       )}
       {plan.playerSeat && !walker && (

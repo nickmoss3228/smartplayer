@@ -12,6 +12,7 @@
 // on the same line of the same person.
 
 import type { Season } from "./atmosphere";
+import { partAt } from "./schoolClock";
 
 /** One member of staff, and the room they can be found in. */
 export interface Speaker {
@@ -102,6 +103,22 @@ export function speakersFor(owned: readonly string[]): Speaker[] {
   return out;
 }
 
+/**
+ * The security officer — the caretaker in the scene, in the same green
+ * sweater and cap — who has the building to himself at night. He works out of
+ * the corridor, where he walks his rounds; a school too small to have one yet
+ * is the first classroom, which is where he walks them then.
+ */
+export function nightSpeaker(owned: readonly string[]): Speaker {
+  return {
+    id: "caretaker",
+    roomId: owned.includes("corridor") ? "corridor" : "classroom",
+    face: { skin: "#d9a577", hair: "#5a4a3a", shirt: "#3f6b5a", hat: "#2f4a3a" },
+    lines: ["rounds", "lockedUp", "lightsLeft", "allQuiet"],
+    teaches: false,
+  };
+}
+
 export interface NoteContext {
   owned: readonly string[];
   learnedWords: readonly string[];
@@ -129,6 +146,13 @@ export interface StaffNote {
  * every teacher in turn, each quoting a different one.
  */
 export function noteRota(ctx: NoteContext): StaffNote[] {
+  // At night the staff have gone home; whoever spoke up then was talking to
+  // an empty building. The security officer is the one who is in.
+  if (partAt(ctx.hour) === "night") {
+    if (!ctx.owned.length) return [];
+    const guard = nightSpeaker(ctx.owned);
+    return guard.lines.map((line) => ({ speaker: guard, line, params: {} }));
+  }
   const speakers = speakersFor(ctx.owned);
   if (!speakers.length) return [];
   const words = ctx.learnedWords.map((w) => w.trim()).filter((w) => w.length > 0 && w.length <= 24);
