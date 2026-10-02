@@ -10,6 +10,7 @@ import {
   SubmitButton,
 } from "../authKit";
 import { changePassword } from "../../services/profileServices";
+import Sheet from "../../components/Sheet/Sheet";
 
 interface ChangePasswordModalProps {
   /** ISO time of the last change, when the server has one */
@@ -84,114 +85,103 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4 dialog-backdrop-in"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="password-modal-title"
-        className="bg-white rounded-t-[3px] sm:rounded-[3px] w-full max-w-md max-h-[88vh] sm:max-h-[85vh] overflow-hidden flex flex-col dialog-panel-in shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-5 flex items-center justify-between flex-shrink-0 border-b border-line">
-          <div className="min-w-0">
-            <h2 id="password-modal-title" className="text-lg font-bold text-black">
-              {t("dashboard.password.title")}
-            </h2>
-            {lastChanged && (
-              <p className="text-xs text-black/40">
-                {t("dashboard.password.lastChanged", { date: lastChanged })}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/10 transition-colors active:scale-90 duration-150"
-            aria-label={t("dashboard.password.close")}
-          >
-            <IoClose size={18} className="text-black/60" />
-          </button>
-        </div>
-
-        <div className="p-5 overflow-y-auto">
-          {done ? (
-            <>
-              <Notice kind="success">{t("dashboard.password.success")}</Notice>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full h-12 rounded-[3px] bg-ink text-white text-sm font-semibold hover:bg-ink/90 active:scale-[0.99] transition-all"
-              >
-                {t("dashboard.password.done")}
-              </button>
-            </>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-              <p className="text-sm text-black/60 leading-snug">
-                {t("dashboard.password.lede")}
-              </p>
-
-              {/* Notice carries its own mb-5 for the auth pages; cancel it so
-                  the form's gap is the only spacing here. */}
-              {error && (
-                <div className="-mb-5">
-                  <Notice kind="error">{error}</Notice>
-                </div>
-              )}
-
-              <PasswordField
-                id="current-password"
-                name="current-password"
-                label={t("dashboard.password.current")}
-                value={current}
-                onChange={setCurrent}
-                show={showCurrent}
-                onToggleShow={() => setShowCurrent((v) => !v)}
-                autoComplete="current-password"
-                required
-              />
-
-              <PasswordField
-                id="new-password"
-                name="new-password"
-                label={t("dashboard.password.new")}
-                value={next}
-                onChange={setNext}
-                show={showNext}
-                onToggleShow={() => setShowNext((v) => !v)}
-                autoComplete="new-password"
-                required
-              >
-                <PasswordStrength value={next} />
-              </PasswordField>
-
-              <PasswordField
-                id="confirm-password"
-                name="confirm-password"
-                label={t("dashboard.password.confirm")}
-                value={confirm}
-                onChange={setConfirm}
-                show={showNext}
-                onToggleShow={() => setShowNext((v) => !v)}
-                autoComplete="new-password"
-                required
-              />
-
-              <SubmitButton
-                loading={saving}
-                disabled={!current || !next || !confirm}
-                loadingLabel={t("dashboard.password.saving")}
-              >
-                {t("dashboard.password.submit")}
-              </SubmitButton>
-            </form>
+    <Sheet onClose={onClose} labelledBy="password-modal-title">
+      {/* Header */}
+      <div className="p-5 flex items-center justify-between flex-shrink-0 border-b border-line">
+        <div className="min-w-0">
+          <h2 id="password-modal-title" className="text-lg font-bold text-black">
+            {t("dashboard.password.title")}
+          </h2>
+          {lastChanged && (
+            <p className="text-xs text-black/40">
+              {t("dashboard.password.lastChanged", { date: lastChanged })}
+            </p>
           )}
         </div>
+        <button
+          onClick={onClose}
+          className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full bg-black/[0.04] hover:bg-black/10 transition-colors active:scale-90 duration-150"
+          aria-label={t("dashboard.password.close")}
+        >
+          <IoClose size={18} className="text-black/60" />
+        </button>
       </div>
-    </div>
+
+      <div className="p-5 overflow-y-auto">
+        {done ? (
+          <>
+            <Notice kind="success">{t("dashboard.password.success")}</Notice>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full h-12 rounded-[3px] bg-ink text-white text-sm font-semibold hover:bg-ink/90 active:scale-[0.99] transition-all"
+            >
+              {t("dashboard.password.done")}
+            </button>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+            <p className="text-sm text-black/60 leading-snug">
+              {t("dashboard.password.lede")}
+            </p>
+
+            {/* Notice carries its own mb-5 for the auth pages; cancel it so
+                the form's gap is the only spacing here. */}
+            {error && (
+              <div className="-mb-5">
+                <Notice kind="error">{error}</Notice>
+              </div>
+            )}
+
+            <PasswordField
+              id="current-password"
+              name="current-password"
+              label={t("dashboard.password.current")}
+              value={current}
+              onChange={setCurrent}
+              show={showCurrent}
+              onToggleShow={() => setShowCurrent((v) => !v)}
+              autoComplete="current-password"
+              required
+            />
+
+            <PasswordField
+              id="new-password"
+              name="new-password"
+              label={t("dashboard.password.new")}
+              value={next}
+              onChange={setNext}
+              show={showNext}
+              onToggleShow={() => setShowNext((v) => !v)}
+              autoComplete="new-password"
+              required
+            >
+              <PasswordStrength value={next} />
+            </PasswordField>
+
+            <PasswordField
+              id="confirm-password"
+              name="confirm-password"
+              label={t("dashboard.password.confirm")}
+              value={confirm}
+              onChange={setConfirm}
+              show={showNext}
+              onToggleShow={() => setShowNext((v) => !v)}
+              autoComplete="new-password"
+              required
+            />
+
+            <SubmitButton
+              loading={saving}
+              disabled={!current || !next || !confirm}
+              loadingLabel={t("dashboard.password.saving")}
+            >
+              {t("dashboard.password.submit")}
+            </SubmitButton>
+          </form>
+        )}
+      </div>
+    </Sheet>
   );
 };
 
