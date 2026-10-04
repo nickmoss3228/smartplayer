@@ -8,8 +8,8 @@ import { fileURLToPath } from 'url';
 // Bare dotenv.config() reads ./.env from wherever node was launched. `npm run
 // dev` runs `nodemon src/server.js` from backend/, so a .env sitting anywhere
 // else is silently ignored — and the first symptom is an unrelated crash from
-// whichever module constructs a client at import time (Resend: "Missing API
-// key"), which sends you hunting in completely the wrong place.
+// whichever module constructs a client at import time (the old Resend client:
+// "Missing API key"), which sends you hunting in completely the wrong place.
 //
 // In Docker this is a no-op: docker-compose injects the real values via
 // env_file, and process.env already wins over anything dotenv would load.
@@ -80,7 +80,6 @@ export const config = {
     port: process.env.PORT || 3000,
     nodeEnv: process.env.NODE_ENV || 'development',
     jwtSecret: process.env.JWT_SECRET,
-    resendApiKey: process.env.RESEND_API_KEY,
     sms: {
         // 'console' prints the OTP to the server log instead of sending it, so
         // signup and login are walkable without a paid SMS account. It is

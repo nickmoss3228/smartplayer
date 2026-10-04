@@ -8,7 +8,15 @@ import {
   getNextTier,
   getRungFills,
   getTierProgress,
+  formatValue,
+  formatAmount,
+  getTierLabel,
 } from './achievementsConfig';
+import i18next, { type TFunction } from 'i18next';
+import {
+  ACHIEVEMENT_TIERS as BACKEND_TIERS,
+  computeHighestTier,
+} from '../../backend/src/config/achievements.js';
 import en from '../locales/en/translation.json';
 import ru from '../locales/ru/translation.json';
 
@@ -166,4 +174,86 @@ describe('achievement config integrity', () => {
       expect(Number.isInteger(t.threshold / 3600), `${t.tier}: ${t.threshold}s`).toBe(true);
     }
   });
+});
+
+// ── Labels ──────────────────────────────────────────────────────────────────
+// These are what the learner actually reads on the card and in the sheet.
+
+describe('achievement labels', () => {
+  const t = i18next.createInstance();
+  t.init({
+    lng: 'en',
+    resources: { en: { translation: en } },
+    interpolation: { escapeValue: false },
+  });
+  const tf = t.t.bind(t) as TFunction;
+  const byKey = (k: string) => ACHIEVEMENT_CATEGORIES.find((c) => c.key === k)!;
+
+  it('formats listening seconds as compact hours and minutes', () => {
+    expect(formatValue(tf, 'listeningTime', 0)).toBe('0m');
+    expect(formatValue(tf, 'listeningTime', 59)).toBe('0m'); // seconds are dropped
+    expect(formatValue(tf, 'listeningTime', 45 * 60)).toBe('45m');
+    expect(formatValue(tf, 'listeningTime', 3 * 3600)).toBe('3h');
+    expect(formatValue(tf, 'listeningTime', 3 * 3600 + 5 * 60)).toBe('3h 5m');
+  });
+
+  it('pluralises the day and story counts on the card', () => {
+    expect(formatValue(tf, 'studyStreak', 1)).toBe('1 day');
+    expect(formatValue(tf, 'studyStreak', 12)).toBe('12 days');
+    expect(formatValue(tf, 'storiesListened', 1)).toBe('1 story');
+    expect(formatValue(tf, 'storiesListened', 4)).toBe('4 stories');
+  });
+
+  it('gives every category a unit when the amount has to stand alone', () => {
+    expect(formatAmount(tf, byKey('questionsAnswered'), 22)).toBe('22 questions');
+    expect(formatAmount(tf, byKey('wordsLearned'), 1)).toBe('1 word');
+    expect(formatAmount(tf, byKey('studyStreak'), 16)).toBe('16 days');
+    expect(formatAmount(tf, byKey('listeningTime'), 5400)).toBe('1h 30m');
+  });
+
+  it('labels tier thresholds in display units, not storage units', () => {
+    const listening = byKey('listeningTime');
+    expect(listening.tiers.map((x) => getTierLabel(tf, listening, x.threshold))).toEqual([
+      '1 hour',
+      '5 hours',
+      '10 hours',
+      '30 hours',
+      '100 hours',
+    ]);
+    expect(getTierLabel(tf, byKey('storiesListened'), 1)).toBe('1 story');
+    expect(getTierLabel(tf, byKey('questionsAnswered'), 1000)).toBe('1000 questions');
+  });
+});
+
+// ── Frontend ↔ backend parity ───────────────────────────────────────────────
+// The dashboard computes tiers from raw stats with this file's thresholds; the
+// backend computes and stores tiers with its own copy. If the two drift, the
+// card shows one medal while the account records another.
+
+describe('frontend and backend achievement tiers', () => {
+  it('cover the same categories', () => {
+    expect(ACHIEVEMENT_CATEGORIES.map((c) => c.key).sort()).toEqual(
+      Object.keys(BACKEND_TIERS).sort(),
+    );
+  });
+
+  it.each(ACHIEVEMENT_CATEGORIES)('$key has identical tiers and thresholds', (category) => {
+    const backend = (BACKEND_TIERS as Record<string, { tier: string; threshold: number }[]>)[
+      category.key
+    ];
+    expect(category.tiers).toEqual(backend.map(({ tier, threshold }) => ({ tier, threshold })));
+  });
+
+  it.each(ACHIEVEMENT_CATEGORIES)(
+    '$key: both sides award the same top tier at every boundary',
+    (category) => {
+      // Probe either side of each threshold, plus zero and far past the top.
+      const probes = [0, ...category.tiers.flatMap((x) => [x.threshold - 1, x.threshold]), 1e9];
+      for (const value of probes) {
+        expect(computeHighestTier(category.key, value), `${category.key} @ ${value}`).toBe(
+          getHighestEarnedTier(category.tiers, value)?.tier ?? null,
+        );
+      }
+    },
+  );
 });

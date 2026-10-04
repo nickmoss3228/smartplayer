@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useStore } from "react-redux";
 import WaveSurfer from "wavesurfer.js";
 import { useAppDispatch } from "../../../hooks/hooks";
+import type { RootState } from "../../../store/store";
 import {
   setCurrentMarkerIndex,
   setIsPlaying,
@@ -48,6 +50,7 @@ export const useSegmentEngine = ({
   onSegmentRepeatComplete,
 }: UseSegmentEngineOptions) => {
   const dispatch = useAppDispatch();
+  const store = useStore<RootState>();
 
   const isPlayingRef = useRef(isPlaying);
   const currentMarkerIndexRef = useRef(currentMarkerIndex);
@@ -120,7 +123,14 @@ export const useSegmentEngine = ({
       // Update the current time and check if the current segment has finished playing
       if (isPlayingRef.current && instance) {
         const now = instance.getCurrentTime();
-        dispatch(setCurrentTime(formatTime(now)));
+        // The label only changes once a second, but this runs every frame.
+        // Dispatching unconditionally woke every useSelector in the app 60
+        // times a second for the whole of playback; compare against the
+        // store (not a local cache — useTrackReset writes "0:00" directly).
+        const label = formatTime(now);
+        if (store.getState().player.currentTime !== label) {
+          dispatch(setCurrentTime(label));
+        }
         // updateActiveSubtitle(now);
 
         // Check if the current segment has finished playing
@@ -294,7 +304,7 @@ export const useSegmentEngine = ({
         rafRef.current = null;
       }
     };
-  }, [isInitialized, getSegmentBounds, dispatch]);
+  }, [isInitialized, getSegmentBounds, dispatch, store]);
 
   // Reset the playback rate to the user's preferred rate when the enhanced mode is disabled.
   // This ensures that the playback rate is consistent with the user's preference when switching between enhanced and free play modes.
@@ -363,7 +373,7 @@ export const useSegmentEngine = ({
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isInitialized, getSegmentBounds, dispatch]);
+  }, [isInitialized, getSegmentBounds, dispatch, store]);
 
   return {
     getSegmentBounds,

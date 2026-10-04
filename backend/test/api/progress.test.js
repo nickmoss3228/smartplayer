@@ -225,6 +225,45 @@ describe("guest progress migration", () => {
     assert.equal((await userRow(u.id)).bitAward, 0);
   });
 
+  // Logging into an EXISTING account after listening as a guest: the guest's
+  // results are folded in, and nothing the account already had is undone —
+  // a guest fail on a part the account passed does not erase the pass, and the
+  // bookmark never moves backwards.
+  it("merges into an account that already has progress without undoing any of it", async () => {
+    const u = await registerUser();
+    for (const partNumber of [1, 2]) {
+      const part = { ...FREE, partNumber };
+      const res = await api("POST", "/api/progress/complete", {
+        token: u.token,
+        body: { ...part, answers: answers(part, { correct: true }) },
+      });
+      assert.equal(res.body.completed, true, `part ${partNumber}`);
+    }
+    const paidBefore = (await userRow(u.id)).bitAward;
+
+    const res = await api("POST", "/api/progress/migrate-guest", {
+      token: u.token,
+      body: {
+        stories: [
+          {
+            difficulty: "easy",
+            storyId: "leo",
+            results: [
+              { partNumber: 1, correctAnswers: 0, totalQuestions: 5 }, // guest failed it
+              { partNumber: 3, correctAnswers: 5, totalQuestions: 5 }, // guest passed it
+            ],
+          },
+        ],
+      },
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+
+    const story = await api("GET", "/api/progress/story/easy/leo", { token: u.token });
+    assert.deepEqual(story.body.completedParts, [1, 2, 3]);
+    assert.equal(story.body.currentPart, 4);
+    assert.equal((await userRow(u.id)).bitAward, paidBefore, "migration never pays");
+  });
+
   it("refuses non-array input", async () => {
     const u = await registerUser();
     for (const body of [{ stories: {} }, { learnedWords: "word" }, { learnedWords: [1] }]) {

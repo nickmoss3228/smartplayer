@@ -190,9 +190,9 @@ const HelpModal: React.FC<HelpModalProps> = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 dialog-backdrop-in" onClick={onClose} />
 
-      <div className="relative z-10 w-full sm:max-w-sm bg-white rounded-t-[3px] sm:rounded-[3px] shadow-xl">
+      <div className="relative z-10 w-full sm:max-w-sm bg-white rounded-t-[3px] sm:rounded-[3px] shadow-xl dialog-panel-in">
         <div className="flex justify-center pt-3 sm:hidden">
           <div className="w-9 h-1 bg-gray-200 rounded-full" />
         </div>

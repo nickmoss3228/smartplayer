@@ -296,9 +296,13 @@ export async function completeStoryPart(
     )
   )`;
 
+  // Every parameter is cast. Two bare parameters compared to each other have
+  // no column to borrow a type from, so Postgres typed `$a < $b` as TEXT and
+  // compared "2" < "10" alphabetically — false — and the bookmark stuck on
+  // part 2 of every 10-part story (only "1" < "10" happened to sort right).
   const advanced = sql`CASE
-    WHEN ${storyProgress.currentPart} = ${partNumber} AND ${partNumber} < ${totalParts}
-      THEN ${partNumber} + 1
+    WHEN ${storyProgress.currentPart} = ${partNumber}::int AND ${partNumber}::int < ${totalParts}::int
+      THEN ${partNumber}::int + 1
     ELSE ${storyProgress.currentPart}
   END`;
 

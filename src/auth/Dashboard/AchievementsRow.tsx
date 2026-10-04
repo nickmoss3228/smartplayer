@@ -27,7 +27,12 @@ const AchievementsRow: React.FC = () => {
 
   const load = useCallback(async () => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      // Nothing to fetch, but the skeleton still has to give way to the cards
+      // (at zero, plus local listening time) rather than pulse forever.
+      setLoading(false);
+      return;
+    }
     try {
       const result = await fetchAchievements(token);
       setData(result);

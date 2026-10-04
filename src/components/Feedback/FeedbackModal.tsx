@@ -43,11 +43,11 @@ const FeedbackModal = ({ onClose }: FeedbackModalProps) => {
 
   return (
     <div
-      className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/70 dialog-backdrop-in"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-[3px] shadow-xl w-full max-w-md mx-4 p-6"
+        className="bg-white rounded-[3px] shadow-xl w-full max-w-md mx-4 p-6 dialog-panel-in"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold text-black mb-4">
