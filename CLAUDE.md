@@ -46,6 +46,8 @@ S3 credentials are in `backend/.env` (`YANDEX_*`). Use `@aws-sdk/client-s3` from
 
 Reads and writes both work. `backend/src/helpers/uploadToStorage.js` is the upload path;
 finite `Cache-Control` for anything referenced by an unversioned URL.
+Local (`backend/.env` and the frontend `.env`) uses the staging bucket, because
+upload keys are deterministic and a local upload into production replaced live audio.
 
 ### The production VM over SSH — yes
 `ssh smartplayer` — an alias in `~/.ssh/config` for `deploy@89.169.159.92`, key

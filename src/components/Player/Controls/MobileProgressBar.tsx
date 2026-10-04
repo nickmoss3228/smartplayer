@@ -22,18 +22,39 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
   duration,
   isLoading,
 }) => {
-  const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const rafRef = useRef<number>(0);
   const barRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const thumbTrackRef = useRef<HTMLDivElement>(null);
 
-  // ── Smooth ~60fps sync with WaveSurfer position ──────────────────────────
+  // ── ~60fps sync with WaveSurfer position ─────────────────────────────────
+  // Written straight to the DOM, not through state: a setState per frame
+  // re-rendered the whole bar (every marker button included) 60 times a
+  // second, and moving the fill by `width` and the thumb by `left` re-ran
+  // layout on each of those frames — the playhead visibly stuttered on phones.
+  // Now the fill scales and the thumb translates, both composite-only.
   useEffect(() => {
+    let last = -1;
+    let lastPct = -1;
+    // The bar unmounts while loading; a fresh one starts at scaleX(0), so a
+    // new element has to be written even if the position hasn't moved.
+    let lastFill: HTMLDivElement | null = null;
     const tick = () => {
       if (durationSeconds > 0) {
         const next = Math.min(1, Math.max(0, getAudioTime() / durationSeconds));
-        // Skip re-render if change is imperceptible (perf guard during pause)
-        setProgress((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
+        if (next !== last || fillRef.current !== lastFill) {
+          if (fillRef.current !== lastFill) lastPct = -1;
+          last = next;
+          lastFill = fillRef.current;
+          if (fillRef.current) fillRef.current.style.transform = `scaleX(${next})`;
+          if (thumbTrackRef.current) thumbTrackRef.current.style.transform = `translateX(${next * 100}%)`;
+          const pct = Math.round(next * 100);
+          if (pct !== lastPct && barRef.current) {
+            lastPct = pct;
+            barRef.current.setAttribute("aria-valuenow", String(pct));
+          }
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -77,8 +98,6 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
     );
   }
 
-  const pct = `${progress * 100}%`;
-
   return (
     <div className="w-full select-none">
       {/*
@@ -92,7 +111,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
         aria-label="Audio progress"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(progress * 100)}
+        aria-valuenow={0}
         tabIndex={0}
         className="relative w-full py-5 cursor-pointer touch-none"
         onPointerDown={handlePointerDown}
@@ -103,10 +122,11 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
         {/* ── Rail ── */}
         <div className="relative h-[3px] w-full rounded-full bg-white/20">
 
-          {/* Played portion */}
+          {/* Played portion — full width, scaled from the left by the rAF loop */}
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-white/90"
-            style={{ width: pct }}
+            ref={fillRef}
+            className="absolute inset-0 rounded-full bg-white/90 origin-left will-change-transform"
+            style={{ transform: "scaleX(0)" }}
           />
 
           {/* ── Segment / time-marker dots ── */}
@@ -141,17 +161,25 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
               );
             })}
 
-          {/* ── Playhead thumb ── */}
+          {/* ── Playhead thumb ──
+              The track spans the rail, so translating it by N% of its own
+              width puts its left edge — where the thumb is centred — at N% of
+              the rail. The thumb grows on drag by scale, not width/height. */}
           <div
+            ref={thumbTrackRef}
             aria-hidden="true"
-            className={[
-              "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 z-20",
-              "rounded-full bg-white shadow-[0_0_8px_rgba(0,0,0,0.35)]",
-              "transition-[width,height] duration-75",
-              isDragging ? "w-[18px] h-[18px]" : "w-[13px] h-[13px]",
-            ].join(" ")}
-            style={{ left: pct }}
-          />
+            className="absolute inset-0 z-20 pointer-events-none will-change-transform"
+            style={{ transform: "translateX(0%)" }}
+          >
+            <div
+              className={[
+                "absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2",
+                "w-[18px] h-[18px] rounded-full bg-white shadow-[0_0_8px_rgba(0,0,0,0.35)]",
+                "transition-transform duration-100 ease-out",
+                isDragging ? "scale-100" : "scale-[0.72]",
+              ].join(" ")}
+            />
+          </div>
         </div>
       </div>
 

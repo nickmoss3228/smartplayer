@@ -1,25 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import {
+  MIN_SCALE,
+  MAX_SCALE,
+  clampView,
+  wheelFactor,
+  zoomAt,
+  type View,
+} from "./zoomMath";
 
-// ─── Zoom helpers (module-level — pure, no closures) ─────────────────────────
-const MIN_SCALE = 1;
-const MAX_SCALE = 5;
-const clamp = (v: number, lo: number, hi: number) =>
-  Math.max(lo, Math.min(hi, v));
-
-/**
- * Clamps the pan translation so the image never drifts more than
- * (scale − 1) × 500 px from centre in either axis.
- */
-const clampPos = (
-  tx: number,
-  ty: number,
-  s: number,
-): { x: number; y: number } => {
-  if (s <= 1) return { x: 0, y: 0 };
-  const b = (s - 1) * 500;
-  return { x: clamp(tx, -b, b), y: clamp(ty, -b, b) };
-};
+const STEP = 0.5; // +/− buttons and keys
+const DOUBLE_TAP_SCALE = 2.5;
+const DOUBLE_TAP_MS = 300;
+/** Pointer travel (px) under which a press still counts as a tap or click. */
+const TAP_SLOP = 6;
+/** Discrete jumps (buttons, keys, double-tap) ease; live gestures never do. */
+const EASE = "transform 180ms ease-out";
 
 interface ModalProps {
   src: string;
@@ -29,58 +25,81 @@ interface ModalProps {
 
 export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
   // ── zoom / pan state ──────────────────────────────────────────────────────
+  /**
+   * viewRef is the source of truth. Gestures update it and the transform is
+   * written straight onto the <img> once per frame, so a pan or pinch never
+   * waits on a React render. `scale` only mirrors it for the controls.
+   */
+  const viewRef = useRef<View>({ s: 1, x: 0, y: 0 });
   const [scale, setScale] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
 
-  /**
-   * Refs mirror the state above so that native event listeners (attached via
-   * useEffect) always read current values without becoming stale closures.
-   */
-  const scaleRef = useRef(1);
-  const posRef = useRef({ x: 0, y: 0 });
-  const draggingRef = useRef(false);
-  const dragRef = useRef<{
-    mx: number;
-    my: number;
-    tx: number;
-    ty: number;
-  } | null>(null);
-  const movedRef = useRef(false); // pointer moved since last down?
-  const pinchRef = useRef<number | null>(null); // previous pinch distance
-  const tapRef = useRef(0); // ms timestamp — double-tap detection
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  /** Viewport rect and the image's untransformed size, kept by a ResizeObserver. */
+  const boxRef = useRef({ left: 0, top: 0, w: 0, h: 0, iw: 0, ih: 0 });
+  const frameRef = useRef(0);
+  const animateRef = useRef(false);
+  /** Did the pointer travel during the latest press? A drag must not close. */
+  const movedRef = useRef(false);
 
-  // ── commit: update both state and mirror-refs atomically ─────────────────
-  const commit = useCallback((s: number, p: { x: number; y: number }) => {
-    scaleRef.current = s;
-    posRef.current = p;
-    setScale(s);
-    setPos(p);
+  const setView = useCallback((next: View, animate = false) => {
+    const b = boxRef.current;
+    viewRef.current = clampView(next, { w: b.w, h: b.h }, { w: b.iw, h: b.ih });
+    animateRef.current = animate;
+    if (frameRef.current) return;
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = 0;
+      const img = imgRef.current;
+      if (!img) return;
+      const { s, x, y } = viewRef.current;
+      img.style.transition = animateRef.current ? EASE : "none";
+      img.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${s})`;
+      setScale(s);
+    });
   }, []);
 
-  /**
-   * Zoom to `newS` keeping the screen point (px, py) — expressed in pixels
-   * relative to the container's centre — visually fixed underneath the pointer.
-   */
-  const zoom = useCallback(
-    (newS: number, px: number, py: number) => {
-      newS = clamp(newS, MIN_SCALE, MAX_SCALE);
-      const s = scaleRef.current;
-      const { x: tx, y: ty } = posRef.current;
-      commit(
-        newS,
-        clampPos(
-          px - (px - tx) * (newS / s),
-          py - (py - ty) * (newS / s),
-          newS,
-        ),
-      );
+  // Reset the id too: StrictMode re-runs effects, and a stale id would make
+  // setView think a frame is still pending and never paint again.
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
     },
-    [commit],
+    [],
   );
 
-  const reset = useCallback(() => commit(1, { x: 0, y: 0 }), [commit]);
+  /** Client coordinates → offset from the viewport centre (the pivot space). */
+  const fromCentre = useCallback((cx: number, cy: number) => {
+    const b = boxRef.current;
+    return { x: cx - b.left - b.w / 2, y: cy - b.top - b.h / 2 };
+  }, []);
+
+  /** Eased jump to scale `s`, pivoting on a client point (default: centre). */
+  const jumpTo = useCallback(
+    (s: number, cx?: number, cy?: number) => {
+      const p =
+        cx === undefined || cy === undefined
+          ? { x: 0, y: 0 }
+          : fromCentre(cx, cy);
+      setView(zoomAt(viewRef.current, s, p.x, p.y), true);
+    },
+    [fromCentre, setView],
+  );
+
+  const reset = useCallback(
+    () => setView({ s: MIN_SCALE, x: 0, y: 0 }, true),
+    [setView],
+  );
+
+  /** Double-click / double-tap: zoom into that point, or back out if zoomed. */
+  const toggleZoom = useCallback(
+    (cx: number, cy: number) => {
+      if (viewRef.current.s > MIN_SCALE) reset();
+      else jumpTo(DOUBLE_TAP_SCALE, cx, cy);
+    },
+    [reset, jumpTo],
+  );
 
   // ── keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -89,15 +108,13 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         onClose();
         return;
       }
-      if (e.key === "+" || e.key === "=")
-        zoom(clamp(scaleRef.current + 0.5, MIN_SCALE, MAX_SCALE), 0, 0);
-      if (e.key === "-")
-        zoom(clamp(scaleRef.current - 0.5, MIN_SCALE, MAX_SCALE), 0, 0);
+      if (e.key === "+" || e.key === "=") jumpTo(viewRef.current.s + STEP);
+      if (e.key === "-") jumpTo(viewRef.current.s - STEP);
       if (e.key === "0") reset();
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [onClose, zoom, reset]);
+  }, [onClose, jumpTo, reset]);
 
   // ── body-scroll lock ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -107,190 +124,183 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
     };
   }, []);
 
-  // ── all pointer/wheel/touch events ───────────────────────────────────────
+  // ── measurements ──────────────────────────────────────────────────────────
+  // Pan limits come from the image's real size. Measured here rather than per
+  // event so gestures never force a layout; re-clamps after a rotation.
+  useEffect(() => {
+    const el = containerRef.current;
+    const img = imgRef.current;
+    if (!el || !img) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      boxRef.current = {
+        left: r.left,
+        top: r.top,
+        w: r.width,
+        h: r.height,
+        iw: img.offsetWidth, // layout size — unaffected by the transform
+        ih: img.offsetHeight,
+      };
+      setView(viewRef.current);
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    ro.observe(img); // fires again once the image has loaded
+    return () => ro.disconnect();
+  }, [setView]);
+
+  // ── pointer / wheel gestures ──────────────────────────────────────────────
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    /** Converts a client coordinate to a pivot relative to the container centre */
-    const getPivot = (cx: number, cy: number) => {
-      const r = el.getBoundingClientRect();
-      return { x: cx - r.left - r.width / 2, y: cy - r.top - r.height / 2 };
-    };
+    /** Active pointers by id → last client position. Two or more = pinch. */
+    const pointers = new Map<number, { x: number; y: number }>();
+    let pinch: { dist: number; x: number; y: number } | null = null;
+    let pressStart = { x: 0, y: 0 };
+    let lastType = "mouse";
+    let lastTap = { t: -Infinity, x: 0, y: 0 };
 
-    // ── Wheel (non-passive so we can call preventDefault) ─────────────────
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const p = getPivot(e.clientX, e.clientY);
-      zoom(scaleRef.current * (e.deltaY < 0 ? 1.12 : 1 / 1.12), p.x, p.y);
-    };
-
-    // ── Mouse drag ────────────────────────────────────────────────────────
-    const onMouseDown = (e: MouseEvent) => {
-      if (scaleRef.current <= 1) return;
-      draggingRef.current = true;
-      movedRef.current = false;
-      setDragging(true);
-      dragRef.current = {
-        mx: e.clientX,
-        my: e.clientY,
-        tx: posRef.current.x,
-        ty: posRef.current.y,
+    const measurePinch = () => {
+      const [a, b] = [...pointers.values()];
+      return {
+        dist: Math.hypot(a.x - b.x, a.y - b.y),
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2,
       };
     };
-    // Attached to window so drag keeps working even if cursor leaves the box
-    const onMouseMove = (e: MouseEvent) => {
-      if (!draggingRef.current || !dragRef.current) return;
-      const dx = e.clientX - dragRef.current.mx;
-      const dy = e.clientY - dragRef.current.my;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) movedRef.current = true;
-      const p = clampPos(
-        dragRef.current.tx + dx,
-        dragRef.current.ty + dy,
-        scaleRef.current,
-      );
-      posRef.current = p;
-      setPos(p);
-    };
-    const onMouseUp = () => {
-      draggingRef.current = false;
-      dragRef.current = null;
-      setDragging(false);
-    };
 
-    // ── Double-click: zoom in to 2.5× (or reset when already zoomed) ──────
-    const onDblClick = (e: MouseEvent) => {
-      e.stopPropagation();
-      if (scaleRef.current > 1) {
-        reset();
-        return;
-      }
-      const p = getPivot(e.clientX, e.clientY);
-      zoom(2.5, p.x, p.y);
-    };
-
-    // ── Touch ─────────────────────────────────────────────────────────────
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        draggingRef.current = true;
+    const onPointerDown = (e: PointerEvent) => {
+      // The controls handle their own clicks; don't start a gesture on them
+      if (e.button !== 0 || (e.target as Element).closest("button")) return;
+      lastType = e.pointerType;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 1) {
         movedRef.current = false;
-        dragRef.current = {
-          mx: e.touches[0].clientX,
-          my: e.touches[0].clientY,
-          tx: posRef.current.x,
-          ty: posRef.current.y,
-        };
-      } else if (e.touches.length === 2) {
-        draggingRef.current = false;
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        pinchRef.current = Math.sqrt(dx * dx + dy * dy);
+        pressStart = { x: e.clientX, y: e.clientY };
+        if (e.pointerType === "mouse" && viewRef.current.s > MIN_SCALE)
+          setDragging(true);
+      } else {
+        movedRef.current = true; // a second finger makes it a pinch, not a tap
+        pinch = measurePinch();
       }
     };
 
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault(); // blocks native browser zoom/scroll
-      if (e.touches.length === 2 && pinchRef.current !== null) {
-        // ── Pinch-to-zoom, centred on the midpoint between fingers ─────
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const r = el.getBoundingClientRect();
-        zoom(
-          scaleRef.current * (dist / pinchRef.current),
-          (e.touches[0].clientX + e.touches[1].clientX) / 2 -
-            r.left -
-            r.width / 2,
-          (e.touches[0].clientY + e.touches[1].clientY) / 2 -
-            r.top -
-            r.height / 2,
-        );
-        pinchRef.current = dist;
-      } else if (
-        e.touches.length === 1 &&
-        draggingRef.current &&
-        dragRef.current &&
-        scaleRef.current > 1
-      ) {
-        // ── Single-finger pan ──────────────────────────────────────────
-        const dx = e.touches[0].clientX - dragRef.current.mx;
-        const dy = e.touches[0].clientY - dragRef.current.my;
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) movedRef.current = true;
-        const p = clampPos(
-          dragRef.current.tx + dx,
-          dragRef.current.ty + dy,
-          scaleRef.current,
-        );
-        posRef.current = p;
-        setPos(p);
-      }
-    };
+    // On window so a drag keeps working after the pointer leaves the image
+    const onPointerMove = (e: PointerEvent) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      const cur = { x: e.clientX, y: e.clientY };
+      pointers.set(e.pointerId, cur);
+      if (Math.hypot(cur.x - pressStart.x, cur.y - pressStart.y) > TAP_SLOP)
+        movedRef.current = true;
 
-    const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) pinchRef.current = null;
-
-      if (e.touches.length === 0) {
-        draggingRef.current = false;
-        // ── Double-tap detection ───────────────────────────────────────
-        const now = Date.now();
-        if (now - tapRef.current < 300 && !movedRef.current) {
-          if (scaleRef.current > 1) {
-            reset();
-          } else {
-            const t = e.changedTouches[0];
-            if (t) {
-              const p = getPivot(t.clientX, t.clientY);
-              zoom(2.5, p.x, p.y);
-            }
-          }
+      const v = viewRef.current;
+      if (pinch) {
+        // Pan with the fingers' midpoint, then zoom about it, so the page
+        // stays under the fingers
+        const next = measurePinch();
+        if (pinch.dist > 0) {
+          const p = fromCentre(next.x, next.y);
+          setView(
+            zoomAt(
+              { s: v.s, x: v.x + next.x - pinch.x, y: v.y + next.y - pinch.y },
+              v.s * (next.dist / pinch.dist),
+              p.x,
+              p.y,
+            ),
+          );
         }
-        tapRef.current = now;
-      } else if (e.touches.length === 1) {
-        // Went 2 → 1 finger: restart single-finger pan tracking
-        pinchRef.current = null;
-        draggingRef.current = true;
-        dragRef.current = {
-          mx: e.touches[0].clientX,
-          my: e.touches[0].clientY,
-          tx: posRef.current.x,
-          ty: posRef.current.y,
-        };
+        pinch = next;
+      } else if (v.s > MIN_SCALE) {
+        // Pan by this event's own delta rather than the distance from the
+        // press: after hitting an edge, dragging back moves the image at once
+        setView({ s: v.s, x: v.x + cur.x - prev.x, y: v.y + cur.y - prev.y });
       }
     };
 
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("mousedown", onMouseDown);
+    const onPointerUp = (e: PointerEvent) => {
+      if (!pointers.delete(e.pointerId)) return;
+      // 2 → 1 fingers: the remaining finger pans on from its last position
+      pinch = pointers.size >= 2 ? measurePinch() : null;
+      if (pointers.size > 0) return;
+      setDragging(false);
+
+      // Double-tap for touch and pen. Mouse double-clicks go through the
+      // native dblclick below, which respects the OS double-click speed.
+      if (
+        e.type !== "pointerup" ||
+        e.pointerType === "mouse" ||
+        movedRef.current
+      )
+        return;
+      const near =
+        Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40;
+      if (e.timeStamp - lastTap.t < DOUBLE_TAP_MS && near) {
+        lastTap.t = -Infinity;
+        toggleZoom(e.clientX, e.clientY);
+      } else {
+        lastTap = { t: e.timeStamp, x: e.clientX, y: e.clientY };
+      }
+    };
+
+    const onDblClick = (e: MouseEvent) => {
+      // Touch double-taps are handled above; browsers that also synthesise a
+      // dblclick for them would otherwise undo the zoom straight away. A fast
+      // double click on +/− must not reset the zoom either.
+      if (lastType !== "mouse" || (e.target as Element).closest("button"))
+        return;
+      toggleZoom(e.clientX, e.clientY);
+    };
+
+    // Non-passive so preventDefault can stop the page scrolling or zooming
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const v = viewRef.current;
+      const p = fromCentre(e.clientX, e.clientY);
+      setView(
+        zoomAt(v, v.s * wheelFactor(e.deltaY, e.deltaMode, e.ctrlKey), p.x, p.y),
+      );
+    };
+
+    // touch-none covers modern browsers; this also stops older iOS Safari
+    // from pinch-zooming the page underneath
+    const onTouchMove = (e: TouchEvent) => e.preventDefault();
+
+    el.addEventListener("pointerdown", onPointerDown);
     el.addEventListener("dblclick", onDblClick);
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
 
     return () => {
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("mousedown", onMouseDown);
+      el.removeEventListener("pointerdown", onPointerDown);
       el.removeEventListener("dblclick", onDblClick);
-      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
-  }, [zoom, reset]);
+  }, [fromCentre, setView, toggleZoom]);
 
-  const cursor = dragging ? "grabbing" : scale > 1 ? "grab" : "zoom-in";
+  const cursor = dragging ? "grabbing" : scale > MIN_SCALE ? "grab" : "zoom-in";
 
   // Full-screen: the container itself is the fixed inset-0 layer, so
   // there's no separate "backdrop" — tapping anywhere that isn't the
-  // image or a control (all of which stopPropagation) closes the modal.
+  // image or a control (all of which stopPropagation) closes the modal,
+  // unless zoomed in or the press was a drag.
   return createPortal(
     <div
       ref={containerRef}
       role="dialog"
       aria-modal
       aria-label={title ?? "Comic"}
-      onClick={scale <= 1 ? onClose : undefined}
+      onClick={() => {
+        if (viewRef.current.s <= MIN_SCALE && !movedRef.current) onClose();
+      }}
       style={{ animation: "comicsScaleIn 200ms ease forwards", cursor }}
       // touch-none: let our own handlers govern all touch gestures
       className="fixed inset-0 z-[9999] bg-black flex items-center justify-center select-none touch-none overflow-hidden"
@@ -320,19 +330,15 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         ×
       </button>
 
-      {/* ── Comic image — transform is applied only here ── */}
+      {/* ── Comic image — setView writes its transform/transition directly;
+          they stay out of `style` so a render can't overwrite a live frame ── */}
       <img
+        ref={imgRef}
         src={src}
         alt={title ?? "Comic"}
         draggable={false}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-          transformOrigin: "center center",
-          // Disable transition while actively dragging for immediate 1:1 response
-          transition: dragging ? "none" : "transform 120ms ease-out",
-          willChange: "transform",
-        }}
+        style={{ transformOrigin: "center center", willChange: "transform" }}
         className="block max-w-full max-h-full object-contain"
       />
 
@@ -341,7 +347,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         className="absolute right-3 z-20 flex items-center gap-1.5"
         style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
-        {scale > 1 && (
+        {scale > MIN_SCALE && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -357,7 +363,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            zoom(clamp(scale - 0.5, MIN_SCALE, MAX_SCALE), 0, 0);
+            jumpTo(viewRef.current.s - STEP);
           }}
           disabled={scale <= MIN_SCALE}
           aria-label="Zoom out"
@@ -369,7 +375,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            zoom(clamp(scale + 0.5, MIN_SCALE, MAX_SCALE), 0, 0);
+            jumpTo(viewRef.current.s + STEP);
           }}
           disabled={scale >= MAX_SCALE}
           aria-label="Zoom in"

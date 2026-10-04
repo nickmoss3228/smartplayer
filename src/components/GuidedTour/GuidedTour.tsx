@@ -47,6 +47,9 @@ function measureTarget(target: string, padding: number): SpotRect | null {
   return null;
 }
 
+const sameRect = (a: SpotRect | null, b: SpotRect | null) =>
+  a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h);
+
 // ─── Tooltip layout ───────────────────────────────────────────────────────────
 const TIP_WIDTH  = 310;
 const TIP_MARGIN = 14;
@@ -138,8 +141,12 @@ export const GuidedTour: React.FC = () => {
 
     setRect(measureTarget(target, padding));
 
+    // Measured every frame so the spotlight follows a target that scrolls or
+    // animates, but only committed when it moved — a fresh object each frame
+    // re-rendered the full-screen overlay 60 times a second while idle.
     const tick = () => {
-      setRect(measureTarget(target, padding));
+      const next = measureTarget(target, padding);
+      setRect((prev) => (sameRect(prev, next) ? prev : next));
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
