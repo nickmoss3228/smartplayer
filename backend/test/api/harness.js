@@ -73,6 +73,7 @@ Object.assign(process.env, {
   // regardless of what the developer's .env happens to say today.
   PAYWALL_ENABLED: "true",
   PHONE_VERIFICATION_REQUIRED: "true",
+  SIGNUP_WALL_ENABLED: "true",
   PAYMENTS_ENABLED: "true",
   PAYMENTS_PROVIDER: "fake",
   PAYMENTS_CALLBACK_SECRET: "test-callback-secret",
@@ -173,14 +174,17 @@ export async function stopServer() {
 export async function api(method, urlPath, { body, token, device, headers = {} } = {}) {
   if (!baseUrl) await startServer();
   const finalHeaders = { ...headers };
-  if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
+  // A FormData body is a multipart upload: fetch writes its own Content-Type
+  // (with the boundary), so none is set here and the body goes through as-is.
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) finalHeaders["Content-Type"] = "application/json";
   if (token) finalHeaders.Authorization = `Bearer ${token}`;
   if (device) finalHeaders["X-Device-Id"] = device;
 
   const response = await fetch(`${baseUrl}${urlPath}`, {
     method,
     headers: finalHeaders,
-    body: body === undefined ? undefined : typeof body === "string" ? body : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm || typeof body === "string" ? body : JSON.stringify(body),
     redirect: "manual",
   });
   const text = await response.text();

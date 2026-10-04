@@ -495,6 +495,28 @@ export const story = pgTable(
     coverUrl: text("cover_url"),
     published: boolean().notNull().default(false),
 
+    // The story's characters, shown on its level page. Rule 3: written whole
+    // by one Builder panel, read whole by one page, never queried by field.
+    // Shape: CastMember in repos/stories.repo.ts. Array order is display
+    // order. A child table would only earn its keep if a character were ever
+    // shared between stories — that would be a registry, a different design.
+    //
+    // Not `cast` (a reserved word in SQL) and not `characters`: `character`
+    // above is the bundle key, and "character" is the user's avatar too.
+    castMembers: jsonb("cast_members")
+      .$type<
+        {
+          key: string;
+          name: { en: string; ru: string };
+          role: { en: string; ru: string };
+          bio: { en: string; ru: string };
+          imageUrl: string | null;
+          firstPart: number;
+        }[]
+      >()
+      .notNull()
+      .default([]),
+
     // ── Catalog ──────────────────────────────────────────────────────────
     //
     // These columns are why this table exists twice over: it holds the story's

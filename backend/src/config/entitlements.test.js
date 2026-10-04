@@ -246,3 +246,21 @@ test("storyKey is difficulty-qualified, because slugs repeat across levels", () 
   assert.equal(storyKey("easy", "leo"), "easy/leo");
   assert.notEqual(storyKey("easy", "x"), storyKey("hard", "x"));
 });
+
+test("with the paywall and the sign-up wall both off, a guest gets every part", () => {
+  const opts = { ...GUEST, paywallEnabled: false, signupWallEnabled: false };
+  const access = accessFor([], ...split(LONG), opts);
+  assert.equal(access.owned, true);
+  assert.equal(isPartVisible(access, 10), true);
+  // The wall is the default: leaving the option out keeps the taster.
+  const walled = accessFor([], ...split(LONG), { ...GUEST, paywallEnabled: false });
+  assert.equal(walled.owned, false);
+  assert.equal(isPartVisible(walled, FREE_PARTS_LONG_STORY + 1), false);
+  // An unlisted story stays refused whatever the switches say.
+  assert.equal(accessFor([], "easy", "not-a-story", opts).owned, false);
+});
+
+test("the sign-up wall switch does nothing while the paywall is on", () => {
+  const access = accessFor([], ...split(LONG), { ...GUEST, signupWallEnabled: false });
+  assert.equal(access.owned, false);
+});

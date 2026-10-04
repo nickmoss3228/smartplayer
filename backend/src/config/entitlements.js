@@ -91,6 +91,7 @@ export function accessFor(
     now = Date.now(),
     catalog = defaultCatalog(),
     paywallEnabled = true,
+    signupWallEnabled = true,
   } = {},
 ) {
   const key = storyKey(difficulty, storyId);
@@ -120,8 +121,11 @@ export function accessFor(
   // paywall is off, signing in is precisely that — it is the only thing being
   // asked of anyone — so the guest keeps their taster and members get the
   // rest. Turn the flag back on and the symmetry returns by itself.
+  //
+  // With the sign-up wall off too (config.payments.signupWallEnabled), nobody
+  // is asked for anything: every story plays in full for guests as well.
   if (!paywallEnabled) {
-    return authenticated
+    return authenticated || !signupWallEnabled
       ? { owned: true, freeParts: Infinity, previewSeconds: null, reason: "paywall-off" }
       : {
           owned: false,

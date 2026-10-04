@@ -61,6 +61,48 @@ export interface QuizQuestion {
   audio?: { fast: string | null; slow: string | null };
 }
 
+export interface LocalizedPair {
+  en: string;
+  ru: string;
+}
+
+/**
+ * The "before you listen" card the level page opens when a part is tapped
+ * (StoryPreviewModal). Both locales travel together: the card is authored in
+ * one Builder panel, side by side, and the dialog picks the reader's language.
+ * Named `intro` rather than `preview` — see the story_part.intro column.
+ */
+export interface PartIntro {
+  title: LocalizedPair;
+  description: LocalizedPair;
+  grammar: { en: string[]; ru: string[] };
+  tip: LocalizedPair;
+  /** A dedicated header image. Null means "use the part's comic page". */
+  imageUrl: string | null;
+  /** Measured from the part's audio in the Builder, so the card can say how long it is. */
+  durationSeconds: number | null;
+}
+
+/**
+ * One character of a story, as the level page shows it: a portrait, a name, a
+ * one-line role and a few sentences about them, in both locales. `firstPart`
+ * is where they first appear — the page keeps them a silhouette until the
+ * student gets there. Stored as the story.cast_members jsonb array.
+ */
+export interface CastMember {
+  /** Stable slug, unique within the story; names the portrait's storage key. */
+  key: string;
+  name: LocalizedPair;
+  role: LocalizedPair;
+  bio: LocalizedPair;
+  imageUrl: string | null;
+  firstPart: number;
+}
+
+/** The slug rule for CastMember.key — also checked by the controller. */
+export const CAST_KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
+export const CAST_MAX_MEMBERS = 12;
+
 export interface StoryPartInput {
   partNumber: number;
   title?: string;
@@ -71,6 +113,7 @@ export interface StoryPartInput {
   vocabulary?: VocabEntry[];
   phrasalVerbs?: VocabEntry[];
   quiz?: QuizQuestion[];
+  intro?: PartIntro | null;
 }
 
 export interface StoryAggregate extends Story {
@@ -207,6 +250,7 @@ export async function loadAggregate(id: string, tx: Tx = db()): Promise<StoryAgg
       audioUrl: part.audioUrl,
       helpAudio: part.helpAudio,
       comicUrl: part.comicUrl,
+      intro: part.intro ?? null,
       timeMarkers: byPart(markerRows, part.id).map((m) => ({
         time: m.time,
         label: m.label,
@@ -265,7 +309,12 @@ export async function distinctVocabKeys(
 // ── Writes ──────────────────────────────────────────────────────────────────
 
 export async function upsertHead(
-  input: Omit<Story, "id" | "createdAt" | "updatedAt"> & { id?: string },
+  // castMembers is optional: the catalog seeders write a story's head without
+  // knowing its cast, and leaving it out of the conflict update keeps it.
+  input: Omit<Story, "id" | "createdAt" | "updatedAt" | "castMembers"> & {
+    id?: string;
+    castMembers?: Story["castMembers"];
+  },
   tx: Tx = db(),
 ): Promise<Story> {
   const { id: providedId, ...values } = input;
@@ -309,6 +358,7 @@ export async function replaceParts(
     audioUrl: part.audioUrl ?? null,
     helpAudio: part.helpAudio ?? [],
     comicUrl: part.comicUrl ?? null,
+    intro: part.intro ?? null,
   }));
 
   await tx.insert(storyPart).values(partRows);
@@ -477,6 +527,7 @@ export interface StoryJson {
   category: string | null;
   coverUrl: string | null;
   published: boolean;
+  cast: CastMember[];
   // Catalog. See the `story` table in schema.ts for what each one decides.
   contentSource: "db" | "builtin";
   character: string;
@@ -501,6 +552,7 @@ export interface StoryWriteInput {
   category?: string | null;
   coverUrl?: string | null;
   published?: boolean;
+  cast?: unknown;
   // Catalog — all optional, all defaulted in headColumns().
   contentSource?: "db" | "builtin";
   character?: string;
@@ -528,6 +580,7 @@ export function toStoryJson(head: Story, parts?: FullPart[]): StoryJson {
     category: head.category,
     coverUrl: head.coverUrl,
     published: head.published,
+    cast: head.castMembers ?? [],
     contentSource: head.contentSource as "db" | "builtin",
     character: head.character,
     paid: head.paid,
@@ -593,8 +646,23 @@ export async function catalogRows(tx: Tx = db()): Promise<
     priceMinor: number | null;
     freeParts: number | null;
     previewSeconds: number | null;
+    /** Total listening time, summed from each part's card; null if any part is unmeasured. */
+    durationSeconds: number | null;
   }[]
 > {
+  // One row per story: the sum of its parts' measured lengths, or NULL when
+  // any part has none — a total that silently skips a part would understate it.
+  const durations = tx
+    .select({
+      storyPk: storyPart.storyPk,
+      total: sql<string | null>`case when bool_or((${storyPart.intro} ->> 'durationSeconds') is null) then null else sum((${storyPart.intro} ->> 'durationSeconds')::numeric) end`.as(
+        "total",
+      ),
+    })
+    .from(storyPart)
+    .groupBy(storyPart.storyPk)
+    .as("durations");
+
   const rows = await tx
     .select({
       difficulty: story.difficulty,
@@ -607,8 +675,10 @@ export async function catalogRows(tx: Tx = db()): Promise<
       priceMinor: story.priceMinor,
       freeParts: story.freeParts,
       previewSeconds: story.previewSeconds,
+      durationTotal: durations.total,
     })
     .from(story)
+    .leftJoin(durations, eq(durations.storyPk, story.id))
     .where(eq(story.published, true))
     .orderBy(asc(story.difficulty), asc(story.storyId));
 
@@ -622,6 +692,7 @@ export async function catalogRows(tx: Tx = db()): Promise<
     priceMinor: r.priceMinor,
     freeParts: r.freeParts,
     previewSeconds: r.previewSeconds,
+    durationSeconds: r.durationTotal === null ? null : Math.round(Number(r.durationTotal)),
   }));
 }
 
@@ -640,6 +711,7 @@ function headColumns(input: StoryWriteInput | StoryJson) {
     category: input.category ?? null,
     coverUrl: input.coverUrl ?? null,
     published: Boolean(input.published),
+    castMembers: normalizeCast(input.cast, input.totalParts),
     // Catalog. `??` throughout, never `||`: 0 is a legitimate freeParts (a
     // story that gives nothing away) and would otherwise collapse to "derive
     // it", quietly handing out the length-based 3 free parts instead.
@@ -651,6 +723,97 @@ function headColumns(input: StoryWriteInput | StoryJson) {
     freeParts: input.freeParts ?? null,
     previewSeconds: input.previewSeconds ?? null,
   };
+}
+
+/**
+ * A part intro in its one stored shape, or null when nothing was written.
+ *
+ * Coerces rather than validates — the controller has already refused anything
+ * malformed with a message. This is what makes an import, a Builder save and a
+ * row written by hand all store the same thing: both locales present, strings
+ * trimmed, empty grammar lines dropped. A card with no text and no image is
+ * null, so "cleared every field" and "never written" are the same state and
+ * the level page falls back the same way for both.
+ */
+export function normalizePartIntro(input: unknown): PartIntro | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Record<string, unknown>;
+
+  const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+  const pair = (value: unknown): LocalizedPair => {
+    const obj = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    return { en: text(obj.en), ru: text(obj.ru) };
+  };
+  const lines = (value: unknown) =>
+    Array.isArray(value) ? value.map(text).filter((line) => line.length > 0) : [];
+  const grammarRaw = (raw.grammar && typeof raw.grammar === "object" ? raw.grammar : {}) as Record<
+    string,
+    unknown
+  >;
+
+  const duration = raw.durationSeconds;
+  const intro: PartIntro = {
+    title: pair(raw.title),
+    description: pair(raw.description),
+    grammar: { en: lines(grammarRaw.en), ru: lines(grammarRaw.ru) },
+    tip: pair(raw.tip),
+    imageUrl: text(raw.imageUrl) || null,
+    durationSeconds:
+      typeof duration === "number" && Number.isFinite(duration) && duration > 0
+        ? Math.round(duration)
+        : null,
+  };
+
+  const hasText =
+    [intro.title, intro.description, intro.tip].some((p) => p.en || p.ru) ||
+    intro.grammar.en.length > 0 ||
+    intro.grammar.ru.length > 0;
+  return hasText || intro.imageUrl ? intro : null;
+}
+
+/**
+ * A cast list in its one stored shape.
+ *
+ * Coerces rather than validates, like normalizePartIntro — the controller has
+ * already refused anything malformed with a message, and this makes an
+ * import, a seed and a Builder save store the same thing. Strings trimmed,
+ * keys lowercased, nameless or duplicate-key members dropped, firstPart
+ * clamped into the story (a story that later loses parts keeps its cast
+ * valid), at most CAST_MAX_MEMBERS.
+ */
+export function normalizeCast(input: unknown, totalParts: number): CastMember[] {
+  if (!Array.isArray(input)) return [];
+
+  const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+  const pair = (value: unknown): LocalizedPair => {
+    const obj = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+    return { en: text(obj.en), ru: text(obj.ru) };
+  };
+  const lastPart = Math.max(1, totalParts);
+
+  const seen = new Set<string>();
+  const cast: CastMember[] = [];
+  for (const entry of input) {
+    if (!entry || typeof entry !== "object") continue;
+    const raw = entry as Record<string, unknown>;
+    const key = text(raw.key).toLowerCase();
+    const name = pair(raw.name);
+    if (!CAST_KEY_PATTERN.test(key) || seen.has(key) || (!name.en && !name.ru)) continue;
+
+    const first =
+      typeof raw.firstPart === "number" && Number.isFinite(raw.firstPart) ? Math.round(raw.firstPart) : 1;
+    cast.push({
+      key,
+      name,
+      role: pair(raw.role),
+      bio: pair(raw.bio),
+      imageUrl: text(raw.imageUrl) || null,
+      firstPart: Math.min(Math.max(1, first), lastPart),
+    });
+    seen.add(key);
+    if (cast.length === CAST_MAX_MEMBERS) break;
+  }
+  return cast;
 }
 
 /**
@@ -673,6 +836,7 @@ function normalizeParts(parts: readonly StoryPartInput[]): StoryPartInput[] {
     audioUrl: part.audioUrl ?? null,
     helpAudio: part.helpAudio ?? [],
     comicUrl: part.comicUrl ?? null,
+    intro: normalizePartIntro(part.intro),
     timeMarkers: part.timeMarkers ?? [],
     vocabulary: vocab(part.vocabulary),
     phrasalVerbs: vocab(part.phrasalVerbs),

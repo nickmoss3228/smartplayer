@@ -9,17 +9,11 @@
 // else (see helpers/applyLevelCompletion.js and the re-grade in completeLevel);
 // this closes the same gap for vocabulary.
 //
-// There are two catalogues and they need different treatment:
-//
-//   Legacy stories — vocabulary is bundled into the FRONTEND
-//   (src/modules/vocabulary/Vocabulary.ts) and never sent to the server, so the
-//   backend genuinely cannot see it. config/vocabKeys.js is a generated
-//   snapshot of exactly those keys; regenerate with
-//   `node scripts/generate-vocab-keys.mjs`.
-//
-//   Story Builder stories — vocabulary lives in the story_part_vocab table, so
-//   it is read live and cached briefly rather than snapshotted. A story edited
-//   in the builder must not need a redeploy before its words start counting.
+// Every story's vocabulary lives in the story_part_vocab table, so it is read
+// live and cached briefly — a story edited in the builder must not need a
+// redeploy before its words start counting. config/vocabKeys.js is a frozen
+// snapshot of the keys the stories had when they still shipped in the
+// frontend, kept so older progress reports keep being accepted.
 
 import { stories } from "../db/index.js";
 import { LEGACY_VOCAB_KEYS } from "../config/vocabKeys.js";

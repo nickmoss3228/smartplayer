@@ -15,10 +15,13 @@ import {
   uploadPartAsset,
   saveMarkers,
   saveComic,
+  saveIntro,
   getStoryVisibility,
   setStoryVisibility,
   uploadStoryCover,
   clearStoryCover,
+  saveCast,
+  uploadCastPortrait,
   saveVocabulary,
   savePhrasalVerbs,
   saveQuiz,
@@ -41,10 +44,13 @@ adminRouter.patch("/:id", adminAuth, updateStoryMeta);
 adminRouter.delete("/:id", adminAuth, deleteStory);
 adminRouter.post("/:id/cover", adminAuth, adminUpload, uploadStoryCover);
 adminRouter.delete("/:id/cover", adminAuth, clearStoryCover);
+adminRouter.put("/:id/cast", adminAuth, saveCast);
+adminRouter.post("/:id/cast/:key/portrait", adminAuth, adminUpload, uploadCastPortrait);
 adminRouter.post("/:id/parts", adminAuth, addPart);
 adminRouter.post("/:id/parts/:partNumber/upload", adminAuth, adminUpload, uploadPartAsset);
 adminRouter.patch("/:id/parts/:partNumber/markers", adminAuth, saveMarkers);
 adminRouter.put("/:id/parts/:partNumber/comic", adminAuth, saveComic);
+adminRouter.put("/:id/parts/:partNumber/intro", adminAuth, saveIntro);
 adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
 adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVerbs);
 adminRouter.put("/:id/parts/:partNumber/quiz", adminAuth, saveQuiz);

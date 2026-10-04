@@ -1,11 +1,10 @@
-// GENERATED FILE — DO NOT EDIT BY HAND.
-// Run: node scripts/generate-vocab-keys.mjs
+// FROZEN SNAPSHOT — do not edit by hand, and there is no generator any more.
 //
-// Every vocabulary progress key in the legacy (bundled) story catalogue, which
-// is the only vocabulary the backend cannot otherwise see: those decks live in
-// the frontend's src/modules/vocabulary/Vocabulary.ts and are never sent to the
-// server. DB-authored stories are validated against the Story model at request
-// time instead, so they are deliberately absent here.
+// Every vocabulary progress key the stories that used to ship inside the
+// frontend bundle had, as of 2026-10-02. Those stories now live in the story
+// table (backend/src/scripts/seedBuiltInStories.ts), whose words are checked
+// live in helpers/vocabKeyCatalog.js — so this set only keeps keys a learner may
+// have reported before a word was renamed or dropped from accepting quietly.
 //
 // Keys are already lowercased and trimmed, matching what the player reports —
 // `(audioKey ?? word).toLowerCase()`, see VocabChip.tsx.

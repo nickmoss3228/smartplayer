@@ -1,0 +1,1 @@
+ALTER TABLE "story" ADD COLUMN "cast_members" jsonb DEFAULT '[]'::jsonb NOT NULL;

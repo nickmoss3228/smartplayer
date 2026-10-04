@@ -34,6 +34,10 @@ export async function getCatalogConfig(req, res) {
       // (see applyCatalogAccess), so it has to be told, or it would keep
       // padlocking content this server will happily serve.
       paywallEnabled: config.payments.paywallEnabled,
+      // With the paywall off: does a guest still stop at the free parts? The
+      // level grid and the player draw padlocks before asking for audio, so
+      // they need the same answer accessFor gives.
+      signupWallEnabled: config.payments.signupWallEnabled,
       // Every story the catalog knows, with the paywall shape the player needs
       // to draw a level grid before it has asked for any audio.
       stories: catalog.stories.map((s) => ({

@@ -158,6 +158,7 @@ async function refuseIfLocked(req, difficulty, storyId, partNumber) {
     authenticated: Boolean(req.user),
     catalog: await getCatalog(),
     paywallEnabled: config.payments.paywallEnabled,
+    signupWallEnabled: config.payments.signupWallEnabled,
   });
   // A preview part is audible for 30 seconds, which is not enough to be quizzed
   // on — and a pass would pay out BitAward for a part nobody has bought.

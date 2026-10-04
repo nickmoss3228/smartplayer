@@ -2,7 +2,7 @@
 //
 // The pure half of the durable-markers feature, split out of the old
 // models/PartMarkers.js so it outlives the Mongoose model. The frontend's
-// Vitest suite (src/modules/audiodata/markerRestore.test.ts) tests it directly,
+// Vitest suite (src/modules/story/markerRestore.test.ts) tests it directly,
 // because the rule it encodes decides whether hand-placed work survives.
 
 /**

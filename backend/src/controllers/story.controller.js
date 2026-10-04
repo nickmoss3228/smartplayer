@@ -66,7 +66,7 @@ const savedPart = (story, req) =>
 export async function createStory(req, res) {
   try {
     invalidateCatalog();
-    const { difficulty, storyId, storyName, description, characterIcon, totalParts } = req.body;
+    const { difficulty, storyId, storyName, description, characterIcon, localized, totalParts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -100,6 +100,9 @@ export async function createStory(req, res) {
       storyName: storyName.trim(),
       description: description?.trim() ?? "",
       characterIcon: characterIcon?.trim() || "📖",
+      // What students read, per locale — asked for up front so a new story
+      // never reaches the shelf showing its admin-facing storyName instead.
+      localized: sanitizeLocalized(localized),
       totalParts: parts,
       parts: buildEmptyParts(parts).map((part) => ({
         ...part,
@@ -168,6 +171,8 @@ export async function importStory(req, res) {
       if (phrasalError) return res.status(400).json({ error: `Part ${part.partNumber} phrasal verbs: ${phrasalError}.` });
       const quizError = validateQuizList(part.quiz ?? []);
       if (quizError) return res.status(400).json({ error: `Part ${part.partNumber} quiz: ${quizError}.` });
+      const introError = validatePartIntro(part.intro ?? null);
+      if (introError) return res.status(400).json({ error: `Part ${part.partNumber} preview card: ${introError}.` });
     }
 
     // Restore markers this story had before it was last deleted.
@@ -392,6 +397,7 @@ const AUDIO_KEY_PATTERN = /^[a-zA-Z0-9 _-]+$/;
 const UPLOAD_KINDS = new Set([
   "audio",
   "comic",
+  "intro",
   "vocab",
   "phrasal",
   "quizFast",
@@ -405,6 +411,8 @@ function assetKeyFor(story, partNumber, kind, extra) {
       return `${base}/audio.mp3`;
     case "comic":
       return `${base}/comic.${extra.ext}`;
+    case "intro":
+      return `${base}/intro.${extra.ext}`;
     case "vocab":
       return `${base}/vocab/${extra.audioKey}.mp3`;
     case "phrasal":
@@ -418,7 +426,7 @@ function assetKeyFor(story, partNumber, kind, extra) {
   }
 }
 
-// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|vocab|phrasal|quizFast|quizSlow[&audioKey=][&index=]
+// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|quizFast|quizSlow[&audioKey=][&index=]
 export async function uploadPartAsset(req, res) {
   try {
     const story = await storiesRepo.loadStoryJson(req.params.id);
@@ -459,11 +467,12 @@ export async function uploadPartAsset(req, res) {
     // taken from the request.
     let ext;
     let contentType;
-    if (kind === "comic") {
+    if (kind === "comic" || kind === "intro") {
       ext = COMIC_EXTENSIONS[req.file.mimetype];
       if (!ext) {
+        const what = kind === "comic" ? "A comic page" : "A preview image";
         return res.status(400).json({
-          error: `A comic page must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
+          error: `${what} must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
         });
       }
       // Safe to reuse: it matched a COMIC_EXTENSIONS key, so it is one of five
@@ -536,6 +545,119 @@ export async function clearStoryCover(req, res) {
   } catch (error) {
     console.error("clearStoryCover error:", error);
     res.status(500).json({ error: "Failed to clear cover." });
+  }
+}
+
+// ─── Admin: the cast ────────────────────────────────────────────────────────
+//
+// The story's characters, shown on its level page (portrait, name, role, a few
+// lines) and revealed as the student reaches the part each first appears in.
+
+// A name fits under a 56px avatar; a bio fits a phone screen without becoming
+// the story's transcript.
+const CAST_LIMITS = { members: storiesRepo.CAST_MAX_MEMBERS, name: 40, role: 80, bio: 600 };
+
+/**
+ * Refuses a malformed cast with a message naming the member and the field.
+ * Trimming and the stored shape are normalizeCast's job.
+ */
+function validateCast(cast, totalParts) {
+  if (!Array.isArray(cast)) return "cast must be a list";
+  if (cast.length > CAST_LIMITS.members) return `at most ${CAST_LIMITS.members} characters`;
+
+  const keys = new Set();
+  for (const [i, member] of cast.entries()) {
+    const at = `character ${i + 1}`;
+    if (!member || typeof member !== "object" || Array.isArray(member)) return `${at} must be an object`;
+
+    const key = typeof member.key === "string" ? member.key.trim().toLowerCase() : "";
+    if (!storiesRepo.CAST_KEY_PATTERN.test(key)) {
+      return `${at}: key must be lowercase letters, digits and dashes (up to 40)`;
+    }
+    if (keys.has(key)) return `${at}: key "${key}" is used twice`;
+    keys.add(key);
+
+    for (const [field, max] of [["name", CAST_LIMITS.name], ["role", CAST_LIMITS.role], ["bio", CAST_LIMITS.bio]]) {
+      const value = member[field];
+      if (value === undefined && field !== "name") continue;
+      if (!value || typeof value !== "object") return `${at}: ${field} must be { en, ru }`;
+      for (const locale of ["en", "ru"]) {
+        const text = value[locale];
+        if (text === undefined) continue;
+        if (typeof text !== "string") return `${at}: ${field}.${locale} must be text`;
+        if (text.trim().length > max) return `${at}: ${field}.${locale} is longer than ${max} characters`;
+      }
+    }
+    const name = member.name;
+    if (!(name.en ?? "").trim() && !(name.ru ?? "").trim()) return `${at}: needs a name in at least one language`;
+
+    if (!Number.isInteger(member.firstPart) || member.firstPart < 1 || member.firstPart > totalParts) {
+      return `${at}: firstPart must be a part number from 1 to ${totalParts}`;
+    }
+
+    const { imageUrl } = member;
+    if (imageUrl !== undefined && imageUrl !== null) {
+      // Lands in an <img src>, like the intro image: an upload URL or a path
+      // the app itself serves, nothing else.
+      if (typeof imageUrl !== "string" || !/^(https:\/\/|\/)\S+$/.test(imageUrl.trim())) {
+        return `${at}: imageUrl must be an https:// URL or a /path`;
+      }
+    }
+  }
+  return null;
+}
+
+// PUT /api/admin/stories/:id/cast  { cast: CastMember[] }
+// Replaced whole — the Builder panel always sends the full list, in order.
+// An empty list clears it.
+export async function saveCast(req, res) {
+  try {
+    const cast = req.body?.cast;
+    if (cast === undefined) return res.status(400).json({ error: "cast is required ([] clears it)." });
+
+    const result = await storiesRepo.mutateStory(req.params.id, (story) => {
+      // Inside the lock: firstPart is checked against the story as it is now.
+      const error = validateCast(cast, story.totalParts);
+      if (error) return { halt: { status: 400, body: { error: `Invalid cast: ${error}.` } } };
+      story.cast = storiesRepo.normalizeCast(cast, story.totalParts);
+    });
+    sendMutation(res, result, (story) => res.json({ story }));
+  } catch (error) {
+    console.error("saveCast error:", error);
+    res.status(500).json({ error: "Failed to save the cast." });
+  }
+}
+
+// POST /api/admin/stories/:id/cast/:key/portrait   (multipart, field "file")
+// Stores the image and returns its URL; it does NOT change the story. The
+// Builder puts the URL on the character and saves the list with PUT …/cast,
+// the same two steps the part intro image takes — so a portrait uploaded for a
+// character that is then deleted before saving changes nothing a student sees.
+export async function uploadCastPortrait(req, res) {
+  try {
+    // Refusals first, before the story or the bucket are touched.
+    const key = String(req.params.key ?? "").toLowerCase();
+    if (!storiesRepo.CAST_KEY_PATTERN.test(key)) {
+      return res.status(400).json({ error: "The character key must be lowercase letters, digits and dashes." });
+    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded." });
+    const ext = COMIC_EXTENSIONS[req.file.mimetype];
+    if (!ext) {
+      return res.status(400).json({
+        error: `A portrait must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
+      });
+    }
+
+    const story = await storiesRepo.loadStoryJson(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+
+    const objectKey = `stories/${story.difficulty}/${story.storyId}/cast/${key}.${ext}`;
+    const url = await uploadBuffer(objectKey, req.file.buffer, req.file.mimetype);
+    res.json({ url });
+  } catch (error) {
+    // Same reasoning as uploadPartAsset: SDK errors name internals.
+    console.error("uploadCastPortrait error:", error);
+    res.status(500).json({ error: "Portrait upload failed." });
   }
 }
 
@@ -637,6 +759,90 @@ export async function saveComic(req, res) {
   }
 }
 
+// Generous for a card that has to fit a phone screen, tight enough that a
+// paste of the whole transcript into the description is refused, not stored.
+const INTRO_LIMITS = { title: 120, description: 1000, tip: 500, grammarLine: 200, grammarLines: 8 };
+
+/**
+ * Refuses a malformed part intro with a message naming the field; null is
+ * "clear it". Shape and trimming are normalizePartIntro's job — this only
+ * rejects what should not be stored at all.
+ */
+function validatePartIntro(intro) {
+  if (intro === null) return null;
+  if (typeof intro !== "object" || Array.isArray(intro)) return "must be an object, or null to clear it";
+
+  const localeText = (value, field, max) => {
+    if (value === undefined) return null;
+    if (!value || typeof value !== "object") return `${field} must be { en, ru }`;
+    for (const locale of ["en", "ru"]) {
+      const text = value[locale];
+      if (text === undefined) continue;
+      if (typeof text !== "string") return `${field}.${locale} must be text`;
+      if (text.trim().length > max) return `${field}.${locale} is longer than ${max} characters`;
+    }
+    return null;
+  };
+
+  const textError =
+    localeText(intro.title, "title", INTRO_LIMITS.title) ??
+    localeText(intro.description, "description", INTRO_LIMITS.description) ??
+    localeText(intro.tip, "tip", INTRO_LIMITS.tip);
+  if (textError) return textError;
+
+  if (intro.grammar !== undefined) {
+    if (!intro.grammar || typeof intro.grammar !== "object") return "grammar must be { en: [], ru: [] }";
+    for (const locale of ["en", "ru"]) {
+      const lines = intro.grammar[locale];
+      if (lines === undefined) continue;
+      if (!Array.isArray(lines) || lines.some((line) => typeof line !== "string")) {
+        return `grammar.${locale} must be a list of text lines`;
+      }
+      if (lines.filter((line) => line.trim()).length > INTRO_LIMITS.grammarLines) {
+        return `grammar.${locale} has more than ${INTRO_LIMITS.grammarLines} points`;
+      }
+      if (lines.some((line) => line.trim().length > INTRO_LIMITS.grammarLine)) {
+        return `a grammar point is longer than ${INTRO_LIMITS.grammarLine} characters`;
+      }
+    }
+  }
+
+  const { imageUrl, durationSeconds } = intro;
+  if (imageUrl !== undefined && imageUrl !== null) {
+    // An upload?kind=intro URL, or a path the app itself serves. Nothing that
+    // is not an image address — this string lands in an <img src>.
+    if (typeof imageUrl !== "string" || !/^(https:\/\/|\/)\S+$/.test(imageUrl.trim())) {
+      return "imageUrl must be an https:// URL or a /path";
+    }
+  }
+  if (durationSeconds !== undefined && durationSeconds !== null) {
+    if (typeof durationSeconds !== "number" || !Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      return "durationSeconds must be a positive number";
+    }
+  }
+  return null;
+}
+
+// PUT /api/admin/stories/:id/parts/:partNumber/intro  { intro }
+// The card the level page opens when this part is tapped. Replaced whole —
+// the Builder panel always sends every field — and null clears it.
+export async function saveIntro(req, res) {
+  try {
+    const intro = req.body?.intro;
+    if (intro === undefined) return res.status(400).json({ error: "intro is required (null clears it)." });
+    const error = validatePartIntro(intro);
+    if (error) return res.status(400).json({ error: `Invalid preview card: ${error}.` });
+
+    const result = await mutatePart(req, (part) => {
+      part.intro = storiesRepo.normalizePartIntro(intro);
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("saveIntro error:", error);
+    res.status(500).json({ error: "Failed to save the preview card." });
+  }
+}
+
 function validateQuizList(quiz) {
   if (!Array.isArray(quiz)) return "must be an array";
   if (quiz.length > MAX_QUIZ_QUESTIONS) return `at most ${MAX_QUIZ_QUESTIONS} questions`;
@@ -719,18 +925,20 @@ export async function setStoryPublished(req, res) {
  * Numbering is load-bearing: adaptPublishedStoryToTracks (services/storyServices.ts)
  * says so in its own comment — filtering a part out renumbers every part after
  * it, so requesting part 5 silently plays a different one while the vocabulary
- * panel still shows part 5. A locked part therefore keeps its number and its
- * title (the level grid needs both to draw a padlocked card) and loses
- * everything that costs money to produce.
+ * panel still shows part 5. A locked part therefore keeps its number, its title,
+ * its comic page and its "before you listen" card — the level grid draws the
+ * padlocked card with the part's name in the reader's language, which lives on
+ * that card — and loses everything you listen to or study.
  */
 const lockPart = (part) => ({
   partNumber: part.partNumber,
   title: part.title ?? "",
+  intro: part.intro ?? null,
   locked: true,
   audioUrl: null,
   helpAudio: [],
   timeMarkers: [],
-  comicUrl: null,
+  comicUrl: part.comicUrl ?? null,
   vocabulary: [],
   phrasalVerbs: [],
   quiz: [],
@@ -744,6 +952,9 @@ const openPart = (part) => ({
   helpAudio: part.helpAudio ?? [],
   timeMarkers: part.timeMarkers,
   comicUrl: part.comicUrl ?? null,
+  // The level page's "before you listen" card. Not `preview` — the caller
+  // below sets that to `true` on a timed-sample part, which would erase it.
+  intro: part.intro ?? null,
   vocabulary: part.vocabulary,
   phrasalVerbs: part.phrasalVerbs,
   // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
@@ -777,6 +988,7 @@ export async function getPublishedStory(req, res) {
       // Read per request, never captured in a module const: config is mutable
       // and the API tests flip this between describes.
       paywallEnabled: config.payments.paywallEnabled,
+      signupWallEnabled: config.payments.signupWallEnabled,
     });
 
     const parts = await Promise.all(
@@ -804,6 +1016,11 @@ export async function getPublishedStory(req, res) {
       category: story.category ?? null,
       coverUrl: story.coverUrl ?? null,
       localized: story.localized ?? null,
+      // Sent whole to everyone, owner or not: who is in a story is not paid
+      // content (a locked part's intro card already names them). Revealing
+      // members part by part is the level page's job, from progress the
+      // server cannot see for a guest.
+      cast: story.cast ?? [],
       totalParts: story.totalParts,
       // The client locks its grid from these rather than recomputing the rule.
       owned: access.owned,
@@ -839,12 +1056,21 @@ export async function listPublishedStories(req, res) {
     // only — the real gate is getPublishedStory above.
     const authenticated = Boolean(req.user);
     const catalog = await getCatalog();
-    const stories = rows.map((story) => {
+    // Shelf order is the order stories were added, oldest first. It used to
+    // come from the frontend's static story list (leo before leo-additional,
+    // Roland Garros before Grazing Board); with every story in the database,
+    // creation order is what keeps those shelves as they were. The repo lists
+    // newest first, which is what the Story Builder wants.
+    const shelf = [...rows].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt) || a.storyId.localeCompare(b.storyId),
+    );
+    const stories = shelf.map((story) => {
       const key = storyKey(difficulty, story.storyId);
       const access = accessFor(req.user?.entitlements, difficulty, story.storyId, {
         authenticated,
         catalog,
         paywallEnabled: config.payments.paywallEnabled,
+        signupWallEnabled: config.payments.signupWallEnabled,
       });
       return {
         // Exactly the fields this roster has always carried.

@@ -432,6 +432,101 @@ describe("Story Builder → playback", () => {
     assert.equal((await api("GET", "/api/admin/stories/not-a-uuid", { token: admin })).status, 404);
   });
 
+  it("stores the per-locale text and part intro card the level page shows", async () => {
+    const admin = await adminToken();
+    const id = storyId();
+    const create = await api("POST", "/api/admin/stories", {
+      token: admin,
+      body: {
+        difficulty: "easy",
+        storyId: id,
+        storyName: "Internal name",
+        totalParts: 1,
+        localized: { title: { en: " Title ", ru: "Заголовок" }, description: { en: "About", ru: "О чём" } },
+      },
+    });
+    assert.equal(create.status, 201, JSON.stringify(create.body));
+    assert.deepEqual(create.body.story.localized, {
+      title: { en: "Title", ru: "Заголовок" },
+      description: { en: "About", ru: "О чём" },
+    });
+    const dbId = create.body.story._id;
+
+    for (const intro of [
+      "text",
+      { title: "not a pair" },
+      { description: { en: "x".repeat(1001) } },
+      { grammar: { en: "one line" } },
+      { grammar: { ru: Array.from({ length: 9 }, (_, i) => `point ${i}`) } },
+      { imageUrl: "javascript:alert(1)" },
+      { durationSeconds: -4 },
+    ]) {
+      const res = await api("PUT", `/api/admin/stories/${dbId}/parts/1/intro`, { token: admin, body: { intro } });
+      assert.equal(res.status, 400, JSON.stringify(intro));
+    }
+    assert.equal((await api("PUT", `/api/admin/stories/${dbId}/parts/1/intro`, { token: admin, body: {} })).status, 400);
+
+    const saved = await api("PUT", `/api/admin/stories/${dbId}/parts/1/intro`, {
+      token: admin,
+      body: {
+        intro: {
+          title: { en: " Part one ", ru: "Часть первая" },
+          description: { en: "What happens", ru: "Что происходит" },
+          grammar: { en: ["Past Simple", "  ", "Articles"], ru: ["Прошедшее простое"] },
+          tip: { en: "Listen for numbers", ru: "" },
+          imageUrl: "https://example.test/preview.jpg",
+          durationSeconds: 133.6,
+        },
+      },
+    });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    assert.deepEqual(saved.body.part.intro, {
+      title: { en: "Part one", ru: "Часть первая" },
+      description: { en: "What happens", ru: "Что происходит" },
+      grammar: { en: ["Past Simple", "Articles"], ru: ["Прошедшее простое"] },
+      tip: { en: "Listen for numbers", ru: "" },
+      imageUrl: "https://example.test/preview.jpg",
+      durationSeconds: 134,
+    });
+
+    // Survives an unrelated save: every edit rewrites the parts wholesale.
+    await api("PATCH", `/api/admin/stories/${dbId}/parts/1/markers`, {
+      token: admin,
+      body: { timeMarkers: markers, audioUrl: "https://example.test/a.mp3" },
+    });
+    const sampled = await api("PATCH", `/api/admin/stories/${dbId}`, {
+      token: admin,
+      body: { freeParts: 0, previewSeconds: 30 },
+    });
+    assert.equal(sampled.status, 200, JSON.stringify(sampled.body));
+    assert.equal((await api("PATCH", `/api/admin/stories/${dbId}/publish`, { token: admin, body: { published: true } })).status, 200);
+
+    // Paid and unowned, part 1 is now a timed sample, flagged `preview: true`
+    // on the way out. The card must survive that flag — it is the part a guest
+    // is most likely to tap.
+    const sample = await api("GET", `/api/stories/easy/${id}`);
+    assert.equal(sample.status, 200, JSON.stringify(sample.body));
+    assert.equal(sample.body.parts[0].preview, true);
+    assert.equal(sample.body.parts[0].intro.title.en, "Part one");
+
+    await api("PATCH", `/api/admin/stories/${dbId}`, { token: admin, body: { paid: false } });
+
+    // What the level page reads.
+    const story = await api("GET", `/api/stories/easy/${id}`);
+    assert.equal(story.status, 200, JSON.stringify(story.body));
+    assert.equal(story.body.localized.title.ru, "Заголовок");
+    assert.equal(story.body.parts[0].intro.description.ru, "Что происходит");
+
+    // Every field emptied is the same as never written.
+    const cleared = await api("PUT", `/api/admin/stories/${dbId}/parts/1/intro`, {
+      token: admin,
+      body: { intro: { title: { en: " ", ru: "" }, grammar: { en: [], ru: [] } } },
+    });
+    assert.equal(cleared.status, 200);
+    assert.equal(cleared.body.part.intro, null);
+    assert.equal((await api("GET", `/api/stories/easy/${id}`)).body.parts[0].intro, null);
+  });
+
   it("adds a part, renames, hides, and deletes a story — markers survive a re-create", async () => {
     const admin = await adminToken();
     const { id, dbId } = await buildStory(admin);

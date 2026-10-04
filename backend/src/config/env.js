@@ -150,6 +150,12 @@ export const config = {
         // Defaults to ON so a deployment that forgets the variable charges for
         // content rather than giving the catalogue away.
         paywallEnabled: process.env.PAYWALL_ENABLED !== 'false',
+        // While the paywall is off, does a GUEST still stop after the free
+        // parts and get asked to sign up? Off, every story plays in full for
+        // everyone, signed in or not. Meaningless while the paywall is on —
+        // then ownership decides. Defaults to ON, like the paywall, so a
+        // missing line never opens content by accident.
+        signupWallEnabled: process.env.SIGNUP_WALL_ENABLED !== 'false',
         // Which driver takes the money. "fake" is a working payment system with
         // the money removed (services/payments/fake.js): it redirects, calls
         // back over real HTTP, retries, and can be told to lose a notification.
