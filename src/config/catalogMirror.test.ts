@@ -206,10 +206,10 @@ describe('pricing policy matches the server', () => {
     }
   });
 
-  it('gives long stories free parts and short ones a timed preview', () => {
+  it('gives the first 3 parts free, capped at the story length, and no timed preview', () => {
     expect(freeAllowanceFor(10)).toEqual({ freeParts: 3, previewSeconds: null });
-    expect(freeAllowanceFor(5)).toEqual({ freeParts: 0, previewSeconds: 30 });
-    expect(freeAllowanceFor(2)).toEqual({ freeParts: 0, previewSeconds: 30 });
+    expect(freeAllowanceFor(5)).toEqual({ freeParts: 3, previewSeconds: null });
+    expect(freeAllowanceFor(2)).toEqual({ freeParts: 2, previewSeconds: null });
   });
 });
 
@@ -248,9 +248,11 @@ describe('the server catalog prices what it sells', () => {
     }
   });
 
-  it('sells every catalog story individually', () => {
-    for (const { key } of SERVER_CATALOG.stories) {
-      expect(getProduct(storySku(key)), key).not.toBeNull();
+  it('sells every story individually, except one the free allowance covers in full', () => {
+    for (const story of SERVER_CATALOG.stories) {
+      const givenAway = story.previewSeconds === null && story.freeParts >= story.parts;
+      if (givenAway) expect(getProduct(storySku(story.key)), story.key).toBeNull();
+      else expect(getProduct(storySku(story.key)), story.key).not.toBeNull();
     }
   });
 

@@ -48,6 +48,7 @@ export async function getCatalogConfig(req, res) {
         paid: s.paid,
         freeParts: s.freeParts,
         previewSeconds: s.previewSeconds,
+        durationSeconds: s.durationSeconds,
       })),
       // `purchasable` here is the ENVIRONMENT's answer, not the catalog's:
       // isPurchasable folds in PURCHASABLE_SKUS, so staging can offer

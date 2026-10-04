@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { priceBasket, isPurchasable, BasketError, MAX_BASKET_ITEMS } from "./basketPricing.js";
 import {
   BUILT_IN_CATALOG,
+  buildCatalog,
   levelSku,
   setSku,
   storySku,
@@ -21,7 +22,9 @@ import {
 const { getProduct, getCatalogStory } = BUILT_IN_CATALOG;
 
 const LEO = storySku("easy/leo");
-const LEO_EXTRA = storySku("easy/leo-additional");
+// A second Leo story that is still sold. leo-additional is not: its 2 parts
+// are both inside the free allowance, so it has no product at all.
+const LEO_EXTRA = storySku("easy/leo-doctor");
 const PLACEHOLDER = storySku("easy/leo-new-job");
 const SET = setSku("leo");
 const LEVEL = levelSku("easy");
@@ -78,8 +81,19 @@ test("a story next to its set is dropped; a set next to its level is dropped", (
   assert.deepEqual(withSet.items.map((i) => i.sku), [SET]);
   assert.deepEqual(withSet.dropped.sort(), [LEO, LEO_EXTRA].sort());
 
-  const withLevel = priceBasket([SET, LEVEL], [], ALL);
-  assert.deepEqual(withLevel.items.map((i) => i.sku), [LEVEL]);
+  // Built in, the easy level and the Leo set grant the SAME stories (the news
+  // is free in full, so neither counts it), and the cheaper one is kept.
+  const sameScope = priceBasket([SET, LEVEL], [], ALL);
+  assert.deepEqual(sameScope.items.map((i) => i.sku), [SET]);
+
+  // A level that really is wider than the set swallows it.
+  const two = buildCatalog([
+    { key: "easy/a", character: "leo", parts: 10 },
+    { key: "easy/b", character: "kim", parts: 10 },
+  ]);
+  const { kept, dropped } = two.collapseBasket([setSku("leo"), levelSku("easy")]);
+  assert.deepEqual(kept, [levelSku("easy")]);
+  assert.deepEqual(dropped, [setSku("leo")]);
 });
 
 test("a set is 19 ₽ per track, and charges only for tracks not already owned", () => {
@@ -97,9 +111,9 @@ test("owning a set drops the stories inside it", () => {
     (e) => e instanceof BasketError && e.code === "ALREADY_OWNED",
   );
 
-  const news = storySku("easy/news-roland-garros");
-  const { items, dropped } = priceBasket([LEO, news], [perpetual(SET)], ALL);
-  assert.deepEqual(items.map((i) => i.sku), [news]);
+  const outside = storySku("medium/maya");
+  const { items, dropped } = priceBasket([LEO, outside], [perpetual(SET)], ALL);
+  assert.deepEqual(items.map((i) => i.sku), [outside]);
   assert.ok(dropped.includes(LEO));
 });
 
@@ -119,7 +133,7 @@ test("empty and oversized baskets are refused", () => {
 
 test("the total is the exact integer sum of its parts", () => {
   const { amountMinor, items } = priceBasket(
-    [LEO, storySku("medium/maya"), storySku("easy/news-grazing-board")],
+    [LEO, storySku("medium/maya"), storySku("hard/daniel")],
     [],
     ALL,
   );

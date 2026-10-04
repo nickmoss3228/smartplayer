@@ -59,11 +59,14 @@ export interface FreeAllowance {
  * because a row may override it per story. Use the catalog's `freeParts` /
  * `previewSeconds` whenever you have the story; reach for this only when you
  * have a part count and nothing else.
+ *
+ * The first 3 parts of any story, capped at its length — so a 2-part story is
+ * free outright. No timed preview by default; see the server's copy.
  */
-export const freeAllowanceFor = (totalParts: number): FreeAllowance =>
-  Number(totalParts) >= LONG_STORY_MIN_PARTS
-    ? { freeParts: FREE_PARTS_LONG_STORY, previewSeconds: null }
-    : { freeParts: 0, previewSeconds: PREVIEW_SECONDS };
+export const freeAllowanceFor = (totalParts: number): FreeAllowance => ({
+  freeParts: Math.min(FREE_PARTS_LONG_STORY, Math.max(0, Number(totalParts) || 0)),
+  previewSeconds: null,
+});
 
 /**
  * The one space character used in every price the app renders: U+00A0, a

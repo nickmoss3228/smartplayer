@@ -1518,7 +1518,42 @@
     "checkoutLoginRequired": "Log in to buy",
     "paymentsDisabled": "The shop is not taking payments yet.",
     "buy": "Buy",
-    "whatsInside": "What's inside?"
+    "whatsInside": "What's inside?",
+    "ladder": {
+      "label": "How to buy",
+      "single": {
+        "kicker": "One at a time",
+        "title": "One story",
+        "body": "Take only the stories you want to finish."
+      },
+      "from": "from",
+      "pickBelow": "Pick a story below",
+      "set": {
+        "kicker": "Character set"
+      },
+      "best": "Best value · −{{percent}}%",
+      "perTrack": "{{price}} a track",
+      "total": "Total {{price}}",
+      "allOwned": "The whole set is yours",
+      "all": {
+        "kicker": "Everything",
+        "title": "All three levels"
+      },
+      "storiesCount_one": "{{count}} story",
+      "storiesCount_other": "{{count}} stories",
+      "tracksCount_one": "{{count}} track",
+      "tracksCount_other": "{{count}} tracks",
+      "levelsCount_one": "{{count}} level",
+      "levelsCount_other": "{{count}} levels",
+      "minutes": "{{count}} min",
+      "minutesSoFar": "{{count}} min to listen to now",
+      "moreSoon_one": "{{count}} more story coming soon",
+      "moreSoon_other": "{{count}} more stories coming soon",
+      "tracksShort": "{{count}} tr.",
+      "inSet": "in set",
+      "removeItem": "Remove: {{name}}",
+      "levels": "Levels"
+    }
   },
   "library": {
     "title": "My library",
@@ -1564,9 +1599,14 @@
     "levelMeta": "Every story and news item on the level",
     "setMeta": "{{count}} tracks · {{perTrack}} a track",
     "sets": {
-      "leo": "Everything about Leo",
-      "maya": "Everything about Maya",
-      "daniel": "Everything about Daniel"
+      "leo": "Leo story set",
+      "maya": "Maya story set",
+      "daniel": "Daniel story set"
+    },
+    "characters": {
+      "leo": "Leo",
+      "maya": "Maya",
+      "daniel": "Daniel"
     }
   },
   "shopPreview": {

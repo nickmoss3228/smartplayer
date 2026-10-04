@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import type { StoryGroup, DifficultySlug } from '../../types/storyGroups';
 import { formatPrice } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
-import { SHOP_ENABLED } from '../../config/features';
 
 /**
  * One story on the shelf.
@@ -263,12 +262,9 @@ export const StoryCard = ({
       <div className="font-mono mt-1.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.16em]">
         {!isShop && isLocked ? (
           <>
-            {/* "3 parts free" only means something next to a shop that sells
-                the rest. With the shop off it is just a number that reads
-                like a limit, so the row keeps its parts count and nothing
-                else. Comes back by itself when SHOP_ENABLED does. */}
+            {/* "3 parts free" — the green hint under a locked card. */}
             <span className="min-w-0 truncate font-semibold text-green-600">
-              {SHOP_ENABLED ? freeHint : null}
+              {freeHint}
             </span>
             <span className="shrink-0 tabular-nums text-gray-400">
               {t('shelf.parts', { count: total })}

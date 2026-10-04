@@ -43,6 +43,10 @@ const GUEST = { authenticated: false, now: NOW };
 const split = (key) => key.split("/");
 const LONG = CATALOG_STORIES.find((s) => s.parts >= LONG_STORY_MIN_PARTS).key;
 const SHORT = CATALOG_STORIES.find((s) => s.parts < LONG_STORY_MIN_PARTS).key;
+// Shorter than a long story but longer than the free allowance, so still sold.
+const MID = CATALOG_STORIES.find(
+  (s) => s.parts < LONG_STORY_MIN_PARTS && s.parts > FREE_PARTS_LONG_STORY,
+).key;
 const LEO_SET = getProduct(setSku("leo")).storyKeys;
 const NEWS = CATALOG_STORIES.find((s) => s.category === "news").key;
 
@@ -79,10 +83,19 @@ test("a set unlocks every story about its character, but not the news", () => {
   assert.equal(accessFor(ents, "medium", "maya", AUTHED).owned, false);
 });
 
-test("a level unlocks everything on it, news included", () => {
+test("a level unlocks everything sold on it; what is given away stays open anyway", () => {
   const ents = [perpetual(levelSku("easy"))];
+  const level = getProduct(levelSku("easy")).storyKeys;
   for (const s of CATALOG_STORIES.filter((c) => c.key.startsWith("easy/"))) {
-    assert.equal(accessFor(ents, ...split(s.key), AUTHED).owned, true, `${s.key} should be owned`);
+    const access = accessFor(ents, ...split(s.key), AUTHED);
+    if (level.includes(s.key)) {
+      assert.equal(access.owned, true, `${s.key} should be owned`);
+    } else {
+      // Not in the level because the free allowance already covers it.
+      for (let n = 1; n <= s.parts; n += 1) {
+        assert.equal(isPartVisible(access, n), true, `${s.key} part ${n}`);
+      }
+    }
   }
   assert.equal(accessFor(ents, "hard", "daniel", AUTHED).owned, false);
 });
@@ -113,15 +126,38 @@ test("a long story gives its first parts away, to guests and members alike", () 
   }
 });
 
-test("a short story gives away only a timed preview of part 1", () => {
+test("a story no longer than the allowance plays every part, with no timed preview", () => {
+  const parts = CATALOG_STORIES.find((s) => s.key === SHORT).parts;
+  assert.ok(parts <= FREE_PARTS_LONG_STORY, `${SHORT} has ${parts} parts`);
   for (const opts of [GUEST, AUTHED]) {
     const access = accessFor([], ...split(SHORT), opts);
-    assert.equal(access.freeParts, 0);
-    assert.equal(access.previewSeconds, PREVIEW_SECONDS);
-    assert.equal(isPartVisible(access, 1), true);
-    assert.equal(isPreviewPart(access, 1), true);
-    assert.equal(isPartVisible(access, 2), false);
+    assert.equal(access.freeParts, parts);
+    assert.equal(access.previewSeconds, null);
+    for (let n = 1; n <= parts; n += 1) {
+      assert.equal(isPartVisible(access, n), true, `part ${n}`);
+      assert.equal(isPreviewPart(access, n), false, `part ${n}`);
+    }
   }
+});
+
+test("a mid-length story gives its first 3 parts away in full, not a preview", () => {
+  const catalog = buildCatalog([{ key: "easy/five", character: "leo", parts: 5 }]);
+  const access = accessFor([], "easy", "five", { ...GUEST, catalog });
+  assert.equal(access.freeParts, FREE_PARTS_LONG_STORY);
+  assert.equal(access.previewSeconds, null);
+  assert.equal(isPartVisible(access, 3), true);
+  assert.equal(isPreviewPart(access, 1), false);
+  assert.equal(isPartVisible(access, 4), false);
+});
+
+test("an admin can still set a timed preview on a row by hand", () => {
+  const catalog = buildCatalog([
+    { key: "easy/teaser", character: "leo", parts: 5, freeParts: 0, previewSeconds: PREVIEW_SECONDS },
+  ]);
+  const access = accessFor([], "easy", "teaser", { ...GUEST, catalog });
+  assert.equal(access.previewSeconds, PREVIEW_SECONDS);
+  assert.equal(isPreviewPart(access, 1), true);
+  assert.equal(isPartVisible(access, 2), false);
 });
 
 test("a guest's allowance never differs from a signed-in non-owner's", () => {
@@ -138,7 +174,7 @@ test("a guest owns nothing even if rows are passed", () => {
 });
 
 test("an owner sees every part, with no preview cut", () => {
-  const access = accessFor([perpetual(storySku(SHORT))], ...split(SHORT), AUTHED);
+  const access = accessFor([perpetual(storySku(MID))], ...split(MID), AUTHED);
   assert.equal(isPartVisible(access, 1), true);
   assert.equal(isPartVisible(access, 999), true);
   assert.equal(isPreviewPart(access, 1), false);
@@ -167,6 +203,23 @@ test("a row marked free is the ONLY way a story is free, and gives every part aw
   // Free content is never bundled into a set — a buyer must not be charged
   // for something already given away.
   assert.equal(catalog.getProduct(setSku("leo")), null);
+});
+
+test("a story the free allowance covers in full is not sold, alone or in a bundle", () => {
+  const catalog = buildCatalog([
+    { key: "easy/long", character: "leo", parts: 10 },
+    { key: "easy/short", character: "leo", parts: 2 },
+    { key: "easy/timed", character: "leo", parts: 2, previewSeconds: 30 },
+  ]);
+  assert.equal(catalog.getProduct(storySku("easy/short")), null);
+  assert.deepEqual(catalog.skusGranting("easy/short"), []);
+  assert.equal(catalog.getProduct(setSku("leo")).storyKeys.includes("easy/short"), false);
+  assert.equal(catalog.getProduct(levelSku("easy")).storyKeys.includes("easy/short"), false);
+  // A timed preview cuts the free part short, so that story still sells.
+  assert.notEqual(catalog.getProduct(storySku("easy/timed")), null);
+  // Access is untouched: every part still plays, for guests too.
+  const access = accessFor([], "easy", "short", { ...GUEST, catalog });
+  assert.equal(isPartVisible(access, 2), true);
 });
 
 test("a row may override the length-derived price and free allowance", () => {

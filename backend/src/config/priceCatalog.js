@@ -32,10 +32,16 @@
 //
 // ── What is free ─────────────────────────────────────────────────────────────
 //
-// The same for guests and signed-in users: a story of LONG_STORY_MIN_PARTS or
-// more gives its first FREE_PARTS_LONG_STORY parts away. A shorter story gives
-// nothing away except a PREVIEW_SECONDS listen of part 1, which the player
-// stops. See freeAllowanceFor().
+// The same for guests and signed-in users: every story gives its first
+// FREE_PARTS_LONG_STORY parts away in full — 3 of a 10-part story, 3 of a
+// 5-part one, and BOTH parts of a 2-part one (a story shorter than the
+// allowance is simply free to listen to). See freeAllowanceFor().
+//
+// There used to be a 30-second preview of part 1 for anything under
+// LONG_STORY_MIN_PARTS. It is gone from the default (2026-09-23): a timed
+// snippet that cuts off mid-sentence was a worse first taste than whole parts.
+// An admin can still set previewSeconds on a row by hand, so the machinery for
+// it (PREVIEW_SECONDS, isPreviewPart, the player's cut-off) stays.
 //
 // A row with `paid: false` is free outright — every part, to everyone. That is
 // the ONLY way a story becomes free now. A story the catalog has never heard of
@@ -82,7 +88,9 @@ export const SET_TRACK_PRICE_MINOR = 1900; // 19 ₽ per track, bought as a set
 export const LEVEL_PRICE_MINOR = 99900;
 
 export const FREE_PARTS_LONG_STORY = 3;
+/** No longer decides the allowance (see freeAllowanceFor); kept for callers. */
 export const LONG_STORY_MIN_PARTS = 10;
+/** Only used when an admin sets a preview on a row by hand. */
 export const PREVIEW_SECONDS = 30;
 
 /**
@@ -92,11 +100,12 @@ export const PREVIEW_SECONDS = 30;
  *   previewSeconds  when not null, part 1 plays for this long and then stops
  *
  * This is the DEFAULT, applied when a row does not state its own allowance.
+ * Capped at the story's length, so a 2-part story reports 2, not 3 — callers
+ * compare freeParts against totalParts, and "3 free of 2" would read as a lie.
  */
 export function freeAllowanceFor(totalParts) {
-  return Number(totalParts) >= LONG_STORY_MIN_PARTS
-    ? { freeParts: FREE_PARTS_LONG_STORY, previewSeconds: null }
-    : { freeParts: 0, previewSeconds: PREVIEW_SECONDS };
+  const parts = Math.max(0, Number(totalParts) || 0);
+  return { freeParts: Math.min(FREE_PARTS_LONG_STORY, parts), previewSeconds: null };
 }
 
 export const storySku = (key) => `story-${key.replace("/", "-")}`;
@@ -125,6 +134,8 @@ function normalizeRow(row) {
     ready: row.ready !== false,
     extension: row.extension === true,
     paid,
+    // Total listening time, when every part has been measured. Display only.
+    durationSeconds: Number.isFinite(row.durationSeconds) ? row.durationSeconds : null,
     // A free story has no price and gives everything away, whatever the row
     // says — otherwise a stale priceMinor could resurrect a paywall on content
     // an admin has deliberately opened up.
@@ -144,6 +155,16 @@ function normalizeRow(row) {
         ? Number(row.previewSeconds)
         : derived.previewSeconds,
   };
+}
+
+/**
+ * Does the free allowance already give every part away?
+ *
+ * Only whole free parts count. A row an admin gave a timed preview keeps
+ * selling, since the preview cuts the free part off before its end.
+ */
+export function isGivenAway(story) {
+  return story.previewSeconds === null && story.freeParts >= story.parts;
 }
 
 /**
@@ -177,7 +198,13 @@ export function buildCatalog(rows) {
   // A set is a character's STORIES, never the news that happens to feature
   // them: the news shelf is sold separately. Free stories are left out too —
   // a bundle must not charge for something already given away.
-  const sellable = stories.filter((s) => s.paid);
+  //
+  // "Free" includes a story whose free allowance already covers every part
+  // (a 2-part story under the 3-free-parts rule): there is nothing left to
+  // unlock, so it has no product of its own and no set or level counts it.
+  // Its ACCESS is unchanged — it stays `paid` with freeParts = parts, so the
+  // level shelf still reads "2 parts free" rather than "yours".
+  const sellable = stories.filter((s) => s.paid && !isGivenAway(s));
   const characters = [...new Set(sellable.map((s) => s.character))].filter(Boolean);
   const setProduct = (character) => {
     const storyKeys = sellable

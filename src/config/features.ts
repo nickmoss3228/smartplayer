@@ -7,9 +7,9 @@
 /**
  * Is the storefront reachable?
  *
- * OFF while the idea is being tested. The shop, the basket, the checkout and
- * the paywall modal are all still built and still work; they are simply not
- * linked from anywhere, and their routes redirect to the level picker.
+ * ON again since 2026-10-01 (it was off 2026-09-20 → 2026-10-01 for idea
+ * testing). When false, the shop, the basket, the checkout and the paywall
+ * modal stay built but unlinked, and their routes redirect to the level picker.
  *
  * ── This flag does NOT decide access ─────────────────────────────────────────
  *
@@ -27,10 +27,10 @@
  *                     PHONE_VERIFICATION_REQUIRED=true   (if SMS is ready)
  *                     PAYMENTS_ENABLED=true
  *   2. set SHOP_ENABLED below to true and rebuild
- *   3. restore the "+" tile and the library filter in pages/List.tsx — they
- *      were removed rather than flagged, since the page reads better without
- *      them and they are two small, well-described blocks in git history
+ *   3. (skipped on purpose, 2026-10-01) the "+" tile and library filter that
+ *      pages/List.tsx had before the shop went off stay OUT — the level shelf
+ *      keeps its current design; the shop is reached from the navbar
  *   4. re-seed the placeholder stories if you want them back:
  *        node --import tsx src/scripts/seedExtensionPacks.js
  */
-export const SHOP_ENABLED = false;
+export const SHOP_ENABLED = true;

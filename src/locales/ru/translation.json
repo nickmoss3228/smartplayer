@@ -1536,7 +1536,46 @@
     "checkoutLoginRequired": "Войди, чтобы купить",
     "paymentsDisabled": "Магазин пока не принимает оплату.",
     "buy": "Купить",
-    "whatsInside": "Что внутри?"
+    "whatsInside": "Что внутри?",
+    "ladder": {
+      "label": "Как купить",
+      "single": {
+        "kicker": "По одной",
+        "title": "Одна история",
+        "body": "Берёшь только то, что хочешь дослушать."
+      },
+      "from": "от",
+      "pickBelow": "Выбрать историю ниже",
+      "set": {
+        "kicker": "Набор персонажа"
+      },
+      "best": "Выгоднее всего · −{{percent}}%",
+      "perTrack": "{{price}} за трек",
+      "total": "Итого {{price}}",
+      "allOwned": "Весь набор уже твой",
+      "all": {
+        "kicker": "Всё сразу",
+        "title": "Все три уровня"
+      },
+      "storiesCount_one": "{{count}} история",
+      "storiesCount_few": "{{count}} истории",
+      "storiesCount_many": "{{count}} историй",
+      "tracksCount_one": "{{count}} трек",
+      "tracksCount_few": "{{count}} трека",
+      "tracksCount_many": "{{count}} треков",
+      "levelsCount_one": "{{count}} уровень",
+      "levelsCount_few": "{{count}} уровня",
+      "levelsCount_many": "{{count}} уровней",
+      "minutes": "{{count}} мин",
+      "minutesSoFar": "{{count}} мин уже можно слушать",
+      "moreSoon_one": "ещё {{count}} история — скоро",
+      "moreSoon_few": "ещё {{count}} истории — скоро",
+      "moreSoon_many": "ещё {{count}} историй — скоро",
+      "tracksShort": "{{count}} тр.",
+      "inSet": "в наборе",
+      "removeItem": "Убрать: {{name}}",
+      "levels": "Уровни"
+    }
   },
   "library": {
     "title": "Моя библиотека",
@@ -1582,9 +1621,14 @@
     "levelMeta": "Все истории и новости уровня",
     "setMeta": "{{count}} треков · {{perTrack}} за трек",
     "sets": {
-      "leo": "Всё про Лео",
-      "maya": "Всё про Майю",
-      "daniel": "Всё про Дэниела"
+      "leo": "Набор историй о Лео",
+      "maya": "Набор историй о Майе",
+      "daniel": "Набор историй о Даниэле"
+    },
+    "characters": {
+      "leo": "Лео",
+      "maya": "Майя",
+      "daniel": "Даниэль"
     }
   },
   "shopPreview": {
