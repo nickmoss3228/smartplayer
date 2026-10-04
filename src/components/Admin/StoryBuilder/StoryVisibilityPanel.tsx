@@ -1,25 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   AdminStoryListItem,
   fetchHiddenStories,
   setStoryHidden,
 } from "../../../services/adminStoryServices";
-import { getStoryGroups, DifficultySlug } from "../../../types/storyGroups";
+import type { DifficultySlug } from "../../../types/storyGroups";
 
 /**
  * Controls which stories students actually see.
  *
- * This exists because deleting a story in the builder does NOT remove it from
- * the app. The built-in stories are declared in src/types/storyGroups.ts and
- * render whether or not the database knows them; a DB story only ever *covers*
- * one of the same slug while it is published. So deleting a draft dropped the
- * override and let the static entry underneath reappear, which reads exactly
- * like the delete silently failing.
- *
- * Hiding is stored per (difficulty, storyId) and applies to built-in and
- * DB-backed stories alike, so this panel is the single answer to "what is on
- * the shelves".
+ * Hiding is stored per (difficulty, storyId), so this panel is the single
+ * answer to "what is on the shelves" without unpublishing anything.
  *
  * It is called UNLIST in the UI, because that is what it does. `hidden` is
  * consulted in exactly one place on the server — listPublishedStories — and
@@ -38,7 +29,6 @@ interface StoryVisibilityPanelProps {
 }
 
 const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => {
-  const { t } = useTranslation();
   const [hidden, setHidden] = useState<Record<string, Set<string>>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -61,29 +51,16 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
     load();
   }, [load]);
 
-  // Everything addressable: the built-in catalogue, plus any DB story that has
-  // no static counterpart. Keyed by slug so an imported built-in appears once.
+  // Every story in the database, per level.
   const rows = useMemo(
     () =>
-      DIFFICULTIES.map((difficulty) => {
-        const staticGroups = getStoryGroups(difficulty, t).map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          icon: g.coverEmoji,
-          builtIn: true,
-        }));
-        const seen = new Set(staticGroups.map((g) => g.slug));
-        const dbOnly = stories
-          .filter((s) => s.difficulty === difficulty && !seen.has(s.storyId))
-          .map((s) => ({
-            slug: s.storyId,
-            title: s.storyName,
-            icon: s.characterIcon,
-            builtIn: false,
-          }));
-        return { difficulty, items: [...staticGroups, ...dbOnly] };
-      }),
-    [stories, t],
+      DIFFICULTIES.map((difficulty) => ({
+        difficulty,
+        items: stories
+          .filter((s) => s.difficulty === difficulty)
+          .map((s) => ({ slug: s.storyId, title: s.storyName, icon: s.characterIcon })),
+      })),
+    [stories],
   );
 
   const toggle = async (difficulty: DifficultySlug, slug: string, nextHidden: boolean) => {
@@ -140,11 +117,6 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                     <span>{item.icon}</span>
                     <span className={isHidden ? "line-through" : ""}>{item.title}</span>
                     <span className="text-xs text-gray-400">{item.slug}</span>
-                    {item.builtIn && (
-                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400 border border-gray-300 rounded-[3px] px-1">
-                        built-in
-                      </span>
-                    )}
                     <button
                       type="button"
                       onClick={() => toggle(difficulty, item.slug, !isHidden)}

@@ -12,6 +12,8 @@ import type { LevelProgressProps } from '../../types/LevelProgress';
 import { PaywallModal } from '../Paywall/PaywallModal';
 import { storyKey } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
+import { CastStrip } from '../../modules/cast/CastStrip';
+import { CastSheet } from '../../modules/cast/CastSheet';
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const catalog = useCatalog();
@@ -29,6 +31,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     storyOwned,
     freeParts,
     previewSeconds,
+    castCards,
+    castFocus,
+    handleOpenCast,
+    handleCloseCast,
   } = useLevelProgressPage(props);
 
   if (isLoading) return <LevelProgressSkeleton />;
@@ -38,6 +44,8 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       <div className="max-w-4xl pt-12 mx-auto">
 
         <LevelProgressHeader difficulty={difficulty} theme={theme} storyTitle={storyTitle} />
+
+        <CastStrip cards={castCards} accent={theme.accent} onOpen={handleOpenCast} />
 
         <LevelProgressBar
           completedCount={completedLevels.length}
@@ -71,6 +79,15 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         onNextDifficulty={handleNextDifficulty}
         hasNextDifficulty={!!navigationState.nextDifficulty}
       />
+
+      {castFocus !== undefined && (
+        <CastSheet
+          cards={castCards}
+          focusKey={castFocus}
+          accent={theme.accent}
+          onClose={handleCloseCast}
+        />
+      )}
 
       <StoryPreviewModal
         isOpen={previewLevel !== null}

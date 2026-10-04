@@ -1,4 +1,3 @@
-import { TFunction } from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,9 +7,7 @@ import {
 } from '../services/storyServices';
 import { useEntitlements } from '../context/EntitlementsContext';
 import { useAuth } from '../context/AuthContext';
-import { storyKey } from '../config/priceCatalog';
 import { useCatalog } from '../context/CatalogContext';
-import type { CatalogStory } from '../services/catalogServices';
 
 export type StoryCategory = 'general' | 'news';
 
@@ -32,9 +29,7 @@ export interface StoryGroup {
   /** Which heading/section this story is grouped under in List.tsx. Defaults to 'general'. */
   category: StoryCategory;
   /**
-   * Paywall state. For a published DB story the SERVER decides it and carries
-   * it on the list response; for a built-in story applyCatalogAccess() fills it
-   * from the mirrored catalog. Undefined means the story is not sold.
+   * Paywall state, decided by the SERVER and carried on the list response.
    */
   locked?: boolean;
   /** Any one of these SKUs unlocks it, smallest scope first. */
@@ -45,98 +40,7 @@ export interface StoryGroup {
   previewSeconds?: number | null;
 }
 
-/**
- * Fills a BUILT-IN story's paywall fields from the price catalog.
- *
- * The server's list endpoint only knows published DB stories, so a static
- * story would otherwise arrive with no lock at all and look free. Pure, so the
- * rule can be tested without mounting anything.
- */
-export function applyCatalogAccess(
-  group: StoryGroup,
-  difficulty: DifficultySlug,
-  owned: boolean,
-  catalog: {
-    getCatalogStory: (key: string) => CatalogStory | null;
-    skusGranting: (key: string) => string[];
-    /** Optional so existing callers and tests keep the paywall on. */
-    paywallEnabled?: boolean;
-  },
-  /** Is anyone signed in? Only meaningful while the paywall is off. */
-  authenticated = false,
-): StoryGroup {
-  const key = storyKey(difficulty, group.slug);
-  const entry = catalog.getCatalogStory(key);
-  // Not in the catalog: no admin has listed it, so there is nothing to sell and
-  // nothing to play. Left locked with no SKU rather than passed through
-  // untouched — an untouched group has `locked: undefined`, which every shelf
-  // reads as "owned", and that is how unlisted stories used to appear free.
-  if (!entry) return { ...group, locked: true, requiredSkus: [], freeParts: 0, previewSeconds: null };
-  // A story the catalog gives away is open to everyone, signed in or not.
-  if (!entry.paid) {
-    return {
-      ...group,
-      locked: false,
-      requiredSkus: [],
-      freeParts: group.totalTracks,
-      previewSeconds: null,
-    };
-  }
-  if (owned) {
-    return { ...group, locked: false, requiredSkus: [], freeParts: group.totalTracks, previewSeconds: null };
-  }
-  // Nothing is sold at the moment, so an ACCOUNT is what opens the catalogue.
-  //
-  // This is the client's copy of the server's rule (accessFor), and it exists
-  // for the stories that have no published DB row — maya, daniel and the rest
-  // arrive from the static catalogue with no `locked` from the server at all.
-  // Without this the page would padlock a signed-in user out of content the
-  // server is perfectly willing to serve, because `owned` is false for
-  // everyone: nobody has bought anything.
-  if (catalog.paywallEnabled === false) {
-    return authenticated
-      ? { ...group, locked: false, requiredSkus: [], freeParts: group.totalTracks, previewSeconds: null }
-      : { ...group, locked: true, requiredSkus: [], freeParts: entry.freeParts, previewSeconds: entry.previewSeconds };
-  }
-  // The row's own allowance, which may override the length-derived default.
-  return {
-    ...group,
-    locked: true,
-    requiredSkus: catalog.skusGranting(key),
-    freeParts: entry.freeParts,
-    previewSeconds: entry.previewSeconds,
-  };
-}
-
 export type DifficultySlug = 'easy' | 'medium' | 'hard';
-// Only non-translatable fields live here
-type StoryGroupRaw = Omit<StoryGroup, 'title' | 'description' | 'category'> & {
-  category?: StoryCategory;
-};
-
-const storyGroupsRaw: Record<DifficultySlug, StoryGroupRaw[]> = {
-  easy: [
-    { slug: 'leo', character: 'Leo', totalTracks: 10, coverEmoji: '🧑', cover: '/assets/covers/leo.jpg' },
-    // totalTracks must match the real length of the track array in
-    // audiodata/audioDataLeoAdditional.ts — a third track is drafted there but
-    // commented out, and claiming 3 here meant progress could never reach 100%.
-    { slug: 'leo-additional',    character: 'Leo',    totalTracks: 2, coverEmoji: '🧑', cover: '/assets/covers/leo-additional.jpg' },
-    // Placeholder "News and Interesting things" group — students listen to a news
-    // source/article first, then get a story connected to it. No real audio/text yet;
-    // fill in totalTracks, coverEmoji, and src/modules/audiodata placeholder tracks
-    // once content is ready.
-    { slug: 'news-roland-garros', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news', cover: '/assets/covers/news-roland-garros.jpg' },
-    // No artwork yet, so no cover — this one keeps the halftone + emoji card.
-    { slug: 'news-family-visit',  character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news' },
-    { slug: 'news-grazing-board', character: 'Leo', totalTracks: 2, coverEmoji: '📰', category: 'news', cover: '/assets/covers/news-grazing-board.jpg' },
-  ],
-  medium: [
-    { slug: 'maya',   character: 'Maya',   totalTracks: 10, coverEmoji: '👩', cover: '/assets/covers/maya.jpg' },
-  ],
-  hard: [
-    { slug: 'daniel', character: 'Daniel', totalTracks: 10, coverEmoji: '👨', cover: '/assets/covers/daniel.jpg' },
-  ],
-};
 
 /**
  * Each level's character art, used when a story has no cover of its own.
@@ -165,33 +69,6 @@ export const coverFor = (
 ): string | undefined =>
   ownCover ?? (category === 'news' ? undefined : CHARACTER_COVER[difficulty]);
 
-export const getStoryGroups = (diff: DifficultySlug, t: TFunction): StoryGroup[] =>
-  storyGroupsRaw[diff].map(story => ({
-    ...story,
-    category:    story.category ?? 'general',
-    title:       t(`stories.${diff}.${story.slug}.title`),
-    description: t(`stories.${diff}.${story.slug}.description`),
-  }));
-
-// Single-story lookup — built on the same translated data as getStoryGroups,
-// so a story's title/description never drifts from what List.tsx shows.
-export const getStoryGroup = (
-  difficulty: DifficultySlug,
-  slug: string,
-  t: TFunction,
-): StoryGroup | undefined =>
-  getStoryGroups(difficulty, t).find(group => group.slug === slug);
-
-// ── DB-backed story fallback ────────────────────────────────────────────────
-// Static stories (leo, leo-additional, maya, daniel, the news placeholders)
-// are always available synchronously from the functions above, so these
-// hooks return that same data immediately (no loading flash for existing
-// content) and swap in a published DB-backed story once fetched — a DB
-// story *overrides* its static counterpart by slug (imported+published
-// stories replace the built-in entry instead of appearing twice), matching
-// the whole-story "DB wins once published" precedence in the backend's
-// helpers/storyLookup.js.
-
 /**
  * @param fallbackCategory the static entry's category, used when the DB story
  *   has no opinion. A published DB story REPLACES its static counterpart
@@ -207,12 +84,12 @@ export type AppLocale = 'en' | 'ru';
  * ("ru-RU"), so match on the prefix rather than equality — the app only ever
  * ships these two bundles.
  */
-function useAppLocale(): AppLocale {
+export function useAppLocale(): AppLocale {
   const { i18n } = useTranslation();
   return i18n.language?.toLowerCase().startsWith('ru') ? 'ru' : 'en';
 }
 
-function dbStoryToGroup(
+export function dbStoryToGroup(
   story: {
     storyId: string;
     storyName: string;
@@ -227,24 +104,21 @@ function dbStoryToGroup(
     freeParts?: number;
     previewSeconds?: number | null;
   },
-  fallbackCategory: StoryCategory = 'general',
-  fallbackCover?: string,
+  difficulty: DifficultySlug,
   locale: AppLocale = 'en',
 ): StoryGroup {
+  const category = story.category ?? 'general';
   return {
     slug: story.storyId,
-    // Per-locale text wins; storyName is the admin-facing identifier and only
-    // stands in for stories imported before localized existed.
+    // Per-locale text wins; storyName is the admin-facing identifier, kept
+    // only as the last resort for a story whose text was never written.
     title: story.localized?.title?.[locale]?.trim() || story.storyName,
     description: story.localized?.description?.[locale]?.trim() || story.description,
     character: story.storyName,
     totalTracks: story.totalParts,
     coverEmoji: story.characterIcon,
-    category: story.category ?? fallbackCategory,
-    // Same fallback as the category, for the same reason: publishing replaces
-    // the static entry, so without this the card loses its art and drops back
-    // to the halftone + emoji placeholder.
-    cover: story.coverUrl ?? fallbackCover,
+    category,
+    cover: coverFor(difficulty, category, story.coverUrl ?? undefined),
     locked: story.locked ?? false,
     requiredSkus: story.requiredSkus ?? [],
     freeParts: story.freeParts,
@@ -309,24 +183,12 @@ const NO_HIDDEN: Set<string> = new Set();
  */
 export function useStoryGroupsWithStatus(
   difficulty: DifficultySlug,
-  t: TFunction,
 ): { stories: StoryGroup[]; loading: boolean } {
   const locale = useAppLocale();
-  const { owns, entitlementsLoading } = useEntitlements();
+  const { entitlementsLoading } = useEntitlements();
   const catalog = useCatalog();
   const { user } = useAuth();
   const cacheKey = `${user?.id ?? 'guest'}:${difficulty}`;
-  // Memoised so the static catalogue has one identity per (level, language)
-  // rather than a new array per render — which is what lets the merge at the
-  // bottom of this hook depend on it honestly instead of listing a subset of
-  // its real inputs and silencing the lint rule.
-  const staticGroups = useMemo(() => getStoryGroups(difficulty, t), [difficulty, t]);
-  // The RAW rows are held in state and adapted during render, not in the
-  // effect: adapting needs the static entry's category as a fallback, and
-  // reaching for staticGroups inside the effect would either capture a stale
-  // copy or, if listed as a dependency, refetch on every render since
-  // getStoryGroups builds a new array each time.
-  //
   // Seeded from the cache in the initialiser rather than by an effect, which is
   // what makes a repeat visit flicker-free: by the time the first render runs,
   // the state already holds the answer.
@@ -389,29 +251,11 @@ export function useStoryGroupsWithStatus(
     };
   }, [difficulty, cacheKey]);
 
-  // Memoised because this used to hand back a freshly built array on EVERY
-  // render — new identity, same contents — which defeated the useMemo in
-  // List.tsx that depends on it and made every card's props new each time.
-  const stories = useMemo(() => {
-    const staticBySlug = new Map(staticGroups.map((g) => [g.slug, g]));
-    const dbGroups = dbStories.map((s) => {
-      const fallback = staticBySlug.get(s.storyId);
-      const category = s.category ?? fallback?.category ?? 'general';
-      return dbStoryToGroup(
-        s,
-        fallback?.category ?? 'general',
-        coverFor(difficulty, category, fallback?.cover),
-        locale,
-      );
-    });
-    const staticWithAccess = staticGroups.map((g) =>
-      applyCatalogAccess(g, difficulty, owns(difficulty, g.slug), catalog, Boolean(user)),
-    );
-    return mergeStoryGroups(staticWithAccess, dbGroups, hidden);
-    // `catalog` belongs here: it arrives asynchronously, and without it this
-    // memo keeps the answer it computed against an EMPTY catalog — every
-    // built-in story locked with no SKU — for the life of the page.
-  }, [staticGroups, difficulty, locale, dbStories, hidden, owns, catalog]);
+  // Memoised: a new array per render would make every card's props new.
+  const stories = useMemo(
+    () => visibleStoryGroups(dbStories, difficulty, locale, hidden),
+    [dbStories, difficulty, locale, hidden],
+  );
 
   // A lock drawn before ownership is known is a lock that flickers off.
   // A price or a padlock drawn before the catalog lands is one that changes
@@ -420,79 +264,45 @@ export function useStoryGroupsWithStatus(
 }
 
 /**
- * The stories alone, for callers that are happy to paint the static catalogue
- * first and correct it a moment later.
+ * What a learner sees on a level shelf: the server's published stories, in
+ * its order, minus the ones an admin unlisted. Pure, so the rule can be tested
+ * without mounting a hook.
  */
-export function useStoryGroups(difficulty: DifficultySlug, t: TFunction): StoryGroup[] {
-  return useStoryGroupsWithStatus(difficulty, t).stories;
+export function visibleStoryGroups(
+  stories: Parameters<typeof dbStoryToGroup>[0][],
+  difficulty: DifficultySlug,
+  locale: AppLocale,
+  hidden: Set<string>,
+): StoryGroup[] {
+  return stories
+    .map((s) => dbStoryToGroup(s, difficulty, locale))
+    .filter((g) => !hidden.has(g.slug));
 }
 
 /**
- * The rule for what a student sees, kept pure so it can be tested without
- * mounting a hook — it decides whether content appears at all.
- *
- * Two separate mechanisms, deliberately not conflated:
- *
- *   override — a published DB story REPLACES the static entry of the same slug,
- *              so an imported-and-edited story appears once, not twice.
- *   hidden   — takes a story out of the list entirely, and applies to both
- *              sides. This is the only thing that can remove a BUILT-IN story:
- *              those are declared in storyGroupsRaw and render whatever the
- *              database says, which is why deleting a draft never removed one
- *              (it dropped the override and the static entry came back).
+ * One story by slug. `loading` is true until the server has answered; a
+ * missing storyGroup after that means "not found" (or hidden).
  */
-export function mergeStoryGroups(
-  staticGroups: StoryGroup[],
-  dbGroups: StoryGroup[],
-  hidden: Set<string>,
-): StoryGroup[] {
-  const dbSlugs = new Set(dbGroups.map((g) => g.slug));
-  return [...staticGroups.filter((g) => !dbSlugs.has(g.slug)), ...dbGroups].filter(
-    (g) => !hidden.has(g.slug),
-  );
-}
-
-// Single-story lookup with DB fallback. `loading` is true only while nothing
-// is available to show yet (a slug that isn't a static story, still waiting
-// on the DB check) — callers should wait for loading to clear before
-// treating a missing storyGroup as "not found" (avoids a false redirect).
-// A published DB story overrides its static counterpart once the fetch
-// resolves, without blocking the initial render for existing content.
 export function useStoryGroup(
   difficulty: DifficultySlug,
   slug: string,
-  t: TFunction,
 ): { storyGroup: StoryGroup | undefined; loading: boolean } {
-  const staticGroup = getStoryGroup(difficulty, slug, t);
   const [dbGroup, setDbGroup] = useState<StoryGroup | undefined>(undefined);
   const [dbChecked, setDbChecked] = useState(false);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
   const locale = useAppLocale();
-  const { owns } = useEntitlements();
-  const catalog = useCatalog();
-  const { user } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
     setDbChecked(false);
-    // Both, because a story can be hidden without having a DB doc at all —
-    // hiding is the only control that works on the built-in stories.
+    // Both: a published story can still be hidden from learners.
     Promise.all([
       fetchPublishedStory(difficulty, slug),
       fetchPublishedStoriesList(difficulty),
     ])
       .then(([story, list]) => {
         if (cancelled) return;
-        setDbGroup(
-          story
-            ? dbStoryToGroup(
-                story,
-                staticGroup?.category ?? 'general',
-                coverFor(difficulty, staticGroup?.category ?? 'general', staticGroup?.cover),
-                locale,
-              )
-            : undefined,
-        );
+        setDbGroup(story ? dbStoryToGroup(story, difficulty, locale) : undefined);
         setHidden(new Set(list.hidden));
         setDbChecked(true);
       })
@@ -502,26 +312,10 @@ export function useStoryGroup(
     return () => {
       cancelled = true;
     };
-    // staticGroup is derived from difficulty/slug/t and only supplies fallback
-    // values; re-running on its identity would refetch on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficulty, slug]);
+  }, [difficulty, slug, locale]);
 
-  // Hidden applies here too. useStoryGroups filtered the list while this hook
-  // did not, so a hidden story vanished from the shelves but was still fully
-  // reachable by URL — including from a bookmark or the level grid.
-  const group =
-    dbGroup ??
-    (staticGroup &&
-      applyCatalogAccess(
-        staticGroup,
-        difficulty,
-        owns(difficulty, staticGroup.slug),
-        catalog,
-        Boolean(user),
-      ));
   return {
-    storyGroup: group && hidden.has(group.slug) ? undefined : group,
-    loading: !staticGroup && !dbChecked,
+    storyGroup: dbGroup && hidden.has(dbGroup.slug) ? undefined : dbGroup,
+    loading: !dbChecked,
   };
 }

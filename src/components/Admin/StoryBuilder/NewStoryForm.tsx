@@ -9,11 +9,19 @@ interface NewStoryFormProps {
 
 const MAX_PARTS = 20;
 
+const LOCALES: { id: "en" | "ru"; label: string }[] = [
+  { id: "en", label: "English" },
+  { id: "ru", label: "Русский" },
+];
+
 const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [storyId, setStoryId] = useState("");
   const [storyName, setStoryName] = useState("");
-  const [description, setDescription] = useState("");
+  // What students read, per language. Asked for here so a new story never
+  // reaches the shelf showing its internal name in place of a title.
+  const [title, setTitle] = useState({ en: "", ru: "" });
+  const [description, setDescription] = useState({ en: "", ru: "" });
   const [characterIcon, setCharacterIcon] = useState("📖");
   const [totalParts, setTotalParts] = useState("10");
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +42,12 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         difficulty,
         storyId: storyId.trim(),
         storyName: storyName.trim(),
-        description: description.trim(),
+        // The pre-localization fallback, for anything that still reads it.
+        description: description.en.trim() || description.ru.trim(),
+        localized: {
+          title: { en: title.en.trim(), ru: title.ru.trim() },
+          description: { en: description.en.trim(), ru: description.ru.trim() },
+        },
         characterIcon,
         totalParts: parts,
       });
@@ -47,7 +60,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-3 max-w-lg">
+    <form onSubmit={handleSubmit} className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-3 max-w-2xl">
       <h2 className="font-semibold text-black">New story</h2>
 
       <div>
@@ -75,7 +88,9 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Story name</label>
+        <label className="block text-xs text-gray-500 mb-1">
+          Internal name <span className="text-gray-400">— what this panel calls it</span>
+        </label>
         <input
           type="text"
           value={storyName}
@@ -85,14 +100,28 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         />
       </div>
 
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">Description</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
-        />
+      <div className="grid gap-3 md:grid-cols-2">
+        {LOCALES.map(({ id, label }) => (
+          <fieldset key={id} className="border border-gray-200 rounded-[3px] p-2 space-y-2 min-w-0">
+            <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 px-1">
+              {label}
+            </legend>
+            <input
+              type="text"
+              value={title[id]}
+              onChange={(e) => setTitle((t) => ({ ...t, [id]: e.target.value }))}
+              placeholder="Title students see"
+              className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-sm"
+            />
+            <textarea
+              value={description[id]}
+              onChange={(e) => setDescription((d) => ({ ...d, [id]: e.target.value }))}
+              placeholder="Description"
+              rows={2}
+              className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-sm"
+            />
+          </fieldset>
+        ))}
       </div>
 
       <div className="flex gap-3">

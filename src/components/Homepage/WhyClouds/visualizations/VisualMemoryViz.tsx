@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { IoSearchOutline, IoCheckmarkCircle, IoVolumeHighOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
-// Real comic panel (see Comics/comicsData.ts) — reused here so the demo
+// Real comic panel (Leo's part 10, served from public/assets) — reused here so the demo
 // points at the exact feature it's explaining, not a mockup of it.
 const COMIC_SRC = '/assets/leo/comics/10. The Lost Kitten.jpg';
 

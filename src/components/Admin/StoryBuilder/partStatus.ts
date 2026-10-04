@@ -12,9 +12,8 @@
 // builder needs to know it happened.
 
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
-import { builtInComicFor } from "../../../modules/story/resolveStory";
 
-export type ElementId = "audio" | "markers" | "comic" | "vocab" | "phrasal" | "quiz";
+export type ElementId = "audio" | "markers" | "comic" | "intro" | "vocab" | "phrasal" | "quiz";
 
 /** Empty, partially filled, or finished. `n/a` is only ever for optional
  *  elements a story does not use — it reads as "nothing owed", not "missing". */
@@ -66,22 +65,24 @@ export const ELEMENTS: ElementSpec[] = [
     short: "Cm",
     label: "Comic",
     required: true,
-    // Three states, not two, because "no comic saved" and "no comic anywhere"
-    // are different problems with different fixes.
-    //
-    // The built-in stories keep their artwork in the app rather than in the
-    // database (Player/Comics/comicsData.ts), and an unpublished story falls
-    // back to it — so a part can read as empty here while students are looking
-    // at the artwork right now. Publishing is what breaks it: a published
-    // story is served entirely from the database, artwork included. So a page
-    // that exists but is not saved is `partial`, which keeps it out of the
-    // sellable count and puts the fix one click away in the Comics panel.
-    state: (p, story) =>
-      p.comicUrl
-        ? "done"
-        : builtInComicFor(story.difficulty, story.storyId, p.partNumber)
-          ? "partial"
-          : "empty",
+    state: (p) => (p.comicUrl ? "done" : "empty"),
+  },
+  {
+    id: "intro",
+    short: "Pv",
+    label: "Preview card",
+    // Optional: the level page always opens a card, building one from the part
+    // title, the story description and the comic page when none is written —
+    // so a missing card is a thinner dialog, never a part nobody can start.
+    required: false,
+    // Done means both languages have a title and a description, since that is
+    // what the dialog leads with.
+    state: (p) => {
+      const intro = p.intro;
+      if (!intro) return "empty";
+      const complete = [intro.title, intro.description].every((pair) => pair.en && pair.ru);
+      return complete ? "done" : "partial";
+    },
   },
   {
     id: "vocab",

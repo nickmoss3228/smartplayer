@@ -52,12 +52,10 @@ const categoryOrder: StoryGroup['category'][] = ['general', 'news'];
 const List = () => {
   const { difficulty } = useParams<{ difficulty: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { getStoryData } = useProgress();
   const { t } = useTranslation();
 
-  const diff = (difficulty || 'easy') as DifficultySlug;
-  const { stories, loading } = useStoryGroupsWithStatus(diff, t);
-  const location = useLocation();
   // Arrived from the end of /welcome, which opened the level the student's
   // own answer suggested — say so once, so landing here is not a mystery and
   // the way to another level is right there. Consumed, like the paywall flag,
@@ -71,6 +69,9 @@ const List = () => {
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.state, location.pathname, navigate]);
+
+  const diff = (difficulty || 'easy') as DifficultySlug;
+  const { stories, loading } = useStoryGroupsWithStatus(diff);
   const theme = themes[diff] || themes.easy;
 
   // Every category that has a story in it. No filtering: the shelf is the

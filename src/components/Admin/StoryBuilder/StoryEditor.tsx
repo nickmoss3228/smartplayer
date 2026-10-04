@@ -13,9 +13,11 @@ import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
 import StoryCoverEditor from "./StoryCoverEditor";
 import StoryPricingPanel from "./StoryPricingPanel";
+import CastEditor from "./CastEditor";
 import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
+import PartIntroEditor from "./PartIntroEditor";
 
 interface StoryEditorProps {
   token: string;
@@ -35,14 +37,29 @@ const PREVIEW_PART = 1;
 
 /** Audio and markers are edited in one place, so two grid columns open the same
  *  panel. Everything else is one column, one editor. */
-const PANEL_FOR: Record<ElementId, "audio" | "comics" | "vocabulary" | "phrasal" | "quiz"> = {
+const PANEL_FOR: Record<ElementId, "audio" | "comics" | "intro" | "vocabulary" | "phrasal" | "quiz"> = {
   audio: "audio",
   markers: "audio",
   comic: "comics",
+  intro: "intro",
   vocab: "vocabulary",
   phrasal: "phrasal",
   quiz: "quiz",
 };
+
+const LOCALE_COLUMNS: { id: "en" | "ru"; label: string }[] = [
+  { id: "en", label: "English" },
+  { id: "ru", label: "Русский" },
+];
+
+/** The story's per-language text as an editable copy, blanks where none is set. */
+const localizedDraft = (story: AdminStory) => ({
+  title: { en: story.localized?.title?.en ?? "", ru: story.localized?.title?.ru ?? "" },
+  description: {
+    en: story.localized?.description?.en ?? "",
+    ru: story.localized?.description?.ru ?? "",
+  },
+});
 
 // Per-part tabs within one "editing story X" view — the admin can jump
 // between parts/steps freely rather than following a forced linear wizard.
@@ -58,7 +75,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
 
   const [editingMeta, setEditingMeta] = useState(false);
   const [editName, setEditName] = useState(story.storyName);
-  const [editDescription, setEditDescription] = useState(story.description);
+  const [editLocalized, setEditLocalized] = useState(() => localizedDraft(story));
   const [editIcon, setEditIcon] = useState(story.characterIcon);
   const [editCategory, setEditCategory] = useState<StoryCategory>(story.category ?? "general");
   const [savingMeta, setSavingMeta] = useState(false);
@@ -126,7 +143,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
 
   const handleStartEditMeta = () => {
     setEditName(story.storyName);
-    setEditDescription(story.description);
+    setEditLocalized(localizedDraft(story));
     setEditIcon(story.characterIcon);
     setEditCategory(story.category ?? "general");
     setError("");
@@ -143,7 +160,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
     try {
       const updated = await updateStoryMeta(token, story._id, {
         storyName: editName.trim(),
-        description: editDescription.trim(),
+        localized: editLocalized,
         characterIcon: editIcon.trim() || "📖",
         category: editCategory,
       });
@@ -213,7 +230,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
 
       <div className="mb-4">
         {editingMeta ? (
-          <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2 max-w-md">
+          <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-3 max-w-3xl">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -225,7 +242,8 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="Story name"
+                placeholder="Internal name"
+                title="What this panel calls the story. Students see the titles below."
                 className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-[3px]"
               />
               {/* Which shelf the story sits on in the students' list. A
@@ -242,13 +260,39 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                 <option value="news">News &amp; Interesting Things</option>
               </select>
             </div>
-            <textarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="Description"
-              rows={2}
-              className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
-            />
+            {/* What students read on the story list and the level page, per
+                language. An empty field falls back to the internal name — which
+                is how an English reader ended up looking at a Russian title. */}
+            <div className="grid gap-3 md:grid-cols-2">
+              {LOCALE_COLUMNS.map(({ id, label }) => (
+                <fieldset key={id} className="bg-white rounded-[3px] border border-gray-200 p-2 space-y-2 min-w-0">
+                  <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 px-1">
+                    {label}
+                  </legend>
+                  <input
+                    type="text"
+                    value={editLocalized.title[id]}
+                    onChange={(e) =>
+                      setEditLocalized((l) => ({ ...l, title: { ...l.title, [id]: e.target.value } }))
+                    }
+                    placeholder={`Title — empty shows "${editName.trim() || story.storyName}"`}
+                    className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
+                  />
+                  <textarea
+                    value={editLocalized.description[id]}
+                    onChange={(e) =>
+                      setEditLocalized((l) => ({
+                        ...l,
+                        description: { ...l.description, [id]: e.target.value },
+                      }))
+                    }
+                    placeholder="Description — on the story card, and on each part's preview card that has none of its own"
+                    rows={3}
+                    className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
+                  />
+                </fieldset>
+              ))}
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleSaveMeta}
@@ -267,17 +311,41 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-black">
-              {story.characterIcon} {story.storyName}
-            </h2>
-            <button
-              onClick={handleStartEditMeta}
-              className="text-xs text-gray-400 hover:text-black"
-              title="Rename or edit this story"
-            >
-              Edit
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-black">
+                {story.characterIcon} {story.storyName}
+              </h2>
+              <button
+                onClick={handleStartEditMeta}
+                className="text-xs text-gray-400 hover:text-black"
+                title="Rename, or edit what students read"
+              >
+                Edit
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 flex flex-wrap gap-x-3">
+              {LOCALE_COLUMNS.map(({ id }) => {
+                const title = story.localized?.title?.[id]?.trim();
+                return (
+                  <span key={id}>
+                    <span className="font-mono uppercase text-gray-400">{id}</span>{" "}
+                    {title ? (
+                      title
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleStartEditMeta}
+                        className="text-amber-700 underline hover:no-underline"
+                        title={`Readers in this language see "${story.storyName}"`}
+                      >
+                        no title yet
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
+            </p>
           </div>
         )}
         <p className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2">
@@ -322,6 +390,17 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           </summary>
           <div className="mt-2 bg-gray-50 rounded-[3px] border border-gray-200 p-3">
             <StoryCoverEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
+          </div>
+        </details>
+
+        {/* The characters on the level page — story-level, like the card. */}
+        <details className="group mt-2">
+          <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black select-none inline-flex items-center gap-1">
+            <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
+            Cast — {story.cast?.length ? `${story.cast.length} character${story.cast.length === 1 ? "" : "s"}` : "none yet"}
+          </summary>
+          <div className="mt-2 bg-gray-50 rounded-[3px] border border-gray-200 p-3">
+            <CastEditor token={token} story={story} onStoryUpdated={onStoryUpdated} />
           </div>
         </details>
 
@@ -389,7 +468,17 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           story={story}
           part={part}
           onPartUpdated={handlePartUpdated}
-          onStoryUpdated={onStoryUpdated}
+        />
+      )}
+      {part && step === "intro" && (
+        // Keyed per part: the form holds an unsaved draft and a measured
+        // length, both of which belong to one part only.
+        <PartIntroEditor
+          key={`${story._id}:${part.partNumber}`}
+          token={token}
+          story={story}
+          part={part}
+          onPartUpdated={handlePartUpdated}
         />
       )}
       {part && step === "vocabulary" && (

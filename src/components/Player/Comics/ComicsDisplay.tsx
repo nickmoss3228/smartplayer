@@ -1,8 +1,5 @@
 import React, { useState, useCallback } from "react";
 import { ComicsModal } from "./ComicsModal";
-import { getOrderedComics, comicManifest, orderedComicsEasy } from "./comicsData";
-
-export { getOrderedComics, comicManifest, orderedComicsEasy };
 
 // ─── Preview card ─────────────────────────────────────────────────────────────
 interface ComicsDisplayProps {

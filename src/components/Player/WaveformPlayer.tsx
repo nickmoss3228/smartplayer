@@ -9,7 +9,6 @@ import { usePlayerControls } from "./hooks/usePlayerControls";
 import { useVocabAudio } from "./hooks/useVocabAudio";
 import { usePlaybackSettings } from "./hooks/usePlaybackSettings";
 import { useEnhancedMode } from "./hooks/useEnhancedMode";
-import { useStoryTitles } from "./hooks/useStoryTitles";
 import { useMarkerNavigation } from "./hooks/useMarkerNavigation";
 import { useTrackReset } from "./hooks/useTrackReset";
 import { usePausableModal } from "./hooks/usePausableModal";
@@ -37,8 +36,8 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     onWavesurferMount,
     level,
     difficulty,
-    storySlug,
     comicUrl,
+    trackTitle,
     vocabulary,
     phrasalVerbs,
     helpAudioUrls,
@@ -82,7 +81,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       onAudioComplete?.();
     }, [onAudioComplete, setIsEnhancedSessionActive]);
 
-    const storyTitles = useStoryTitles(difficulty, storySlug);
 
     // BitPhrase: fired by useSegmentEngine whenever a segment finishes its
     // full auto-repeat cycle. Guests simply don't earn currency yet — no
@@ -264,7 +262,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               <ComicsDisplay
                 storyIndex={Number(trackId)}
                 src={comicUrl}
-                title={storyTitles[Number(trackId)]}
+                title={trackTitle}
                 difficulty={difficulty}
               />
             </div>
@@ -412,7 +410,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               layout="desktop"
               storyIndex={Number(trackId)}
               comicSrc={comicUrl}
-              comicsTitle={storyTitles[Number(trackId)]}
+              comicsTitle={trackTitle}
               difficulty={difficulty}
               onOpenHelp={help.open}
               hasHelpAudio={hasHelpAudio}

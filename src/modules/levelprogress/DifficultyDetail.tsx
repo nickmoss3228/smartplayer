@@ -1,5 +1,4 @@
 import { useParams, Navigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
 import { getGuestStoryProgress } from '../../services/guestProgress';
@@ -26,7 +25,6 @@ const DifficultyDetail = () => {
     difficulty: string;
     storySlug: string;
   }>();
-  const { t } = useTranslation();
   const { user } = useAuth();
 
   // ← use new context shape
@@ -39,7 +37,7 @@ const DifficultyDetail = () => {
     difficulty && VALID_DIFFICULTIES.includes(difficulty as DifficultySlug) ? difficulty : 'easy'
   ) as DifficultySlug;
   const resolvedSlug = storySlug || DEFAULT_SLUGS[diff];
-  const { storyGroup, loading: storyGroupLoading } = useStoryGroup(diff, resolvedSlug, t);
+  const { storyGroup, loading: storyGroupLoading } = useStoryGroup(diff, resolvedSlug);
 
   // Validate difficulty
   if (!difficulty || !VALID_DIFFICULTIES.includes(difficulty as DifficultySlug)) {

@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AdminStory,
   StoryPart,
   uploadPartAsset,
   saveComic,
-  getStory,
 } from "../../../services/adminStoryServices";
 import { IoImageOutline } from "react-icons/io5";
-import { builtInComicFor } from "../../../modules/story/resolveStory";
 
 interface PartComicEditorProps {
   token: string;
@@ -15,7 +13,6 @@ interface PartComicEditorProps {
   part: StoryPart;
   onPartUpdated: (part: StoryPart) => void;
   /** Whole-story replacement, for edits that touch more than one part. */
-  onStoryUpdated: (story: AdminStory) => void;
 }
 
 // Roughly what a full comic page from the built-in stories weighs (~270 KB).
@@ -39,35 +36,13 @@ const PartComicEditor = ({
   story,
   part,
   onPartUpdated,
-  onStoryUpdated,
 }: PartComicEditorProps) => {
   const [comicUrl, setComicUrl] = useState<string | null>(part.comicUrl ?? null);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [adopting, setAdopting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-
-  // Artwork that already ships with the app for this exact part.
-  //
-  // A published story takes ALL its content from the database, comic pages
-  // included, while an unpublished one falls back to the built-in files. So
-  // the three original character stories — imported before the importer knew
-  // about the comic manifest — read as "no comic" here and, worse, would lose
-  // their artwork the moment anyone published them. This is the recovery
-  // path: the pages exist, so offer them rather than asking for a re-upload.
-  const builtIn = useMemo(
-    () => builtInComicFor(story.difficulty, story.storyId, part.partNumber),
-    [story.difficulty, story.storyId, part.partNumber],
-  );
-  const adoptable = useMemo(
-    () =>
-      story.parts.filter(
-        (p) => !p.comicUrl && builtInComicFor(story.difficulty, story.storyId, p.partNumber),
-      ),
-    [story.parts, story.difficulty, story.storyId],
-  );
 
   useEffect(() => {
     setComicUrl(part.comicUrl ?? null);
@@ -123,35 +98,6 @@ const PartComicEditor = ({
       setError(err instanceof Error ? err.message : "Failed to remove the comic page.");
     } finally {
       setRemoving(false);
-    }
-  };
-
-  /** Save the built-in page(s) onto the story, so publishing keeps them. */
-  const handleAdopt = async (targets: StoryPart[]) => {
-    setAdopting(true);
-    setError("");
-    setNotice("");
-    try {
-      for (const target of targets) {
-        const url = builtInComicFor(story.difficulty, story.storyId, target.partNumber);
-        if (!url) continue;
-        const saved = await saveComic(token, story._id, target.partNumber, url);
-        if (target.partNumber === part.partNumber) setComicUrl(saved.comicUrl ?? null);
-      }
-      // Re-read rather than folding each saved part in as it arrives:
-      // onPartUpdated merges into the story this render closed over, so a loop
-      // of them would write every part on top of a snapshot taken before the
-      // first save and keep only the last one.
-      onStoryUpdated(await getStory(token, story._id));
-      setNotice(
-        targets.length === 1
-          ? "Using the built-in page for this part."
-          : `Using the built-in pages for ${targets.length} parts.`,
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the comic page.");
-    } finally {
-      setAdopting(false);
     }
   };
 
@@ -235,47 +181,6 @@ const PartComicEditor = ({
             >
               {removing ? "Removing..." : "Remove"}
             </button>
-          </div>
-        </div>
-      ) : builtIn ? (
-        <div className="bg-amber-50 rounded-[3px] border border-amber-200 p-4">
-          <p className="text-sm font-semibold text-amber-900">
-            This story already has artwork for part {part.partNumber}
-          </p>
-          <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-            It ships with the app, so students see it today. It is not saved on the story though,
-            and a published story shows only what is saved here &mdash; so publishing as things
-            stand would drop it.
-          </p>
-          <div className="flex items-start gap-3 mt-3">
-            <img
-              src={builtIn}
-              alt={`Built-in comic page for part ${part.partNumber}`}
-              className="w-32 rounded-[3px] border border-amber-200 bg-white"
-            />
-            <div className="flex flex-col items-start gap-2">
-              <button
-                type="button"
-                onClick={() => handleAdopt([part])}
-                disabled={adopting}
-                className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-3 py-1.5 disabled:opacity-50"
-              >
-                {adopting ? "Saving…" : "Use this page"}
-              </button>
-              {adoptable.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleAdopt(adoptable)}
-                  disabled={adopting}
-                  className="text-xs text-amber-800 underline hover:no-underline disabled:opacity-50"
-                >
-                  Use the built-in pages for all {adoptable.length} parts missing one
-                </button>
-              )}
-              <span className="text-[11px] text-amber-700">
-                Or upload your own above &mdash; that replaces it.
-              </span>
-            </div>
           </div>
         </div>
       ) : (

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
@@ -13,14 +14,13 @@ import {
   saveLastListened,
 } from '../../modules/levelprogress/levelprogress.module';
 import { themes } from '../../modules/levelprogress/themes.levelprogress';
-import {
-  storyPreviewData,
-  StoryPreview,
-} from '../../modules/storypreview/storyPreviewData';
+import { partPreviewCard, type StoryPreview } from '../../modules/storypreview/partPreview';
 import { preloadImages } from '../../services/preload';
+import { fetchPublishedStory, type PublishedStory } from '../../services/storyServices';
 import type { LevelProgressProps } from '../../types/LevelProgress';
-import type { Difficulty } from '../../types/Player';
-import { resolveStory } from '../../modules/story/resolveStory';
+import { useAppLocale } from '../../types/storyGroups';
+import { resolveStory, withLocalizedTitles } from '../../modules/story/resolveStory';
+import { castCards as buildCastCards, reachedPart } from '../../modules/cast/castReveal';
 
 /** Just past the preview dialog's 320ms entrance (App.css dialog-panel-in). */
 const PRELOAD_AFTER_OPEN_MS = 400;
@@ -35,13 +35,14 @@ const markCongratsShown = (diff: string) =>
 export function useLevelProgressPage(props: LevelProgressProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const locale = useAppLocale();
   const { user } = useAuth();
   const { owns } = useEntitlements();
 
   // ── Modal state ───────────────────────────────────────────────────────
   const [showCongrats, setShowCongrats] = useState(false);
   const [previewLevel, setPreviewLevel] = useState<number | null>(null);
-  const [previewData, setPreviewData] = useState<StoryPreview | null>(null);
   // Opens on arrival when the player or a sign-in round trip sent the learner
   // back here to buy — that is the whole point of the trip.
   const [showPaywall, setShowPaywall] = useState(
@@ -69,7 +70,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     props.storySlug ?? 'leo',
   );
 
-  const isLoading = !!user && storyData.loading && isInitialLoad;
+  const progressLoading = !!user && storyData.loading && isInitialLoad;
 
   const completedLevels = props.completedLevels?.length
     ? props.completedLevels
@@ -77,13 +78,38 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   const currentLevel = props.currentLevel ?? storyData.currentPart;
 
   const storySlug = props.storySlug ?? 'leo';
+  const difficultyKey = props.difficulty ?? 'easy';
 
-  // Resolved the same way the player resolves it. This used to call the static
-  // track list directly, which returned [] for a DB-backed story — so the grid
-  // fell back to generic "Level N" labels for exactly the stories whose names
-  // the admin had just edited.
-  const resolvedStory = resolveStory(props.difficulty ?? 'easy', storySlug, null);
-  const audioTracks = resolvedStory.tracks;
+  // The published story — every story is one now. Re-asked per user: the
+  // server decides which parts come back unlocked from who is asking.
+  const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
+  const [dbChecked, setDbChecked] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setDbStory(null);
+    setDbChecked(false);
+    const load = async () => {
+      // Never throws: a missing or unpublished story comes back as null.
+      const story = await fetchPublishedStory(difficultyKey, storySlug);
+      if (cancelled) return;
+      setDbStory(story);
+      setDbChecked(true);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [difficultyKey, storySlug, user?.id]);
+
+  const resolvedStory = useMemo(
+    () => resolveStory(difficultyKey, storySlug, dbStory),
+    [difficultyKey, storySlug, dbStory],
+  );
+  // What each card is called, in the reader's language.
+  const audioTracks = useMemo(
+    () => withLocalizedTitles(resolvedStory, dbStory, locale),
+    [dbStory, resolvedStory, locale],
+  );
   const totalLevels =
     props.totalLevels ?? (storyData.totalParts || audioTracks.length);
 
@@ -98,10 +124,13 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   } = useLevelProgress({ ...props, completedLevels, currentLevel, totalLevels });
 
   const theme = themes[difficulty] || themes.easy;
-const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, storySlug);
+  const { preloadAudioAssets } = usePreloadStoryAssets(audioTracks);
+  // Nothing to draw until the server has answered — the same wait Player.tsx
+  // makes (dbStoryLoading).
+  const isLoading = progressLoading || !dbChecked;
   // Per-track, from the resolver, so a second story on a level can no longer
   // show the level's built-in character's artwork.
-  const comics = resolvedStory.tracks.map((track) => track.comicUrl ?? '');
+  const comics = useMemo(() => audioTracks.map((track) => track.comicUrl ?? ''), [audioTracks]);
 
   const isAllCompleted =
     completedLevels.length === totalLevels ||
@@ -112,20 +141,12 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Warm the grid's comic pages. Keyed on the list itself rather than the
+  // level: a published story's pages arrive with the database answer, after
+  // the first render, and keying on the level preloaded the static list only.
   useEffect(() => {
-    const previewUrls = audioTracks
-      .map((track) => {
-        const data = storyPreviewData[`${difficulty}-${track.id}`];
-        return (data as any)?.coverImage as string | undefined;
-      })
-      .filter((url): url is string => Boolean(url));
-    preloadImages(previewUrls);
-
-    const comicUrls = (comics as any[])
-      .map((c) => (typeof c === 'string' ? c : c?.src ?? c?.cover ?? c?.image))
-      .filter((url): url is string => typeof url === 'string' && url.length > 0);
-    preloadImages(comicUrls);
-  }, [difficulty]);
+    preloadImages(comics.filter(Boolean));
+  }, [comics]);
 
   useEffect(() => {
     if (isAllCompleted && !hasShownCongrats(difficulty)) {
@@ -149,7 +170,7 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
    * While the paywall is off there IS a "sign up to continue" gate, and it is
    * the only one: a guest keeps the taster, and an account opens the rest.
    */
-  const { getCatalogStory, paywallEnabled } = useCatalog();
+  const { getCatalogStory, paywallEnabled, signupWallEnabled } = useCatalog();
   const catalogEntry = getCatalogStory(storyKey(difficulty, storySlug));
   // A story the catalog does not list is NOT open. This read `!catalogEntry ||
   // owns(...)`, which called every unlisted story owned — the client half of
@@ -162,7 +183,8 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
       // Nothing is sold: an account is what opens the catalogue. Without this
       // the grid padlocks a signed-in user out of parts the server will serve,
       // because owns() is false for everyone — nobody has bought anything.
-      (!paywallEnabled && Boolean(user))
+      // With the sign-up wall off as well, guests get everything too.
+      (!paywallEnabled && (Boolean(user) || !signupWallEnabled))
     : false;
   // The row's own allowance, which may override the length-derived default.
   const allowance =
@@ -174,6 +196,43 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
 
   const isPartLocked = (level: number): boolean =>
     !(level <= freeParts || (previewSeconds !== null && level === 1));
+
+  // ── Preview card ──────────────────────────────────────────────────────
+  /**
+   * The card for the tapped part, derived rather than stored so it follows
+   * the language switch. Built from what the admin wrote (partPreview.ts),
+   * with the grid's name and picture for the part so the card and the card
+   * that was tapped agree.
+   */
+  const previewData = useMemo<StoryPreview | null>(() => {
+    if (previewLevel === null || !dbStory) return null;
+    const part = dbStory.parts.find((p) => p.partNumber === previewLevel);
+    if (!part) return null;
+    const track = audioTracks.find((tr) => tr.id === String(previewLevel));
+    return partPreviewCard({
+      difficulty,
+      story: dbStory,
+      part: { ...part, title: part.title?.trim() || track?.title, comicUrl: track?.comicUrl ?? part.comicUrl },
+      locale,
+      t,
+    });
+  }, [previewLevel, dbStory, audioTracks, difficulty, locale, t]);
+
+  // ── Cast ──────────────────────────────────────────────────────────────
+  // The characters, revealed up to the part this student has reached in THIS
+  // story. Recomputed from progress, so finishing a part reveals whoever
+  // arrives in the next one without a reload.
+  const castCards = useMemo(
+    () =>
+      buildCastCards(
+        dbStory?.cast ?? [],
+        reachedPart({ completedParts: completedLevels, currentPart: currentLevel, totalParts: totalLevels }),
+        locale,
+      ),
+    [dbStory, completedLevels, currentLevel, totalLevels, locale],
+  );
+  // Open sheet: undefined = closed, null = opened from "All", a key = that character.
+  const [castFocus, setCastFocus] = useState<string | null | undefined>(undefined);
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleLevelCardClick = (level: number) => {
@@ -190,7 +249,6 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
       return;
     }
     setPreviewLevel(level);
-    setPreviewData(storyPreviewData[`${difficulty}-${storySlug}-${level}`] ?? null);
     // Warm the audio only once the preview dialog has finished opening: the
     // preload creates an <audio> element per clip at once, and doing that in
     // the click frame is what made the dialog's entrance stutter on phones.
@@ -204,7 +262,6 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
       handleLevelClick(previewLevel);
     }
     setPreviewLevel(null);
-    setPreviewData(null);
   };
 
   const handleNextDifficulty = () => {
@@ -235,6 +292,8 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     previewSeconds,
     showPaywall,
     setShowPaywall,
+    castCards,
+    castFocus,
     // modal state
     showCongrats,
     previewLevel,
@@ -242,8 +301,10 @@ const { preloadAudioAssets } = usePreloadStoryAssets(difficulty as Difficulty, s
     // handlers
     handleLevelCardClick,
     handleStartListening,
-    handleClosePreview: () => { setPreviewLevel(null); setPreviewData(null); },
+    handleClosePreview: () => setPreviewLevel(null),
     handleCloseCongrats: () => setShowCongrats(false),
     handleNextDifficulty,
+    handleOpenCast: (key: string | null) => setCastFocus(key),
+    handleCloseCast: () => setCastFocus(undefined),
   };
 }

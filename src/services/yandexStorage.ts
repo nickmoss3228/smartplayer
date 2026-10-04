@@ -25,8 +25,8 @@ export const getStorageUrl = (path: string): string => {
  *
  * Mirrors backend/src/config/quizData.js's resolveQuizAudioPath exactly,
  * because it's resolving the same data: quiz audio is kept bucket-relative
- * and already percent-encoded in both quizData.js and an imported Story
- * draft (see assembleImportPayload.ts), specifically so a story keeps
+ * and already percent-encoded in both quizData.js and the seeded stories
+ * (backend/src/seed/builtInStories.json), specifically so a story keeps
  * working if it's ever copied between environments with different buckets.
  * A freshly (re-)uploaded clip is already absolute (uploadToStorage.js
  * returns a full URL), so that case is passed through untouched.

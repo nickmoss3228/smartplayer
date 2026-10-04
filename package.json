@@ -11,9 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
-    "verify:audio": "node scripts/verify-audio.mjs",
-    "pull:markers": "node scripts/pull-markers.mjs"
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.3.0",

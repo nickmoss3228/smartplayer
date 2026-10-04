@@ -10,7 +10,7 @@ interface Props {
   completedLevels: number[];
   lastListenedLevel: number | null;
   audioTracks: AudioTrack[];
-  comics: any[];
+  comics: string[];
   theme: Theme;
   getLevelData: (level: number, lastListened: number | null) => { status: string };
   /** Parts that play in full without owning the story. 0 when owned. */

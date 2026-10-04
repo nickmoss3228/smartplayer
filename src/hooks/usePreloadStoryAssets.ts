@@ -1,7 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { preloadAudio, preloadAudios } from '../services/preload';
-import { resolveStory, findResolvedTrack } from '../modules/story/resolveStory';
-import type { Difficulty } from '../types/Player';
+import type { ResolvedTrack } from '../modules/story/resolveStory';
 
 
 /**
@@ -9,7 +8,7 @@ import type { Difficulty } from '../types/Player';
  * It starts buffering the main audio track + all vocab clips so they're
  * ready by the time the user navigates to the Player.
  */
-export function usePreloadStoryAssets(difficulty: Difficulty, storySlug: string) {
+export function usePreloadStoryAssets(tracks: ResolvedTrack[]) {
   // Deduplication: never preload the same level twice in a session.
   const preloadedLevels = useRef<Set<number>>(new Set());
 
@@ -18,11 +17,9 @@ export function usePreloadStoryAssets(difficulty: Difficulty, storySlug: string)
       if (preloadedLevels.current.has(level)) return;
       preloadedLevels.current.add(level);
 
-      // Resolved the same way the player resolves it, so preloading can no
-      // longer warm a different object than playback later requests — the two
-      // used to build their own paths, and disagreed on letter case.
-      const trackId = String(level);
-      const track   = findResolvedTrack(resolveStory(difficulty, storySlug, null), trackId);
+      // The same resolved tracks the player plays, so preloading warms exactly
+      // the objects playback will request.
+      const track = tracks.find((t) => t.id === String(level));
 
       // Main story audio — may be several MB, so we start right when the modal
       // opens, and mark it 'high' priority so it isn't starved of bandwidth by
@@ -41,7 +38,7 @@ export function usePreloadStoryAssets(difficulty: Difficulty, storySlug: string)
       preloadAudios(vocabUrls, 'auto', 'low');
       console.debug(`[preload] ${vocabUrls.length} vocab clips for level ${level}`);
     },
-    [difficulty, storySlug],
+    [tracks],
   );
 
   return { preloadAudioAssets };

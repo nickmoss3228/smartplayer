@@ -23,6 +23,8 @@ interface CatalogContextValue {
   currency: string;
   /** False while nothing is sold — see Catalog.paywallEnabled. */
   paywallEnabled: boolean;
+  /** See Catalog.signupWallEnabled. */
+  signupWallEnabled: boolean;
   products: CatalogProduct[];
   stories: CatalogStory[];
   /**
@@ -90,6 +92,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return {
       currency: data.currency,
       paywallEnabled: data.paywallEnabled,
+      signupWallEnabled: data.signupWallEnabled,
       products: data.products,
       stories: data.stories,
       catalogLoading,

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import type { TFunction } from 'i18next';
 
 import { CHARACTER_CATALOG, CHARACTER_SLOTS } from './characterCatalog';
 import { SHOP_CATALOG, SHOP_SLOTS } from './shopCatalog';
@@ -19,7 +18,14 @@ import {
   NBSP,
   formatPrice,
 } from './priceCatalog';
-import { getStoryGroups, type DifficultySlug } from '../types/storyGroups';
+import seed from '../../backend/src/seed/builtInStories.json';
+
+const seedStories = seed.stories as Array<{
+  difficulty: string;
+  storyId: string;
+  category: string;
+  parts: unknown[];
+}>;
 
 import {
   CHARACTER_CATALOG as SERVER_CHARACTER_CATALOG,
@@ -262,17 +268,15 @@ describe('the server catalog prices what it sells', () => {
     }
   });
 
-  it('knows the real length and shelf of every built-in story it sells', () => {
-    // `parts` sets both the price and the free allowance, so a catalog entry
-    // that disagrees with the static catalogue misprices the story.
-    const t = ((key: string) => key) as unknown as TFunction;
-    for (const difficulty of ['easy', 'medium', 'hard'] as DifficultySlug[]) {
-      for (const group of getStoryGroups(difficulty, t)) {
-        const entry = getCatalogStory(difficulty + '/' + group.slug);
-        if (!entry) continue;
-        expect(entry.parts, group.slug).toBe(group.totalTracks);
-        expect(entry.category, group.slug).toBe(group.category);
-      }
+  it('prices the seeded stories at their real length and shelf', () => {
+    // The fallback rows price content when the story table cannot be read, so
+    // a row that disagrees with the seeded story (its real part count and
+    // shelf) would misprice it exactly when the database is down.
+    for (const story of seedStories) {
+      const entry = getCatalogStory(`${story.difficulty}/${story.storyId}`);
+      expect(entry, story.storyId).not.toBeNull();
+      expect(entry!.parts, story.storyId).toBe(story.parts.length);
+      expect(entry!.category, story.storyId).toBe(story.category);
     }
   });
 

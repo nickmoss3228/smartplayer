@@ -103,7 +103,7 @@ export const LevelShelf = ({ difficulty, filter, highlightSku, onPreview }: Prop
   const { canBuy, entitlementsLoading, ownedStories } = useEntitlements();
   const { products, getCatalogStory, getProduct, priceFor, catalogLoading } = useCatalog();
 
-  const { stories, loading: storiesLoading } = useStoryGroupsWithStatus(difficulty, t);
+  const { stories, loading: storiesLoading } = useStoryGroupsWithStatus(difficulty);
   const theme = themes[difficulty] ?? themes.easy;
 
   // Either half missing makes the shelf unrenderable, so they are one flag.

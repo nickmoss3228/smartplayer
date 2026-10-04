@@ -4,6 +4,9 @@
 // always the Mongo _id (not the storyId slug) — matches the backend routes.
 import { API_URL, authHeaders, parseOrThrow } from "./adminServices";
 import type { StoryCategory } from "../types/storyGroups";
+import type { CastMember, PartIntro } from "./storyServices";
+
+export type { CastMember, PartIntro };
 
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -40,11 +43,12 @@ export interface StoryPart {
   audioUrl: string | null;
   helpAudio?: string[];
   /**
-   * The comic page shown alongside this part's audio. Optional because every
-   * part created before the Comics tab existed has none, and because
-   * assembleImportPayload only fills it for built-in stories that ship art.
+   * The comic page shown alongside this part's audio. Optional because a part
+   * can be saved before its artwork exists.
    */
   comicUrl?: string | null;
+  /** The level page's "before you listen" card; null when none is written. */
+  intro?: PartIntro | null;
   timeMarkers: TimeMarker[];
   vocabulary: VocabEntry[];
   phrasalVerbs: VocabEntry[];
@@ -64,6 +68,8 @@ export interface AdminStory {
   coverUrl?: string | null;
   /** What students see, per locale; empty strings fall back to storyName. */
   localized?: { title: LocalizedText; description: LocalizedText } | null;
+  /** The characters on the level page, in display order. */
+  cast?: CastMember[];
   totalParts: number;
   /**
    * In the catalog: priced, listed to learners, and playable. A draft is none
@@ -103,6 +109,7 @@ export const createStory = async (
     storyName: string;
     description: string;
     characterIcon: string;
+    localized?: { title: LocalizedText; description: LocalizedText };
     totalParts: number;
   }
 ): Promise<AdminStory> => {
@@ -237,7 +244,7 @@ export const deleteStory = async (token: string, id: string): Promise<void> => {
   await parseOrThrow(res);
 };
 
-export type UploadKind = "audio" | "comic" | "vocab" | "phrasal" | "quizFast" | "quizSlow";
+export type UploadKind = "audio" | "comic" | "intro" | "vocab" | "phrasal" | "quizFast" | "quizSlow";
 
 export const uploadPartAsset = async (
   token: string,
@@ -294,6 +301,23 @@ export const saveComic = async (
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ comicUrl }),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Replaces the part's preview card whole. Pass null to clear it — the level
+// page then builds the card from the part title and the story description.
+export const savePartIntro = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  intro: PartIntro | null
+): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/intro`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ intro }),
   });
   const data = await parseOrThrow(res);
   return data.part;
@@ -424,4 +448,39 @@ export const clearStoryCover = async (token: string, id: string): Promise<AdminS
   });
   const data = await parseOrThrow(res);
   return data.story;
+};
+
+// ─── Cast (the characters on the story's level page) ───────────────────────
+
+// Replaces the whole list, in order. [] clears it.
+export const saveStoryCast = async (
+  token: string,
+  id: string,
+  cast: CastMember[]
+): Promise<AdminStory> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/cast`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ cast }),
+  });
+  const data = await parseOrThrow(res);
+  return data.story;
+};
+
+// Stores the image and returns its URL — the story is NOT changed until the
+// cast is saved with that URL on the character.
+export const uploadCastPortrait = async (
+  token: string,
+  id: string,
+  key: string,
+  file: File
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(
+    `${API_URL}/api/admin/stories/${id}/cast/${encodeURIComponent(key)}/portrait`,
+    { method: "POST", headers: authHeaders(token), body: formData }
+  );
+  const data = await parseOrThrow(res);
+  return data.url;
 };

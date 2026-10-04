@@ -1,24 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { resolveStory, findResolvedTrack, staticVocabClipUrl } from "./resolveStory";
+import { resolveStory, findResolvedTrack, withLocalizedTitles } from "./resolveStory";
 import type { PublishedStory } from "../../services/storyServices";
 
 /**
- * Guards the rule that a story resolves from exactly ONE source.
- *
- * The bug these exist to prevent: the app used to answer "where does this
- * story's content come from?" independently in about ten places. Tracks came
- * from the database while the vocabulary chips came from the static tables, so
- * a published story was only ever half itself — editing a word in the Story
- * Builder changed the Vocab Quiz but not the chips beside the waveform, and the
- * two could show different word lists for the same track at the same time.
- *
- * The invariant below is deliberately phrased as "nothing static leaks in",
- * because a merge that looks reasonable field-by-field is exactly how the
- * original defect was written.
+ * Guards the rule that a story resolves from exactly ONE source — its
+ * published copy. The app used to answer "where does this story's content
+ * come from?" in about ten places, and a published story was only ever half
+ * itself (tracks from the database, vocabulary chips from a static table).
  */
 
-// A DB story whose every value differs from the static leo story, so a leak is
-// detectable rather than coincidentally equal.
+// A published story with recognisable values throughout.
 const dbStory = (over: Partial<PublishedStory> = {}): PublishedStory => ({
   storyId: "leo",
   storyName: "DB Leo",
@@ -62,21 +53,16 @@ const dbStory = (over: Partial<PublishedStory> = {}): PublishedStory => ({
   ...over,
 });
 
-describe("resolveStory — branch selection", () => {
-  it("uses the static branch when there is no published story", () => {
-    expect(resolveStory("easy", "leo", null).source).toBe("static");
+describe("resolveStory — one source", () => {
+  it("has no tracks until the published story has arrived", () => {
+    const resolved = resolveStory("easy", "leo", null);
+    expect(resolved.source).toBe("db");
+    expect(resolved.tracks).toEqual([]);
   });
 
-  it("uses the DB branch when a published story is supplied", () => {
-    expect(resolveStory("easy", "leo", dbStory()).source).toBe("db");
-  });
-});
-
-describe("resolveStory — the invariant: no static leaks into a DB story", () => {
-  const staticLeo = resolveStory("easy", "leo", null);
   const resolved = resolveStory("easy", "leo", dbStory());
 
-  it("takes track titles, audio and comics from the DB", () => {
+  it("takes track titles, audio and comics from the published story", () => {
     const track = findResolvedTrack(resolved, "1")!;
     expect(track.title).toBe("DB Part One");
     expect(track.audio).toBe("https://db.example/part1.mp3");
@@ -84,28 +70,19 @@ describe("resolveStory — the invariant: no static leaks into a DB story", () =
     expect(track.helpAudio).toEqual(["https://db.example/help1.mp3"]);
   });
 
-  // The specific defect: chips read the static table while the quiz read the DB.
-  it("takes vocabulary and phrasal verbs from the DB, never the static table", () => {
+  it("takes vocabulary and phrasal verbs from the same part", () => {
     const track = findResolvedTrack(resolved, "1")!;
     expect(track.vocabulary.map((w) => w.audioKey)).toEqual(["db-word"]);
     expect(track.phrasalVerbs.map((w) => w.audioKey)).toEqual(["db-phrasal"]);
-
-    const staticKeys = findResolvedTrack(staticLeo, "1")!.vocabulary.map((w) => w.audioKey);
-    expect(staticKeys.length).toBeGreaterThan(0); // the fixture is meaningful
-    for (const key of staticKeys) {
-      expect(track.vocabulary.map((w) => w.audioKey)).not.toContain(key);
-    }
   });
 
-  it("plays DB clip URLs rather than rebuilding a bucket path", () => {
+  it("plays the stored clip URLs rather than rebuilding a bucket path", () => {
     const track = findResolvedTrack(resolved, "1")!;
     expect(track.vocabulary[0].audioUrl).toBe("https://db.example/w.mp3");
-    expect(track.vocabulary[0].audioUrl).not.toContain("/quiz/");
   });
 
-  it("leaves a DB part with no comic empty instead of borrowing the built-in art", () => {
-    const track = findResolvedTrack(resolved, "2")!;
-    expect(track.comicUrl).toBeNull();
+  it("leaves a part with no comic empty", () => {
+    expect(findResolvedTrack(resolved, "2")!.comicUrl).toBeNull();
   });
 });
 
@@ -136,47 +113,32 @@ describe("resolveStory — parts are never dropped or renumbered", () => {
   });
 });
 
-describe("resolveStory — the static branch", () => {
-  it("gives every built-in story tracks with resolvable vocabulary clips", () => {
-    for (const [difficulty, slug] of [
-      ["easy", "leo"],
-      ["easy", "leo-additional"],
-      ["medium", "maya"],
-      ["hard", "daniel"],
-    ] as const) {
-      const story = resolveStory(difficulty, slug, null);
-      expect(story.tracks.length, `${difficulty}/${slug} has tracks`).toBeGreaterThan(0);
-      for (const track of story.tracks) {
-        for (const word of [...track.vocabulary, ...track.phrasalVerbs]) {
-          expect(word.audioUrl, `${slug} part ${track.id} "${word.audioKey}"`).not.toBe("");
-        }
-      }
-    }
+describe("withLocalizedTitles", () => {
+  const intro = (en: string, ru: string) => ({
+    title: { en, ru },
+    description: { en: "", ru: "" },
+    grammar: { en: [], ru: [] },
+    tip: { en: "", ru: "" },
+    imageUrl: null,
+    durationSeconds: null,
   });
 
-  // comicsData's manifest is keyed by difficulty, so it names the level's
-  // built-in character. Any other story on that level must not inherit it.
-  it("does not lend the built-in character's comics to another story on the level", () => {
-    const leo = resolveStory("easy", "leo", null);
-    const additional = resolveStory("easy", "leo-additional", null);
-
-    expect(leo.tracks[0].comicUrl).toBeTruthy();
-    const leoComics = new Set(leo.tracks.map((t) => t.comicUrl));
-    for (const track of additional.tracks) {
-      if (track.comicUrl) expect(leoComics.has(track.comicUrl)).toBe(false);
-    }
+  it("names a part from its card in the reader's language", () => {
+    const story = dbStory();
+    story.parts[0].intro = intro("Card title", "Заголовок карточки");
+    const resolved = resolveStory("easy", "leo", story);
+    expect(withLocalizedTitles(resolved, story, "ru")[0].title).toBe("Заголовок карточки");
+    expect(withLocalizedTitles(resolved, story, "en")[0].title).toBe("Card title");
   });
 
-  it("lowercases the audioKey when building a clip path", () => {
-    // The chips used to use the raw key while preloading lowercased it, so a
-    // capitalised key warmed one object and then played a different one.
-    const upper = staticVocabClipUrl("easy", "leo", "1", "Busy", "vocab");
-    const lower = staticVocabClipUrl("easy", "leo", "1", "busy", "vocab");
-    expect(upper).toBe(lower);
-    expect(lower).toContain("/vocab/busy.mp3");
+  it("keeps the part's own name when its card has no title", () => {
+    const story = dbStory();
+    story.parts[0].intro = intro("", "");
+    expect(withLocalizedTitles(resolveStory("easy", "leo", story), story, "ru")[0].title).toBe("DB Part One");
   });
 
-  it("returns an empty URL for a story with no folder mapping", () => {
-    expect(staticVocabClipUrl("easy", "not-a-story", "1", "word", "vocab")).toBe("");
+  it("leaves a story with no published copy alone", () => {
+    const empty = resolveStory("easy", "leo", null);
+    expect(withLocalizedTitles(empty, null, "en")).toBe(empty.tracks);
   });
 });

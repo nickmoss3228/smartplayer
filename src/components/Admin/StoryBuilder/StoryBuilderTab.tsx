@@ -1,34 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useState } from "react";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import {
   AdminStory,
   AdminStoryListItem,
   getStory,
   listStories,
-  importStory,
 } from "../../../services/adminStoryServices";
-import { getStoryGroups, DifficultySlug, StoryGroup } from "../../../types/storyGroups";
-import { assembleImportPayload } from "./assembleImportPayload";
 import NewStoryForm from "./NewStoryForm";
 import StoryEditor from "./StoryEditor";
 import StoryRail from "./StoryRail";
 import StoryVisibilityPanel from "./StoryVisibilityPanel";
 
-const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
-
 const RAIL_KEY = "story_builder_rail_open";
 
 const StoryBuilderTab = ({ token }: { token: string }) => {
-  const { t } = useTranslation();
   const [stories, setStories] = useState<AdminStoryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showNewForm, setShowNewForm] = useState(false);
   const [activeStory, setActiveStory] = useState<AdminStory | null>(null);
-  const [importingSlug, setImportingSlug] = useState<string | null>(null);
-  const [importError, setImportError] = useState("");
-  const [importNotice, setImportNotice] = useState("");
   // Whole-catalogue visibility, behind a toggle — see the note where it renders.
   const [showShelves, setShowShelves] = useState(false);
   // Collapsing the rail gives the whole width to the part you are building,
@@ -55,17 +45,6 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Built-in (static-file) stories not yet imported into the builder — the
-  // only ones worth offering an "Import" button for.
-  const importable = useMemo(() => {
-    const existingIds = new Set(stories.map((s) => `${s.difficulty}:${s.storyId}`));
-    return DIFFICULTIES.flatMap((difficulty) =>
-      getStoryGroups(difficulty, t)
-        .filter((group) => !existingIds.has(`${difficulty}:${group.slug}`))
-        .map((group) => ({ difficulty, group }))
-    );
-  }, [stories, t]);
 
   const openStory = async (id: string) => {
     try {
@@ -94,64 +73,6 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     void _parts;
     setStories((prev) => prev.map((s) => (s._id === updated._id ? row : s)));
   };
-
-  const handleImport = async (difficulty: DifficultySlug, group: StoryGroup) => {
-    setImportingSlug(group.slug);
-    setImportError("");
-    setImportNotice("");
-    try {
-      const payload = await assembleImportPayload(token, difficulty, group);
-      const { story, markersRestoredForParts } = await importStory(token, payload);
-      if (markersRestoredForParts > 0) {
-        setImportNotice(
-          `Time markers restored on ${markersRestoredForParts} part${
-            markersRestoredForParts === 1 ? "" : "s"
-          } from the last time this story had them.`,
-        );
-      }
-      setActiveStory(story); // open the new draft for review before publishing
-      load();
-    } catch (err) {
-      setImportError(err instanceof Error ? err.message : "Import failed.");
-    } finally {
-      setImportingSlug(null);
-    }
-  };
-
-  // The import affordance, folded into the foot of the rail. It used to sit
-  // above the story list, always expanded, pushing the thing you came for below
-  // the fold — it is setup, not daily work.
-  const importPanel = importable.length > 0 && (
-    <details className="group">
-      <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black px-2 py-1 select-none">
-        <span className="group-open:hidden">Import {importable.length} built-in stories</span>
-        <span className="hidden group-open:inline">Import built-in stories</span>
-      </summary>
-      <div className="px-2 pt-2 pb-1">
-        <p className="text-[11px] text-gray-400 mb-2 leading-snug">
-          Brings a story's audio, markers, vocabulary and quiz in as a <strong>draft</strong>.
-          Nothing changes for students until you publish it.
-        </p>
-        {importError && <p className="text-red-600 text-xs mb-2">{importError}</p>}
-        {importNotice && <p className="text-green-700 text-xs mb-2">{importNotice}</p>}
-        <div className="flex flex-col gap-1">
-          {importable.map(({ difficulty, group }) => (
-            <button
-              key={`${difficulty}:${group.slug}`}
-              onClick={() => handleImport(difficulty, group)}
-              disabled={importingSlug === group.slug}
-              className="flex items-center gap-1.5 text-xs text-left text-gray-700 rounded-[3px] px-2 py-1 hover:bg-gray-100 disabled:opacity-50"
-            >
-              <span>{group.coverEmoji}</span>
-              <span className="flex-1 truncate">{group.title}</span>
-              <span className="text-[10px] text-gray-400">{difficulty}</span>
-              {importingSlug === group.slug && <span className="text-[10px]">…</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-    </details>
-  );
 
   return (
     <div>
@@ -230,7 +151,6 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
                 stories={stories}
                 activeId={activeStory?._id ?? null}
                 onOpen={openStory}
-                footer={importPanel}
               />
             ) : (
               <span

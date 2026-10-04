@@ -33,6 +33,8 @@ export interface WaveformPlayerProps {
   storySlug: string;
   /** Comic page for this track, resolved by modules/story/resolveStory.ts. */
   comicUrl?: string | null;
+  /** The part's name, used as the comic page's title. */
+  trackTitle?: string;
   /**
    * The track’s words, already resolved to a single source with their clip
    * URLs filled in. Passed down rather than looked up here, so the chips

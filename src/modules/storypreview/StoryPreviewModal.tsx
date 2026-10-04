@@ -1,8 +1,8 @@
 // StoryPreviewModal.tsx
-import { IoBulbOutline, IoChevronDown, IoClose } from 'react-icons/io5';
+import { IoBulbOutline, IoChevronDown, IoClose, IoHeadsetOutline } from 'react-icons/io5';
 import React, { useState } from "react";
 import { Theme } from "../../types/LevelProgress.ts";
-import { StoryPreview } from "./storyPreviewData.tsx";
+import type { StoryPreview } from "./partPreview";
 import { useTranslation } from "react-i18next";
 import { CURRENCIES, QUIZ_PASS_BITAWARD } from "../../config/currencies";
 
@@ -22,24 +22,11 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
 
   if (!isOpen || !preview) return null;
 
-  const storyKey = `storyPreviews.${preview.id}`;
-  const title       = t(`${storyKey}.title`, { defaultValue: preview.title });
-  const description = t(`${storyKey}.description`, { defaultValue: preview.description });
-  const tip         = t(`${storyKey}.tip`, { defaultValue: preview.tip });
-  const difficulty  = t(`${storyKey}.difficulty`, { defaultValue: preview.difficulty });
-  const duration    = t(`${storyKey}.duration`, { defaultValue: preview.duration });
-
-  // Grammar: prefer the translated array from i18next;
-  // if the key is missing or returns a non-array, fall back to preview.grammar.
-  const grammarFromI18n = t(`${storyKey}.grammar`, {
-    returnObjects: true,
-    defaultValue: null,
-  });
-  const safeGrammarPoints: string[] = Array.isArray(grammarFromI18n)
-    ? (grammarFromI18n as string[])
-    : Array.isArray(preview.grammar)
-    ? preview.grammar
-    : [];
+  // Every card is built by partPreview.ts and is already in the reader's language.
+  const { title, description, tip, difficulty, duration } = preview;
+  const safeGrammarPoints: string[] = Array.isArray(preview.grammar) ? preview.grammar : [];
+  // A Builder card can leave both out; the toggle then has nothing to open.
+  const hasDetails = safeGrammarPoints.length > 0 || Boolean(tip);
 
   return (
     /*
@@ -70,11 +57,23 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
 
         {/* ── Header image — flex-shrink-0 so it never gets squished ── */}
         <div className="relative h-52 w-full overflow-hidden flex-shrink-0">
-          <img
-            src={preview.image}
-            alt={preview.title}
-            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-          />
+          {preview.image ? (
+            <img
+              src={preview.image}
+              alt={title}
+              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+            />
+          ) : (
+            // No picture anywhere yet (no preview image, comic page or cover):
+            // the level colour and a listening icon, not a broken-image icon.
+            <div
+              className={`w-full h-full bg-gradient-to-br ${theme.progressGradient} opacity-60
+                          flex items-center justify-center text-white/80`}
+              aria-hidden
+            >
+              <IoHeadsetOutline size={64} />
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
           <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${theme.progressGradient}`} />
           <button
@@ -97,7 +96,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <p className="font-mono text-[10px] text-white/45 uppercase tracking-[0.16em]">
-                {difficulty} · {duration}
+                {duration ? `${difficulty} · ${duration}` : difficulty}
               </p>
               <div className="flex items-center gap-3 shrink-0">
                 {[
@@ -123,6 +122,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
     </p>
 
           {/* Expandable details */}
+          {hasDetails && (
           <div
             className={`overflow-hidden transition-all duration-500 ease-in-out ${
               showDetails ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
@@ -131,6 +131,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             <div className="space-y-4 pt-1">
 
               {/* Grammar points — smaller text on mobile */}
+              {safeGrammarPoints.length > 0 && (
               <div>
                 <p className="font-mono text-[10px] text-white/60 uppercase tracking-[0.16em] mb-2">
                   {t("storyModal.grammarFocus")}
@@ -149,8 +150,10 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Tip — hidden on mobile, visible on sm+ */}
+              {tip && (
               <div className="hidden sm:flex gap-3 bg-white/5 border border-white/10 rounded-tile p-4">
                 <IoBulbOutline size={20} className="flex-shrink-0 text-white/70" aria-hidden />
                 <p className="text-white/65 text-sm leading-relaxed">
@@ -158,11 +161,14 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
                   {tip}
                 </p>
               </div>
+              )}
 
             </div>
           </div>
+          )}
 
           {/* Toggle */}
+          {hasDetails && (
           <button
             onClick={() => setShowDetails((prev) => !prev)}
             className="w-full py-2 text-xs font-medium text-white/35 hover:text-white/60
@@ -175,6 +181,7 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             />
             {showDetails ? t("storyModal.hideDetails") : t("storyModal.grammarAndTips")}
           </button>
+          )}
         </div>
 
         {/* ── Action buttons — flex-shrink-0 keeps them ALWAYS visible ── */}

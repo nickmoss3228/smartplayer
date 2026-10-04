@@ -23,10 +23,9 @@
 // deploy that silently ships a stale or empty sitemap is harder to notice than
 // one that stops.
 
-import { build } from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
@@ -39,45 +38,18 @@ const ORIGIN = "https://xn--80aa4acdq.xn--p1ai";
 
 const checkOnly = process.argv.includes("--check");
 
-// ── read the story table out of the TypeScript source ──────────────────────
-// Same trick scripts/verify-audio.mjs uses: bundle the module with esbuild and
-// import the result, so this script consumes the real data structure instead
-// of a copy that can rot.
-//
-// `packages: "external"` leaves react / i18next / axios as bare imports for
-// Node to resolve from node_modules rather than inlining them.
-//
-// The `define` is load-bearing. src/services/apiClient.ts evaluates
-//   export const API_BASE = import.meta.env.VITE_API_URL ?? "..."
-// at module scope, and storyGroups.ts reaches it transitively. `import.meta.env`
-// is undefined in plain Node, so without this the import dies with a TypeError
-// on a line that has nothing to do with sitemaps. If a new `import.meta.env.X`
-// ever appears in this import graph, add it here — the failure is loud.
-async function loadStoryGroups() {
-  const out = path.join(root, ".sitemap-storygroups.mjs");
-  try {
-    await build({
-      entryPoints: [path.join(root, "src/types/storyGroups.ts")],
-      bundle: true,
-      format: "esm",
-      platform: "node",
-      outfile: out,
-      packages: "external",
-      logLevel: "warning",
-      define: { "import.meta.env.VITE_API_URL": '""' },
-    });
-    return await import(`${pathToFileURL(out).href}?t=${Date.now()}`);
-  } finally {
-    fs.rmSync(out, { force: true });
-  }
-}
-
-const { getStoryGroups } = await loadStoryGroups();
-
-// getStoryGroups wants a TFunction to localise title and description. The
-// sitemap needs neither — only slugs — so identity is enough and avoids
-// booting i18next here just to throw the result away.
-const identity = (key) => key;
+// ── the story pages ────────────────────────────────────────────────────────
+// Stories live in the database (moved there 2026-10-02 — see
+// backend/src/scripts/seedBuiltInStories.ts), and this build runs in a Docker
+// stage with neither a database nor the backend source (.dockerignore drops
+// backend/). So the story pages to submit are listed here. That is also the
+// right place for the decision: not every story needs to be in a search index,
+// and a story added in the Story Builder is submitted by adding its line.
+const STORY_PAGES = {
+  easy: ["leo", "leo-additional", "news-roland-garros", "news-grazing-board"],
+  medium: ["maya"],
+  hard: ["daniel"],
+};
 
 const DIFFICULTIES = ["easy", "medium", "hard"];
 
@@ -97,9 +69,7 @@ const urls = [
   "/how-to-use",
   "/levels",
   ...DIFFICULTIES.map((d) => `/levels/${d}`),
-  ...DIFFICULTIES.flatMap((d) =>
-    getStoryGroups(d, identity).map((g) => `/levels/${d}/${g.slug}`),
-  ),
+  ...DIFFICULTIES.flatMap((d) => STORY_PAGES[d].map((slug) => `/levels/${d}/${slug}`)),
 ];
 
 // Slugs are author-supplied, so escape rather than trusting them to stay

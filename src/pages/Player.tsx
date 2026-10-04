@@ -20,7 +20,8 @@ import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
 import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import FeedbackModal from "../components/Feedback/FeedbackModal";
-import { resolveStory, findResolvedTrack } from "../modules/story/resolveStory";
+import { resolveStory, findResolvedTrack, withLocalizedTitles } from "../modules/story/resolveStory";
+import { useAppLocale } from "../types/storyGroups";
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
 import {
@@ -62,6 +63,7 @@ const Player = React.memo(() => {
   const { setWalletDirect } = useWallet();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
+  const locale = useAppLocale();
 
   const {
     difficulty: urlDifficulty,
@@ -151,7 +153,7 @@ const Player = React.memo(() => {
   // (config/entitlements.js), for guests and members alike. The grid never
   // links a locked part, but a URL can: send the learner back to the grid with
   // the offer open instead of leaving them on a silent player.
-  const { getCatalogStory, paywallEnabled, catalogLoading } = useCatalog();
+  const { getCatalogStory, paywallEnabled, signupWallEnabled, catalogLoading } = useCatalog();
   const catalogEntry = getCatalogStory(storyKey(difficulty, storySlug));
   // Deliberately the same expression the level grid uses, because these two
   // used to disagree twice over: this one treated a story missing from the
@@ -162,7 +164,7 @@ const Player = React.memo(() => {
   const storyOwned = catalogEntry
     ? !catalogEntry.paid ||
       owns(difficulty, storySlug) ||
-      (!paywallEnabled && Boolean(user))
+      (!paywallEnabled && (Boolean(user) || !signupWallEnabled))
     : false;
   const allowance =
     catalogEntry && !storyOwned
@@ -211,22 +213,8 @@ const Player = React.memo(() => {
     return () => window.clearInterval(id);
   }, [previewSeconds, level]);
 
-  // Resolved once, from ONE source — see modules/story/resolveStory.ts. Before
-  // this, tracks came from the DB while the vocabulary chips came from the
-  // static tables, so a published story was only ever half itself.
-  const staticStory = useMemo(
-    () => resolveStory(difficulty, storySlug, null),
-    [difficulty, storySlug],
-  );
-
-  // Whole-story, DB-wins-once-published precedence (matches the backend's
-  // helpers/storyLookup.js): always check for a published Story Builder
-  // override — including for static stories like leo/maya/daniel, since an
-  // imported+published copy must actually take effect — but never block
-  // rendering on it. Static content (if any) renders immediately; if a
-  // published override is found, everything for this story (tracks, vocab,
-  // phrasal) swaps to the DB copy. Only a story with nothing static at all
-  // shows a loading spinner until the DB check resolves (see dbChecked below).
+  // Resolved once, from ONE source — the published story (see
+  // modules/story/resolveStory.ts). Nothing plays until the server answers.
   const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
   const [dbChecked, setDbChecked] = useState(false);
 
@@ -247,12 +235,13 @@ const Player = React.memo(() => {
     };
   }, [difficulty, storySlug]);
 
-  const resolvedStory = useMemo(
-    () => (dbStory ? resolveStory(difficulty, storySlug, dbStory) : staticStory),
-    [dbStory, difficulty, storySlug, staticStory],
-  );
+  const resolvedStory = useMemo(() => {
+    const resolved = resolveStory(difficulty, storySlug, dbStory);
+    // The header names the part in the reader's language, as the grid does.
+    return { ...resolved, tracks: withLocalizedTitles(resolved, dbStory, locale) };
+  }, [dbStory, difficulty, storySlug, locale]);
   const audioTracks = resolvedStory.tracks;
-  const dbStoryLoading = audioTracks.length === 0 && !dbChecked;
+  const dbStoryLoading = !dbChecked;
 
   const resolvedStorySlug =
     storySlug ??
@@ -459,11 +448,11 @@ const Player = React.memo(() => {
       <GuidedTour />
       {previewEnded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 dialog-backdrop-in"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-sm rounded-[3px] bg-white p-7 text-center shadow-xl">
+          <div className="w-full max-w-sm rounded-[3px] bg-white p-7 text-center shadow-xl dialog-panel-in">
             <h2 className="mb-2 text-xl font-bold text-gray-900">{t("playerPreview.endedTitle")}</h2>
             <p className="mb-6 text-sm leading-relaxed text-gray-500">{t("playerPreview.endedBody")}</p>
             <button
@@ -489,7 +478,12 @@ const Player = React.memo(() => {
         </div>
       )}
       <div className="flex justify-center items-center h-full">
-        <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 backdrop-blur-sm rounded-[3px] text-center animate-fade-in flex flex-col overflow-hidden">
+        {/* No backdrop-blur on this panel: behind it is only the static theme
+            gradient, which a blur leaves looking the same, but on a phone the
+            panel is the whole screen and the waveform redraws inside it every
+            frame of playback — so the compositor re-blurred the full screen
+            60 times a second for no visible difference. */}
+        <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 rounded-[3px] text-center animate-fade-in flex flex-col overflow-hidden">
           {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks ── */}
           <div className="shrink-0 relative flex items-center justify-center min-h-[52px] px-2">
             <button
@@ -577,6 +571,7 @@ const Player = React.memo(() => {
                 helpAudioUrls={audioTrack.helpAudio}
                 storySlug={storySlug}
                 comicUrl={audioTrack.comicUrl}
+                trackTitle={audioTrack.title}
                 hasListenedFully={hasListenedFully}
                 onOpenQuiz={() => setShowQuiz(true)}
                 onOpenVocabQuiz={() => setShowVocabQuiz(true)}

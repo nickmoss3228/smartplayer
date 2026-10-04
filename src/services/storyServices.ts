@@ -27,6 +27,27 @@ export interface PublishedQuizQuestion {
   // never includes correctAnswer — the backend strips it, same as getPublicQuiz
 }
 
+/**
+ * The "before you listen" card the level page opens for a part, written in the
+ * Story Builder in both locales. Null when nothing has been written — the card
+ * is then built from the part title, the story description and the comic page
+ * (see modules/storypreview/partPreview.ts). Mirrors PartIntro in the
+ * backend's db/repos/stories.repo.ts.
+ *
+ * `intro`, not `preview`: a part's `preview` flag below already means "a timed
+ * audio sample", and the server sets it on exactly the parts a guest taps.
+ */
+export interface PartIntro {
+  title: LocalizedText;
+  description: LocalizedText;
+  grammar: { en: string[]; ru: string[] };
+  tip: LocalizedText;
+  /** A dedicated header image; null means the part's comic page. */
+  imageUrl: string | null;
+  /** Measured from the part's audio when the card was saved. */
+  durationSeconds: number | null;
+}
+
 export interface PublishedStoryPart {
   partNumber: number;
   /** Track name. Empty on parts created before the field existed. */
@@ -34,6 +55,8 @@ export interface PublishedStoryPart {
   audioUrl: string | null;
   helpAudio?: string[];
   comicUrl?: string | null;
+  /** Absent on a locked part — a padlocked card opens the paywall, not this. */
+  intro?: PartIntro | null;
   timeMarkers: { time: number; label: string; color: string }[];
   vocabulary: PublishedVocabEntry[];
   phrasalVerbs: PublishedVocabEntry[];
@@ -54,6 +77,21 @@ export interface LocalizedText {
   ru: string;
 }
 
+/**
+ * One of the story's characters, as the level page shows them. Mirrors
+ * CastMember in the backend's db/repos/stories.repo.ts. `firstPart` is where
+ * they first appear; the page keeps them a silhouette until the student gets
+ * there (modules/cast/castReveal.ts).
+ */
+export interface CastMember {
+  key: string;
+  name: LocalizedText;
+  role: LocalizedText;
+  bio: LocalizedText;
+  imageUrl: string | null;
+  firstPart: number;
+}
+
 export interface PublishedStory {
   storyId: string;
   storyName: string;
@@ -61,6 +99,10 @@ export interface PublishedStory {
   characterIcon: string;
   /** What students see, per locale. Null on stories imported before it existed. */
   localized?: { title: LocalizedText; description: LocalizedText } | null;
+  /** 4:5 card art — the last-resort image for a part's preview card. */
+  coverUrl?: string | null;
+  /** The characters, in the admin's order. Absent from an older server. */
+  cast?: CastMember[];
   totalParts: number;
   parts: PublishedStoryPart[];
   /** True when the caller owns none of this story beyond its free preview. */

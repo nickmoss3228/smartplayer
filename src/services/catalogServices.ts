@@ -20,6 +20,8 @@ export interface CatalogStory {
   freeParts: number;
   /** When set, part 1 plays for this long and then stops. */
   previewSeconds: number | null;
+  /** Total listening time in seconds; null until every part has been measured. */
+  durationSeconds?: number | null;
 }
 
 export interface CatalogProduct {
@@ -50,6 +52,12 @@ export interface Catalog {
    * as "everything is free".
    */
   paywallEnabled: boolean;
+  /**
+   * While the paywall is off: does a guest still stop at the free parts and
+   * get asked to sign up? Defaults to TRUE wherever it could be missing, for
+   * the same reason as paywallEnabled.
+   */
+  signupWallEnabled: boolean;
   stories: CatalogStory[];
   products: CatalogProduct[];
 }
@@ -66,6 +74,7 @@ export const NO_CATALOG: Catalog = {
   currency: "RUB",
   // Fails SAFE: a failed fetch means the paywall is on, not off.
   paywallEnabled: true,
+  signupWallEnabled: true,
   stories: [],
   products: [],
 };
@@ -79,6 +88,7 @@ export async function fetchCatalog(): Promise<Catalog> {
     // `!== false` rather than `?? true`: an older server that does not send the
     // field at all is a server whose paywall is on.
     paywallEnabled: data.paywallEnabled !== false,
+    signupWallEnabled: data.signupWallEnabled !== false,
     stories: Array.isArray(data.stories) ? data.stories : [],
     products: Array.isArray(data.products) ? data.products : [],
   };

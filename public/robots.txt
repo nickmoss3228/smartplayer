@@ -24,6 +24,7 @@ Disallow: /players
 Disallow: /login
 Disallow: /signup
 Disallow: /forgot-password
+Disallow: /welcome
 Disallow: /player
 
 # NOTE: Disallow stops crawling, not indexing — a URL linked from elsewhere can
