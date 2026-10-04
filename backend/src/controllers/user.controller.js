@@ -5,6 +5,12 @@ import { CURRENCY } from "../config/priceCatalog.js";
 import { getCatalog } from "../helpers/catalogStore.js";
 import { isPurchasable } from "../config/basketPricing.js";
 import { config } from "../config/env.js";
+import {
+  ENGLISH_LEVELS,
+  LISTENING_EXPERIENCES,
+  isEnglishLevel,
+  isListeningExperience,
+} from "../config/onboarding.js";
 
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 const SEARCH_MIN_LENGTH = 2;
@@ -56,6 +62,99 @@ export async function updateProfile(req, res) {
     });
   } catch (error) {
     console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── /user/onboarding ──────────────────────────────────────────────────────
+// The /welcome flow a new account goes through before its first story: two
+// questions about the student, then the method slides. See config/onboarding.js.
+
+function invalidAnswer(res, field, allowed) {
+  return res.status(400).json({
+    code: "INVALID_ONBOARDING_ANSWER",
+    message: `${field} must be one of: ${allowed.join(", ")}`,
+  });
+}
+
+const onboardingBody = (state) => ({
+  onboarding: {
+    englishLevel: state.englishLevel,
+    listeningExperience: state.listeningExperience,
+    onboardedAt: state.onboardedAt,
+  },
+});
+
+// PATCH /user/onboarding — saves one or both answers as the student moves
+// through the questions, so a flow abandoned halfway resumes where it stopped,
+// on any device. Does NOT finish the flow; that is POST …/complete.
+export async function saveOnboarding(req, res) {
+  try {
+    const { englishLevel, listeningExperience } = req.body ?? {};
+    if (englishLevel === undefined && listeningExperience === undefined) {
+      return res.status(400).json({
+        code: "INVALID_ONBOARDING_ANSWER",
+        message: "Send englishLevel and/or listeningExperience",
+      });
+    }
+    if (englishLevel !== undefined && !isEnglishLevel(englishLevel)) {
+      return invalidAnswer(res, "englishLevel", ENGLISH_LEVELS);
+    }
+    if (listeningExperience !== undefined && !isListeningExperience(listeningExperience)) {
+      return invalidAnswer(res, "listeningExperience", LISTENING_EXPERIENCES);
+    }
+
+    const state = await usersRepo.saveOnboardingAnswers(req.user._id, {
+      englishLevel,
+      listeningExperience,
+    });
+    if (!state) return res.status(404).json({ message: "User not found" });
+    res.json(onboardingBody(state));
+  } catch (error) {
+    console.error("Save onboarding error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /user/onboarding/complete — the last slide's button. Takes both answers
+// again rather than trusting the PATCHes before it landed (they are
+// best-effort), and is idempotent: onboardedAt is set once and kept.
+export async function completeOnboarding(req, res) {
+  try {
+    const { englishLevel, listeningExperience } = req.body ?? {};
+    if (englishLevel === undefined || listeningExperience === undefined) {
+      return res.status(400).json({
+        code: "ONBOARDING_INCOMPLETE",
+        message: "Both englishLevel and listeningExperience are required",
+      });
+    }
+    if (!isEnglishLevel(englishLevel)) return invalidAnswer(res, "englishLevel", ENGLISH_LEVELS);
+    if (!isListeningExperience(listeningExperience)) {
+      return invalidAnswer(res, "listeningExperience", LISTENING_EXPERIENCES);
+    }
+
+    const state = await usersRepo.completeOnboarding(req.user._id, {
+      englishLevel,
+      listeningExperience,
+    });
+    if (!state) return res.status(404).json({ message: "User not found" });
+    res.json(onboardingBody(state));
+  } catch (error) {
+    console.error("Complete onboarding error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /user/onboarding/restart — "take the intro again" from the Dashboard.
+// Clears the answers and the finish; the client then goes to /welcome, and
+// until the flow is done again the gate keeps sending it there.
+export async function restartOnboarding(req, res) {
+  try {
+    const state = await usersRepo.restartOnboarding(req.user._id);
+    if (!state) return res.status(404).json({ message: "User not found" });
+    res.json(onboardingBody(state));
+  } catch (error) {
+    console.error("Restart onboarding error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

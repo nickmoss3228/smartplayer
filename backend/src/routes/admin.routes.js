@@ -9,6 +9,7 @@ import {
   logoutAllPlayerSessions,
   getPlayerProgress,
   resetPlayerSchool,
+  resetPlayerOnboarding,
   listAuditLog,
 } from "../controllers/admin.controller.js";
 import { adminAuth } from "../middleware/adminAuth.js";
@@ -38,6 +39,7 @@ router.patch("/players/:userId/ban", adminAuth, asyncHandler(setPlayerBanned));
 router.post("/players/:userId/logout-all", adminAuth, asyncHandler(logoutAllPlayerSessions));
 router.get("/players/:userId/progress", adminAuth, asyncHandler(getPlayerProgress));
 router.post("/players/:userId/reset-school", adminAuth, asyncHandler(resetPlayerSchool));
+router.post("/players/:userId/reset-onboarding", adminAuth, asyncHandler(resetPlayerOnboarding));
 router.get("/audit", adminAuth, asyncHandler(listAuditLog));
 
 export default router;

@@ -228,6 +228,13 @@ export const listPlayers = async (req, res) => {
       // Raw IPs are deliberately not exposed: only /24-or-/48 prefixes are
       // stored at all, and even those stay server-side.
       sharing: sharingScore(user),
+      // The /welcome flow: null onboardedAt means it is still owed. The two
+      // answers are the student's own words about themselves.
+      onboarding: {
+        englishLevel: user.onboarding?.englishLevel ?? null,
+        listeningExperience: user.onboarding?.listeningExperience ?? null,
+        onboardedAt: user.onboarding?.completedAt ?? null,
+      },
     })),
     page,
     hasMore: page * limit < total,
@@ -322,6 +329,18 @@ export const resetPlayerSchool = async (req, res) => {
   // what the player will now load rather than assuming the write did what it
   // said.
   res.json({ success: true, school: serializeSchool(user.school) });
+};
+
+// POST /api/admin/players/:userId/reset-onboarding
+//
+// Send one player back through /welcome — the questions and the method slides
+// — on their next page load, with the answers cleared. For testing the flow on
+// a real account and for a student who asks to see it again. Their progress,
+// wallet and everything else are untouched.
+export const resetPlayerOnboarding = async (req, res) => {
+  const state = isId(req.params.userId) ? await usersRepo.restartOnboarding(req.params.userId) : null;
+  if (!state) return res.status(404).json({ error: "No user with that id." });
+  res.json({ success: true, onboarding: state });
 };
 
 // Audit rows in the shape the audit tab has always read: `_id`, and `actor`

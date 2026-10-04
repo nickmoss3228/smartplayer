@@ -2,18 +2,17 @@ import { ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionEnter, motionFast } from '../../ui/motion';
-import { IoClose, IoRefreshOutline } from 'react-icons/io5';
+import { IoClose } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
 interface WhyModalProps {
   isOpen: boolean;
   title: string;
   onClose: () => void;
-  onReplay: () => void;
   children: ReactNode;
 }
 
-const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, children }) => {
+const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, children }) => {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -78,17 +77,7 @@ const WhyModal: React.FC<WhyModalProps> = ({ isOpen, title, onClose, onReplay, c
 
             <h3 className="text-xl sm:text-2xl font-bold text-black mb-6 pr-8">{title}</h3>
 
-            <div className="min-h-[220px] flex items-center justify-center">{children}</div>
-
-            <button
-              type="button"
-              onClick={onReplay}
-              className="font-mono mt-6 mx-auto flex items-center gap-2 text-[10px] tracking-[0.16em]
-                uppercase text-gray-400 hover:text-black transition-colors cursor-pointer"
-            >
-              <IoRefreshOutline size={14} />
-              {t('homepage.why.replay')}
-            </button>
+            <div>{children}</div>
           </motion.div>
         </motion.div>
       )}

@@ -105,6 +105,11 @@ function rowToDoc(
     passwordResetToken: row.passwordResetToken ?? undefined,
     passwordResetExpires: row.passwordResetExpires ?? undefined,
     passwordChangedAt: row.passwordChangedAt ?? undefined,
+    onboarding: {
+      englishLevel: row.onboardingEnglishLevel,
+      listeningExperience: row.onboardingListeningExperience,
+      completedAt: row.onboardedAt,
+    },
     avatar: row.avatar,
     nickname: row.nickname,
     lastActiveAt: row.lastActiveAt,
@@ -216,6 +221,7 @@ function docToColumns(doc: UserDoc): Partial<NewUser> {
   const character = doc.character ?? {};
   const equipped = character.equipped ?? {};
   const school = doc.school ?? {};
+  const onboarding = doc.onboarding ?? {};
 
   return {
     username: doc.username,
@@ -242,6 +248,10 @@ function docToColumns(doc: UserDoc): Partial<NewUser> {
     passwordResetToken: doc.passwordResetToken ?? null,
     passwordResetExpires: toDate(doc.passwordResetExpires),
     passwordChangedAt: toDate(doc.passwordChangedAt),
+
+    onboardingEnglishLevel: onboarding.englishLevel ?? null,
+    onboardingListeningExperience: onboarding.listeningExperience ?? null,
+    onboardedAt: toDate(onboarding.completedAt),
 
     avatar: doc.avatar ?? "cat",
     nickname: doc.nickname ?? null,

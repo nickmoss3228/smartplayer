@@ -72,6 +72,7 @@ const ROUTES = [
   { m: "PATCH",  re: /^\/api\/admin\/players\/([^/]+)\/ban$/,                        action: "player.setBanned",       target: (m) => ({ type: "User", id: m[1] }) },
   { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/logout-all$/,                 action: "player.logoutAll",       target: (m) => ({ type: "User", id: m[1] }) },
   { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/reset-school$/,              action: "player.resetSchool",     target: (m) => ({ type: "User", id: m[1] }) },
+  { m: "POST",   re: /^\/api\/admin\/players\/([^/]+)\/reset-onboarding$/,          action: "player.resetOnboarding", target: (m) => ({ type: "User", id: m[1] }) },
   { m: "POST",   re: /^\/api\/admin\/stories$/,                                      action: "story.create" },
   { m: "POST",   re: /^\/api\/admin\/stories\/import$/,                              action: "story.import" },
   { m: "PATCH",  re: /^\/api\/admin\/stories\/([^/]+)\/publish$/,                    action: "story.setPublished",     target: (m) => ({ type: "Story", id: m[1] }) },

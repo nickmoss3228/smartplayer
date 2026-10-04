@@ -454,6 +454,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // For fields the server has just confirmed through another endpoint — the
+  // /welcome flow's answers and finish — so the gate sees them without a
+  // round trip through validate-token. Never used to invent a signed-in user.
+  const updateUser = useCallback((patch: Partial<User>): void => {
+    setUser((current) => (current ? { ...current, ...patch } : current));
+  }, []);
+
   const value: AuthContextValue = {
     user,
     loading,
@@ -463,6 +470,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resendPhoneCode,
     startPhoneVerification,
     signOut,
+    updateUser,
     requestPasswordReset,
     confirmPasswordReset
   };

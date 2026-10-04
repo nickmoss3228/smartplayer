@@ -1,25 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { ComponentType } from 'react';
-import type { IconType } from 'react-icons';
 import {
   IoChevronBack,
-  IoWaterOutline,
-  IoVolumeHighOutline,
   IoEarOutline,
-  IoImagesOutline,
-  IoHelpCircleOutline,
-  IoRefreshOutline,
   IoArrowForward,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import MilkGlass from '../components/Levels/MilkGlass';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
-import {
-  ALL_WHY_QUESTIONS,
-  BLOB_COLORS,
-  type WhyQuestionId,
-} from '../components/Homepage/WhyClouds/whyCloudsData';
+import { METHOD_GROUPS, groupByScene } from '../components/Homepage/WhyClouds/whyCloudsData';
+import { LoopSteps } from '../components/Method/LoopSteps';
+import { MethodBlock } from '../components/Method/MethodBlock';
+import { ScenePanel } from '../components/Method/MethodScene';
 import { buttonPrimary } from '../components/ui/buttonStyles';
 
 /**
@@ -47,142 +39,20 @@ import { buttonPrimary } from '../components/ui/buttonStyles';
  * student physically performs. The clouds explain *why*; the loop explains
  * *what you do*, and it comes first.
  *
- * The visualizations are the app's own components, rendered inline instead of
- * in WhyModal — so anything fixed there is fixed in both places at once.
+ * The pictures are the login screen's five method scenes (Method/MethodScene),
+ * the same ones the homepage pop-ups and the onboarding slides show. Questions
+ * that share a picture are told under one drawing (MethodBlock), so no
+ * animation plays twice in a row.
  */
 
-// ─── Groups ───────────────────────────────────────────────────────────────
-// Order matters: it is the argument. Ids index into ALL_WHY_QUESTIONS, which
-// stays the single source of truth for which viz belongs to which question.
-const GROUPS: { key: string; ids: WhyQuestionId[] }[] = [
-  { key: 'player', ids: ['repetition', 'speeds'] },
-  { key: 'taken', ids: ['noSubtitles', 'earsOnly', 'vocabLanguage'] },
-  { key: 'given', ids: ['visualMemory'] },
-];
-
-const LOOP_ICONS: IconType[] = [
-  IoWaterOutline,
-  IoVolumeHighOutline,
-  IoEarOutline,
-  IoImagesOutline,
-  IoHelpCircleOutline,
-];
+// The groups and their order — the argument — are METHOD_GROUPS in
+// whyCloudsData.ts, shared with the onboarding slides.
 
 const LEVEL_IDS = ['easy', 'medium', 'hard'] as const;
 const LEVEL_FILL: Record<(typeof LEVEL_IDS)[number], number> = {
   easy: 0.28,
   medium: 0.58,
   hard: 0.92,
-};
-
-// ─── Viz stage ────────────────────────────────────────────────────────────
-/**
- * Every visualization animates on mount. On the homepage that is fine — the
- * modal mounts one at a time, on demand. Here all six would mount at page load
- * and play themselves out below the fold, so a student scrolling down arrives
- * at six finished diagrams having watched none of them.
- *
- * So the viz is not mounted until its card is actually on screen, and `playKey`
- * remounts it for the replay control — the same trick WhyCloudsSection uses.
- */
-const VizStage: React.FC<{ Viz: ComponentType }> = ({ Viz }) => {
-  const { t } = useTranslation();
-  const hostRef = useRef<HTMLDivElement>(null);
-  const [seen, setSeen] = useState(false);
-  const [playKey, setPlayKey] = useState(0);
-
-  useEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-    // No IntersectionObserver (very old browsers): just show it.
-    if (typeof IntersectionObserver === 'undefined') {
-      setSeen(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.3 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  return (
-    <div className="rounded-[3px] border border-gray-200 bg-white p-5 sm:p-7">
-      {/* min-height reserves the space the viz will occupy, so the page does
-          not jump as each one mounts on scroll. */}
-      <div
-        ref={hostRef}
-        className="flex min-h-[13rem] items-center justify-center"
-      >
-        {seen && <Viz key={playKey} />}
-      </div>
-
-      <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
-        <button
-          type="button"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="flex items-center gap-1.5 rounded-[2px] border border-gray-200 px-3 py-1
-            font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400
-            transition hover:border-gray-300 hover:text-gray-700"
-        >
-          <IoRefreshOutline className="h-3 w-3" />
-          {t('homepage.why.replay')}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// ─── Cloud block ──────────────────────────────────────────────────────────
-/**
- * One question, opened. The blob pair behind the heading is the same one the
- * cloud wears in the hero, so tapping "Why 3 speeds?" on the homepage and
- * landing here reads as the same object continued.
- */
-const CloudBlock: React.FC<{ id: WhyQuestionId; Viz: ComponentType; index: number }> = ({
-  id,
-  Viz,
-  index,
-}) => {
-  const { t } = useTranslation();
-  const [blobA, blobB] = BLOB_COLORS[index % BLOB_COLORS.length];
-
-  return (
-    <article id={id} className="relative scroll-mt-20 pt-4">
-      <div className="relative mb-5">
-        {/* Same radial-gradient treatment as Cloud.tsx — a transparent-edged
-            gradient rather than a blurred solid, so there is no per-frame
-            filter pass. See the note in Cloud.tsx. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -left-6 -top-10 h-40 w-40 rounded-full opacity-70"
-          style={{ background: `radial-gradient(circle, ${blobA} 0%, ${blobA}00 70%)` }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-16 -top-4 h-36 w-36 rounded-full opacity-60"
-          style={{ background: `radial-gradient(circle, ${blobB} 0%, ${blobB}00 70%)` }}
-        />
-
-        <div className="relative">
-          <p className="text-sm font-semibold text-gray-500">
-            {t(`homepage.why.${id}.cloud`)}
-          </p>
-          <h3 className="mt-1 text-xl font-extrabold leading-tight text-gray-900 sm:text-2xl">
-            {t(`homepage.why.${id}.title`)}
-          </h3>
-        </div>
-      </div>
-
-      <VizStage Viz={Viz} />
-    </article>
-  );
 };
 
 // ─── Rail ─────────────────────────────────────────────────────────────────
@@ -220,7 +90,7 @@ const HowToUse: React.FC = () => {
   // first one intersecting the viewport at all.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
-    const ids = ['do', ...GROUPS.flatMap((g) => g.ids), 'levels'];
+    const ids = ['do', ...METHOD_GROUPS.flatMap((g) => g.ids), 'levels'];
     const nodes = ids
       .map((id) => document.getElementById(id))
       .filter((n): n is HTMLElement => n !== null);
@@ -237,12 +107,6 @@ const HowToUse: React.FC = () => {
     nodes.forEach((n) => io.observe(n));
     return () => io.disconnect();
   }, []);
-
-  const loopSteps = [1, 2, 3, 4, 5].map((n) => ({
-    Icon: LOOP_ICONS[n - 1],
-    title: t(`howToUse.loop.s${n}.title`),
-    text: t(`howToUse.loop.s${n}.text`),
-  }));
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -266,7 +130,7 @@ const HowToUse: React.FC = () => {
         <nav className="flex flex-col gap-0.5" aria-label={t('howToUse.nav.title')}>
           <RailLink href="#do" label={t('howToUse.nav.doIt')} active={active === 'do'} />
 
-          {GROUPS.map((g) => (
+          {METHOD_GROUPS.map((g) => (
             <React.Fragment key={g.key}>
               <span className="px-2.5 pb-1 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
                 {t(`howToUse.groups.${g.key}.label`)}
@@ -336,34 +200,12 @@ const HowToUse: React.FC = () => {
               {t('howToUse.loop.title')}
             </h2>
 
-            <ol className="grid gap-3 sm:grid-cols-2">
-              {loopSteps.map(({ Icon, title, text }, i) => (
-                <li
-                  key={title}
-                  className={`flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5
-                    ${i === 4 ? 'sm:col-span-2' : ''}`}
-                >
-                  <span
-                    aria-hidden
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[3px]
-                      border border-line bg-room text-ink"
-                  >
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="font-mono text-[10px] tracking-[0.16em] text-gray-400">
-                      {String(i + 1).padStart(2, '0')}
-                    </p>
-                    <h3 className="mt-0.5 text-[15px] text-gray-900">{title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-gray-600">{text}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <ScenePanel scene="loop" caption={false} className="mb-6" />
+            <LoopSteps />
           </section>
 
           {/* ═══════════════ THE SIX QUESTIONS ═══════════════ */}
-          {GROUPS.map((g) => (
+          {METHOD_GROUPS.map((g) => (
             <section
               key={g.key}
               className="border-t border-gray-200 py-12 sm:py-16"
@@ -378,15 +220,10 @@ const HowToUse: React.FC = () => {
                 {t(`howToUse.groups.${g.key}.text`)}
               </p>
 
-              <div className="mt-10 flex flex-col gap-12">
-                {g.ids.map((id) => {
-                  const index = ALL_WHY_QUESTIONS.findIndex((q) => q.id === id);
-                  const entry = ALL_WHY_QUESTIONS[index];
-                  if (!entry) return null;
-                  return (
-                    <CloudBlock key={id} id={id} Viz={entry.Viz} index={index} />
-                  );
-                })}
+              <div className="mt-10 flex flex-col gap-16">
+                {groupByScene(g.ids).map(({ scene, ids }) => (
+                  <MethodBlock key={scene} scene={scene} ids={ids} anchors startWhenSeen />
+                ))}
               </div>
             </section>
           ))}

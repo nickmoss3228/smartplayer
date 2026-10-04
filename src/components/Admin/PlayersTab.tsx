@@ -5,6 +5,7 @@ import {
   logoutAllPlayerSessions,
   grantCurrency,
   resetPlayerSchool,
+  resetPlayerOnboarding,
   AdminPlayer,
   AdminPlayerSharing,
 } from "../../services/adminServices";
@@ -259,6 +260,39 @@ const PlayersTab = ({ token }: { token: string }) => {
     }
   };
 
+  // Send one player back through /welcome on their next page load. Confirmed
+  // because it is visible to them at once — every page sends them to the
+  // questions until they finish again — but it costs them nothing: progress
+  // and wallet stay as they are.
+  const handleResetOnboarding = async (player: AdminPlayer) => {
+    if (
+      !window.confirm(
+        `Show the intro to ${player.nickname} again?
+
+` +
+          `Their two answers are cleared, and on their next visit they go through ` +
+          `the questions and the method slides before anything else. Progress and ` +
+          `wallet are not touched.`
+      )
+    ) {
+      return;
+    }
+    setError("");
+    try {
+      await resetPlayerOnboarding(token, player.id);
+      setPlayers((prev) =>
+        prev.map((p) =>
+          p.id === player.id
+            ? { ...p, onboarding: { englishLevel: null, listeningExperience: null, onboardedAt: null } }
+            : p
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      setError(`Could not reset ${player.nickname}'s intro.`);
+    }
+  };
+
   const handleGrant = async (
     playerId: string,
     amounts: { bitAward: number; bitWord: number; bitPhrase: number }
@@ -307,6 +341,25 @@ const PlayersTab = ({ token }: { token: string }) => {
                 <SharingBadge sharing={player.sharing} />
               </div>
               <div className="text-xs text-gray-500">{player.email}</div>
+              {player.onboarding && (
+                <div className="text-xs text-gray-500 mt-0.5">
+                  Intro:{" "}
+                  {player.onboarding.onboardedAt ? (
+                    <span className="text-emerald-700">done</span>
+                  ) : (
+                    <span className="text-amber-700">not yet</span>
+                  )}
+                  {(player.onboarding.englishLevel || player.onboarding.listeningExperience) && (
+                    <span className="text-gray-400">
+                      {" · "}
+                      {[player.onboarding.englishLevel, player.onboarding.listeningExperience]
+                        .filter(Boolean)
+                        .join(" · ")
+                        .replace(/_/g, " ")}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="text-xs whitespace-nowrap flex items-center gap-2">
@@ -335,6 +388,14 @@ const PlayersTab = ({ token }: { token: string }) => {
                 : resetDoneId === player.id
                   ? "School reset \u2713"
                   : "Reset school"}
+            </button>
+
+            <button
+              onClick={() => handleResetOnboarding(player)}
+              title="Clear their two answers; they go through /welcome again on their next visit"
+              className="text-xs text-gray-600 hover:text-black whitespace-nowrap"
+            >
+              Show intro again
             </button>
 
             <button

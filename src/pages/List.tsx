@@ -1,8 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useStoryGroupsWithStatus, DifficultySlug, StoryGroup } from '../types/storyGroups';
 import { useProgress } from '../context/ProgressContext';
-import { useMemo } from 'react';
-import { IoSearchOutline } from 'react-icons/io5';
+import { useEffect, useMemo, useState } from 'react';
+import { IoCloseOutline, IoSearchOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
 import StoryCard from '../components/Stories/StoryCard';
@@ -57,6 +57,20 @@ const List = () => {
 
   const diff = (difficulty || 'easy') as DifficultySlug;
   const { stories, loading } = useStoryGroupsWithStatus(diff, t);
+  const location = useLocation();
+  // Arrived from the end of /welcome, which opened the level the student's
+  // own answer suggested — say so once, so landing here is not a mystery and
+  // the way to another level is right there. Consumed, like the paywall flag,
+  // so a reload or a back-navigation does not repeat it.
+  const [pickNote] = useState(
+    () => (location.state as { onboardingPick?: DifficultySlug } | null)?.onboardingPick ?? null,
+  );
+  const [pickNoteOpen, setPickNoteOpen] = useState(pickNote !== null);
+  useEffect(() => {
+    if ((location.state as { onboardingPick?: unknown } | null)?.onboardingPick) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.state, location.pathname, navigate]);
   const theme = themes[diff] || themes.easy;
 
   // Every category that has a story in it. No filtering: the shelf is the
@@ -122,6 +136,27 @@ const List = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-16 space-y-8">
+        {pickNote && pickNoteOpen && (
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-card border border-line bg-white px-4 py-3 animate-fade-in"
+          >
+            <p className="m-0 flex-1 text-sm leading-snug text-dim">
+              {t('onboarding.pick.note', { level: t(`levels.${pickNote}`) })}{' '}
+              <Link to="/levels" className="font-semibold text-ink underline underline-offset-2">
+                {t('onboarding.pick.change')}
+              </Link>
+            </p>
+            <button
+              type="button"
+              onClick={() => setPickNoteOpen(false)}
+              aria-label={t('onboarding.pick.dismiss')}
+              className="-m-2 flex h-11 w-11 flex-none items-center justify-center rounded-[3px] text-muted transition hover:text-ink"
+            >
+              <IoCloseOutline className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+        )}
         {loading ? (
           /* Sized from the static catalogue, which is the best guess available
              without the server and is almost always the right number — so the

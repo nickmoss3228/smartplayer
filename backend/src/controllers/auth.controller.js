@@ -82,6 +82,22 @@ function isText(value) {
   return typeof value === "string" && value.length > 0;
 }
 
+/**
+ * The /welcome flow's state, carried on every "you are signed in" body so the
+ * client knows where to send a new account before it renders anything (see
+ * src/modules/onboarding/gate.ts). onboardedAt is always present: null means
+ * "not done yet", and an absent field is how an older server reads to the
+ * client — which it treats as done.
+ */
+function onboardingFields(user) {
+  const onboarding = user.onboarding ?? {};
+  return {
+    onboardedAt: onboarding.completedAt ?? null,
+    englishLevel: onboarding.englishLevel ?? null,
+    listeningExperience: onboarding.listeningExperience ?? null,
+  };
+}
+
 function verificationResponse(user, ticket) {
   return {
     code: "PHONE_VERIFICATION_REQUIRED",
@@ -248,6 +264,7 @@ export async function signup(req, res) {
           email: user.email,
           phoneNumber: user.phoneNumber,
           createdAt: user.createdAt,
+          ...onboardingFields(user),
         },
       });
     }
@@ -368,6 +385,7 @@ export async function login(req, res) {
         username: user.username,
         email: user.email,
         createdAt: user.createdAt,
+        ...onboardingFields(user),
       },
     });
   } catch (error) {
@@ -470,7 +488,7 @@ export async function verifyPhone(req, res) {
       });
     }
 
-    res.json({ token: result.token, user: { id: user._id, username: user.username, email: user.email, phoneNumber: user.phoneNumber, createdAt: user.createdAt } });
+    res.json({ token: result.token, user: { id: user._id, username: user.username, email: user.email, phoneNumber: user.phoneNumber, createdAt: user.createdAt, ...onboardingFields(user) } });
   } catch (error) {
     console.error("Phone verification error:", error);
     res.status(500).json({ message: "Server error" });
@@ -562,6 +580,7 @@ export const validateToken = async (req, res) => {
         id: req.user._id,
         username: req.user.username,
         email: req.user.email,
+        ...onboardingFields(req.user),
       },
     });
   } catch (error) {

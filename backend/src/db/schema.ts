@@ -70,6 +70,10 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 /** Mirrors TIER_ORDER in config/achievements.js. */
 const TIERS = ["bronze", "silver", "gold", "platinum", "crown"] as const;
 
+/** Mirror ENGLISH_LEVELS / LISTENING_EXPERIENCES in config/onboarding.js. */
+const ENGLISH_LEVELS = ["beginner", "elementary", "intermediate", "upper_intermediate", "advanced"] as const;
+const LISTENING_EXPERIENCES = ["none", "subtitles", "no_subtitles", "courses", "immersion"] as const;
+
 const quoted = (values: readonly string[]) => values.map((v) => `'${v}'`).join(", ");
 
 /** `CHECK (col IS NULL OR col IN (...))` — a Mongoose enum on a nullable field. */
@@ -121,6 +125,16 @@ export const users = pgTable(
     // "not changed since this was recorded", not "never changed" — accounts
     // older than the column have no honest value to put here.
     passwordChangedAt: ts("password_changed_at"),
+
+    // ── onboarding (the /welcome flow) ──
+    // The two answers are the student's own words about themselves, NULL
+    // until given. onboarded_at NULL means "has not been through the flow
+    // yet" and is what sends a signed-in user to /welcome — new sign-ups and
+    // accounts older than the column alike (deliberately NOT backfilled; see
+    // migration 0007). A restart (Dashboard, or admin) clears all three.
+    onboardingEnglishLevel: text("onboarding_english_level"),
+    onboardingListeningExperience: text("onboarding_listening_experience"),
+    onboardedAt: ts("onboarded_at"),
 
     createdAt: ts("created_at").notNull().defaultNow(),
     lastActiveAt: ts("last_active_at").notNull().defaultNow(),
@@ -240,6 +254,12 @@ export const users = pgTable(
     check("users_ach_study_streak_tier", oneOf("achievement_study_streak", TIERS)),
     check("users_ach_stories_listened_tier", oneOf("achievement_stories_listened", TIERS)),
     check("users_ach_words_learned_tier", oneOf("achievement_words_learned", TIERS)),
+
+    check("users_onboarding_english_level", oneOf("onboarding_english_level", ENGLISH_LEVELS)),
+    check(
+      "users_onboarding_listening_experience",
+      oneOf("onboarding_listening_experience", LISTENING_EXPERIENCES),
+    ),
   ],
 );
 

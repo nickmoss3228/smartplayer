@@ -1,3 +1,5 @@
+import type { EnglishLevel, ListeningExperience } from '../modules/onboarding/onboardingOptions';
+
 export interface User {
   id: string;
   username: string;
@@ -6,6 +8,14 @@ export interface User {
   isPhoneVerified?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  /**
+   * When the /welcome flow was finished. `null` = not yet, and the app sends
+   * the account there first (modules/onboarding/gate.ts). Absent = a server
+   * from before the flow existed, which counts as done.
+   */
+  onboardedAt?: string | null;
+  englishLevel?: EnglishLevel | null;
+  listeningExperience?: ListeningExperience | null;
 }
 
 export interface AuthError {
@@ -85,6 +95,8 @@ export interface AuthContextValue {
   resendPhoneCode: (ticket: string) => Promise<ResendCodeResult>;
   startPhoneVerification: (usernameOrEmail: string, password: string, phoneNumber: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
+  /** Merge server-confirmed fields into the signed-in user (e.g. onboarding state). */
+  updateUser: (patch: Partial<User>) => void;
   requestPasswordReset: (email: string) => Promise<ResetPasswordResult>;
   confirmPasswordReset: (token: string, newPassword: string) => Promise<ResetPasswordResult>;
 }

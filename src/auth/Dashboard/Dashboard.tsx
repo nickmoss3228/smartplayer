@@ -1,9 +1,16 @@
 // components/Dashboard/Dashboard.tsx
 import React, { lazy, Suspense, useState, useEffect, useMemo } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { IoLogOutOutline, IoChevronForward, IoKeyOutline } from "react-icons/io5";
+import {
+  IoLogOutOutline,
+  IoChevronForward,
+  IoKeyOutline,
+  IoSchoolOutline,
+  IoRefreshOutline,
+} from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
+import { restartOnboarding } from "../../services/onboardingServices";
 import { fetchAllDashboardData } from "../../services/dashboardServices";
 import {
   getOverallProgress,
@@ -30,7 +37,8 @@ const CharacterCreator = lazy(() => import("../../modules/character/CharacterCre
 
 const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, updateUser } = useAuth();
+  const navigate = useNavigate();
 
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
   const [detailedProgress, setDetailedProgress] =
@@ -43,6 +51,25 @@ const Dashboard: React.FC = () => {
   );
   const [rankModalOpen, setRankModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [introRestarting, setIntroRestarting] = useState(false);
+  const [introError, setIntroError] = useState(false);
+
+  // "Take the intro again": the server forgets the answers and the finish, and
+  // /welcome runs from the first question. Finishing it lands on the level the
+  // new answer suggests, exactly as the first time (returnTo /levels — see
+  // modules/onboarding/destination.ts).
+  const handleRestartIntro = async () => {
+    setIntroRestarting(true);
+    setIntroError(false);
+    try {
+      await restartOnboarding();
+      updateUser({ onboardedAt: null, englishLevel: null, listeningExperience: null });
+      navigate("/welcome", { state: { returnTo: "/levels" } });
+    } catch {
+      setIntroError(true);
+      setIntroRestarting(false);
+    }
+  };
 
   // Load dashboard data
   useEffect(() => {
@@ -291,6 +318,31 @@ const Dashboard: React.FC = () => {
             </div>
           </>
         )}
+
+        {/* ── The intro, again ── */}
+        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-card border border-line bg-white p-4 sm:p-5">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-tile bg-room text-ink">
+            <IoSchoolOutline size={20} />
+          </div>
+          <div className="min-w-[12rem] flex-1">
+            <p className="m-0 text-sm font-bold text-black/85 sm:text-base">{t("dashboard.intro.title")}</p>
+            <p className="m-0 mt-0.5 text-[13px] leading-snug text-black/50">{t("dashboard.intro.text")}</p>
+            {introError && (
+              <p role="alert" className="m-0 mt-1 text-[13px] text-signal-ink">
+                {t("dashboard.intro.error")}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleRestartIntro}
+            disabled={introRestarting}
+            className="flex items-center gap-1.5 rounded-[3px] bg-black/[0.04] px-4 py-2 text-sm font-semibold text-black/70 transition-all hover:bg-black/10 active:scale-95 disabled:opacity-50"
+          >
+            <IoRefreshOutline size={16} />
+            {t("dashboard.intro.button")}
+          </button>
+        </div>
       </div>
 
       {selectedDifficulty && overviewData && (

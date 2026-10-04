@@ -258,6 +258,79 @@ export async function update(
   return row ?? null;
 }
 
+// ── onboarding ──────────────────────────────────────────────────────────────
+
+/** What the /welcome endpoints read back: the two answers and when it ended. */
+export interface OnboardingState {
+  englishLevel: string | null;
+  listeningExperience: string | null;
+  onboardedAt: Date | null;
+}
+
+const ONBOARDING_COLUMNS = {
+  englishLevel: users.onboardingEnglishLevel,
+  listeningExperience: users.onboardingListeningExperience,
+  onboardedAt: users.onboardedAt,
+};
+
+/**
+ * Store whichever answers were given, leaving the other one and onboarded_at
+ * alone. The values are trusted to be valid here — the controller checks them
+ * against config/onboarding.js, and the CHECK constraints catch anything else.
+ */
+export async function saveOnboardingAnswers(
+  userId: string,
+  patch: { englishLevel?: string; listeningExperience?: string },
+  tx: Tx = db(),
+): Promise<OnboardingState | null> {
+  const set: Partial<User> = {};
+  if (patch.englishLevel !== undefined) set.onboardingEnglishLevel = patch.englishLevel;
+  if (patch.listeningExperience !== undefined) set.onboardingListeningExperience = patch.listeningExperience;
+  if (Object.keys(set).length === 0) {
+    const [row] = await tx.select(ONBOARDING_COLUMNS).from(users).where(eq(users.id, userId));
+    return row ?? null;
+  }
+  const [row] = await tx.update(users).set(set).where(eq(users.id, userId)).returning(ONBOARDING_COLUMNS);
+  return row ?? null;
+}
+
+/**
+ * Both answers plus the end of the flow, in one statement. COALESCE keeps the
+ * FIRST completion time: a second call (a double tap, a retry after a lost
+ * response) updates the answers but never moves onboarded_at.
+ */
+export async function completeOnboarding(
+  userId: string,
+  answers: { englishLevel: string; listeningExperience: string },
+  tx: Tx = db(),
+): Promise<OnboardingState | null> {
+  const [row] = await tx
+    .update(users)
+    .set({
+      onboardingEnglishLevel: answers.englishLevel,
+      onboardingListeningExperience: answers.listeningExperience,
+      onboardedAt: sql`COALESCE(${users.onboardedAt}, now())`,
+    })
+    .where(eq(users.id, userId))
+    .returning(ONBOARDING_COLUMNS);
+  return row ?? null;
+}
+
+/**
+ * Send an account back through /welcome as if it were new: both answers and
+ * the finish cleared, so the questions are asked afresh rather than shown
+ * pre-filled. The student's own "take the intro again" and the admin's reset
+ * both land here.
+ */
+export async function restartOnboarding(userId: string, tx: Tx = db()): Promise<OnboardingState | null> {
+  const [row] = await tx
+    .update(users)
+    .set({ onboardingEnglishLevel: null, onboardingListeningExperience: null, onboardedAt: null })
+    .where(eq(users.id, userId))
+    .returning(ONBOARDING_COLUMNS);
+  return row ?? null;
+}
+
 export async function setBanned(userId: string, banned: boolean, tx: Tx = db()): Promise<number> {
   const result = await tx.update(users).set({ banned }).where(eq(users.id, userId));
   return result.rowCount ?? 0;

@@ -99,6 +99,12 @@ export interface AdminPlayer {
   createdAt: string;
   lastActiveAt: string;
   sharing: AdminPlayerSharing;
+  /** The /welcome flow: onboardedAt null means it is still owed. */
+  onboarding?: {
+    englishLevel: string | null;
+    listeningExperience: string | null;
+    onboardedAt: string | null;
+  };
 }
 
 interface AdminPlayersResponse {
@@ -186,6 +192,22 @@ export const resetPlayerSchool = async (
   userId: string
 ): Promise<void> => {
   const res = await fetch(`${API_URL}/api/admin/players/${userId}/reset-school`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  await parseOrThrow(res);
+};
+
+/**
+ * Send one player back through /welcome — both questions and the method
+ * slides — on their next page load, with their answers cleared. Progress,
+ * wallet and everything else are untouched.
+ */
+export const resetPlayerOnboarding = async (
+  token: string,
+  userId: string
+): Promise<void> => {
+  const res = await fetch(`${API_URL}/api/admin/players/${userId}/reset-onboarding`, {
     method: "POST",
     headers: authHeaders(token),
   });

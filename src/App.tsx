@@ -42,6 +42,7 @@ const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
 const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
+const Onboarding = lazy(() => import("./modules/onboarding/OnboardingPage"));
 
 const Stories = lazy(() => import("./pages/Stories"));
 // Public and unauthenticated on purpose — see the note in Legal.tsx.
@@ -126,6 +127,11 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
                 {/* ── Auth-only ── */}
+                {/* Where a new account goes first (Layout.tsx sends it). */}
+                <Route
+                  path="/welcome"
+                  element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
+                />
                 <Route
                   path="/dashboard"
                   element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
