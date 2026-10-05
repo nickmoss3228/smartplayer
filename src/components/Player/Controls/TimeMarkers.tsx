@@ -1,34 +1,53 @@
 import React  from "react";
+import { useTranslation } from "react-i18next";
 import { TimeMarker } from "../../../types";
 
 interface TimeMarkersProps {
   timeMarkers: TimeMarker[];
   durationSeconds: number;
   onMarkerClick: (time: number) => void;
+  /** Phrase being drilled (phrase-by-phrase mode); shaded on the waveform. */
+  activeIndex?: number | null;
 }
 
+/**
+ * The phrase boundaries over the desktop waveform (phones draw their own dots
+ * in MobileProgressBar). The stored marker colour is ignored: red lines on
+ * the level gradient were the loudest thing on the screen. Each line sits in
+ * a 9 px hit area, because the line itself is too thin to click.
+ *
+ * Positioned against an inset matching the waveform container's horizontal
+ * padding, so a marker lines up with the bar it belongs to.
+ */
 export const TimeMarkers: React.FC<TimeMarkersProps> = React.memo(
-  ({ timeMarkers, durationSeconds, onMarkerClick }) => {
+  ({ timeMarkers, durationSeconds, onMarkerClick, activeIndex = null }) => {
+    const { t } = useTranslation();
     if (durationSeconds === 0) return null;
 
+    const pct = (time: number) => `${(time / durationSeconds) * 100}%`;
+    const active = activeIndex != null ? timeMarkers[activeIndex] : undefined;
+    const activeEnd = activeIndex != null ? (timeMarkers[activeIndex + 1]?.time ?? durationSeconds) : 0;
+
     return (
-      <div className="absolute top-0 left-0 right-0 h-full bottom-0">
-        {timeMarkers.map((marker, index) => {
-          const position = (marker.time / durationSeconds) * 100;
-          return (
-            <div
-              key={index}
-              className="absolute top-0 bottom-0 w-1 md:w-[0.5px] cursor-pointer transition-opacity duration-300 z-10 hover:opacity-80"
-              style={{ left: `${position}%`, backgroundColor: marker.color || "red" }}
-              onClick={() => onMarkerClick(marker.time)}
-              title={`Jump to ${marker.label}`}
-            >
-              {/* <span onClick={() => onMarkerClick(marker.time)} className="absolute top-1 left-1/2 -translate-x-1/2 bg-black/75 text-white px-1.5 py-0.5 md:px-[6px] md:py-0.5 rounded-[3px] text-[11px] md:text-[11px] whitespace-nowrap">
-                {marker.label}
-              </span> */}
-            </div>
-          );
-        })}
+      <div className="absolute inset-y-0 left-2 right-2">
+        {active && (
+          <div
+            className="pointer-events-none absolute inset-y-0 bg-white/15"
+            style={{ left: pct(active.time), width: `${((activeEnd - active.time) / durationSeconds) * 100}%` }}
+          />
+        )}
+        {timeMarkers.map((marker, index) => (
+          <button
+            key={index}
+            type="button"
+            className="group/mk absolute inset-y-1.5 z-10 w-[9px] -translate-x-1/2 cursor-pointer"
+            style={{ left: pct(marker.time) }}
+            onClick={() => onMarkerClick(marker.time)}
+            aria-label={t("controls.jumpToPhrase", { n: index + 1 })}
+          >
+            <span className="mx-auto block h-full w-[1.5px] rounded-full bg-black/35 transition-colors group-hover/mk:bg-white" />
+          </button>
+        ))}
       </div>
     );
   },

@@ -66,14 +66,14 @@ Inside Enhanced mode, a second toggle decides what happens *after* a sentence's 
 SPEED_SEQUENCES = {
   1: [1.0],            // repeatCount 1 → hear it once, normal speed
   2: [0.8, 1.0],       // repeatCount 2 → slow, then normal
-  3: [0.5, 0.8, 1.0],  // repeatCount 3 → very slow, slow, normal
+  3: [0.65, 0.8, 1.0], // repeatCount 3 → very slow, slow, normal
 }
 ```
 
 So with `repeatCount = 3`, one sentence sounds like:
 
 ```
-pass 1 ──0.5x──▶  "The… quick… brown… fox…"
+pass 1 ──0.65x─▶  "The… quick… brown… fox…"
 pass 2 ──0.8x──▶  "The quick brown fox…"
 pass 3 ──1.0x──▶  "The quick brown fox."
                         │
@@ -329,7 +329,7 @@ Note `userPlaybackRateRef` vs `playbackRateRef` — a genuinely nice distinction
 - `userPlaybackRateRef` = *what the user chose* (their preference; only `changePlaybackRate` writes it)
 - `playbackRateRef` = *what is playing right now* (the engine overwrites it constantly during the speed ladder)
 
-When a sentence finishes, the engine restores the first from the second. Without two refs, the drill's 0.5x would silently become the user's new "preference."
+When a sentence finishes, the engine restores the first from the second. Without two refs, the drill's 0.65x would silently become the user's new "preference."
 
 ### 8b. Tab visibility
 

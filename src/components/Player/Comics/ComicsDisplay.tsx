@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { IoExpandOutline } from "react-icons/io5";
 import { ComicsModal } from "./ComicsModal";
 
 // ─── Preview card ─────────────────────────────────────────────────────────────
@@ -7,7 +9,8 @@ interface ComicsDisplayProps {
   storyIndex?: number;
   difficulty?: string;
   title?: string;
-  variant?: "card" | "circular";
+  /** card: the phone's square preview. banner: the desktop column's wide crop. */
+  variant?: "card" | "banner";
   /**
    * The page to show, already resolved by modules/story/resolveStory.ts.
    *
@@ -26,27 +29,15 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
   variant = "card",
 }) => {
   const [open, setOpen] = useState(false);
-
+  const { t } = useTranslation();
 
   const handleOpen = useCallback(() => setOpen(true), []);
   const handleClose = useCallback(() => setOpen(false), []);
 
   // ── empty-state ────────────────────────────────────────────────
   if (!src) {
-    if (variant === "circular") {
-      return (
-        <div
-          className="h-full max-h-full w-auto max-w-full aspect-square mx-auto rounded-[3px]
-                  bg-white/10 border border-white/15 flex items-center justify-center"
-        >
-          <span
-            className="text-white/40 text-[10px] uppercase tracking-[0.16em] font-mono"
-          >
-            Comics
-          </span>
-        </div>
-      );
-    }
+    // The desktop column simply leaves the banner out when there is no page.
+    if (variant === "banner") return null;
     return (
       <div
         className="w-[70%] max-w-[280px] aspect-square mx-auto rounded-[3px]
@@ -61,53 +52,28 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
     );
   }
 
-  // ── CIRCULAR variant (desktop PlayerControls button) ──────────
-  if (variant === "circular") {
+  // ── BANNER variant (desktop player column) ────────────────────
+  // The top of the page, as wide as the column and as tall as the column can
+  // spare; the whole page opens in ComicsModal.
+  if (variant === "banner") {
     return (
       <>
         <button
           onClick={handleOpen}
-          aria-label="Open comic"
-          className="
-            w-14 h-14 rounded-full overflow-hidden
-            border-2 border-white/30 hover:border-white/70
-            bg-white/10 cursor-pointer group relative
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60
-            transition-all duration-200 active:scale-95 shadow-lg
-          "
+          aria-label={t("player.wholeComic")}
+          className="group relative block h-full w-full cursor-pointer overflow-hidden rounded-card bg-white/10
+            focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           <img
             src={src}
-            alt={title ?? "Comic"}
+            alt={title ?? ""}
             draggable={false}
-            className="
-              w-full h-full object-cover object-center
-              scale-[1.65] group-hover:scale-[1.85]
-              transition-transform duration-500 ease-out
-            "
+            className="h-full w-full select-none object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           />
-          <div
-            className="absolute inset-0 rounded-full
-                          shadow-[inset_0_0_14px_rgba(0,0,0,0.45)]
-                          pointer-events-none"
-          />
-          <div
-            className="
-            absolute inset-0 rounded-full flex items-center justify-center
-            bg-black/0 group-hover:bg-black/30
-            transition-colors duration-300 pointer-events-none
-          "
-          >
-            <span
-              className="
-              text-white text-[9px] uppercase tracking-[0.16em] font-mono
-              opacity-0 group-hover:opacity-100
-              transition-opacity duration-300
-            "
-            >
-              View
-            </span>
-          </div>
+          <span className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-1.5 rounded-[3px] bg-black/70 px-3 py-1.5 text-[12.5px] font-semibold text-white">
+            <IoExpandOutline size={15} aria-hidden="true" />
+            {t("player.wholeComic")}
+          </span>
         </button>
 
         {open && <ComicsModal src={src} title={title} onClose={handleClose} />}

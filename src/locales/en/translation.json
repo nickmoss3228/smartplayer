@@ -132,7 +132,7 @@
         "title": "Speed hides the words",
         "tagFast": "1.0×",
         "tagMid": "0.8×",
-        "tagSlow": "0.5×",
+        "tagSlow": "0.65×",
         "takeaway": "Slow down first. Speed up once you're sure."
       },
       "noSubtitles": {
@@ -265,10 +265,9 @@
       "passes": "3 repetitions · 3 speeds",
       "subtitles": "no subtitles · just your ears",
       "word": "hear a word — imagine the thing",
-      "comic": "hear it. pick it. keep it.",
+      "comic": "hear a word — find it in the comic",
       "loop": "every story is one loop",
-      "subtitlesOff": "subtitles off",
-      "correct": "correct!"
+      "subtitlesOff": "subtitles off"
     },
     "back": "Back"
   },
@@ -281,7 +280,20 @@
     "pause": "Pause",
     "speed": "Speed",
     "freemode": "Free Mode",
-    "drillmode": "Drill Mode"
+    "drillmode": "Drill Mode",
+    "prevPhrase": "Previous phrase",
+    "nextPhrase": "Next phrase",
+    "jumpToPhrase": "Go to phrase {{n}}",
+    "mode": "How to play",
+    "modeFree": "Straight through",
+    "modePhrases": "Phrase by phrase",
+    "keySpace": "Space",
+    "keyPause": "pause",
+    "keyNext": "next phrase",
+    "keyReplay": "replay",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute"
   },
   "quiz": {
     "question": "Question",
@@ -808,7 +820,7 @@
       },
       {
         "title": "Playback Speed",
-        "body": "Speed sets how fast the audio plays: 0.5×, 0.8× or 1×. Begin at 0.5×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
+        "body": "Speed sets how fast the audio plays: 0.65×, 0.8× or 1×. Begin at 0.65×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
       },
       {
         "title": "Why three speeds?",
@@ -852,12 +864,17 @@
   "player": {
     "vocabulary": "Vocabulary",
     "phrasal-verbs": "Phrasal verbs",
-    "quiz-incomp": "Take the Quiz!",
     "quiz": "Quiz",
     "quiz-bottom": "Listen until the end to open the quiz.",
-    "vocab-quiz": "Vocab Quiz",
     "quiz-loading": "Loading quiz...",
-    "quiz-load-error": "Failed to load the quiz. Please try again."
+    "quiz-load-error": "Failed to load the quiz. Please try again.",
+    "partOf": "part {{n}} of {{total}}",
+    "wordsTitle": "Words in this part",
+    "wordsKnown": "{{known}} of {{total}} known",
+    "wordKnown": "known",
+    "wholeComic": "Whole comic",
+    "phraseOf": "phrase {{n}} of {{total}}",
+    "back": "Back"
   },
   "character": {
     "eyebrow": "Your character",
@@ -1687,5 +1704,49 @@
     "lockedHint": "Reach that part to find out who this is.",
     "lockedAria": "Hidden character, arrives in part {{part}}",
     "openAria": "More about {{name}}"
+  },
+  "panelQuiz": {
+    "prompt": "Listen, then tap the panel where it happens",
+    "playing": "Listen…",
+    "nowTap": "Where did it happen? Tap the panel",
+    "tapToListen": "Tap the speaker to listen",
+    "replay": "Play the line again",
+    "slower": "Slower",
+    "right": "Right!",
+    "wrong": "It happened here",
+    "score": "score {{score}}",
+    "panel": "Panel {{n}}",
+    "audioError": "The audio won't play. Check your connection.",
+    "doneTitle": "Done!",
+    "doneScore": "You placed {{score}} of {{total}} lines",
+    "again": "Play again",
+    "back": "Back"
+  },
+  "practice": {
+    "button": "Practice",
+    "buttonProgress": "Practice, {{done}} of {{total}} done",
+    "eyebrow": "part {{n}} · finished",
+    "title": "Practise",
+    "next": "next",
+    "quizTitle": "Take the quiz",
+    "wordsTitle": "Words",
+    "comicTitle": "Find the scene",
+    "questions_one": "{{count}} question",
+    "questions_other": "{{count}} questions",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "lines_one": "{{count}} line",
+    "lines_other": "{{count}} lines",
+    "opensPart": "opens part {{n}}",
+    "partOpen": "part {{n}} is open",
+    "lastPart": "the last part",
+    "done": "done",
+    "later": "Later",
+    "close": "Close",
+    "locked": "opens once you finish listening",
+    "cardCount_one": "{{count}} exercise",
+    "cardCount_other": "{{count}} exercises",
+    "cardProgress": "{{done}} of {{total}} done",
+    "gamesLabel": "Practice games"
   }
 }

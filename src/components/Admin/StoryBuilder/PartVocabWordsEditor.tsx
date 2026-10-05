@@ -8,6 +8,8 @@ import {
   savePhrasalVerbs,
 } from "../../../services/adminStoryServices";
 import AudioPreview from "./AudioPreview";
+import VocabPicturesPanel from "./VocabPicturesPanel";
+import { VocabPicture } from "../../Player/Vocabulary/VocabPicture";
 
 interface PartVocabWordsEditorProps {
   token: string;
@@ -71,6 +73,35 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
   };
 
   const handleRemove = (index: number) => setWords(words.filter((_, i) => i !== index));
+
+  const setPicture = (index: number, image: VocabEntry["image"]) =>
+    setWords(words.map((w, i) => (i === index ? { ...w, image } : w)));
+
+  const [pictureBusy, setPictureBusy] = useState<string | null>(null);
+  const uploadPicture = async (index: number, file: File) => {
+    const { audioKey } = words[index];
+    setError("");
+    setPictureBusy(audioKey);
+    try {
+      const url = await uploadPartAsset(
+        token,
+        story._id,
+        part.partNumber,
+        file,
+        kind === "vocab" ? "vocabImage" : "phrasalImage",
+        { audioKey },
+      );
+      setPicture(index, { url, box: null, aspect: null });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setPictureBusy(null);
+    }
+  };
+
+  // The list is staged here and written by Save, like adding a word — say so,
+  // or a batch of attached pictures looks saved when it is not.
+  const dirty = JSON.stringify(words) !== JSON.stringify(part[listKey]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -137,6 +168,17 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
         <div className="space-y-1">
           {words.map((w, i) => (
             <div key={i} className="flex items-center gap-3 text-sm bg-gray-50 rounded-[3px] px-3 py-2">
+              {/* The word's picture, if any — stored for a picture game; the
+                  player shows words as text (pictures were too small to read). */}
+              <span className="relative w-10 h-10 shrink-0 rounded-[3px] overflow-hidden border border-gray-200 bg-white">
+                {w.image ? (
+                  <VocabPicture image={w.image} className="absolute inset-0 w-full h-full" />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-300">
+                    no pic
+                  </span>
+                )}
+              </span>
               {/* Leading, and a fixed width wide enough for the longest state
                   ("✗ won't load"), so the whole list can be scanned straight
                   down the left edge for a clip that didn't load rather than
@@ -147,10 +189,33 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
               <span className="font-semibold text-black">{w.word}</span>
               <span className="text-gray-500">{w.audioKey}</span>
               {w.definition && <span className="text-gray-400 truncate">{w.definition}</span>}
+              <label className="ml-auto text-xs text-gray-500 hover:text-black cursor-pointer whitespace-nowrap">
+                {pictureBusy === w.audioKey ? "Uploading…" : w.image ? "Replace picture" : "Add picture"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                  className="sr-only"
+                  disabled={pictureBusy !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) void uploadPicture(i, file);
+                  }}
+                />
+              </label>
+              {w.image && (
+                <button
+                  type="button"
+                  onClick={() => setPicture(i, null)}
+                  className="text-xs text-gray-400 hover:text-red-600 whitespace-nowrap"
+                >
+                  No picture
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemove(i)}
-                className="ml-auto text-red-500 text-xs hover:text-red-700"
+                className="text-red-500 text-xs hover:text-red-700"
               >
                 Remove
               </button>
@@ -159,14 +224,28 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
-      >
-        {saving ? "Saving..." : `Save ${kind === "vocab" ? "vocabulary" : "phrasal verbs"}`}
-      </button>
+      <VocabPicturesPanel
+        // Per part: its source image and "next word" belong to one page.
+        key={`${story._id}:${part.partNumber}:${kind}`}
+        token={token}
+        story={story}
+        part={part}
+        kind={kind}
+        words={words}
+        onWordsChange={setWords}
+      />
+
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : `Save ${kind === "vocab" ? "vocabulary" : "phrasal verbs"}`}
+        </button>
+        {dirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
+      </div>
     </div>
   );
 };

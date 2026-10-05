@@ -2,7 +2,7 @@
  * The method in five pictures. Each scene is one idea told in a few seconds,
  * looping:
  *
- *   passes    — one phrase at 1.0× / 0.8× / 0.5×        (3 repetitions, 3 speeds)
+ *   passes    — one phrase at 1.0× / 0.8× / 0.65×       (3 repetitions, 3 speeds)
  *   subtitles — the caption drains away, the ear listens  (no subtitles, ears only)
  *   word      — a heard word becomes the thing itself     (words not in English)
  *   comic     — a heard word, found in the comic          (visual memory)
@@ -43,7 +43,7 @@ const Passes = () => (
   <div className="ap-scene">
     <div className="ap-a-rows">
       <span className="ap-a-mark" />
-      {(['1.0×', '0.8×', '0.5×'] as const).map((tag, i) => (
+      {(['1.0×', '0.8×', '0.65×'] as const).map((tag, i) => (
         <div key={tag} className={`ap-a-row r${i + 1}`}>
           <span className="ap-a-tag ap-mono">{tag}</span>
           <span className="ap-a-ph">
@@ -96,23 +96,53 @@ const WordToThing = () => (
   </div>
 );
 
-const CELL = { fill: 'none', stroke: '#3a4654', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+const RAIN = 'l-4 10';
 
-const Comic = ({ correct }: { correct: string }) => (
+/*
+ * One comic page, four panels of one small story — rain comes, someone looks
+ * out, someone walks under an umbrella, the sun is back. The word is heard and
+ * the eye goes looking through the panels until it lands on the umbrella.
+ *
+ * Deliberately not a choice: no tiles to tap, no "correct!". The player has no
+ * picture quiz; what the comic gives is a place to look for what you heard.
+ */
+const Comic = () => (
   <div className="ap-scene ap-d">
     <div className="ap-d-word">
       <Speaker size={30} />
       <span className="ap-d-say">umbrella</span>
     </div>
-    <div className="ap-d-grid">
-      <div className="ap-d-cell"><svg viewBox="0 0 64 64" {...CELL}><circle cx="46" cy="18" r="7" /><path d="M4 50 Q20 36 32 46 T60 44" /></svg></div>
-      <div className="ap-d-cell"><svg viewBox="0 0 64 64" {...CELL}><circle cx="32" cy="18" r="8" /><path d="M18 58 V42 a14 14 0 0 1 28 0 V58" /></svg></div>
-      <div className="ap-d-cell"><svg viewBox="0 0 64 64" {...CELL}><rect x="12" y="14" width="40" height="36" rx="2" /><path d="M12 30 H52 M32 14 V50" /></svg></div>
-      <div className="ap-d-cell"><svg viewBox="0 0 64 64" {...CELL}><path d="M8 54 H56 M16 54 V30 L32 16 L48 30 V54 M27 54 V40 H37 V54" /></svg></div>
-      <div className="ap-d-cell"><svg viewBox="0 0 100 100" className="ap-d-hit" {...CELL} strokeWidth={3}><path d={UMBRELLA} /></svg></div>
-      <div className="ap-d-cell"><svg viewBox="0 0 64 64" {...CELL}><path d="M10 44 H54 M16 44 V28 H48 V44 M22 28 V20 H42 V28" /></svg></div>
-      <span className="ap-d-focus" />
-      <span className="ap-d-ok ap-mono">{correct}</span>
+    <div className="ap-d-page">
+      <svg viewBox="0 0 420 206" width="420" height="206" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <g className="ap-d-frame">
+          <rect x="1" y="1" width="150" height="98" rx="2" />
+          <rect x="159" y="1" width="260" height="98" rx="2" />
+          <rect x="1" y="107" width="250" height="98" rx="2" />
+          <rect x="259" y="107" width="160" height="98" rx="2" />
+        </g>
+        <g className="ap-d-ink">
+          {/* 1 · the rain comes */}
+          <path d="M46 56 Q38 42 54 40 Q58 26 76 30 Q90 20 102 34 Q118 34 112 50 Q110 56 102 56 Z" />
+          <path d={`M60 66 ${RAIN} M78 66 ${RAIN} M96 66 ${RAIN}`} />
+          {/* 2 · someone steps out and feels it */}
+          <path d="M190 90 V48 L222 28 L254 48 V90 M214 90 V66 H230 V90 M168 90 H410" />
+          <circle cx="300" cy="38" r="8" />
+          <path d="M300 46 V70 M300 70 l-8 19 M300 70 l8 19 M300 54 l-10 10 M300 54 l11 -8" />
+          <path d={`M338 22 ${RAIN} M362 36 ${RAIN} M386 20 ${RAIN} M350 60 ${RAIN} M380 58 ${RAIN}`} />
+          {/* 3 · walking out in it (the umbrella is drawn on its own below) */}
+          <circle cx="116" cy="148" r="7" />
+          <path d="M116 155 V176 M116 176 l-7 18 M116 176 l7 18 M116 161 L125 156 M10 196 H242" />
+          <path d={`M36 122 ${RAIN} M60 146 ${RAIN} M40 168 ${RAIN} M176 120 ${RAIN} M200 146 ${RAIN} M224 124 ${RAIN} M188 170 ${RAIN}`} />
+          {/* 4 · and the sun is back */}
+          <circle cx="339" cy="142" r="12" />
+          <path d="M339 120 v-6 M339 164 v6 M317 142 h-6 M361 142 h6 M323 126 l-4 -4 M355 126 l4 -4 M323 158 l-4 4 M355 158 l4 4" />
+          <ellipse cx="339" cy="190" rx="38" ry="5" />
+        </g>
+        <g className="ap-d-hit" transform="translate(107 112) scale(.5)" strokeWidth={4.4}>
+          <path d={UMBRELLA} />
+        </g>
+      </svg>
+      <span className="ap-d-gaze" />
     </div>
   </div>
 );
@@ -155,7 +185,7 @@ export const SceneDrawing = ({ scene }: { scene: SceneId }) => {
     case 'word':
       return <WordToThing />;
     case 'comic':
-      return <Comic correct={t('auth.panel.correct')} />;
+      return <Comic />;
     case 'loop':
       return <Loop steps={[1, 2, 3, 4, 5].map((n) => t(`howToUse.loop.s${n}.title`))} />;
   }

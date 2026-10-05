@@ -35,7 +35,7 @@
 .ap-arc.b { animation-delay: .25s; }
 @keyframes ap-arc { 0%, 100% { opacity: .2 } 8%, 18% { opacity: 1 } }
 
-/* ── A · three passes: one sentence at 1.0×, 0.8×, 0.5× ─────────── 9s ── */
+/* ── A · three passes: one sentence at 1.0×, 0.8×, 0.65× ────────── 9s ── */
 .ap-a-rows { position: relative; display: flex; flex-direction: column; gap: 24px; }
 .ap-a-row { display: flex; align-items: center; gap: 16px; height: 34px; opacity: .14; animation: ap-row 9s infinite; }
 .ap-a-tag { width: 48px; flex: none; font-size: 12px; color: #7d8d9c; }
@@ -81,27 +81,29 @@
 @keyframes ap-obj { 0% { opacity: 0 } 3%, 29% { opacity: 1 } 33%, 100% { opacity: 0 } }
 @keyframes ap-draw { 0%, 4% { stroke-dashoffset: 1 } 20%, 100% { stroke-dashoffset: 0 } }
 
-/* ── D · hear the word, pick its picture ─────────────────────────── 7s ── */
-.ap-d { flex-direction: column; align-items: stretch; gap: 18px; padding: 0 10px; }
+/* ── D · hear the word, look for it in the comic ─────────────────── 7s ── */
+/* A round gaze, not a selection box, and no verdict at the end: this is the
+   eye searching a comic page, not a picture quiz (the player has none). The
+   gaze positions are panel spots on the 420×206 page, minus half its size. */
+.ap-d { flex-direction: column; align-items: stretch; gap: 14px; padding: 0 10px; }
 .ap-d-word { display: flex; align-items: center; gap: 12px; height: 40px; }
 .ap-d-say { font-size: 26px; font-weight: 800; letter-spacing: -.01em; opacity: 0; animation: ap-say 7s infinite; }
-.ap-d-grid { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.ap-d-cell { height: 96px; border: 1px solid #2b3644; border-radius: 2px; display: flex; align-items: center; justify-content: center; }
-.ap-d-cell svg { width: 58px; height: 58px; }
-.ap-d-focus { position: absolute; left: 0; top: 0; width: calc((100% - 20px) / 3); height: 96px; box-sizing: border-box; border: 2px solid #e5484d; border-radius: 2px; opacity: 0; animation: ap-hunt 7s infinite; }
-.ap-d-hit { animation: ap-hit 7s infinite; }
-.ap-d-ok { position: absolute; left: calc((100% - 20px) / 3 + 20px); top: 116px; padding: 4px 8px; background: #e5484d; color: #fff; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border-radius: 2px; opacity: 0; animation: ap-ok 7s infinite; }
+.ap-d-page { position: relative; width: 420px; height: 206px; }
+.ap-d-page svg { display: block; }
+.ap-d-frame { stroke: #2b3644; stroke-width: 1.5; }
+.ap-d-ink { stroke: #4a5868; stroke-width: 2; }
+.ap-d-hit { stroke: #4a5868; animation: ap-hit 7s infinite; }
+.ap-d-gaze { position: absolute; left: 0; top: 0; width: 64px; height: 64px; box-sizing: border-box; border: 2px solid #e5484d; border-radius: 50%; opacity: 0; animation: ap-gaze 7s infinite ease-in-out; }
 @keyframes ap-say { 0%, 4% { opacity: 0 } 10%, 94% { opacity: 1 } 100% { opacity: 0 } }
-@keyframes ap-hunt {
-  0%, 14% { opacity: 0; transform: translate(0, 0) }
-  16%, 24% { opacity: 1; transform: translate(0, 0) }
-  30%, 36% { opacity: 1; transform: translate(calc(100% + 10px), 0) }
-  42%, 48% { opacity: 1; transform: translate(calc(200% + 20px), 106px) }
-  54%, 94% { opacity: 1; transform: translate(calc(100% + 10px), 106px) }
-  100% { opacity: 0; transform: translate(calc(100% + 10px), 106px) }
+@keyframes ap-gaze {
+  0%, 14% { opacity: 0; transform: translate(44px, 10px) }
+  16%, 24% { opacity: 1; transform: translate(44px, 10px) }
+  30%, 36% { opacity: 1; transform: translate(264px, 28px) }
+  42%, 48% { opacity: 1; transform: translate(307px, 118px) }
+  54%, 94% { opacity: 1; transform: translate(97px, 108px) }
+  100% { opacity: 0; transform: translate(97px, 108px) }
 }
-@keyframes ap-hit { 0%, 54% { stroke: #3a4654 } 58%, 94% { stroke: #eef4f8 } 100% { stroke: #3a4654 } }
-@keyframes ap-ok { 0%, 56% { opacity: 0 } 60%, 94% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes ap-hit { 0%, 54% { stroke: #4a5868 } 58%, 94% { stroke: #eef4f8 } 100% { stroke: #4a5868 } }
 
 /* ── E · the five-step loop, walked round a ring ─────────────────── 10s ── */
 .ap-e { position: relative; width: 300px; height: 300px; margin: 0 auto; }
@@ -141,9 +143,9 @@
   .ap-c-obj.o3 { opacity: 1; }
   .ap-c-obj.o3 path { stroke-dashoffset: 0; }
 
-  /* D · the word said, its picture found */
-  .ap-d-say, .ap-d-ok { opacity: 1; }
-  .ap-d-focus { opacity: 1; transform: translate(calc(100% + 10px), 106px); }
+  /* D · the word said, the eye resting on it in the comic */
+  .ap-d-say { opacity: 1; }
+  .ap-d-gaze { opacity: 1; transform: translate(97px, 108px); }
   .ap-d-hit { stroke: #eef4f8; }
 
   /* E · the ring closed, the first step named */

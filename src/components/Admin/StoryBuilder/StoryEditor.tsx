@@ -18,6 +18,7 @@ import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
 import PartIntroEditor from "./PartIntroEditor";
+import PartPanelQuizEditor from "./PartPanelQuizEditor";
 
 interface StoryEditorProps {
   token: string;
@@ -37,7 +38,10 @@ const PREVIEW_PART = 1;
 
 /** Audio and markers are edited in one place, so two grid columns open the same
  *  panel. Everything else is one column, one editor. */
-const PANEL_FOR: Record<ElementId, "audio" | "comics" | "intro" | "vocabulary" | "phrasal" | "quiz"> = {
+const PANEL_FOR: Record<
+  ElementId,
+  "audio" | "comics" | "intro" | "vocabulary" | "phrasal" | "quiz" | "panels"
+> = {
   audio: "audio",
   markers: "audio",
   comic: "comics",
@@ -45,6 +49,7 @@ const PANEL_FOR: Record<ElementId, "audio" | "comics" | "intro" | "vocabulary" |
   vocab: "vocabulary",
   phrasal: "phrasal",
   quiz: "quiz",
+  panels: "panels",
 };
 
 const LOCALE_COLUMNS: { id: "en" | "ru"; label: string }[] = [
@@ -501,6 +506,17 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       )}
       {part && step === "quiz" && (
         <PartQuizEditor token={token} story={story} part={part} onPartUpdated={handlePartUpdated} />
+      )}
+      {part && step === "panels" && (
+        // Keyed per part: panels, matches and the audio being measured all
+        // belong to one part's page and one part's track.
+        <PartPanelQuizEditor
+          key={`${story._id}:${part.partNumber}`}
+          token={token}
+          story={story}
+          part={part}
+          onPartUpdated={handlePartUpdated}
+        />
       )}
     </div>
   );
