@@ -23,7 +23,6 @@ import {
   type PaymentConfig,
 } from '../services/paymentServices';
 import { useEntitlements } from '../context/EntitlementsContext';
-import { useCart } from '../context/CartContext';
 import { formatPrice } from '../config/priceCatalog';
 import { useCatalog } from '../context/CatalogContext';
 
@@ -54,32 +53,32 @@ const useItemLabel = () => {
   const { getProduct } = useCatalog();
   return (item: OrderItem) => {
     const product = getProduct(item.sku);
-    if (product?.kind === 'set') return t('payment.itemSet');
-    if (product?.kind === 'level') return t('payment.itemLevel');
-    if (product?.kind === 'story') return t('payment.itemStory');
+    if (product?.kind === 'level') {
+      return t('payment.itemLevel', { level: t(`list.difficultyTitle.${product.difficulty}`) });
+    }
+    if (product?.kind === 'all') return t('payment.itemAll');
     return item.sku;
   };
 };
 
-/** Deep link to something the buyer just unlocked, when we can name one. */
-const firstStoryPath = (
+/** Deep link to the level the buyer just opened, when the order names one. */
+const firstLevelPath = (
   items: OrderItem[],
-  getProduct: (sku: string) => { storyKey?: string } | null,
+  getProduct: (sku: string) => { difficulty?: string } | null,
 ): string | null => {
   for (const item of items) {
-    const key = getProduct(item.sku)?.storyKey;
-    if (key) return `/levels/${key}`;
+    const difficulty = getProduct(item.sku)?.difficulty;
+    if (difficulty) return `/levels/${difficulty}`;
   }
   return null;
 };
 
 const CheckoutReturn = () => {
   const { getProduct } = useCatalog();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { refreshEntitlements } = useEntitlements();
-  const { clear } = useCart();
+  const { refreshEntitlements, activeUntil } = useEntitlements();
   const itemLabel = useItemLabel();
 
   const orderId = params.get('orderId');
@@ -115,7 +114,6 @@ const CheckoutReturn = () => {
           // Refresh once, not on every poll — the padlocks come off here.
           if (!cleared.current) {
             cleared.current = true;
-            clear();
             await refreshEntitlements();
           }
           return;
@@ -166,7 +164,7 @@ const CheckoutReturn = () => {
         ? t('payment.failed')
         : t('payment.pending');
 
-  const storyPath = order ? firstStoryPath(order.items, getProduct) : null;
+  const storyPath = order ? firstLevelPath(order.items, getProduct) : null;
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -199,14 +197,31 @@ const CheckoutReturn = () => {
                 </p>
               )}
               <ul className="space-y-1">
-                {order.items.map((item) => (
+                {order.items.map((item) => {
+                  // After the refresh above: when the subscription now ends —
+                  // for a renewal, the new end, not a fresh 30 days.
+                  const until = granted ? activeUntil(item.sku) : null;
+                  return (
                   <li key={item.sku} className="flex justify-between gap-3 text-sm text-gray-700">
-                    <span>{itemLabel(item)}</span>
+                    <span>
+                      {itemLabel(item)}
+                      {until && (
+                        <span className="block text-xs text-green-700">
+                          {t('payment.activeUntil', {
+                            date: until.toLocaleDateString(i18n.language, {
+                              day: 'numeric',
+                              month: 'long',
+                            }),
+                          })}
+                        </span>
+                      )}
+                    </span>
                     <span className="tabular-nums text-gray-500">
                       {formatPrice(item.amountMinor, order.currency)}
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
               <p className="mt-2 border-t border-gray-200 pt-2 text-right text-sm font-semibold tabular-nums text-gray-900">
                 {formatPrice(order.amountMinor, order.currency)}

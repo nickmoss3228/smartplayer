@@ -12,9 +12,11 @@
 // library shelf. A mirror cannot mirror rows that are written at runtime, so
 // the mirror is gone and the server answers instead.
 //
-// What stays here is what is genuinely static: the price per track, the free
-// allowance rule, the SKU spelling, and how a number becomes "290 ₽". These are
-// the same on both sides because they are policy, not data.
+// What stays here is what is genuinely static: the free allowance rule and how
+// a number becomes "199 ₽". These are the same on both sides because they are
+// policy, not data. Prices are not here at all — what a subscription costs and
+// how long it runs come from the catalog, so the shop cannot show one number
+// while the server charges another.
 //
 // Display text (names, blurbs) is NOT here — it lives in
 // locales/{en,ru}/translation.json under `shop.*`, the same way story titles do,
@@ -22,7 +24,8 @@
 
 export const CURRENCY = 'RUB';
 
-export type ProductKind = 'story' | 'set' | 'level';
+/** A subscription to one level, or to all of them. Nothing else is sold. */
+export type ProductKind = 'level' | 'all';
 export type DifficultySlug = 'easy' | 'medium' | 'hard';
 export type CatalogCategory = 'general' | 'news';
 
@@ -32,18 +35,9 @@ export type CatalogCategory = 'general' | 'news';
  */
 export const storyKey = (difficulty: string, storyId: string) => `${difficulty}/${storyId}`;
 
-export const TRACK_PRICE_MINOR = 2900;
-export const SET_TRACK_PRICE_MINOR = 1900;
-/** 999 ₽. Still not for sale — see the server's note on why. */
-export const LEVEL_PRICE_MINOR = 99900;
-
 export const FREE_PARTS_LONG_STORY = 3;
 export const LONG_STORY_MIN_PARTS = 10;
 export const PREVIEW_SECONDS = 30;
-
-export const storySku = (key: string) => `story-${key.replace('/', '-')}`;
-export const setSku = (character: string) => `set-${character}`;
-export const levelSku = (difficulty: string) => `level-${difficulty}`;
 
 export interface FreeAllowance {
   /** Parts 1..freeParts play in full. */

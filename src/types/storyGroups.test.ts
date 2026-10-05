@@ -91,13 +91,13 @@ describe('dbStoryToGroup', () => {
 
   it('keeps the lock the server decided', () => {
     const locked = dbStoryToGroup(
-      row({ locked: true, freeParts: 3, requiredSkus: ['story-easy-leo'] }),
+      row({ locked: true, freeParts: 3, requiredSkus: ['sub-easy', 'sub-all'] }),
       'easy',
       'en',
     );
     expect(locked.locked).toBe(true);
     expect(locked.freeParts).toBe(3);
-    expect(locked.requiredSkus).toEqual(['story-easy-leo']);
+    expect(locked.requiredSkus).toEqual(['sub-easy', 'sub-all']);
     expect(dbStoryToGroup(row(), 'easy', 'en').locked).toBe(false);
   });
 });

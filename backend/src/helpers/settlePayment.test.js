@@ -10,81 +10,90 @@
 // delivered twice grants once" property is verified against a real database by
 // scripts/verifyPaymentLoop.mjs, because npm test must not require a database.
 //
-// Nothing in the catalog is dated any more, but rowsFor still honours a
-// durationDays stored on an order line, so the extension rules are exercised
-// through that path rather than deleted.
+// Everything sold is a subscription, so every grant is dated, and the
+// extension rules below are the whole of what a renewal means.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { rowsFor } from "./settlePayment.js";
-import { BUILT_IN_CATALOG, setSku, storySku } from "../config/priceCatalog.js";
+import {
+  ALL_SUBSCRIPTION_SKU,
+  BUILT_IN_CATALOG,
+  SUBSCRIPTION_DAYS,
+  levelSubscriptionSku,
+} from "../config/priceCatalog.js";
 
 const { getProduct } = BUILT_IN_CATALOG;
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 6, 12, 0, 0);
 const PAYMENT_ID = "payment-1";
+const PERIOD = SUBSCRIPTION_DAYS * DAY;
 
-const SET = setSku("leo");
-const STORY = storySku("easy/leo");
+const EASY = levelSubscriptionSku("easy");
+const ALL = ALL_SUBSCRIPTION_SKU;
 
-const line = (sku, durationDays = null) => ({
+const line = (sku, durationDays = SUBSCRIPTION_DAYS) => ({
   sku,
   amountMinor: getProduct(sku).amountMinor,
   durationDays,
 });
 const paymentOf = (...items) => ({ _id: PAYMENT_ID, items });
 
-test("a perpetual SKU produces one never-expiring row tagged with its payment", () => {
-  const { perpetual, extensions } = rowsFor(paymentOf(line(SET)), [], NOW);
-  assert.equal(extensions.length, 0);
-  assert.equal(perpetual.length, 1);
-  assert.equal(perpetual[0].sku, SET);
-  assert.equal(perpetual[0].expiresAt, null);
-  assert.equal(perpetual[0].source, "purchase");
-  // paymentId is what makes the $push idempotent — not decoration.
-  assert.equal(perpetual[0].paymentId, PAYMENT_ID);
-});
-
-test("a dated line expires exactly its duration from now", () => {
-  const { extensions, perpetual } = rowsFor(paymentOf(line(STORY, 30)), [], NOW);
+test("a subscription produces one dated row, a period from now, tagged with its payment", () => {
+  const { perpetual, extensions } = rowsFor(paymentOf(line(EASY)), [], NOW);
   assert.equal(perpetual.length, 0);
+  assert.equal(extensions.length, 1);
+  assert.equal(extensions[0].sku, EASY);
   assert.equal(extensions[0].hadRow, false);
-  assert.equal(+extensions[0].expiresAt, NOW + 30 * DAY);
+  assert.equal(+extensions[0].expiresAt, NOW + PERIOD);
+  // paymentId is what lets a refund find the row — not decoration.
+  assert.equal(extensions[0].paymentId, PAYMENT_ID);
 });
 
-test("renewing an ACTIVE dated row adds to it rather than resetting it", () => {
+test("an order line with no period falls back to the product's own", () => {
+  const { perpetual, extensions } = rowsFor(paymentOf(line(EASY, null)), [], NOW);
+  assert.equal(perpetual.length, 0, "a subscription never turns perpetual");
+  assert.equal(+extensions[0].expiresAt, NOW + PERIOD);
+});
+
+test("renewing a LIVE subscription adds to it rather than resetting it", () => {
   const remaining = 10 * DAY;
-  const existing = [{ sku: STORY, expiresAt: new Date(NOW + remaining) }];
-  const { extensions } = rowsFor(paymentOf(line(STORY, 30)), existing, NOW);
+  const existing = [{ sku: EASY, expiresAt: new Date(NOW + remaining) }];
+  const { extensions } = rowsFor(paymentOf(line(EASY)), existing, NOW);
   assert.equal(extensions[0].hadRow, true);
-  assert.equal(+extensions[0].expiresAt, NOW + remaining + 30 * DAY);
+  assert.equal(+extensions[0].expiresAt, NOW + remaining + PERIOD);
 });
 
-test("re-buying an EXPIRED dated row starts from now, not from the old expiry", () => {
-  const existing = [{ sku: STORY, expiresAt: new Date(NOW - 60 * DAY) }];
-  const { extensions } = rowsFor(paymentOf(line(STORY, 30)), existing, NOW);
-  assert.equal(+extensions[0].expiresAt, NOW + 30 * DAY);
+test("re-buying an ENDED subscription starts from now, not from the old end", () => {
+  const existing = [{ sku: EASY, expiresAt: new Date(NOW - 60 * DAY) }];
+  const { extensions } = rowsFor(paymentOf(line(EASY)), existing, NOW);
+  assert.equal(+extensions[0].expiresAt, NOW + PERIOD);
 });
 
-test("a row expiring exactly now is treated as expired", () => {
-  const existing = [{ sku: STORY, expiresAt: new Date(NOW) }];
-  const { extensions } = rowsFor(paymentOf(line(STORY, 30)), existing, NOW);
-  assert.equal(+extensions[0].expiresAt, NOW + 30 * DAY);
+test("a row ending exactly now is treated as ended", () => {
+  const existing = [{ sku: EASY, expiresAt: new Date(NOW) }];
+  const { extensions } = rowsFor(paymentOf(line(EASY)), existing, NOW);
+  assert.equal(+extensions[0].expiresAt, NOW + PERIOD);
 });
 
-test("a mixed payment splits into perpetual pushes and dated extensions", () => {
-  const { perpetual, extensions } = rowsFor(paymentOf(line(SET), line(STORY, 30)), [], NOW);
-  assert.deepEqual(perpetual.map((r) => r.sku), [SET]);
-  assert.deepEqual(extensions.map((r) => r.sku), [STORY]);
+test("each subscription extends only its own row", () => {
+  const existing = [{ sku: EASY, expiresAt: new Date(NOW + 10 * DAY) }];
+  const { extensions } = rowsFor(paymentOf(line(EASY), line(ALL)), existing, NOW);
+  const by = Object.fromEntries(extensions.map((r) => [r.sku, +r.expiresAt]));
+  assert.equal(by[EASY], NOW + 10 * DAY + PERIOD);
+  assert.equal(by[ALL], NOW + PERIOD);
 });
 
 test("an item whose SKU has left the catalog grants nothing and does not throw", () => {
-  const payment = { _id: PAYMENT_ID, items: [{ sku: "all-access-90d", amountMinor: 1, durationDays: 90 }] };
-  assert.doesNotThrow(() => rowsFor(payment, [], NOW));
-  const { perpetual, extensions } = rowsFor(payment, [], NOW);
-  assert.equal(perpetual.length + extensions.length, 0);
+  // The per-story and per-character SKUs sold before 2026-10-05, and the old pass.
+  for (const sku of ["all-access-90d", "story-easy-leo", "set-leo"]) {
+    const payment = { _id: PAYMENT_ID, items: [{ sku, amountMinor: 1, durationDays: 90 }] };
+    assert.doesNotThrow(() => rowsFor(payment, [], NOW));
+    const { perpetual, extensions } = rowsFor(payment, [], NOW);
+    assert.equal(perpetual.length + extensions.length, 0, sku);
+  }
 });
 
 test("a payment with no items grants nothing", () => {

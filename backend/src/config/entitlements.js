@@ -45,9 +45,8 @@ export const isFreeStory = (key, catalog = defaultCatalog()) =>
 /**
  * Active iff perpetual, or now is strictly before expiresAt.
  *
- * Nothing sold today is dated, but rows are permanent and an admin grant can
- * still carry `days`, so the boundary stays pinned: AT expiresAt a row is
- * expired.
+ * Everything sold is dated — a subscription runs SUBSCRIPTION_DAYS — so this
+ * boundary is the whole of the paywall's clock: AT expiresAt a row is expired.
  */
 export function isActive(row, now = Date.now()) {
   if (!row || typeof row.sku !== "string") return false;

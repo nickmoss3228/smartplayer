@@ -6,7 +6,7 @@ import { api } from "./apiClient";
 export interface EntitlementRow {
   sku: string;
   grantedAt: string;
-  /** null = never expires. Only an admin grant with `days` sets one. */
+  /** When the subscription ends. null = never — only an admin can grant that. */
   expiresAt: string | null;
   source: "purchase" | "admin" | "promo";
 }
@@ -14,15 +14,15 @@ export interface EntitlementRow {
 export interface Entitlements {
   entitlements: EntitlementRow[];
   /**
-   * Resolved "difficulty/slug" keys of every PAID story this account owns, with
-   * sets and levels already expanded. The client gates on this, never on rows.
+   * Resolved "difficulty/slug" keys of every PAID story a live subscription of
+   * this account covers. The client gates on this, never on rows.
    */
   ownedStories: string[];
   currency: string;
   /**
-   * Which SKUs the SERVER will price right now. The bundled catalog carries
-   * production defaults, so this is what lets staging offer placeholder stories
-   * that production refuses without shipping a different build.
+   * Which SKUs the SERVER will price right now. The catalog carries production
+   * defaults, so this is what lets staging sell a subscription production
+   * refuses without shipping a different build.
    */
   purchasableSkus: string[];
 }

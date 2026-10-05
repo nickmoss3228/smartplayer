@@ -18,8 +18,10 @@ import { useCatalog } from "./CatalogContext";
 
 interface EntitlementsContextValue extends Entitlements {
   entitlementsLoading: boolean;
-  /** Has the signed-in account bought this story (directly, or via a set or level)? */
+  /** Does a live subscription of this account cover this story? */
   owns: (difficulty: string, slug: string) => boolean;
+  /** When this account's subscription to `sku` ends, or null when none is running. */
+  activeUntil: (sku: string) => Date | null;
   /** Would the server actually sell this SKU in THIS environment? */
   canBuy: (sku: string) => boolean;
   refreshEntitlements: () => Promise<void>;
@@ -29,6 +31,7 @@ const EntitlementsContext = createContext<EntitlementsContextValue>({
   ...NO_ENTITLEMENTS,
   entitlementsLoading: true,
   owns: () => false,
+  activeUntil: () => null,
   canBuy: () => false,
   refreshEntitlements: async () => {},
 });
@@ -89,6 +92,13 @@ export const EntitlementsProvider: React.FC<{ children: React.ReactNode }> = ({
       ...data,
       entitlementsLoading,
       owns: (difficulty: string, slug: string) => ownedSet.has(storyKey(difficulty, slug)),
+      activeUntil: (sku: string) => {
+        // Every subscription is dated, so a row with no end is not one.
+        const row = data.entitlements.find((e) => e.sku === sku);
+        if (!row?.expiresAt) return null;
+        const ends = new Date(row.expiresAt);
+        return ends.getTime() > Date.now() ? ends : null;
+      },
       // A guest has no entitlements response to read this from, but still has
       // to see real prices and buy buttons — buying is what signs them in.
       // /api/catalog is public precisely so this question has an answer for

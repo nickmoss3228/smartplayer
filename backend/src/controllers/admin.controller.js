@@ -139,8 +139,8 @@ export const grantEntitlement = async (req, res) => {
     return res.status(404).json({ error: "No matching user." });
   }
 
-  // Every catalog SKU is perpetual; `days` turns a grant into a trial, so
-  // support can hand out a week of a set rather than the set itself.
+  // Every catalog SKU is a subscription and defaults to its own length;
+  // `days` overrides it, so support can hand out a week of a level as a trial.
   //
   // Validated BEFORE deciding whether the grant is dated. `Number("abc")` is
   // NaN, which is not finite, so a mistyped trial length used to fall through

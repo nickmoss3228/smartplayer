@@ -28,8 +28,8 @@ export class BasketError extends Error {
  *
  * `purchasable` in the catalog is the PRODUCTION default. `extraSkus` comes
  * from PURCHASABLE_SKUS in the env and only ever widens the set, so staging can
- * offer placeholder stories that production refuses — without shipping a
- * different build. "*" opens everything, which is a staging convenience and
+ * offer a subscription with nothing released in it yet that production refuses
+ * — without shipping a different build. "*" opens everything, which is a staging convenience and
  * must never appear in a production env file.
  */
 export function isPurchasable(sku, extraSkus = [], catalog = BUILT_IN_CATALOG) {
@@ -82,13 +82,13 @@ export function priceBasket(
   }
 
   // A duplicate is charged once, and an item another item already covers (a
-  // story next to its set, a set next to its level) is not charged at all.
+  // level next to the all-levels subscription) is not charged at all.
   const { kept, dropped } = catalog.collapseBasket(skus);
 
-  // Drop what they already own outright. A partly owned set stays, and is
-  // priced below for only the tracks still missing.
+  // Drop what they already own outright. A dated product is never "owned" in
+  // that sense: buying it again is a renewal, and settlement adds the days to
+  // the end of the running period.
   const { stories } = resolveAccess(entitlements, now, catalog);
-  const owned = [...stories];
   const buying = kept.filter((sku) => {
     const product = getProduct(sku);
     if (product.durationDays !== null && product.durationDays !== undefined) return true;
@@ -105,7 +105,7 @@ export function priceBasket(
     const product = getProduct(sku);
     return {
       sku,
-      amountMinor: catalog.priceFor(product, owned),
+      amountMinor: product.amountMinor,
       durationDays: product.durationDays ?? null,
     };
   });

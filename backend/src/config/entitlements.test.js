@@ -24,9 +24,10 @@ import {
   FREE_PARTS_LONG_STORY,
   LONG_STORY_MIN_PARTS,
   PREVIEW_SECONDS,
-  levelSku,
-  setSku,
-  storySku,
+  ALL_SUBSCRIPTION_SKU,
+  LEVEL_SUBSCRIPTION_PRICE_MINOR,
+  SUBSCRIPTION_DAYS,
+  levelSubscriptionSku,
 } from "./priceCatalog.js";
 
 // The built-in rows stand in for "whatever the story table holds". These tests
@@ -36,6 +37,9 @@ const { stories: CATALOG_STORIES, getProduct } = BUILT_IN_CATALOG;
 const NOW = Date.UTC(2026, 8, 5, 12, 0, 0);
 const perpetual = (sku) => ({ sku, grantedAt: new Date(NOW), expiresAt: null });
 const until = (sku, ms) => ({ sku, grantedAt: new Date(NOW), expiresAt: new Date(ms) });
+const DAY = 24 * 60 * 60 * 1000;
+/** A subscription bought just now, running its full period. */
+const live = (sku) => until(sku, NOW + SUBSCRIPTION_DAYS * DAY);
 
 const AUTHED = { authenticated: true, now: NOW };
 const GUEST = { authenticated: false, now: NOW };
@@ -47,16 +51,17 @@ const SHORT = CATALOG_STORIES.find((s) => s.parts < LONG_STORY_MIN_PARTS).key;
 const MID = CATALOG_STORIES.find(
   (s) => s.parts < LONG_STORY_MIN_PARTS && s.parts > FREE_PARTS_LONG_STORY,
 ).key;
-const LEO_SET = getProduct(setSku("leo")).storyKeys;
+const EASY = levelSubscriptionSku("easy");
+const EASY_KEYS = getProduct(EASY).storyKeys;
 const NEWS = CATALOG_STORIES.find((s) => s.category === "news").key;
 
 test("isActive: a perpetual row never expires", () => {
-  assert.equal(isActive(perpetual(storySku(LONG)), NOW), true);
-  assert.equal(isActive(perpetual(storySku(LONG)), Date.UTC(2200, 0, 1)), true);
+  assert.equal(isActive(perpetual(EASY), NOW), true);
+  assert.equal(isActive(perpetual(EASY), Date.UTC(2200, 0, 1)), true);
 });
 
 test("isActive: the expiry boundary is exclusive", () => {
-  const row = until(storySku(LONG), NOW);
+  const row = until(EASY, NOW);
   assert.equal(isActive(row, NOW - 1), true, "1ms before expiry should be active");
   assert.equal(isActive(row, NOW), false, "at expiry should be expired");
 });
@@ -67,41 +72,54 @@ test("isActive: junk fails closed rather than throwing", () => {
   }
 });
 
-test("a story SKU unlocks that story and nothing else", () => {
-  const ents = [perpetual(storySku("easy/leo"))];
-  assert.equal(accessFor(ents, "easy", "leo", AUTHED).owned, true);
-  assert.equal(accessFor(ents, "easy", "leo-additional", AUTHED).owned, false);
-});
-
-test("a set unlocks every story about its character, but not the news", () => {
-  const ents = [perpetual(setSku("leo"))];
-  for (const key of LEO_SET) {
+test("a level subscription unlocks every story on its level, news included, and nothing else", () => {
+  const ents = [live(EASY)];
+  const easy = CATALOG_STORIES.filter((c) => c.key.startsWith("easy/"));
+  assert.ok(easy.some((c) => c.key === NEWS), "fixture: the news is on the easy level");
+  for (const { key } of easy) {
     assert.equal(accessFor(ents, ...split(key), AUTHED).owned, true, `${key} should be owned`);
   }
-  assert.equal(LEO_SET.includes(NEWS), false, "fixture: news is not in the set");
-  assert.equal(accessFor(ents, ...split(NEWS), AUTHED).owned, false);
   assert.equal(accessFor(ents, "medium", "maya", AUTHED).owned, false);
-});
-
-test("a level unlocks everything sold on it; what is given away stays open anyway", () => {
-  const ents = [perpetual(levelSku("easy"))];
-  const level = getProduct(levelSku("easy")).storyKeys;
-  for (const s of CATALOG_STORIES.filter((c) => c.key.startsWith("easy/"))) {
-    const access = accessFor(ents, ...split(s.key), AUTHED);
-    if (level.includes(s.key)) {
-      assert.equal(access.owned, true, `${s.key} should be owned`);
-    } else {
-      // Not in the level because the free allowance already covers it.
-      for (let n = 1; n <= s.parts; n += 1) {
-        assert.equal(isPartVisible(access, n), true, `${s.key} part ${n}`);
-      }
-    }
-  }
   assert.equal(accessFor(ents, "hard", "daniel", AUTHED).owned, false);
 });
 
+test("the all-levels subscription unlocks every paid story", () => {
+  const ents = [live(ALL_SUBSCRIPTION_SKU)];
+  for (const { key } of CATALOG_STORIES) {
+    assert.equal(accessFor(ents, ...split(key), AUTHED).owned, true, key);
+  }
+});
+
+test("a subscription stops unlocking the moment it ends", () => {
+  const ends = NOW + 5 * DAY;
+  const ents = [until(EASY, ends)];
+  assert.equal(accessFor(ents, "easy", "leo", { ...AUTHED, now: ends - 1 }).owned, true);
+  const after = accessFor(ents, "easy", "leo", { ...AUTHED, now: ends });
+  assert.equal(after.owned, false);
+  // Back to the same taster everyone gets, not to nothing.
+  assert.equal(after.freeParts, FREE_PARTS_LONG_STORY);
+});
+
+test("a story published later is inside a live subscription, with no new purchase", () => {
+  const ents = [live(EASY)];
+  const before = buildCatalog([{ key: "easy/leo", character: "leo", parts: 10 }]);
+  const after = buildCatalog([
+    { key: "easy/leo", character: "leo", parts: 10 },
+    { key: "easy/new", character: "leo", parts: 5 },
+  ]);
+  assert.equal(accessFor(ents, "easy", "new", { ...AUTHED, catalog: before }).reason, "unlisted");
+  assert.equal(accessFor(ents, "easy", "new", { ...AUTHED, catalog: after }).owned, true);
+});
+
 test("a row naming a SKU that has left the catalog grants nothing and does not throw", () => {
-  const ents = [perpetual("all-access-90d"), perpetual("pack-easy")];
+  // Including the per-story and per-character rows sold before 2026-10-05.
+  const ents = [
+    perpetual("all-access-90d"),
+    perpetual("pack-easy"),
+    perpetual("story-easy-leo"),
+    perpetual("set-leo"),
+    perpetual("level-easy"),
+  ];
   assert.doesNotThrow(() => accessFor(ents, ...split(LONG), AUTHED));
   assert.equal(accessFor(ents, ...split(LONG), AUTHED).owned, false);
   assert.equal(resolveAccess(ents, NOW).stories.size, 0);
@@ -170,11 +188,11 @@ test("a guest's allowance never differs from a signed-in non-owner's", () => {
 });
 
 test("a guest owns nothing even if rows are passed", () => {
-  assert.equal(accessFor([perpetual(storySku(LONG))], ...split(LONG), GUEST).owned, false);
+  assert.equal(accessFor([live(ALL_SUBSCRIPTION_SKU)], ...split(LONG), GUEST).owned, false);
 });
 
 test("an owner sees every part, with no preview cut", () => {
-  const access = accessFor([perpetual(storySku(MID))], ...split(MID), AUTHED);
+  const access = accessFor([live(ALL_SUBSCRIPTION_SKU)], ...split(MID), AUTHED);
   assert.equal(isPartVisible(access, 1), true);
   assert.equal(isPartVisible(access, 999), true);
   assert.equal(isPreviewPart(access, 1), false);
@@ -200,33 +218,34 @@ test("a row marked free is the ONLY way a story is free, and gives every part aw
   assert.equal(access.reason, "free");
   assert.equal(isPartVisible(access, 4), true);
   assert.equal(isFreeStory("easy/gift", catalog), true);
-  // Free content is never bundled into a set — a buyer must not be charged
-  // for something already given away.
-  assert.equal(catalog.getProduct(setSku("leo")), null);
+  // Nothing paid, nothing to subscribe to — a buyer must not be charged for
+  // something already given away.
+  assert.equal(catalog.getProduct(levelSubscriptionSku("easy")), null);
+  assert.equal(catalog.getProduct(ALL_SUBSCRIPTION_SKU), null);
 });
 
-test("a story the free allowance covers in full is not sold, alone or in a bundle", () => {
+test("a subscription's price does not depend on what is inside it", () => {
   const catalog = buildCatalog([
     { key: "easy/long", character: "leo", parts: 10 },
+    // Free in full already: it rides along and adds nothing.
     { key: "easy/short", character: "leo", parts: 2 },
-    { key: "easy/timed", character: "leo", parts: 2, previewSeconds: 30 },
+    // priceMinor was a per-story price; nothing reads it now.
+    { key: "easy/custom", character: "leo", parts: 10, priceMinor: 9900 },
   ]);
-  assert.equal(catalog.getProduct(storySku("easy/short")), null);
-  assert.deepEqual(catalog.skusGranting("easy/short"), []);
-  assert.equal(catalog.getProduct(setSku("leo")).storyKeys.includes("easy/short"), false);
-  assert.equal(catalog.getProduct(levelSku("easy")).storyKeys.includes("easy/short"), false);
-  // A timed preview cuts the free part short, so that story still sells.
-  assert.notEqual(catalog.getProduct(storySku("easy/timed")), null);
-  // Access is untouched: every part still plays, for guests too.
+  const level = catalog.getProduct(levelSubscriptionSku("easy"));
+  assert.deepEqual(level.storyKeys, ["easy/long", "easy/short", "easy/custom"]);
+  assert.equal(level.amountMinor, LEVEL_SUBSCRIPTION_PRICE_MINOR);
+  assert.deepEqual(catalog.skusGranting("easy/custom"), [
+    levelSubscriptionSku("easy"),
+    ALL_SUBSCRIPTION_SKU,
+  ]);
+  // Access is untouched: every part of the short one still plays, for guests too.
   const access = accessFor([], "easy", "short", { ...GUEST, catalog });
   assert.equal(isPartVisible(access, 2), true);
 });
 
-test("a row may override the length-derived price and free allowance", () => {
-  const catalog = buildCatalog([
-    { key: "easy/custom", character: "leo", parts: 10, priceMinor: 9900, freeParts: 1 },
-  ]);
-  assert.equal(catalog.getProduct(storySku("easy/custom")).amountMinor, 9900);
+test("a row may override the length-derived free allowance", () => {
+  const catalog = buildCatalog([{ key: "easy/custom", character: "leo", parts: 10, freeParts: 1 }]);
   const access = accessFor([], "easy", "custom", { ...GUEST, catalog });
   assert.equal(access.freeParts, 1, "1, not the 3 a 10-part story would derive");
   assert.equal(isPartVisible(access, 1), true);
@@ -290,9 +309,10 @@ test("paywall off changes nothing about a story that was already free", () => {
   assert.equal(access.reason, "free");
 });
 
-test("ownedStoryKeys lists only what was bought, expanded through sets", () => {
+test("ownedStoryKeys lists only what is subscribed to, expanded by level", () => {
   assert.deepEqual(ownedStoryKeys([], NOW), []);
-  assert.deepEqual(ownedStoryKeys([perpetual(setSku("leo"))], NOW).sort(), [...LEO_SET].sort());
+  assert.deepEqual(ownedStoryKeys([live(EASY)], NOW).sort(), [...EASY_KEYS].sort());
+  assert.deepEqual(ownedStoryKeys([until(EASY, NOW)], NOW), [], "an ended one lists nothing");
 });
 
 test("storyKey is difficulty-qualified, because slugs repeat across levels", () => {

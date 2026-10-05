@@ -134,7 +134,7 @@ describe("POST /api/progress/complete", () => {
     assert.equal((await userRow(u.id)).bitAward, 0);
   });
 
-  it("refuses a locked part until an admin grants the story", async () => {
+  it("refuses a locked part until an admin grants the level", async () => {
     const u = await registerUser();
     const body = { ...LOCKED, answers: answers(LOCKED, { correct: true }) };
 
@@ -144,7 +144,7 @@ describe("POST /api/progress/complete", () => {
 
     const grant = await api("POST", "/api/admin/grant-entitlement", {
       token: await adminToken(),
-      body: { userId: u.id, sku: "story-easy-leo" },
+      body: { userId: u.id, sku: "sub-easy" },
     });
     assert.equal(grant.status, 200, JSON.stringify(grant.body));
 

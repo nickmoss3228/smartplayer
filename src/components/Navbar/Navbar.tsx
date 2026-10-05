@@ -17,7 +17,6 @@ import { useCharacter } from "../../context/CharacterContext";
 import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
-import { useCart } from "../../context/CartContext";
 import gbFlag from "../../assets/flags/gb.svg";
 import ruFlag from "../../assets/flags/ru.svg";
 
@@ -46,7 +45,6 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { character } = useCharacter();
-  const { count: cartCount } = useCart();
   const navigate = useNavigate();
 
   // The homepage hero already renders the brand name at full size directly
@@ -140,8 +138,8 @@ const Navbar = () => {
                   each card and "mine" is a filter, so two buttons would lead to
                   the same page twice.
 
-                  Ungated: a visitor browses and fills a basket before signing
-                  up, and only checkout needs an account.
+                  Ungated: a visitor browses the plans before signing up, and
+                  only subscribing needs an account.
 
                   Kept away from WalletChips deliberately. Those are BitAward /
                   BitWord / BitPhrase, earned by studying; this leads to stories
@@ -151,25 +149,10 @@ const Navbar = () => {
               <button
                 onClick={() => navigate("/stories")}
                 title={t("navbar.stories")}
-                aria-label={
-                  cartCount > 0
-                    ? `${t("navbar.stories")} (${cartCount})`
-                    : t("navbar.stories")
-                }
+                aria-label={t("navbar.stories")}
                 className="relative cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
               >
                 <IoBookOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
-                {/* A basket you cannot see is a basket you forget. The count is
-                    also in the aria-label above, since a badge is decorative to
-                    a screen reader. */}
-                {cartCount > 0 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gray-900 px-1 text-[10px] font-bold leading-none text-white tabular-nums"
-                  >
-                    {cartCount}
-                  </span>
-                )}
               </button>
               )}
 

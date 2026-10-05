@@ -15,6 +15,7 @@ import {
   stopServer,
   userRow,
 } from "./harness.js";
+import { LEVEL_SUBSCRIPTION_PRICE_MINOR, SUBSCRIPTION_DAYS } from "../../src/config/priceCatalog.js";
 
 before(startServer);
 after(stopServer);
@@ -37,7 +38,7 @@ async function settled(u, orderId, { until = (o) => o.status !== "pending", time
 
 const fakeIdOf = (confirmationUrl) => new URL(confirmationUrl).searchParams.get("fp");
 
-async function placeOrder(u, skus = ["story-easy-leo"]) {
+async function placeOrder(u, skus = ["sub-easy"]) {
   const res = await api("POST", "/api/payments/orders", { token: u.token, body: { skus } });
   assert.equal(res.status, 200, JSON.stringify(res.body));
   return res.body;
@@ -49,7 +50,11 @@ describe("payments", () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.enabled, true);
     assert.equal(res.body.fake, true);
-    assert.ok(res.body.purchasableSkus.includes("story-easy-leo"));
+    for (const sku of ["sub-easy", "sub-medium", "sub-hard", "sub-all"]) {
+      assert.ok(res.body.purchasableSkus.includes(sku), sku);
+    }
+    // Stories and character sets are not sold one at a time any more.
+    assert.ok(!res.body.purchasableSkus.some((sku) => /^(story|set|level)-/.test(sku)));
   });
 
   it("pay → callback → entitlement → the locked part opens", async () => {
@@ -57,7 +62,7 @@ describe("payments", () => {
     assert.equal((await api("GET", LOCKED_QUIZ, { token: u.token })).status, 403);
 
     const order = await placeOrder(u);
-    assert.equal(order.amountMinor, 10 * 2900);
+    assert.equal(order.amountMinor, LEVEL_SUBSCRIPTION_PRICE_MINOR);
 
     const act = await api("POST", `/api/payments/fake/${fakeIdOf(order.confirmationUrl)}/act`, {
       body: { action: "pay" },
@@ -68,15 +73,45 @@ describe("payments", () => {
     assert.equal(done.status, "succeeded");
 
     const ent = await api("GET", "/api/user/entitlements", { token: u.token });
-    assert.deepEqual(ent.body.ownedStories, ["easy/leo"]);
+    // The whole level, and only that level.
+    assert.ok(ent.body.ownedStories.includes("easy/leo"));
+    assert.ok(ent.body.ownedStories.every((key) => key.startsWith("easy/")), ent.body.ownedStories.join());
     assert.equal((await api("GET", LOCKED_QUIZ, { token: u.token })).status, 200);
+
+    // Dated: one period from now.
+    const [row] = ent.body.entitlements;
+    const ends = new Date(row.expiresAt).getTime();
+    assert.ok(Math.abs(ends - (Date.now() + SUBSCRIPTION_DAYS * 24 * 3600 * 1000)) < 60 * 1000, row.expiresAt);
 
     const history = await api("GET", "/api/payments/orders", { token: u.token });
     assert.equal(history.body.orders.length, 1);
 
-    // Buying it again is refused rather than charged twice.
-    const again = await api("POST", "/api/payments/orders", { token: u.token, body: { skus: ["story-easy-leo"] } });
-    assert.equal(again.status, 409);
+    // Buying it again while it runs is a renewal, not a refusal.
+    const again = await api("POST", "/api/payments/orders", { token: u.token, body: { skus: ["sub-easy"] } });
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    assert.equal(again.body.amountMinor, LEVEL_SUBSCRIPTION_PRICE_MINOR);
+  });
+
+  it("a renewal adds a period to the end of the running one", async () => {
+    const u = await registerUser();
+    const pay = async () => {
+      const order = await placeOrder(u);
+      await api("POST", `/api/payments/fake/${fakeIdOf(order.confirmationUrl)}/act`, { body: { action: "pay" } });
+      await settled(u, order.orderId, { until: (o) => o.granted });
+      const ent = await api("GET", "/api/user/entitlements", { token: u.token });
+      return new Date(ent.body.entitlements[0].expiresAt).getTime();
+    };
+    const first = await pay();
+    const second = await pay();
+    assert.equal(second - first, SUBSCRIPTION_DAYS * 24 * 3600 * 1000);
+  });
+
+  it("the retired story and set SKUs are not sold", async () => {
+    const u = await registerUser();
+    for (const sku of ["story-easy-leo", "set-leo", "level-easy"]) {
+      const res = await api("POST", "/api/payments/orders", { token: u.token, body: { skus: [sku] } });
+      assert.equal(res.status, 400, `${sku}: ${JSON.stringify(res.body)}`);
+    }
   });
 
   it("a duplicated callback grants exactly once", async () => {
@@ -122,16 +157,16 @@ describe("payments", () => {
   it("refuses client-supplied prices, unknown SKUs, empty baskets and guests", async () => {
     const u = await registerUser();
     for (const body of [
-      { skus: ["story-easy-leo"], amountMinor: 1 },
+      { skus: ["sub-easy"], amountMinor: 1 },
       { skus: ["story-does-not-exist"] },
       { skus: [] },
-      { skus: "story-easy-leo" },
+      { skus: "sub-easy" },
       {},
     ]) {
       const res = await api("POST", "/api/payments/orders", { token: u.token, body });
       assert.equal(res.status, 400, JSON.stringify(body));
     }
-    assert.equal((await api("POST", "/api/payments/orders", { body: { skus: ["story-easy-leo"] } })).status, 401);
+    assert.equal((await api("POST", "/api/payments/orders", { body: { skus: ["sub-easy"] } })).status, 401);
   });
 
   it("an order is visible only to its buyer", async () => {
@@ -220,26 +255,26 @@ describe("admin", () => {
     const u = await registerUser();
     const grant = await api("POST", "/api/admin/grant-entitlement", {
       token: admin,
-      body: { userId: u.id, sku: "set-leo", days: 7 },
+      body: { userId: u.id, sku: "sub-easy", days: 7 },
     });
     assert.equal(grant.status, 200, JSON.stringify(grant.body));
     const firstExpiry = new Date(grant.body.entitlements[0].expiresAt).getTime();
 
     const extend = await api("POST", "/api/admin/grant-entitlement", {
       token: admin,
-      body: { userId: u.id, sku: "set-leo", days: 7 },
+      body: { userId: u.id, sku: "sub-easy", days: 7 },
     });
     const secondExpiry = new Date(extend.body.entitlements[0].expiresAt).getTime();
     assert.ok(secondExpiry - firstExpiry > 6 * 24 * 3600 * 1000, "a repeat grant should extend, not reset");
     assert.equal(extend.body.entitlements.length, 1);
 
     for (const days of [0, -1, 1.5, "abc"]) {
-      const bad = await api("POST", "/api/admin/grant-entitlement", { token: admin, body: { userId: u.id, sku: "set-leo", days } });
+      const bad = await api("POST", "/api/admin/grant-entitlement", { token: admin, body: { userId: u.id, sku: "sub-easy", days } });
       assert.equal(bad.status, 400, `days=${days}`);
     }
     assert.equal((await api("POST", "/api/admin/grant-entitlement", { token: admin, body: { userId: u.id, sku: "nope" } })).status, 400);
 
-    const revoke = await api("DELETE", "/api/admin/entitlement", { token: admin, body: { userId: u.id, sku: "set-leo" } });
+    const revoke = await api("DELETE", "/api/admin/entitlement", { token: admin, body: { userId: u.id, sku: "sub-easy" } });
     assert.equal(revoke.status, 200);
     assert.equal(revoke.body.removed, 1);
     assert.deepEqual(revoke.body.entitlements, []);

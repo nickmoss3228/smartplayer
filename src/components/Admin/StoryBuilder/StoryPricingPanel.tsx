@@ -2,23 +2,24 @@ import { useEffect, useState } from "react";
 import { AdminStory, updateStoryMeta } from "../../../services/adminStoryServices";
 
 /**
- * What this story costs, and how much of it is free.
+ * Whether this story is behind the subscription, and how much of it is free.
  *
- * This panel is the reason the catalog moved into the database. Prices used to
- * be literals in backend/src/config/priceCatalog.js, mirrored into the
- * frontend — which meant a story created here appeared in NO catalog, and the
- * server's paywall failed open on keys it did not recognise. The result was a
- * story that was free to every logged-out visitor and impossible to buy. Every
- * field below now has exactly one home: the story row.
+ * There is no per-story price: stories are not sold one at a time. A paid
+ * story is inside its level's subscription and the all-levels one, whatever
+ * it is — so the only commercial choice left here is paid or free.
+ *
+ * This panel is the reason the catalog moved into the database. A story
+ * created here used to appear in NO catalog, and the server's paywall failed
+ * open on keys it did not recognise. Every field below now has exactly one
+ * home: the story row.
  *
  * ── The empty-means-derive rule ─────────────────────────────────────────────
  *
- * Price, free parts and preview seconds are all optional, and blank is a real
- * value meaning "work it out from the length" — 29 ₽ a track, and the first
- * three parts free (every part, on a story of three or fewer). No timed
- * preview unless one is typed in here.
- * Almost every story should leave all three blank; they exist for the one that
- * should not follow the rule.
+ * Free parts and preview seconds are optional, and blank is a real value
+ * meaning "work it out from the length" — the first three parts free (every
+ * part, on a story of three or fewer). No timed preview unless one is typed in
+ * here. Almost every story should leave both blank; they exist for the one
+ * that should not follow the rule.
  *
  * Note 0 is NOT blank. A freeParts of 0 means "nothing plays free", which is a
  * deliberate and different thing from leaving it empty.
@@ -28,8 +29,6 @@ interface Props {
   story: AdminStory;
   onStoryUpdated: (story: AdminStory) => void;
 }
-
-const TRACK_PRICE_MINOR = 2900;
 
 /** "" for null/undefined, so a blank input round-trips back to "derive it". */
 const toField = (value: number | null | undefined) =>
@@ -47,7 +46,6 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
   const [character, setCharacter] = useState(story.character ?? "");
   const [paid, setPaid] = useState(story.paid !== false);
   const [ready, setReady] = useState(story.ready !== false);
-  const [priceMinor, setPriceMinor] = useState(toField(story.priceMinor));
   const [freeParts, setFreeParts] = useState(toField(story.freeParts));
   const [previewSeconds, setPreviewSeconds] = useState(toField(story.previewSeconds));
   const [saving, setSaving] = useState(false);
@@ -60,21 +58,15 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
     setCharacter(story.character ?? "");
     setPaid(story.paid !== false);
     setReady(story.ready !== false);
-    setPriceMinor(toField(story.priceMinor));
     setFreeParts(toField(story.freeParts));
     setPreviewSeconds(toField(story.previewSeconds));
     setError("");
     setSaved(false);
-  }, [story._id, story.character, story.paid, story.ready, story.priceMinor, story.freeParts, story.previewSeconds]);
-
-  const derivedPrice = story.totalParts * TRACK_PRICE_MINOR;
-  const effectivePrice = priceMinor.trim() === "" ? derivedPrice : Number(priceMinor);
+  }, [story._id, story.character, story.paid, story.ready, story.freeParts, story.previewSeconds]);
 
   const save = async () => {
-    const price = toValue(priceMinor);
     const free = toValue(freeParts);
     const preview = toValue(previewSeconds);
-    if (price === undefined) return setError("Price must be a whole number of kopecks, or blank.");
     if (free === undefined) return setError("Free parts must be a whole number, or blank.");
     if (preview === undefined) return setError("Preview seconds must be a whole number, or blank.");
     if (free !== null && free > story.totalParts) {
@@ -89,14 +81,13 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
           character: character.trim().toLowerCase(),
           paid,
           ready,
-          priceMinor: price,
           freeParts: free,
           previewSeconds: preview,
         }),
       );
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save pricing.");
+      setError(err instanceof Error ? err.message : "Failed to save access settings.");
     } finally {
       setSaving(false);
     }
@@ -108,7 +99,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
   return (
     <div className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-4">
       <div>
-        <h3 className="font-semibold text-black">Pricing &amp; access</h3>
+        <h3 className="font-semibold text-black">Access</h3>
         <p className="mt-0.5 text-xs text-gray-500">
           Leave a number blank to work it out from the story&apos;s length. These take effect as
           soon as the story is published.
@@ -123,10 +114,10 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
           className="mt-0.5 h-4 w-4 cursor-pointer"
         />
         <span className="text-sm text-black">
-          Sold for money
+          Behind the subscription
           <span className="block text-xs text-gray-500">
-            Unticked, the whole story is free to everyone and it is left out of the character
-            set — a bundle must not charge for something already given away.
+            Ticked, it is inside its level&apos;s subscription and the all-levels one. Unticked,
+            the whole story is free to everyone and in no subscription.
           </span>
         </span>
       </label>
@@ -141,32 +132,17 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
               className="mt-0.5 h-4 w-4 cursor-pointer"
             />
             <span className="text-sm text-black">
-              Ready to sell
+              Released
               <span className="block text-xs text-gray-500">
-                Unticked, it appears in the shop as &ldquo;coming soon&rdquo; with no buy button.
-                Use this until the audio is actually uploaded.
+                Unticked, the shop counts it as &ldquo;coming soon&rdquo;; a level with nothing
+                released is not sold. Use this until the audio is actually uploaded.
               </span>
             </span>
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={label}>Price (kopecks)</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={priceMinor}
-                onChange={(e) => setPriceMinor(e.target.value)}
-                placeholder={`${derivedPrice} (29 ₽ × ${story.totalParts})`}
-                className={field}
-              />
-              <p className="mt-1 text-[11px] text-gray-400">
-                Shown to buyers as {(effectivePrice / 100).toFixed(0)} ₽
-              </p>
-            </div>
-
-            <div>
-              <label className={label}>Set / character</label>
+              <label className={label}>Character</label>
               <input
                 type="text"
                 value={character}
@@ -175,8 +151,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
                 className={field}
               />
               <p className="mt-1 text-[11px] text-gray-400">
-                Sells through <code>set-{character.trim().toLowerCase() || "…"}</code>. Blank
-                keeps it out of every bundle.
+                Who the story is about. Names the level in the shop.
               </p>
             </div>
 
@@ -220,7 +195,7 @@ const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
         disabled={saving}
         className="px-3 py-2 rounded-[3px] bg-black text-white text-sm disabled:opacity-50 cursor-pointer"
       >
-        {saving ? "Saving…" : "Save pricing"}
+        {saving ? "Saving…" : "Save access"}
       </button>
     </div>
   );

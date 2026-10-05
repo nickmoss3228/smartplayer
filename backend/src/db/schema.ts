@@ -538,13 +538,15 @@ export const story = pgTable(
     // Does it cost money? `false` is the ONLY way a story is free — the
     // catalog never gives content away by omission.
     paid: boolean().notNull().default(true),
-    // Sellable NOW. False is the safety catch on a story whose audio does not
-    // exist yet: it can be listed and previewed but not bought.
+    // Released. False marks a story whose audio does not exist yet: it is
+    // listed as "coming soon", and a subscription holding only such stories
+    // is not sold.
     ready: boolean().notNull().default(true),
 
-    // Per-story overrides. NULL means "derive it" — the price from
-    // parts × TRACK_PRICE_MINOR, the allowance from freeAllowanceFor(parts) —
-    // which is what almost every row should carry.
+    // Per-story overrides. NULL means "derive it" — the allowance from
+    // freeAllowanceFor(parts) — which is what almost every row should carry.
+    // price_minor is no longer read: stories are not sold one at a time since
+    // the subscription model (2026-10-05). Kept so old rows stay readable.
     priceMinor: integer("price_minor"),
     freeParts: integer("free_parts"),
     previewSeconds: integer("preview_seconds"),

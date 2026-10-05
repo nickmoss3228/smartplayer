@@ -1524,56 +1524,53 @@
   },
   "paywall": {
     "title": "Эта часть закрыта",
-    "description": "Купи эту историю или весь набор про персонажа — так каждый трек дешевле.",
+    "description": "Открой весь уровень подпиской — или сразу все три.",
     "locked": "Закрыто",
     "comingSoon": "Скоро",
-    "buyStory": "Эта история",
-    "buySet": "Весь набор",
-    "buyLevel": "Весь уровень",
-    "loginFirst": "Чтобы купить, войди или зарегистрируйся — после этого мы вернём тебя сюда.",
+    "loginFirst": "Чтобы оформить подписку, войди или зарегистрируйся — после этого мы вернём тебя сюда.",
     "browseShop": "Посмотреть всё в магазине",
     "maybeLater": "Может быть, позже",
-    "signUpToContinue": "Зарегистрируйся бесплатно, чтобы слушать дальше — мы вернём тебя сюда."
+    "signUpToContinue": "Зарегистрируйся бесплатно, чтобы слушать дальше — мы вернём тебя сюда.",
+    "subscribeLevel": "Уровень «{{level}}»",
+    "subscribeAll": "Все три уровня",
+    "pricePerPeriod_one": "{{price}} / {{count}} день",
+    "pricePerPeriod_few": "{{price}} / {{count}} дня",
+    "pricePerPeriod_many": "{{price}} / {{count}} дней"
   },
   "shop": {
     "title": "Магазин",
-    "subtitle": "Одна история — 29 ₽ за трек. Весь набор про персонажа — 19 ₽ за трек.",
-    "packs": "Наборы по уровням",
-    "packBlurb": "Ещё три истории с уже знакомым персонажем.",
-    "singleStories": "Отдельные истории",
-    "owned": "Уже твоё",
+    "subtitle": "Подписка на один уровень или сразу на все три. Новые истории — без доплаты.",
     "comingSoon": "Скоро",
-    "addToCart": "В корзину",
-    "inCart": "В корзине",
-    "remove": "Убрать",
-    "cartTitle": "Корзина",
-    "cartEmpty": "Корзина пуста.",
-    "total": "Итого",
-    "checkout": "Оплатить",
-    "checkoutLoginRequired": "Войди, чтобы купить",
     "paymentsDisabled": "Магазин пока не принимает оплату.",
-    "buy": "Купить",
     "whatsInside": "Что внутри?",
-    "ladder": {
-      "label": "Как купить",
-      "single": {
-        "kicker": "По одной",
-        "title": "Одна история",
-        "body": "Берёшь только то, что хочешь дослушать."
+    "plans": {
+      "label": "Подписки",
+      "levels": "Уровни",
+      "level": {
+        "kicker": "Один уровень",
+        "title": "Уровень «{{level}}»"
       },
-      "from": "от",
-      "pickBelow": "Выбрать историю ниже",
-      "set": {
-        "kicker": "Набор персонажа"
-      },
-      "best": "Выгоднее всего · −{{percent}}%",
-      "perTrack": "{{price}} за трек",
-      "total": "Итого {{price}}",
-      "allOwned": "Весь набор уже твой",
       "all": {
         "kicker": "Всё сразу",
         "title": "Все три уровня"
       },
+      "best": "Выгоднее · −{{percent}}%",
+      "perPeriod_one": "за {{count}} день",
+      "perPeriod_few": "за {{count}} дня",
+      "perPeriod_many": "за {{count}} дней",
+      "activeUntil": "Подписка активна до {{date}}",
+      "coveredByAll": "Уже входит в твою подписку на все уровни — до {{date}}",
+      "subscribe": "Оформить подписку",
+      "renew_one": "Продлить на {{count}} день",
+      "renew_few": "Продлить на {{count}} дня",
+      "renew_many": "Продлить на {{count}} дней",
+      "loginToSubscribe": "Войди, чтобы оформить",
+      "redirecting": "Переходим к оплате…",
+      "newStoriesIncluded": "Новые истории открываются сами, без доплаты.",
+      "separately_one": "{{count}} уровень по отдельности — {{price}}",
+      "separately_few": "{{count}} уровня по отдельности — {{price}}",
+      "separately_many": "{{count}} уровней по отдельности — {{price}}",
+      "footnote": "Подписка не продлевается сама и ничего не списывает без тебя. Продлить можно в любой момент — новые дни добавятся к оставшимся.",
       "storiesCount_one": "{{count}} история",
       "storiesCount_few": "{{count}} истории",
       "storiesCount_many": "{{count}} историй",
@@ -1588,10 +1585,7 @@
       "moreSoon_one": "ещё {{count}} история — скоро",
       "moreSoon_few": "ещё {{count}} истории — скоро",
       "moreSoon_many": "ещё {{count}} историй — скоро",
-      "tracksShort": "{{count}} тр.",
-      "inSet": "в наборе",
-      "removeItem": "Убрать: {{name}}",
-      "levels": "Уровни"
+      "tracksShort": "{{count}} тр."
     }
   },
   "library": {
@@ -1614,34 +1608,26 @@
     "stillProcessing": "Платёж ещё подтверждается. Обычно это занимает несколько секунд — библиотека обновится сама, платить повторно не нужно.",
     "canceled": "Платёж отменён",
     "canceledBody": "Деньги не списаны.",
-    "successBody": "Все покупки уже открыты и ждут в библиотеке.",
+    "successBody": "Подписка уже работает — истории открыты в библиотеке.",
     "failedBody": "Деньги не списаны. Можно попробовать ещё раз в магазине.",
     "unlocked": "Открыто",
     "startListening": "Начать слушать",
-    "itemSet": "Набор историй",
-    "itemLevel": "Весь уровень",
-    "itemStory": "Отдельная история"
+    "itemLevel": "Подписка на уровень «{{level}}»",
+    "itemAll": "Подписка на все уровни",
+    "activeUntil": "действует до {{date}}"
   },
   "shelf": {
     "title": "Истории",
     "subtitle": "Всё, что есть в приложении. Твоё и остальное.",
     "filterAll": "Все",
     "filterMine": "Мои",
-    "filterBuy": "Купить",
+    "filterBuy": "Закрытые",
     "yours": "Доступно",
     "freeParts": "{{count}} части бесплатно",
     "freePreview": "{{seconds}} секунд бесплатно",
     "previewBadge": "{{seconds}} сек",
     "parts": "{{count}} частей",
     "ownedOf": "{{owned}} из {{total}}",
-    "wholeLevel": "Весь уровень {{level}}",
-    "levelMeta": "Все истории и новости уровня",
-    "setMeta": "{{count}} треков · {{perTrack}} за трек",
-    "sets": {
-      "leo": "Набор историй о Лео",
-      "maya": "Набор историй о Майе",
-      "daniel": "Набор историй о Даниэле"
-    },
     "characters": {
       "leo": "Лео",
       "maya": "Майя",
@@ -1657,8 +1643,12 @@
     "loading": "Загружаем…",
     "listen": "Слушать",
     "listenFree": "Слушать бесплатно",
-    "buyStory": "Купить историю",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "subscribeLevel": "Уровень «{{level}}»",
+    "subscribeAll": "Все уровни",
+    "days_one": "{{count}} день",
+    "days_few": "{{count}} дня",
+    "days_many": "{{count}} дней"
   },
   "onboarding": {
     "stepOf": "Шаг {{n}} из {{total}}",

@@ -1506,56 +1506,49 @@
   },
   "paywall": {
     "title": "This part is locked",
-    "description": "Buy this story, or the whole set about the character — every track is cheaper that way.",
+    "description": "Open the whole level with a subscription — or all three at once.",
     "locked": "Locked",
     "comingSoon": "Coming soon",
-    "buyStory": "This story",
-    "buySet": "The whole set",
-    "buyLevel": "The whole level",
-    "loginFirst": "To buy, log in or sign up — we will bring you straight back here.",
+    "loginFirst": "To subscribe, log in or sign up — we will bring you straight back here.",
     "browseShop": "See everything in the shop",
     "maybeLater": "Maybe later",
-    "signUpToContinue": "Sign up free to keep listening — we will bring you straight back here."
+    "signUpToContinue": "Sign up free to keep listening — we will bring you straight back here.",
+    "subscribeLevel": "{{level}} level",
+    "subscribeAll": "All three levels",
+    "pricePerPeriod_one": "{{price}} / {{count}} day",
+    "pricePerPeriod_other": "{{price}} / {{count}} days"
   },
   "shop": {
     "title": "Shop",
-    "subtitle": "A story is 29 ₽ a track. The whole set about a character is 19 ₽ a track.",
-    "packs": "Level packs",
-    "packBlurb": "Three more stories with the character you already know.",
-    "singleStories": "Single stories",
-    "owned": "Owned",
+    "subtitle": "Subscribe to one level, or to all three at once. New stories come at no extra cost.",
     "comingSoon": "Coming soon",
-    "addToCart": "Add",
-    "inCart": "In basket",
-    "remove": "Remove",
-    "cartTitle": "Basket",
-    "cartEmpty": "Your basket is empty.",
-    "total": "Total",
-    "checkout": "Checkout",
-    "checkoutLoginRequired": "Log in to buy",
     "paymentsDisabled": "The shop is not taking payments yet.",
-    "buy": "Buy",
     "whatsInside": "What's inside?",
-    "ladder": {
-      "label": "How to buy",
-      "single": {
-        "kicker": "One at a time",
-        "title": "One story",
-        "body": "Take only the stories you want to finish."
+    "plans": {
+      "label": "Subscriptions",
+      "levels": "Levels",
+      "level": {
+        "kicker": "One level",
+        "title": "{{level}} level"
       },
-      "from": "from",
-      "pickBelow": "Pick a story below",
-      "set": {
-        "kicker": "Character set"
-      },
-      "best": "Best value · −{{percent}}%",
-      "perTrack": "{{price}} a track",
-      "total": "Total {{price}}",
-      "allOwned": "The whole set is yours",
       "all": {
         "kicker": "Everything",
         "title": "All three levels"
       },
+      "best": "Best value · −{{percent}}%",
+      "perPeriod_one": "for {{count}} day",
+      "perPeriod_other": "for {{count}} days",
+      "activeUntil": "Active until {{date}}",
+      "coveredByAll": "Already in your all-levels subscription — until {{date}}",
+      "subscribe": "Subscribe",
+      "renew_one": "Extend by {{count}} day",
+      "renew_other": "Extend by {{count}} days",
+      "loginToSubscribe": "Log in to subscribe",
+      "redirecting": "Going to payment…",
+      "newStoriesIncluded": "New stories open on their own, at no extra cost.",
+      "separately_one": "{{count}} level separately — {{price}}",
+      "separately_other": "{{count}} levels separately — {{price}}",
+      "footnote": "A subscription never renews or charges you on its own. Extend it any time — the new days are added to the ones left.",
       "storiesCount_one": "{{count}} story",
       "storiesCount_other": "{{count}} stories",
       "tracksCount_one": "{{count}} track",
@@ -1566,10 +1559,7 @@
       "minutesSoFar": "{{count}} min to listen to now",
       "moreSoon_one": "{{count}} more story coming soon",
       "moreSoon_other": "{{count}} more stories coming soon",
-      "tracksShort": "{{count}} tr.",
-      "inSet": "in set",
-      "removeItem": "Remove: {{name}}",
-      "levels": "Levels"
+      "tracksShort": "{{count}} tr."
     }
   },
   "library": {
@@ -1592,34 +1582,26 @@
     "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again.",
     "canceled": "Payment canceled",
     "canceledBody": "Nothing was charged.",
-    "successBody": "Everything you bought is unlocked and waiting in your library.",
+    "successBody": "Your subscription is on — the stories are open in your library.",
     "failedBody": "Nothing was charged. You can try again from the shop whenever you like.",
     "unlocked": "Unlocked",
     "startListening": "Start listening",
-    "itemSet": "Story set",
-    "itemLevel": "Whole level",
-    "itemStory": "Single story"
+    "itemLevel": "{{level}} level subscription",
+    "itemAll": "All-levels subscription",
+    "activeUntil": "active until {{date}}"
   },
   "shelf": {
     "title": "Stories",
     "subtitle": "Everything in the app. Yours, and the rest.",
     "filterAll": "All",
     "filterMine": "Mine",
-    "filterBuy": "To buy",
+    "filterBuy": "Locked",
     "yours": "Available",
     "freeParts": "{{count}} parts free",
     "freePreview": "{{seconds}} seconds free",
     "previewBadge": "{{seconds}} sec",
     "parts": "{{count}} parts",
     "ownedOf": "{{owned}} of {{total}}",
-    "wholeLevel": "All of {{level}}",
-    "levelMeta": "Every story and news item on the level",
-    "setMeta": "{{count}} tracks · {{perTrack}} a track",
-    "sets": {
-      "leo": "Leo story set",
-      "maya": "Maya story set",
-      "daniel": "Daniel story set"
-    },
     "characters": {
       "leo": "Leo",
       "maya": "Maya",
@@ -1635,8 +1617,11 @@
     "loading": "Loading…",
     "listen": "Listen",
     "listenFree": "Listen for free",
-    "buyStory": "Buy the story",
-    "close": "Close"
+    "close": "Close",
+    "subscribeLevel": "{{level}} level",
+    "subscribeAll": "All levels",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days"
   },
   "onboarding": {
     "stepOf": "Step {{n}} of {{total}}",

@@ -28,18 +28,18 @@ const fake = await import(`${B}/services/payments/fake.js`);
 const { callbackUrlFor, signOrder } = await import(`${B}/helpers/callbackToken.js`);
 const { signAccessToken } = await import(`${B}/helpers/sessionStore.js`);
 const { reconcileOnce } = await import(`${B}/jobs/reconcilePayments.js`);
-const { getProduct } = await import(`${B}/config/priceCatalog.js`);
+const { BUILT_IN_CATALOG, SUBSCRIPTION_DAYS } = await import(`${B}/config/priceCatalog.js`);
 
-// Every catalog SKU is perpetual, so each scenario buys its own SKU and
-// counting that SKU's rows means something.
-const SET_A = "set-leo";
-const SET_B = "set-maya";
-const SET_C = "set-daniel";
-const STORY_A = "story-easy-leo-new-job";
-const STORY_B = "story-easy-leo-doctor";
-const STORY_C = "story-medium-maya-interview";
-const STORY_D = "story-hard-daniel-courtroom";
-const price = (sku) => getProduct(sku).amountMinor;
+// Everything sold is a subscription, and there are only four. A scenario that
+// asserts "nothing was granted" buys one this user has never held; the later
+// ones RENEW, and check the expiry moved by exactly one period — or not at all.
+const SUB_EASY = "sub-easy";
+const SUB_MEDIUM = "sub-medium";
+const SUB_HARD = "sub-hard";
+const SUB_ALL = "sub-all";
+const price = (sku) => BUILT_IN_CATALOG.getProduct(sku).amountMinor;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PERIOD_MS = SUBSCRIPTION_DAYS * DAY_MS;
 
 const results = [];
 const check = (name, ok, detail = "") => {
@@ -74,7 +74,7 @@ console.log(`listening on ${PORT}\n`);
 let USER_ID = null;
 const orders = [];
 
-async function newOrder(sku, amountMinor, durationDays = null) {
+async function newOrder(sku, amountMinor, durationDays = SUBSCRIPTION_DAYS) {
   const payment = await payments.create({
     userId: USER_ID,
     provider: "fake",
@@ -100,6 +100,13 @@ async function newOrder(sku, amountMinor, durationDays = null) {
 }
 
 const rowsFor = async (sku) => (await entitlements.listFor(USER_ID)).filter((e) => e.sku === sku);
+/** When this user's subscription ends, in ms — null when they have none. */
+const expiryOf = async (sku) => {
+  const [row] = await rowsFor(sku);
+  return row?.expiresAt ? +new Date(row.expiresAt) : null;
+};
+/** Within a minute: settlement reads its own clock. */
+const near = (a, b) => a !== null && b !== null && Math.abs(a - b) < 60 * 1000;
 
 /** Ages a payment past the reconciler's threshold. */
 const age = (orderId, ms) =>
@@ -144,13 +151,13 @@ try {
     const cfg = await (await fetch(`${api}/api/payments/config`)).json();
     check("the shop reports itself open", cfg.enabled === true, JSON.stringify(cfg.enabled));
     check("the client is told no real money moves", cfg.fake === true);
-    check("the catalog is on sale", cfg.purchasableSkus.includes(SET_A) && cfg.purchasableSkus.includes(STORY_C));
+    check("the catalog is on sale", cfg.purchasableSkus.includes(SUB_ALL) && cfg.purchasableSkus.includes(SUB_MEDIUM));
 
     // A body carrying a price is a probe, not a helpful client.
     const probe = await fetch(`${api}/api/payments/orders`, {
       method: "POST",
       headers: auth,
-      body: JSON.stringify({ skus: [STORY_C], amountMinor: 1 }),
+      body: JSON.stringify({ skus: [SUB_MEDIUM], amountMinor: 1 }),
     });
     check("a client-supplied price is refused", probe.status === 400, `HTTP ${probe.status}`);
     check("...with the documented code", (await probe.json()).code === "PRICE_NOT_ACCEPTED");
@@ -158,11 +165,11 @@ try {
     const res = await fetch(`${api}/api/payments/orders`, {
       method: "POST",
       headers: auth,
-      body: JSON.stringify({ skus: [STORY_C] }),
+      body: JSON.stringify({ skus: [SUB_MEDIUM] }),
     });
     const order = await res.json();
     check("an order is created", res.status === 200, `HTTP ${res.status}`);
-    check("priced by the server, not the client", order.amountMinor === price(STORY_C), `${order.amountMinor}`);
+    check("priced by the server, not the client", order.amountMinor === price(SUB_MEDIUM), `${order.amountMinor}`);
     check(
       "and points at the acquirer's page",
       typeof order.confirmationUrl === "string" && order.confirmationUrl.includes("/checkout/fake"),
@@ -173,7 +180,7 @@ try {
     // The buyer follows confirmationUrl; the page reads ?fp= and asks about it.
     const fp = new URL(order.confirmationUrl).searchParams.get("fp");
     const shown = await (await fetch(`${api}/api/payments/fake/${fp}`)).json();
-    check("the acquirer's page shows the right amount", shown.amountMinor === price(STORY_C));
+    check("the acquirer's page shows the right amount", shown.amountMinor === price(SUB_MEDIUM));
 
     // Press Pay. Returns immediately; the callback follows out of band.
     const acted = await fetch(`${api}/api/payments/fake/${fp}/act`, {
@@ -191,19 +198,19 @@ try {
     check("the return page's poll sees it granted", Boolean(granted));
     check("the diagnostic fields are present outside production", Boolean(granted?.providerPaymentId));
 
-    // Buys its own story SKU, so nothing has to be cleaned up between steps —
-    // an earlier version wiped entitlements here and raced with its own
+    // Buys its own subscription, so nothing has to be cleaned up between steps
+    // — an earlier version wiped entitlements here and raced with its own
     // in-flight grant, which is precisely the bug this step now guards against.
   }
 
   // ── 1. The happy path, out of band ───────────────────────────────────────
   console.log("1. pay -> callback -> grant");
   {
-    const { orderId, fakeId } = await newOrder(STORY_D, price(STORY_D));
+    const { orderId, fakeId } = await newOrder(SUB_HARD, price(SUB_HARD));
     await fake.act(fakeId, { action: "pay", sim: { delayMs: 0 } });
 
     const rows = await waitFor(async () => {
-      const r = await rowsFor(STORY_D);
+      const r = await rowsFor(SUB_HARD);
       return r.length ? r : null;
     });
     const settled = await payments.findById(orderId);
@@ -213,34 +220,43 @@ try {
     check("paidAt was persisted (it used to be silently dropped)", Boolean(settled.paidAt));
     check("grantAppliedAt was stamped", Boolean(settled.grantAppliedAt));
     check("exactly one entitlement row", rows?.length === 1, `${rows?.length}`);
-    check("the purchase never expires", rows?.[0]?.expiresAt === null, String(rows?.[0]?.expiresAt));
+    check(
+      `it runs for ${SUBSCRIPTION_DAYS} days`,
+      near(await expiryOf(SUB_HARD), Date.now() + PERIOD_MS),
+      String(rows?.[0]?.expiresAt)
+    );
   }
 
   // ── 2. A duplicate delivery ──────────────────────────────────────────────
   console.log("\n2. duplicate delivery (the idempotency latch)");
   {
-    const { orderId, fakeId } = await newOrder(SET_A, price(SET_A));
+    const { orderId, fakeId } = await newOrder(SUB_ALL, price(SUB_ALL));
     await fake.act(fakeId, { action: "pay", sim: { delayMs: 0, deliver: "twice" } });
 
-    await waitFor(async () => (await rowsFor(SET_A)).length || null);
+    await waitFor(async () => (await rowsFor(SUB_ALL)).length || null);
     await sleep(1500); // let the second delivery land too
 
     const row = await fakePayments.findById(fakeId);
     check("the acquirer really delivered twice", row.deliveries.length >= 2, `${row.deliveries.length} attempts`);
     check("both deliveries answered 2xx", row.deliveries.every((d) => d.code === 200));
-    check("a duplicate grants nothing extra", (await rowsFor(SET_A)).length === 1);
+    check("a duplicate grants nothing extra", (await rowsFor(SUB_ALL)).length === 1);
+    check(
+      "...and does not add a second period",
+      near(await expiryOf(SUB_ALL), Date.now() + PERIOD_MS),
+      new Date(await expiryOf(SUB_ALL)).toISOString()
+    );
     check("the order settled once", (await payments.findById(orderId)).status === "succeeded");
   }
 
   // ── 3. A wrong amount ────────────────────────────────────────────────────
   console.log("\n3. an amount that disagrees with the order");
   {
-    const { orderId, fakeId } = await newOrder(SET_B, price(SET_B));
+    const { orderId, fakeId } = await newOrder(SUB_EASY, price(SUB_EASY));
     await fake.act(fakeId, { action: "pay", sim: { delayMs: 0, amount: "wrong" } });
     await sleep(1500);
 
     const row = await payments.findById(orderId);
-    check("nothing is granted", (await rowsFor(SET_B)).length === 0);
+    check("nothing is granted", (await rowsFor(SUB_EASY)).length === 0);
     check("the order is not marked succeeded", row.status !== "succeeded", row.status);
     check("no grant latch was set", row.grantedAt === null);
   }
@@ -248,8 +264,8 @@ try {
   // ── 4. Forged and misaddressed callbacks ─────────────────────────────────
   console.log("\n4. forgery");
   {
-    const { orderId } = await newOrder(SET_C, price(SET_C));
-    const body = { paymentId: "fake_forged", clientOrderId: orderId, status: "PAID", amount: price(SET_C) / 100, currency: "RUB" };
+    const { orderId } = await newOrder(SUB_EASY, price(SUB_EASY));
+    const body = { paymentId: "fake_forged", clientOrderId: orderId, status: "PAID", amount: price(SUB_EASY) / 100, currency: "RUB" };
     const good = signOrder(orderId);
     const bad = `${good.slice(0, -1)}${good.endsWith("0") ? "1" : "0"}`;
 
@@ -266,56 +282,63 @@ try {
       "a webhook addressed to another driver 404s",
       (await post(`http://localhost:${PORT}/api/payments/vtb/webhook?order=${orderId}&t=${good}`, body)).status === 404
     );
-    check("no forgery granted anything", (await rowsFor(SET_C)).length === 0);
+    check("no forgery granted anything", (await rowsFor(SUB_EASY)).length === 0);
   }
 
   // ── 5. A lost callback, and the reconciler ───────────────────────────────
   console.log("\n5. a callback that never arrives");
   {
-    const { orderId, fakeId } = await newOrder(STORY_A, price(STORY_A));
+    const { orderId, fakeId } = await newOrder(SUB_EASY, price(SUB_EASY));
     await fake.act(fakeId, { action: "pay", sim: { delayMs: 0, deliver: "never" } });
     await sleep(800);
 
     const stranded = await payments.findById(orderId);
     check("the payment is stranded, as designed", stranded.grantedAt === null && stranded.status === "pending");
-    check("no entitlement yet", (await rowsFor(STORY_A)).length === 0);
+    check("no entitlement yet", (await rowsFor(SUB_EASY)).length === 0);
 
     // Sweep 1 only chases payments older than 15 minutes.
     await age(orderId, 20 * 60 * 1000);
     const stats = await reconcileOnce();
     check("the reconciler settles it without any callback", stats.settled >= 1, JSON.stringify(stats));
-    check("the entitlement lands", (await rowsFor(STORY_A)).length === 1);
+    check("the entitlement lands", (await rowsFor(SUB_EASY)).length === 1);
   }
 
   // ── 6. Declined, then paid ───────────────────────────────────────────────
-  console.log("\n6. declined, then paid on a second attempt");
+  console.log("\n6. a renewal: declined, then paid on a second attempt");
   {
-    const { orderId, fakeId } = await newOrder(STORY_B, price(STORY_B));
+    // sub-hard is live from step 1, so this order is a renewal.
+    const before = await expiryOf(SUB_HARD);
+    const { orderId, fakeId } = await newOrder(SUB_HARD, price(SUB_HARD));
     await fake.act(fakeId, { action: "decline", sim: { delayMs: 0 } });
     await sleep(1200);
 
     const afterDecline = await payments.findById(orderId);
     check("a decline is recorded as failed", afterDecline.status === "failed", afterDecline.status);
-    check("a decline grants nothing", (await rowsFor(STORY_B)).length === 0);
+    check("a decline grants nothing", (await expiryOf(SUB_HARD)) === before);
 
     await post(webhookUrl(orderId), {
       paymentId: fakeId,
       clientOrderId: orderId,
       status: "PAID",
-      amount: price(STORY_B) / 100,
+      amount: price(SUB_HARD) / 100,
       currency: "RUB",
       paidAt: new Date().toISOString(),
     });
     await sleep(500);
 
     check("FAILED -> PAID still grants", Boolean((await payments.findById(orderId)).grantedAt));
-    check("and grants exactly once", (await rowsFor(STORY_B)).length === 1);
+    check(
+      "and adds exactly one period to the end, not from today",
+      (await expiryOf(SUB_HARD)) === before + PERIOD_MS,
+      new Date(await expiryOf(SUB_HARD)).toISOString()
+    );
+    check("still one row", (await rowsFor(SUB_HARD)).length === 1);
   }
 
   // ── 7. Boot recovery ─────────────────────────────────────────────────────
   console.log("\n7. an undelivered callback survives a restart");
   {
-    const { orderId, fakeId } = await newOrder(SET_C, price(SET_C));
+    const { orderId, fakeId } = await newOrder(SUB_MEDIUM, price(SUB_MEDIUM));
     // Decided, but with a delay long enough that "the process died" first.
     await fake.act(fakeId, { action: "pay", sim: { delayMs: 600000 } });
     check("nothing delivered yet", (await payments.findById(orderId)).grantedAt === null);
@@ -332,16 +355,21 @@ try {
   console.log("\n8. reconciling repeatedly grants nothing twice");
   {
     // The regression this guards: the repair sweep once re-granted a settled
-    // payment on every run. Every order above is settled now; sweeping three
-    // more times must leave each SKU with exactly the rows it already had.
+    // payment on every run — for a subscription, +30 days each time. Every
+    // order above is settled now; sweeping three more times must leave each
+    // subscription ending exactly when it already did.
     const before = {};
-    for (const sku of [STORY_D, SET_A, STORY_A, STORY_B, SET_C]) before[sku] = (await rowsFor(sku)).length;
+    for (const sku of [SUB_EASY, SUB_MEDIUM, SUB_HARD, SUB_ALL]) before[sku] = await expiryOf(sku);
 
     for (let i = 0; i < 3; i += 1) await reconcileOnce();
 
-    for (const [sku, count] of Object.entries(before)) {
-      const after = (await rowsFor(sku)).length;
-      check(`three sweeps leave ${sku} at ${count} row(s)`, after === count, `${after} rows`);
+    for (const [sku, ends] of Object.entries(before)) {
+      const after = await expiryOf(sku);
+      check(
+        `three sweeps leave ${sku} ending ${new Date(ends).toISOString()}`,
+        after === ends,
+        new Date(after).toISOString()
+      );
     }
   }
 } finally {

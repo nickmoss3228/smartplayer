@@ -22,7 +22,6 @@ import { WalletProvider } from './context/WalletContext';
 import { CatalogProvider } from './context/CatalogContext';
 import { SHOP_ENABLED } from './config/features';
 import { EntitlementsProvider } from './context/EntitlementsContext';
-import { CartProvider } from './context/CartContext';
 import { CharacterProvider } from './context/CharacterContext';
 import { Layout } from "./Layout"
 
@@ -72,7 +71,6 @@ function App() {
         <WalletProvider>
         <CatalogProvider>
         <EntitlementsProvider>
-        <CartProvider>
         <CharacterProvider>
         <ProgressProvider>
           <Provider store={store}>
@@ -186,7 +184,6 @@ function App() {
           </Provider>
         </ProgressProvider>
         </CharacterProvider>
-        </CartProvider>
         </EntitlementsProvider>
         </CatalogProvider>
         </WalletProvider>

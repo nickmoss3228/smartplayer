@@ -14,14 +14,14 @@ interface Props {
   theme: Theme;
   /** Story being blocked, for the heading. */
   storyTitle?: string;
-  /** SKUs that would unlock it, smallest scope first (story, set, level). */
+  /** SKUs that would unlock it, smallest scope first (its level, then all). */
   requiredSkus: string[];
   onClose: () => void;
 }
 
 /**
- * Sells what would unlock a story: the story itself, the character's set, or
- * the whole level.
+ * Offers what would unlock a story: a subscription to its level, or to every
+ * level. Stories are not sold one at a time.
  *
  * Shown to guests too. A guest is asked to sign in at the moment they pick an
  * offer, and comes straight back to this page with the modal open again —
@@ -38,24 +38,20 @@ export const PaywallModal: React.FC<Props> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { canBuy, ownedStories } = useEntitlements();
+  const { canBuy } = useEntitlements();
   // Before the early return: hooks cannot be called conditionally.
-  const { getProduct, priceFor } = useCatalog();
+  const { getProduct } = useCatalog();
 
   if (!isOpen) return null;
 
   const offers = requiredSkus
     .map((sku) => getProduct(sku))
-    .filter((p): p is Product => p !== null)
-    // The level bundle has no price yet. An offer nobody can take is noise;
-    // a placeholder story or set still shows, as "coming soon".
-    .filter((p) => p.kind !== 'level' || canBuy(p.sku));
+    .filter((p): p is Product => p !== null);
 
-  const labelFor = (product: Product) => {
-    if (product.kind === 'set') return t('paywall.buySet');
-    if (product.kind === 'level') return t('paywall.buyLevel');
-    return t('paywall.buyStory');
-  };
+  const labelFor = (product: Product) =>
+    product.kind === 'level'
+      ? t('paywall.subscribeLevel', { level: t(`list.difficultyTitle.${product.difficulty}`) })
+      : t('paywall.subscribeAll');
 
   const choose = (product: Product) => {
     if (!user) {
@@ -95,8 +91,8 @@ export const PaywallModal: React.FC<Props> = ({
                 key={product.sku}
                 disabled={!sellable}
                 onClick={() => choose(product)}
-                // The first offer is the smallest sufficient purchase, so it
-                // gets the primary treatment.
+                // The first offer is the level the story is on, so it gets
+                // the primary treatment.
                 className={`w-full py-3 px-4 rounded-[3px] font-semibold transition-all flex items-center justify-between gap-3 ${
                   !sellable
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -107,7 +103,12 @@ export const PaywallModal: React.FC<Props> = ({
               >
                 <span className="text-sm">{labelFor(product)}</span>
                 <span className="text-sm tabular-nums whitespace-nowrap">
-                  {sellable ? formatPrice(priceFor(product, ownedStories)) : t('paywall.comingSoon')}
+                  {sellable
+                    ? t('paywall.pricePerPeriod', {
+                        price: formatPrice(product.amountMinor),
+                        count: product.durationDays ?? 0,
+                      })
+                    : t('paywall.comingSoon')}
                 </span>
               </button>
             );

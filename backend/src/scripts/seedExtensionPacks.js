@@ -232,9 +232,9 @@ async function seed(database) {
       // keys, and it is the honest one: visible, not purchasable.
       //
       // Unpublishing them instead would take them out of the shop AND out of
-      // the set bundles, which is not what anyone wants to look at.
+      // the subscriptions, which is not what anyone wants to look at.
       published: true,
-      // Set grouping. Lowercased because the SKU is built from it: `set-leo`.
+      // The character the story is about. Lowercased, like every other row.
       character: meta.character.toLowerCase(),
       paid: true,
       ready: false,
