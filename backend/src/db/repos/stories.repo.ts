@@ -46,12 +46,46 @@ export interface TimeMarker {
   color?: string;
 }
 
+/** A rectangle on an image, as fractions of its width and height (0–1). */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * A word's picture. `box` crops it out of `url` (a comic page, or a sheet with
+ * one picture per word); null means the whole image. `aspect` is the crop's
+ * width / height in pixels — set with the box, null without one — so the
+ * player can lay the crop out before the image has loaded.
+ */
+export interface VocabImage {
+  url: string;
+  box: Box | null;
+  aspect: number | null;
+}
+
 export interface VocabEntry {
   word: string;
   definition?: string;
   audioKey: string;
   audioUrl?: string | null;
+  image?: VocabImage | null;
 }
+
+/**
+ * "Where did it happen?" on the comic page: the panels as boxes, and the
+ * stretches of the part's audio (seconds) that each belongs to. `panel` is an
+ * index into `panels`.
+ */
+export interface PanelQuiz {
+  panels: Box[];
+  clips: { start: number; end: number; panel: number }[];
+}
+
+export const PANEL_QUIZ_MAX_PANELS = 24;
+export const PANEL_QUIZ_MAX_CLIPS = 60;
 
 export interface QuizQuestion {
   question: string;
@@ -114,6 +148,7 @@ export interface StoryPartInput {
   phrasalVerbs?: VocabEntry[];
   quiz?: QuizQuestion[];
   intro?: PartIntro | null;
+  panelQuiz?: PanelQuiz | null;
 }
 
 export interface StoryAggregate extends Story {
@@ -251,6 +286,7 @@ export async function loadAggregate(id: string, tx: Tx = db()): Promise<StoryAgg
       helpAudio: part.helpAudio,
       comicUrl: part.comicUrl,
       intro: part.intro ?? null,
+      panelQuiz: part.panelQuiz ?? null,
       timeMarkers: byPart(markerRows, part.id).map((m) => ({
         time: m.time,
         label: m.label,
@@ -278,12 +314,14 @@ function toVocabEntry(row: {
   definition: string;
   audioKey: string;
   audioUrl: string | null;
+  image: VocabImage | null;
 }): VocabEntry {
   return {
     word: row.word,
     definition: row.definition,
     audioKey: row.audioKey,
     audioUrl: row.audioUrl,
+    image: row.image ?? null,
   };
 }
 
@@ -359,6 +397,7 @@ export async function replaceParts(
     helpAudio: part.helpAudio ?? [],
     comicUrl: part.comicUrl ?? null,
     intro: part.intro ?? null,
+    panelQuiz: part.panelQuiz ?? null,
   }));
 
   await tx.insert(storyPart).values(partRows);
@@ -375,6 +414,7 @@ export async function replaceParts(
         definition: entry.definition ?? "",
         audioKey: entry.audioKey,
         audioUrl: entry.audioUrl ?? null,
+        image: entry.image ?? null,
       }));
     return [...of(part.vocabulary, "vocabulary"), ...of(part.phrasalVerbs, "phrasal")];
   });
@@ -816,6 +856,79 @@ export function normalizeCast(input: unknown, totalParts: number): CastMember[] 
   return cast;
 }
 
+const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+const round4 = (value: number) => Math.round(value * 10_000) / 10_000;
+
+/**
+ * A box clamped onto the image, rounded to 4 places (a hundredth of a pixel on
+ * a 1000 px page); null when it is not a box at all or has no area left.
+ */
+export function normalizeBox(input: unknown): Box | null {
+  if (!input || typeof input !== "object") return null;
+  const { x, y, w, h } = input as Record<string, unknown>;
+  if (![x, y, w, h].every(finite)) return null;
+  const left = Math.min(Math.max(x as number, 0), 1);
+  const top = Math.min(Math.max(y as number, 0), 1);
+  const right = Math.min(Math.max((x as number) + (w as number), 0), 1);
+  const bottom = Math.min(Math.max((y as number) + (h as number), 0), 1);
+  if (right - left <= 0 || bottom - top <= 0) return null;
+  return { x: round4(left), y: round4(top), w: round4(right - left), h: round4(bottom - top) };
+}
+
+/**
+ * A word's picture in its one stored shape, or null for none. Coerces, like
+ * normalizePartIntro — the controller has already refused a malformed one.
+ * A crop without an aspect cannot be laid out, so it loses its box rather
+ * than being drawn stretched.
+ */
+export function normalizeVocabImage(input: unknown): VocabImage | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Record<string, unknown>;
+  const url = typeof raw.url === "string" ? raw.url.trim() : "";
+  if (!url) return null;
+  const box = normalizeBox(raw.box);
+  const aspect = finite(raw.aspect) && raw.aspect > 0 ? round4(raw.aspect) : null;
+  return box && aspect ? { url, box, aspect } : { url, box: null, aspect: null };
+}
+
+/**
+ * A panel quiz in its one stored shape, or null for none.
+ *
+ * Panels that are not boxes are dropped and the clips re-pointed at the ones
+ * that remain; a clip pointing nowhere, or with no length, is dropped. Clips
+ * are kept in story order. A quiz left with no clip is null — there is
+ * nothing to play — so "cleared it" and "never made one" read the same.
+ */
+export function normalizePanelQuiz(input: unknown): PanelQuiz | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Record<string, unknown>;
+  const rawPanels = Array.isArray(raw.panels) ? raw.panels.slice(0, PANEL_QUIZ_MAX_PANELS) : [];
+
+  const panels: Box[] = [];
+  const newIndex = new Map<number, number>();
+  rawPanels.forEach((candidate, i) => {
+    const box = normalizeBox(candidate);
+    if (!box) return;
+    newIndex.set(i, panels.length);
+    panels.push(box);
+  });
+
+  const clips = (Array.isArray(raw.clips) ? raw.clips : [])
+    .map((clip) => {
+      if (!clip || typeof clip !== "object") return null;
+      const { start, end, panel } = clip as Record<string, unknown>;
+      if (!finite(start) || !finite(end) || !Number.isInteger(panel)) return null;
+      const target = newIndex.get(panel as number);
+      if (target === undefined || start < 0 || end <= start) return null;
+      return { start: Math.round(start * 1000) / 1000, end: Math.round(end * 1000) / 1000, panel: target };
+    })
+    .filter((clip): clip is PanelQuiz["clips"][number] => clip !== null)
+    .sort((a, b) => a.start - b.start)
+    .slice(0, PANEL_QUIZ_MAX_CLIPS);
+
+  return panels.length > 0 && clips.length > 0 ? { panels, clips } : null;
+}
+
 /**
  * The trims and defaults Mongoose applied on save (`trim: true` on part title,
  * vocab word and audioKey). Applied on every write so a Builder save and an
@@ -828,6 +941,7 @@ function normalizeParts(parts: readonly StoryPartInput[]): StoryPartInput[] {
       definition: entry.definition ?? "",
       audioKey: String(entry.audioKey ?? "").trim(),
       audioUrl: entry.audioUrl ?? null,
+      image: normalizeVocabImage(entry.image),
     }));
 
   return parts.map((part) => ({
@@ -837,6 +951,7 @@ function normalizeParts(parts: readonly StoryPartInput[]): StoryPartInput[] {
     helpAudio: part.helpAudio ?? [],
     comicUrl: part.comicUrl ?? null,
     intro: normalizePartIntro(part.intro),
+    panelQuiz: normalizePanelQuiz(part.panelQuiz),
     timeMarkers: part.timeMarkers ?? [],
     vocabulary: vocab(part.vocabulary),
     phrasalVerbs: vocab(part.phrasalVerbs),

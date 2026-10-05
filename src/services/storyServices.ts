@@ -12,11 +12,43 @@ import { api } from "./apiClient";
 import { AudioTrack } from "../types";
 
 
+/** A rectangle on an image, as fractions of its width and height (0–1). */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * A word's picture, shown instead of its Russian text. `box` crops it out of
+ * `url` (the part's comic page, or a sheet with one picture per word); null
+ * means the whole image. `aspect` is the crop's width / height in pixels.
+ * Mirrors VocabImage in the backend's db/repos/stories.repo.ts.
+ */
+export interface VocabImage {
+  url: string;
+  box: Box | null;
+  aspect: number | null;
+}
+
+/**
+ * "Where did it happen?" on the comic page: the panels, and which stretch of
+ * the part's audio (seconds) belongs to which one. `panel` indexes `panels`.
+ * Mirrors PanelQuiz in the backend's db/repos/stories.repo.ts.
+ */
+export interface PanelQuiz {
+  panels: Box[];
+  clips: { start: number; end: number; panel: number }[];
+}
+
 export interface PublishedVocabEntry {
   word: string; // Russian text shown to the student
   definition: string;
   audioKey: string;
   audioUrl: string;
+  /** Absent from an older server; null when the word has no picture. */
+  image?: VocabImage | null;
 }
 
 export interface PublishedQuizQuestion {
@@ -61,6 +93,8 @@ export interface PublishedStoryPart {
   vocabulary: PublishedVocabEntry[];
   phrasalVerbs: PublishedVocabEntry[];
   quiz: PublishedQuizQuestion[];
+  /** The comic-page game; null when the part has none (or it is locked/a preview). */
+  panelQuiz?: PanelQuiz | null;
   /**
    * The caller has not paid for this part. The server sends the part number
    * and title and nothing else — no audio, no comic, no vocabulary, no quiz.
@@ -195,4 +229,5 @@ export const adaptPublishedStoryToTracks = (story: PublishedStory): AudioTrack[]
       timeMarkers: part.timeMarkers,
       helpAudio: part.helpAudio ?? [],
       comicUrl: part.comicUrl ?? null,
+      panelQuiz: part.panelQuiz ?? null,
     }));

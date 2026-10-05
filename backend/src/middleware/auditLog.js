@@ -82,6 +82,7 @@ const ROUTES = [
   { m: "PUT",    re: /^\/api\/admin\/stories\/([^/]+)\/parts\/(\d+)\/vocabulary$/,   action: "story.saveVocabulary",   target: (m) => ({ type: "Story", id: m[1] }) },
   { m: "PUT",    re: /^\/api\/admin\/stories\/([^/]+)\/parts\/(\d+)\/phrasal-verbs$/, action: "story.savePhrasalVerbs", target: (m) => ({ type: "Story", id: m[1] }) },
   { m: "PUT",    re: /^\/api\/admin\/stories\/([^/]+)\/parts\/(\d+)\/quiz$/,         action: "story.saveQuiz",         target: (m) => ({ type: "Story", id: m[1] }) },
+  { m: "PUT",    re: /^\/api\/admin\/stories\/([^/]+)\/parts\/(\d+)\/panel-quiz$/,   action: "story.savePanelQuiz",    target: (m) => ({ type: "Story", id: m[1] }) },
   // These two must stay BELOW the more specific /stories/:id/... patterns
   // above, or "/stories/abc/publish" would match /^\/stories\/([^/]+)$/ first.
   { m: "PATCH",  re: /^\/api\/admin\/stories\/([^/]+)$/,                             action: "story.updateMeta",       target: (m) => ({ type: "Story", id: m[1] }) },

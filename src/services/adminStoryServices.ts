@@ -4,9 +4,9 @@
 // always the Mongo _id (not the storyId slug) — matches the backend routes.
 import { API_URL, authHeaders, parseOrThrow } from "./adminServices";
 import type { StoryCategory } from "../types/storyGroups";
-import type { CastMember, PartIntro } from "./storyServices";
+import type { Box, CastMember, PanelQuiz, PartIntro, VocabImage } from "./storyServices";
 
-export type { CastMember, PartIntro };
+export type { Box, CastMember, PanelQuiz, PartIntro, VocabImage };
 
 export type Difficulty = "easy" | "medium" | "hard";
 
@@ -21,6 +21,8 @@ export interface VocabEntry {
   definition: string;
   audioKey: string; // English filename stem, also the progress key
   audioUrl: string;
+  /** Shown to students instead of `word`; null or absent for none. */
+  image?: VocabImage | null;
 }
 
 export interface QuizQuestion {
@@ -49,6 +51,8 @@ export interface StoryPart {
   comicUrl?: string | null;
   /** The level page's "before you listen" card; null when none is written. */
   intro?: PartIntro | null;
+  /** The comic-page game; null when the part has none. */
+  panelQuiz?: PanelQuiz | null;
   timeMarkers: TimeMarker[];
   vocabulary: VocabEntry[];
   phrasalVerbs: VocabEntry[];
@@ -244,7 +248,17 @@ export const deleteStory = async (token: string, id: string): Promise<void> => {
   await parseOrThrow(res);
 };
 
-export type UploadKind = "audio" | "comic" | "intro" | "vocab" | "phrasal" | "quizFast" | "quizSlow";
+export type UploadKind =
+  | "audio"
+  | "comic"
+  | "intro"
+  | "vocab"
+  | "phrasal"
+  | "vocabImage"
+  | "phrasalImage"
+  | "pictureSheet"
+  | "quizFast"
+  | "quizSlow";
 
 export const uploadPartAsset = async (
   token: string,
@@ -366,6 +380,23 @@ export const saveQuiz = async (
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ quiz }),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Replaces the part's comic quiz whole. Pass null to remove it — the player
+// then shows no button for it.
+export const savePanelQuiz = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  panelQuiz: PanelQuiz | null
+): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/panel-quiz`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ panelQuiz }),
   });
   const data = await parseOrThrow(res);
   return data.part;

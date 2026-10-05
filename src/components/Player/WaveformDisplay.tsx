@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 // import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { TimeMarkers } from "./Controls/TimeMarkers";
 import { MobileProgressBar } from "./Controls/MobileProgressBar";
@@ -27,6 +28,8 @@ interface WaveformDisplayProps {
   // ── New: only needed for the mobile layout ──
   onSeek?: (progress: number) => void;
   getAudioTime?: () => number;
+  /** Desktop: the phrase being drilled, shaded and counted. null in free play. */
+  activeMarkerIndex?: number | null;
 }
 
 export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
@@ -42,7 +45,9 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
     isMobile = false,
     onSeek,
     getAudioTime,
+    activeMarkerIndex = null,
   }) => {
+    const { t } = useTranslation();
 
      {/*
           ════════════════════════════════════════════════════════
@@ -58,63 +63,51 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
     return (
       <>
         {!isMobile && (
-          <div className="relative">
-            {isLoading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-[3px]">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="text-white text-sm">Loading audio...</span>
+          // Only ever shown inside WaveformPlayer's desktop branch, so these
+          // classes need no md: prefixes — the phone never sees this instance.
+          <div className="flex flex-col gap-1.5">
+            <div className="relative">
+              {isLoading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20 rounded-tile">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="text-white text-sm">Loading audio...</span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* ── Waveform canvas ── */}
-            <div
-              ref={waveformRef}
-              className="w-full mx-auto rounded-full overflow-hidden relative px-1 group
-                         bg-black/40 h-[48px]
-                         md:bg-white/60 md:h-8 md:rounded-[3px] md:px-0.5"
-            >
-              <div
-                id="hover"
-                className="absolute left-0 top-0 z-10 pointer-events-none h-full w-0
-                           mix-blend-overlay bg-white/20 opacity-0
-                           transition-opacity duration-200 group-hover:opacity-100"
-              />
-
-              {isInitialized && !isLoading && timeMarkers?.length > 0 && (
-                <TimeMarkers
-                  timeMarkers={timeMarkers}
-                  durationSeconds={durationSeconds}
-                  onMarkerClick={onMarkerClick}
-                />
               )}
+
+              {/* ── Waveform canvas ── (px-2 here must match TimeMarkers' inset) */}
+              <div
+                ref={waveformRef}
+                className="w-full overflow-hidden relative group rounded-tile bg-black/15 px-2 py-1"
+              >
+                <div
+                  id="hover"
+                  className="absolute left-0 top-0 z-10 pointer-events-none h-full w-0
+                             mix-blend-overlay bg-white/20 opacity-0
+                             transition-opacity duration-200 group-hover:opacity-100"
+                />
+
+                {isInitialized && !isLoading && timeMarkers?.length > 0 && (
+                  <TimeMarkers
+                    timeMarkers={timeMarkers}
+                    durationSeconds={durationSeconds}
+                    onMarkerClick={onMarkerClick}
+                    activeIndex={activeMarkerIndex}
+                  />
+                )}
+              </div>
             </div>
 
-            {/*
-              ── Time labels live OUTSIDE waveformRef ──
-              Positioned against the outer `relative` div, so overflow-hidden
-              on the waveform canvas can never clip or bury them.
-            */}
-            <div
-              id="time"
-              className="absolute z-20 top-1/2 -translate-y-1/2 left-2
-                         text-[11px] bg-black/75 px-1.5 py-0.5 text-[#ddd]
-                         rounded-[3px] pointer-events-none
-                         md:top-auto md:translate-y-0 md:bottom-[-15px] md:left-[-10px]
-                         md:text-[10px] md:px-1 md:py-[1px]"
-            >
-              {currentTime}
-            </div>
-            <div
-              id="duration"
-              className="absolute z-20 top-1/2 -translate-y-1/2 right-2
-                         text-[11px] bg-black/75 px-1.5 py-0.5 text-[#ddd]
-                         rounded-[3px] pointer-events-none
-                         md:top-auto md:translate-y-0 md:bottom-[-15px] md:right-[-10px]
-                         md:text-[10px] md:px-1 md:py-[1px]"
-            >
-              {duration}
+            {/* Under the waveform rather than hung off its corners. */}
+            <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-white/80">
+              <span id="time">{currentTime}</span>
+              {activeMarkerIndex != null && timeMarkers.length > 0 && (
+                <span className="text-white/65">
+                  {t("player.phraseOf", { n: activeMarkerIndex + 1, total: timeMarkers.length })}
+                </span>
+              )}
+              <span id="duration">{duration}</span>
             </div>
           </div>
         )}

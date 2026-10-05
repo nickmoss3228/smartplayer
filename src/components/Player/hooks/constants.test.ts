@@ -4,7 +4,7 @@ import { SPEED_SEQUENCES, PLAYBACK_RATES, formatTime } from './constants';
 /**
  * SPEED_SEQUENCES encodes the teaching method itself: a segment repeats N
  * times, getting faster each pass, ending at full speed. Everything the
- * marketing copy and the guided tour promise ("first at 0.5×, then 0.8×, then
+ * marketing copy and the guided tour promise ("first at 0.65×, then 0.8×, then
  * 1.0×") is this table. useSegmentEngine indexes into it by repeat number, so
  * a sequence shorter than its key silently falls back to 1.0 and the learner
  * gets full speed on a pass that was supposed to be slow.
@@ -47,7 +47,7 @@ describe('SPEED_SEQUENCES', () => {
   });
 
   it('starts the 3× sequence slowest, as the guided tour promises', () => {
-    expect(SPEED_SEQUENCES[3]).toEqual([0.5, 0.8, 1.0]);
+    expect(SPEED_SEQUENCES[3]).toEqual([0.65, 0.8, 1.0]);
   });
 });
 

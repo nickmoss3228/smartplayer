@@ -611,6 +611,16 @@ export const storyPart = pgTable(
       imageUrl: string | null;
       durationSeconds: number | null;
     }>(),
+    // The "where did it happen?" game on the comic page: the page's panels as
+    // boxes (fractions of the image, so they survive any display size), and
+    // the stretches of the part's audio that belong to each one. Rule 3: the
+    // Builder writes it whole and the player reads it whole. NULL means the
+    // part has no such game, and the player shows no button for it. Shape:
+    // PanelQuiz in repos/stories.repo.ts.
+    panelQuiz: jsonb("panel_quiz").$type<{
+      panels: { x: number; y: number; w: number; h: number }[];
+      clips: { start: number; end: number; panel: number }[];
+    }>(),
   },
   (t) => [uniqueIndex("story_part_story_number_key").on(t.storyPk, t.partNumber)],
 );
@@ -637,6 +647,16 @@ export const storyPartVocab = pgTable(
     // user_learned_word.word.
     audioKey: text("audio_key").notNull(),
     audioUrl: text("audio_url"),
+    // A picture of the word, shown instead of its Russian text. `box` crops
+    // it out of a bigger image — the part's comic page, or a sheet drawn with
+    // one picture per word — and `aspect` is that crop's width / height in
+    // pixels, so it can be drawn without loading the image first. No box
+    // means the whole image. NULL: the word has no picture and shows as text.
+    image: jsonb("image").$type<{
+      url: string;
+      box: { x: number; y: number; w: number; h: number } | null;
+      aspect: number | null;
+    }>(),
   },
   (t) => [
     uniqueIndex("story_part_vocab_part_kind_ordinal_key").on(t.partPk, t.kind, t.ordinal),

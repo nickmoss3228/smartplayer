@@ -25,6 +25,7 @@ import {
   saveVocabulary,
   savePhrasalVerbs,
   saveQuiz,
+  savePanelQuiz,
   setStoryPublished,
   getPublishedStory,
   listPublishedStories,
@@ -54,6 +55,7 @@ adminRouter.put("/:id/parts/:partNumber/intro", adminAuth, saveIntro);
 adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
 adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVerbs);
 adminRouter.put("/:id/parts/:partNumber/quiz", adminAuth, saveQuiz);
+adminRouter.put("/:id/parts/:partNumber/panel-quiz", adminAuth, savePanelQuiz);
 adminRouter.patch("/:id/publish", adminAuth, setStoryPublished);
 
 // Public — the player fetches a published story's content here.

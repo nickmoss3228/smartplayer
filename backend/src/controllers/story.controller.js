@@ -8,6 +8,7 @@
 // transaction holding the story row. That is the Postgres equivalent of the
 // find/mutate/save() these handlers were written around, with the lock added so
 // two Builder tabs saving different parts cannot overwrite each other.
+import crypto from "node:crypto";
 import { stories as storiesRepo } from "../db/index.js";
 import { restoreMarkersIntoParts } from "../helpers/markerRestore.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
@@ -378,7 +379,7 @@ const COMIC_EXTENSIONS = {
   "image/gif": "gif",
 };
 
-// Every non-comic kind is audio. Browsers are not consistent about which of
+// Every kind outside IMAGE_KINDS is audio. Browsers are not consistent about which of
 // these they attach to a .mp3, so the allowlist is wide on the way in — but
 // whatever arrives, the object is stored as a single normalised type below.
 const AUDIO_MIME_TYPES = new Set([
@@ -400,9 +401,17 @@ const UPLOAD_KINDS = new Set([
   "intro",
   "vocab",
   "phrasal",
+  "vocabImage",
+  "phrasalImage",
+  "pictureSheet",
   "quizFast",
   "quizSlow",
 ]);
+
+/** The upload kinds that are pictures rather than audio. */
+const IMAGE_KINDS = new Set(["comic", "intro", "vocabImage", "phrasalImage", "pictureSheet"]);
+/** The upload kinds named after one word, so they need its audioKey. */
+const WORD_KINDS = new Set(["vocab", "phrasal", "vocabImage", "phrasalImage"]);
 
 function assetKeyFor(story, partNumber, kind, extra) {
   const base = `stories/${story.difficulty}/${story.storyId}/${partNumber}`;
@@ -417,6 +426,14 @@ function assetKeyFor(story, partNumber, kind, extra) {
       return `${base}/vocab/${extra.audioKey}.mp3`;
     case "phrasal":
       return `${base}/phrasal/${extra.audioKey}.mp3`;
+    case "vocabImage":
+      return `${base}/vocab-pictures/${extra.audioKey}.${extra.ext}`;
+    case "phrasalImage":
+      return `${base}/phrasal-pictures/${extra.audioKey}.${extra.ext}`;
+    // Named by content, not by slot: words keep crops of a sheet by its URL,
+    // so uploading a second sheet must not overwrite the first one's object.
+    case "pictureSheet":
+      return `${base}/picture-sheets/${extra.contentHash}.${extra.ext}`;
     case "quizFast":
       return `${base}/quiz/q${extra.index}-fast.mp3`;
     case "quizSlow":
@@ -426,7 +443,7 @@ function assetKeyFor(story, partNumber, kind, extra) {
   }
 }
 
-// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|quizFast|quizSlow[&audioKey=][&index=]
+// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|vocabImage|phrasalImage|pictureSheet|quizFast|quizSlow[&audioKey=][&index=]
 export async function uploadPartAsset(req, res) {
   try {
     const story = await storiesRepo.loadStoryJson(req.params.id);
@@ -442,13 +459,13 @@ export async function uploadPartAsset(req, res) {
     if (!UPLOAD_KINDS.has(kind)) {
       return res.status(400).json({ error: "Invalid kind." });
     }
-    if (["vocab", "phrasal"].includes(kind) && !audioKey?.trim()) {
-      return res.status(400).json({ error: "audioKey is required for vocab/phrasal uploads." });
+    if (WORD_KINDS.has(kind) && !audioKey?.trim()) {
+      return res.status(400).json({ error: "audioKey is required for a word's audio or picture." });
     }
     // audioKey is interpolated straight into the object key by assetKeyFor, so
     // it has to be constrained before it gets there — otherwise "../../" walks
     // out of this story's folder and overwrites another story's asset.
-    if (["vocab", "phrasal"].includes(kind) && !AUDIO_KEY_PATTERN.test(audioKey.trim())) {
+    if (WORD_KINDS.has(kind) && !AUDIO_KEY_PATTERN.test(audioKey.trim())) {
       return res.status(400).json({
         error:
           "audioKey may contain only letters, numbers, spaces, hyphens and underscores.",
@@ -467,10 +484,11 @@ export async function uploadPartAsset(req, res) {
     // taken from the request.
     let ext;
     let contentType;
-    if (kind === "comic" || kind === "intro") {
+    if (IMAGE_KINDS.has(kind)) {
       ext = COMIC_EXTENSIONS[req.file.mimetype];
       if (!ext) {
-        const what = kind === "comic" ? "A comic page" : "A preview image";
+        const what =
+          kind === "comic" ? "A comic page" : kind === "intro" ? "A preview image" : "A picture";
         return res.status(400).json({
           error: `${what} must be a JPEG, PNG, WebP, AVIF or GIF image — got ${req.file.mimetype}.`,
         });
@@ -485,11 +503,12 @@ export async function uploadPartAsset(req, res) {
         });
       }
       // Normalised, not echoed: assetKeyFor hardcodes a .mp3 key for every
-      // non-comic kind, so the stored type has to agree with the key.
+      // non-image kind, so the stored type has to agree with the key.
       contentType = "audio/mpeg";
     }
 
-    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext });
+    const contentHash = crypto.createHash("sha256").update(req.file.buffer).digest("hex").slice(0, 16);
+    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext, contentHash });
     if (!key) return res.status(400).json({ error: "Invalid kind." });
 
     const url = await uploadBuffer(key, req.file.buffer, contentType);
@@ -698,12 +717,54 @@ export async function saveMarkers(req, res) {
   }
 }
 
+// An upload URL, or a path the app itself serves (not a protocol-relative
+// "//host"). It lands in an <img src> and nowhere else — the player crops with
+// an <img>, never a CSS url() — so spaces and quotes are fine: the built-in
+// comic pages are named "1. Meet Leo.jpg".
+const IMAGE_URL_PATTERN = /^(https:\/\/|\/(?!\/))[^\u0000-\u001f]{1,2048}$/;
+
+/**
+ * Refuses a box that is not one: four numbers, inside the image, with some
+ * area. A little slack past 1 for float sums (0.1 + 0.9 is 1.0000000000000002);
+ * the repo clamps it.
+ */
+function validateBox(box, field) {
+  if (!box || typeof box !== "object") return `${field} must be { x, y, w, h }`;
+  const { x, y, w, h } = box;
+  if (![x, y, w, h].every((n) => typeof n === "number" && Number.isFinite(n))) {
+    return `${field} needs numeric x, y, w and h`;
+  }
+  if (x < 0 || y < 0 || w <= 0 || h <= 0 || x + w > 1.001 || y + h > 1.001) {
+    return `${field} must lie inside the image (fractions from 0 to 1)`;
+  }
+  return null;
+}
+
+function validateVocabImage(image, word) {
+  if (image === undefined || image === null) return null;
+  if (typeof image !== "object" || Array.isArray(image)) return `the picture for "${word}" must be an object`;
+  if (typeof image.url !== "string" || !IMAGE_URL_PATTERN.test(image.url.trim())) {
+    return `the picture for "${word}" needs an https:// URL or a /path`;
+  }
+  if (image.box === undefined || image.box === null) return null;
+  const boxError = validateBox(image.box, `the crop for "${word}"`);
+  if (boxError) return boxError;
+  if (typeof image.aspect !== "number" || !Number.isFinite(image.aspect) || image.aspect <= 0) {
+    return `the crop for "${word}" needs its aspect (width / height in pixels)`;
+  }
+  return null;
+}
+
 function validateVocabList(list) {
   if (!Array.isArray(list)) return "must be an array";
   const keys = list.map((w) => w.audioKey?.toLowerCase());
   if (keys.some((k) => !k)) return "every entry needs an audioKey";
   if (new Set(keys).size !== keys.length) return "audioKey must be unique within the part";
   if (list.some((w) => !w.word?.trim())) return "every entry needs a word (Russian text)";
+  for (const w of list) {
+    const imageError = validateVocabImage(w.image, w.audioKey);
+    if (imageError) return imageError;
+  }
   return null;
 }
 
@@ -843,6 +904,61 @@ export async function saveIntro(req, res) {
   }
 }
 
+/**
+ * Refuses a malformed panel quiz with a message naming the problem; null is
+ * "clear it". Ordering and rounding are normalizePanelQuiz's job.
+ */
+function validatePanelQuiz(quiz) {
+  if (quiz === null) return null;
+  if (typeof quiz !== "object" || Array.isArray(quiz)) return "must be { panels, clips }, or null to clear it";
+  const { panels, clips } = quiz;
+  if (!Array.isArray(panels) || panels.length === 0) return "needs at least one panel";
+  if (panels.length > storiesRepo.PANEL_QUIZ_MAX_PANELS) {
+    return `at most ${storiesRepo.PANEL_QUIZ_MAX_PANELS} panels`;
+  }
+  for (const [i, panel] of panels.entries()) {
+    const error = validateBox(panel, `panel ${i + 1}`);
+    if (error) return error;
+  }
+  if (!Array.isArray(clips) || clips.length === 0) return "needs at least one line matched to a panel";
+  if (clips.length > storiesRepo.PANEL_QUIZ_MAX_CLIPS) {
+    return `at most ${storiesRepo.PANEL_QUIZ_MAX_CLIPS} lines`;
+  }
+  for (const [i, clip] of clips.entries()) {
+    const { start, end, panel } = clip ?? {};
+    if (![start, end].every((n) => typeof n === "number" && Number.isFinite(n)) || start < 0 || end <= start) {
+      return `line ${i + 1} needs a start and an end, in seconds, end after start`;
+    }
+    if (!Number.isInteger(panel) || panel < 0 || panel >= panels.length) {
+      return `line ${i + 1} points at a panel that does not exist`;
+    }
+  }
+  return null;
+}
+
+// PUT /api/admin/stories/:id/parts/:partNumber/panel-quiz  { panelQuiz }
+// The "where did it happen?" game on the comic page. Replaced whole; null
+// clears it. Needs a comic page to draw the panels on.
+export async function savePanelQuiz(req, res) {
+  try {
+    const panelQuiz = req.body?.panelQuiz;
+    if (panelQuiz === undefined) return res.status(400).json({ error: "panelQuiz is required (null clears it)." });
+    const error = validatePanelQuiz(panelQuiz);
+    if (error) return res.status(400).json({ error: `Invalid comic quiz: ${error}.` });
+
+    const result = await mutatePart(req, (part) => {
+      if (panelQuiz !== null && !part.comicUrl) {
+        return { halt: { status: 400, body: { error: "Invalid comic quiz: this part has no comic page to play it on." } } };
+      }
+      part.panelQuiz = storiesRepo.normalizePanelQuiz(panelQuiz);
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("savePanelQuiz error:", error);
+    res.status(500).json({ error: "Failed to save the comic quiz." });
+  }
+}
+
 function validateQuizList(quiz) {
   if (!Array.isArray(quiz)) return "must be an array";
   if (quiz.length > MAX_QUIZ_QUESTIONS) return `at most ${MAX_QUIZ_QUESTIONS} questions`;
@@ -942,6 +1058,7 @@ const lockPart = (part) => ({
   vocabulary: [],
   phrasalVerbs: [],
   quiz: [],
+  panelQuiz: null,
 });
 
 const openPart = (part) => ({
@@ -966,6 +1083,10 @@ const openPart = (part) => ({
       slow: resolveQuizAudioPath(rest.audio?.slow),
     },
   })),
+  // Sent WITH its answers, unlike the quiz above: it is practice that pays
+  // nothing and records nothing, so there is no score worth forging. The day
+  // it rewards anything, grading moves server-side the way the quiz's did.
+  panelQuiz: part.panelQuiz ?? null,
 });
 
 // GET /api/stories/:difficulty/:storyId
@@ -994,9 +1115,9 @@ export async function getPublishedStory(req, res) {
     const parts = await Promise.all(
       story.parts.map(async (part) => {
         if (!isPartVisible(access, part.partNumber)) return lockPart(part);
-        // A preview is a listen, not a lesson: the quiz stays closed.
+        // A preview is a listen, not a lesson: the quizzes stay closed.
         const open = isPreviewPart(access, part.partNumber)
-          ? { ...openPart(part), preview: true, quiz: [] }
+          ? { ...openPart(part), preview: true, quiz: [], panelQuiz: null }
           : openPart(part);
         // Only audio this caller is allowed to hear is ever signed — a locked
         // part left above with no URL at all. See helpers/signedAudio.js.

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useMemo } from "react";
 import { WaveformPlayerProps } from "../../types";
 import { useAppSelector } from "../../hooks/hooks";
 import { useListeningTimer } from "../../hooks/useListeningTimer";
@@ -19,10 +19,18 @@ import FeedbackModal from "../Feedback/FeedbackModal";
 import { WaveformDisplay } from "./WaveformDisplay";
 import { PlayerControls } from "./Controls/PlayerControls";
 import { VolumeControl } from "./Controls/VolumeControl";
-import { VocabChip } from "./Vocabulary/VocabChip";
 import { VocabularyRow } from "./Vocabulary/VocabularyRow";
+import { WordRail } from "./Vocabulary/WordRail";
 import ComicsDisplay from "./Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
+import {
+  IoChevronForward,
+  IoGridOutline,
+  IoListOutline,
+  IoLockClosedOutline,
+  IoVolumeHighOutline,
+} from "react-icons/io5";
+import type { PracticeKind } from "./Practice/PracticeModal";
 import { submitPhraseRepeat } from "../../services/walletServices";
 import { useWallet } from "../../context/WalletContext";
 
@@ -42,8 +50,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     phrasalVerbs,
     helpAudioUrls,
     hasListenedFully,
-    onOpenQuiz,
-    onOpenVocabQuiz,
+    practices = [],
+    onOpenPractice,
+    practicesDone = 0,
     learnedWords,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
@@ -209,36 +218,103 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     // markers that were never recorded, and length alone would call that help.
     const hasHelpAudio = (helpAudioUrls ?? []).filter(Boolean).length > 0;
 
-    // Desktop renders vocabulary and phrasal verbs as two identical labelled
-    // chip blocks (mobile uses VocabularyRow's horizontal scroller for both).
-    // Shared rather than copied because the chip wiring here — audioUrl, the
-    // onPlay arity, the learned-key casing — is exactly what drifted apart
-    // between the two layouts before.
-    const renderWordSection = (
-      words: typeof currentVocabulary,
-      label: string,
-      tourId: string,
-    ) =>
-      words.length > 0 ? (
-        <div className="max-w-[1100px] mx-auto px-5 pb-6 mt-2" data-tour={tourId}>
-          <p className="text-white/50 text-[10px] uppercase tracking-[0.16em] font-mono mb-3">
-            {label}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {words.map(({ word, audioKey, audioUrl }) => (
-              <VocabChip
-                key={word}
-                word={word}
-                audioKey={audioKey}
-                audioUrl={audioUrl}
-                onPlay={(_key, url) => playVocabWord(url)}
-                volume={isMuted ? 0 : volume}
-                isLearned={learnedWords?.has((audioKey ?? word).toLowerCase())}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null;
+    // Once the part has been heard to the end, one button opens everything
+    // there is to do with it — the quiz and the practice games — in the
+    // practice window (Practice/PracticeModal.tsx), which also opens by itself
+    // the moment the part ends. It used to be one button per game, and a
+    // third game no longer fit a phone's width.
+    const showPractice = hasListenedFully && practices.length > 0 && onOpenPractice;
+    const practiceIcon: Record<PracticeKind, React.ReactNode> = {
+      quiz: <IoListOutline key="quiz" size={16} />,
+      words: <IoVolumeHighOutline key="words" size={16} />,
+      comic: <IoGridOutline key="comic" size={16} />,
+    };
+    const practiceButton = (
+      <button
+        type="button"
+        onClick={onOpenPractice}
+        aria-label={
+          practicesDone > 0
+            ? t("practice.buttonProgress", { done: practicesDone, total: practices.length })
+            : undefined
+        }
+        className="inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-[3px] border border-white/20 bg-gray-500/25 px-6 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-200 hover:bg-gray-500/40 active:scale-95"
+      >
+        <span className="inline-flex gap-1" aria-hidden="true">
+          {practices.map((kind) => practiceIcon[kind])}
+        </span>
+        {t("practice.button")}
+        {/* What is left, at a glance: "3" when nothing is done yet, "2/3" after.
+            Not green icons — on the easy level's green gradient they vanish. */}
+        <span className="rounded-[2px] bg-black/25 px-1.5 font-mono text-[11px] tabular-nums" aria-hidden="true">
+          {practicesDone > 0 ? `${practicesDone}/${practices.length}` : practices.length}
+        </span>
+      </button>
+    );
+
+    // ── Desktop pieces ────────────────────────────────────────────────────
+    // Stable, so the rail's memoised rows don't redraw on every time tick.
+    const playWord = useCallback(
+      (_key: string, url: string) => playVocabWord(url),
+      [playVocabWord],
+    );
+
+    const volumeControl = useMemo(
+      () => (
+        <VolumeControl
+          isMuted={isMuted}
+          volume={volume}
+          onMuteToggle={handleMuteToggle}
+          onVolumeChange={handleVolumeChange}
+        />
+      ),
+      [isMuted, volume, handleMuteToggle, handleVolumeChange],
+    );
+
+    // Desktop keeps «Практика» in one place from the start: locked until the
+    // part has been heard, then the way into the practice window. (The phone
+    // button above still appears only once the part is heard.) A part with
+    // nothing to practise shows no card at all.
+    const hasPractices = practices.length > 0 && Boolean(onOpenPractice);
+    const practiceIcons = practices.map((kind) => practiceIcon[kind]);
+    const practiceCard = !hasPractices ? null : hasListenedFully ? (
+      <button
+        type="button"
+        onClick={onOpenPractice}
+        className="flex w-full cursor-pointer items-center gap-3.5 rounded-card bg-ink px-4 py-3.5 text-left text-panel-text shadow-lg transition-colors hover:bg-ink/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+      >
+        <span className="inline-flex gap-1.5 text-panel-dim" aria-hidden="true">
+          {practiceIcons}
+        </span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[15px] font-bold">{t("practice.button")}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-panel-dim">
+            {practicesDone > 0
+              ? t("practice.cardProgress", { done: practicesDone, total: practices.length })
+              : t("practice.cardCount", { count: practices.length })}
+          </span>
+        </span>
+        <IoChevronForward size={18} className="ml-auto shrink-0 text-panel-dim" aria-hidden="true" />
+      </button>
+    ) : (
+      <div
+        aria-disabled="true"
+        className="flex items-center gap-3.5 rounded-card bg-black/15 px-4 py-3.5 text-white/90"
+      >
+        <IoLockClosedOutline size={18} className="shrink-0" aria-hidden="true" />
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[15px] font-bold">{t("practice.button")}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/70">
+            {t("practice.locked")}
+          </span>
+        </span>
+        <span className="ml-auto inline-flex gap-1.5 text-white/60" aria-hidden="true">
+          {practiceIcons}
+        </span>
+      </div>
+    );
+
+    const hasRail = currentVocabulary.length + currentPhrasalVerbs.length > 0 || practiceCard !== null;
 
     return (
       <div className="waveform-overlay h-full min-h-0">
@@ -346,115 +422,90 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 zone and shrink everything above it a second time on top of
                 the comics-flex change above; total bottom-zone height now
                 stays constant whether or not hasListenedFully is true. */}
-            <div className="flex justify-center gap-2 mt-6 min-h-[44px]">
-              {hasListenedFully && (
-                <>
-                  <button
-                    onClick={onOpenQuiz}
-                    className="px-5 py-2 rounded-[3px] text-sm font-semibold
-                     bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                     hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-                  >
-                    {t("player.quiz-incomp")}
-                  </button>
-                  <button
-                    onClick={onOpenVocabQuiz}
-                    className="px-5 py-2 rounded-[3px] text-sm font-semibold
-                     bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                     hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-                  >
-                    {t("player.vocab-quiz")}
-                  </button>
-                </>
-              )}
-            </div>
+            <div className="mt-6 flex min-h-[44px] flex-col">{showPractice && practiceButton}</div>
           </div>
         </div>
 
-        {/* ═══════════ DESKTOP LAYOUT (≥ md) — UNCHANGED ═══════════ */}
-        <div className="hidden md:block">
-          <div data-tour="tour-player">
-            <WaveformDisplay
-              waveformRef={waveformRef}
-              isLoading={isLoading}
-              isInitialized={isInitialized}
-              currentTime={currentTime}
-              duration={duration}
-              durationSeconds={durationSeconds}
-              timeMarkers={timeMarkers}
-              subtitlesVisible={subtitlesVisible}
-              activeSubtitle={activeSubtitle}
-              onMarkerClick={handleMarkerClick}
-            />
-          </div>
-
+        {/* ═══════════ DESKTOP LAYOUT (≥ md) ═══════════
+            From lg: the player on the left (comic, waveform, controls) and the
+            word rail on the right, each fitting the panel's height — the rail's
+            list scrolls inside itself, so a long part never runs off screen.
+            Between md and lg the two stack and the whole area scrolls. */}
+        <div className="hidden md:flex h-full min-h-0 flex-col text-left">
           <div
-            /* No bg-white/60 card: the controls sit straight on the page
-               gradient the way the mobile ones do. The white panel was the
-               only reason desktop needed dark, filled buttons. */
-            className="max-w-[1100px] mx-auto p-[35px] rounded-[3px] md:p-5 sm:p-4 flex flex-col justify-between items-center gap-5 md:gap-4 sm:gap-3 mt-[15px]"
-            data-tour="tour-controls"
+            className={`flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto lg:grid lg:grid-rows-[minmax(0,1fr)] lg:gap-8 lg:overflow-visible ${
+              hasRail
+                ? "lg:grid-cols-[minmax(0,1fr)_360px]"
+                : "lg:mx-auto lg:w-full lg:max-w-[720px] lg:grid-cols-1"
+            }`}
           >
-            <PlayerControls
-              isPlaying={isPlaying}
-              isControlledMode={isControlledMode}
-              onPlayPause={handlePlayPause}
-              onToggleControlledMode={toggleControlledMode}
-              repeatCount={repeatCount}
-              onRepeatCountChange={handleSetRepeatCount}
-              playbackRate={playbackRate}
-              onSpeedChange={changePlaybackRate}
-              isEnhancedMode={isEnhancedMode}
-              onToggleEnhancedMode={handleToggleEnhancedMode}
-              isEnhancedSessionActive={isEnhancedSessionActive} // ← NEW
-              layout="desktop"
-              storyIndex={Number(trackId)}
-              comicSrc={comicUrl}
-              comicsTitle={trackTitle}
-              difficulty={difficulty}
-              onOpenHelp={help.open}
-              hasHelpAudio={hasHelpAudio}
-            />
-            <VolumeControl
-              isMuted={isMuted}
-              volume={volume}
-              onMuteToggle={handleMuteToggle}
-              onVolumeChange={handleVolumeChange}
-            />
-          </div>
+            {/* With a comic the column starts level with the rail; without
+                one, the waveform and controls sit in the middle instead of
+                hugging the top over empty space. */}
+            <div className={`flex shrink-0 flex-col gap-4 lg:min-h-0 ${comicUrl ? "lg:justify-start" : "lg:justify-center"}`}>
+              {comicUrl && (
+                <div
+                  data-tour="tour-comics"
+                  className="h-[clamp(120px,20vh,200px)] shrink-0 lg:h-auto lg:min-h-24 lg:max-h-[236px] lg:flex-1 lg:shrink"
+                >
+                  <ComicsDisplay variant="banner" src={comicUrl} title={trackTitle} />
+                </div>
+              )}
 
-          {hasListenedFully && (
-            <div className="max-w-[1100px] mx-auto flex justify-center pt-3 gap-3 mt-6">
-              <button
-                onClick={onOpenQuiz}
-                className="px-5 py-2 rounded-[3px] text-sm font-semibold
-                 bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                 hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-              >
-                {t("player.quiz-incomp")}
-              </button>
-              <button
-                onClick={onOpenVocabQuiz}
-                className="px-5 py-2 rounded-[3px] text-sm font-semibold
-                 bg-gray-500/25 text-white border border-white/20 shadow-lg backdrop-blur-sm
-                 hover:bg-gray-500/40 transition-all duration-200 active:scale-95"
-              >
-                {t("player.vocab-quiz")}
-              </button>
+              <div data-tour="tour-player" className="shrink-0">
+                <WaveformDisplay
+                  waveformRef={waveformRef}
+                  isLoading={isLoading}
+                  isInitialized={isInitialized}
+                  currentTime={currentTime}
+                  duration={duration}
+                  durationSeconds={durationSeconds}
+                  timeMarkers={timeMarkers}
+                  subtitlesVisible={subtitlesVisible}
+                  activeSubtitle={activeSubtitle}
+                  onMarkerClick={handleMarkerClick}
+                  activeMarkerIndex={isEnhancedMode ? currentMarkerIndex : null}
+                />
+              </div>
+
+              <div data-tour="tour-controls" className="shrink-0">
+                <PlayerControls
+                  isPlaying={isPlaying}
+                  isControlledMode={isControlledMode}
+                  onPlayPause={handlePlayPause}
+                  onToggleControlledMode={toggleControlledMode}
+                  repeatCount={repeatCount}
+                  onRepeatCountChange={handleSetRepeatCount}
+                  playbackRate={playbackRate}
+                  onSpeedChange={changePlaybackRate}
+                  isEnhancedMode={isEnhancedMode}
+                  onToggleEnhancedMode={handleToggleEnhancedMode}
+                  isEnhancedSessionActive={isEnhancedSessionActive}
+                  layout="desktop"
+                  onPrev={handlePrevMarker}
+                  onNext={handleNextMarker}
+                  canGoPrev={canGoPrev}
+                  canGoNext={canGoNext}
+                  onOpenHelp={help.open}
+                  hasHelpAudio={hasHelpAudio}
+                  volumeControl={volumeControl}
+                />
+              </div>
             </div>
-          )}
 
-          {renderWordSection(
-            currentVocabulary,
-            t("player.vocabulary"),
-            "tour-vocabulary",
-          )}
-
-          {renderWordSection(
-            currentPhrasalVerbs,
-            t("player.phrasal-verbs"),
-            "tour-phrasal-verbs",
-          )}
+            {hasRail && (
+              <aside className="flex min-h-[280px] flex-1 flex-col lg:min-h-0 lg:border-l lg:border-white/25 lg:pl-7">
+                <WordRail
+                  vocabulary={currentVocabulary}
+                  phrasalVerbs={currentPhrasalVerbs}
+                  onPlay={playWord}
+                  volume={isMuted ? 0 : volume}
+                  learnedWords={learnedWords}
+                  footer={practiceCard}
+                />
+              </aside>
+            )}
+          </div>
         </div>
 
         <HelpModal

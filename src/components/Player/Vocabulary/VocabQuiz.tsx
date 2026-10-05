@@ -126,16 +126,17 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
     hasFiredCompletionRef.current = false;
   }, [words]);
 
-  // Grid sizing: shrink cell size and font when there are many words,
-  // so everything fits on screen without scrolling.
-  const gridStyle = useMemo(() => {
+  // Tile sizing. The tiles flow in rows rather than sitting in fixed grid
+  // columns: a fixed column on a phone is ~64 px of text, and a word like
+  // «производительности» could only fit by being split mid-word. A flex item
+  // is never narrower than its longest word (its min-content width), so a long
+  // word simply gets a wider tile; phrases still wrap, but only between words.
+  // `basis` sets how many share a row when the words are short.
+  const tileLayout = useMemo(() => {
     const count = words.length;
-    const cols = count <= 4 ? 2 : count <= 12 ? 3 : count <= 12 ? 3 : 4;
-    const fontSize = count <= 8 ? "0.9rem" : count <= 16 ? "0.8rem" : "0.68rem";
-    return {
-      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-      fontSize,
-    } as React.CSSProperties;
+    const basis = count <= 4 ? "40%" : count <= 12 ? "28%" : "21%";
+    const fontSize = count <= 8 ? "0.95rem" : count <= 16 ? "0.875rem" : "0.8rem";
+    return { basis, fontSize };
   }, [words.length]);
 
   if (words.length < 4) {
@@ -229,9 +230,14 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
             </div>
           </div>
 
+          {/* Scrolls rather than squeezing when a long list does not fit. The
+              inner block's auto margins centre it while it fits and drop to
+              zero when it does not — centring the scroller itself would push
+              the first rows above its top, out of reach. */}
+          <div className="flex-1 min-h-0 overflow-y-auto flex">
           <div
-            className="flex-1 min-h-0 grid gap-2 content-center"
-            style={gridStyle}
+            className="m-auto w-full flex flex-wrap gap-2 py-1"
+            style={{ fontSize: tileLayout.fontSize }}
           >
             {words.map((w) => {
               const isThisCorrectWord = w.word === current.word;
@@ -253,12 +259,14 @@ export const VocabQuiz: React.FC<VocabQuizProps> = ({
                   key={w.word}
                   onClick={() => handleChoice(w)}
                   disabled={status !== "idle"}
-                  className={`rounded-tile px-2 py-3 min-h-[3.5rem] font-semibold leading-snug text-center break-words whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
+                  style={{ flex: `1 1 ${tileLayout.basis}` }}
+                  className={`rounded-tile px-3 py-3 min-h-[3.5rem] font-semibold leading-snug text-center break-normal hyphens-none whitespace-normal transition-colors duration-150 disabled:cursor-default ${stateClasses}`}
                 >
                   {w.word}
                 </button>
               );
             })}
+          </div>
           </div>
         </>
       )}

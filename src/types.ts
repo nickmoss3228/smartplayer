@@ -1,4 +1,6 @@
 import WaveSurfer from "wavesurfer.js";
+import type { PanelQuiz } from "./services/storyServices";
+import type { PracticeKind } from "./components/Player/Practice/PracticeModal";
 
 export interface Subtitle {
   startTime: number;
@@ -19,6 +21,8 @@ export interface AudioTrack {
    * second story on the same level.
    */
   comicUrl?: string | null;
+  /** The comic-page game ("where did it happen?"); null when the part has none. */
+  panelQuiz?: PanelQuiz | null;
 }
 export interface TimeMarker {
   time: number;
@@ -57,8 +61,12 @@ export interface WaveformPlayerProps {
   onWavesurferMount: (wavesurfer: WaveSurfer) => void;
   helpAudioUrls?: string[];
   hasListenedFully?: boolean;
-  onOpenQuiz?: () => void;
-  onOpenVocabQuiz?: () => void;
+  /** What this part offers once heard, quiz first — the icons on «Практика». */
+  practices?: PracticeKind[];
+  /** Opens the practice window. */
+  onOpenPractice?: () => void;
+  /** How many of `practices` are finished — shown as "2/3" on the button. */
+  practicesDone?: number;
   /** Vocab word keys (lowercased audioKey ?? word) already answered correctly */
   learnedWords?: Set<string>;
 }

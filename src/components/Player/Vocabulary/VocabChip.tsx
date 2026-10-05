@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React from "react";
+import { useWordClip } from "./useWordClip";
 
 interface VocabChipProps {
   word: string;
@@ -13,41 +14,7 @@ interface VocabChipProps {
 
 export const VocabChip: React.FC<VocabChipProps> = React.memo(
   ({ word, audioKey, audioUrl = "", onPlay, volume = 1, isLearned = false }) => {
-    const [isPlaying, setIsPlaying] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    useEffect(() => {
-      if (audioRef.current) {
-        audioRef.current.volume = volume;
-      }
-    }, [volume]);
-
-    const handleClick = useCallback(() => {
-      const key = (audioKey ?? word).toLowerCase();
-
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        setIsPlaying(false);
-        return;
-      }
-
-      const audio = onPlay(key, audioUrl);
-      if (!audio) return;
-
-      audio.volume = volume;
-      audioRef.current = audio;
-
-      audio.addEventListener("play", () => setIsPlaying(true));
-      audio.addEventListener("ended", () => setIsPlaying(false));
-      audio.addEventListener("pause", () => setIsPlaying(false));
-      audio.addEventListener("error", () => {
-        setIsPlaying(false);
-        console.warn(
-          `[VocabChip] Could not load audio for "${word}" key: "${key}"`,
-        );
-      });
-    }, [word, audioKey, audioUrl, onPlay, volume]);
+    const { isPlaying, toggle: handleClick } = useWordClip({ word, audioKey, audioUrl, onPlay, volume });
 
     return (
       <div className="group relative">

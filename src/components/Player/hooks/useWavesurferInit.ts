@@ -71,13 +71,15 @@ export const useWavesurferInit = ({
 
     wavesurfer.current = WaveSurfer.create({
       container: waveformRef.current,
-      waveColor: isMobile ? "rgba(255,255,255,0.25)" : "rgb(26, 26, 26)",
-      progressColor: isMobile ? "rgb(5, 223, 59)" : "rgb(0, 209, 70)",
-      cursorColor: isMobile ? "rgba(255,255,255,0.9)" : "#008206ff",
+      // Desktop: white on a faint dark track (WaveformDisplay), played part
+      // solid, the rest translucent — the same language as the phone's bar.
+      waveColor: isMobile ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.42)",
+      progressColor: isMobile ? "rgb(5, 223, 59)" : "#ffffff",
+      cursorColor: isMobile ? "rgba(255,255,255,0.9)" : "#ffffff",
       barWidth: isMobile ? 3 : 2,
       barRadius: isMobile ? 3 : 2,
-      cursorWidth: isMobile ? 2 : 3,
-      height: isMobile ? 44 : 30,
+      cursorWidth: isMobile ? 2 : 2,
+      height: isMobile ? 44 : 52,
       barGap: 2,
       normalize: true,
       fillParent: true,

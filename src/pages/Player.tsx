@@ -24,6 +24,18 @@ import { resolveStory, findResolvedTrack, withLocalizedTitles } from "../modules
 import { useAppLocale } from "../types/storyGroups";
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
 import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
+import { PanelQuiz } from "../components/Player/PanelQuiz/PanelQuiz";
+import {
+  PracticeModal,
+  type PracticeKind,
+  type PracticeOption,
+} from "../components/Player/Practice/PracticeModal";
+import { questionsFromClips } from "../modules/comicPractice/panelQuizRounds";
+import {
+  isPanelQuizDone,
+  markPanelQuizDone,
+  passed as panelQuizPassed,
+} from "../modules/comicPractice/panelQuizProgress";
 import {
   fetchPublishedStory,
   PublishedStory,
@@ -31,15 +43,15 @@ import {
 import { AudioTrack } from "../types";
 import { useListeningTimeSync } from "../hooks/useListeningTimeSync";
 import { useVocabProgress } from "../components/Player/hooks/useVocabProgress";
-import { saveGuestQuizResult } from "../services/guestProgress";
+import { getGuestStoryProgress, saveGuestQuizResult } from "../services/guestProgress";
 import { fetchQuizQuestions } from "../services/quizServices";
 import { preloadAudio } from "../services/preload";
 import { QuizQuestion } from "../types/Quiz";
 
-// Whether a track's "Take the quiz" / "Vocab quiz" buttons should stay
+// Whether a track's «Практика» button (the quiz and the practice games) stays
 // unlocked persists across visits (not just the current session) once the
 // student has heard the whole track once — otherwise navigating away and
-// back would make them re-listen just to see the buttons again.
+// back would make them re-listen just to see the button again.
 const getListenedKey = (difficulty: string, storySlug: string, level: number) =>
   `listenedFully_${difficulty}_${storySlug}_${level}`;
 import { API_BASE as API_BASE_URL } from "../services/apiClient";
@@ -88,14 +100,19 @@ const Player = React.memo(() => {
     ? `/levels/${difficulty}/${storySlug}`
     : `/levels/${difficulty}`;
 
-  // Replace the useProgress destructure in Player.tsx
-  const { refreshStoryProgress } = useProgress();
+  const { refreshStoryProgress, getStoryData, storyProgress, isInitialLoad } = useProgress();
 
   const navigate = useNavigate();
 
   const wavesurferRef = useRef<WaveSurferInstance | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
   const [showQuiz, setShowQuiz] = useState(false);
+  const [showPanelQuiz, setShowPanelQuiz] = useState(false);
+  // The practice window: opens by itself when a part ends, and from «Практика».
+  const [showPractice, setShowPractice] = useState(false);
+  // Bumped when progress kept in this browser changes (a guest's quiz, the
+  // comic game), so the ticks in the practice window are read again.
+  const [localProgressTick, setLocalProgressTick] = useState(0);
   const [_quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
@@ -142,6 +159,8 @@ const Player = React.memo(() => {
   useEffect(() => {
     setSelectedTrackId(level.toString());
     setShowQuiz(false);
+    setShowPanelQuiz(false);
+    setShowPractice(false);
     setQuizResults(null);
     setQuizQuestions(null);
     setQuizLoadError(false);
@@ -242,6 +261,8 @@ const Player = React.memo(() => {
   }, [dbStory, difficulty, storySlug, locale]);
   const audioTracks = resolvedStory.tracks;
   const dbStoryLoading = !dbChecked;
+  // The desktop header's eyebrow: the story's name, as the shelves show it.
+  const storyTitle = dbStory?.localized?.title?.[locale]?.trim() || dbStory?.storyName;
 
   const resolvedStorySlug =
     storySlug ??
@@ -340,6 +361,8 @@ const Player = React.memo(() => {
   const handleAudioComplete = useCallback(() => {
     setHasListenedFully(true);
     markListenedFullyStored(difficulty, storySlug, level);
+    // The moment a part ends is when to offer what comes next.
+    setShowPractice(true);
   }, [difficulty, storySlug, level]);
 
   const handleQuizComplete = useCallback(
@@ -356,6 +379,7 @@ const Player = React.memo(() => {
           results.totalQuestions,
           audioTracks.length,
         );
+        setLocalProgressTick((n) => n + 1);
         return;
       }
 
@@ -432,6 +456,75 @@ const Player = React.memo(() => {
     (_audioKey: string, audioUrl: string) => playVocabWord(audioUrl),
     [playVocabWord],
   );
+
+  // The comic game needs all three: the page to tap, the audio to play lines
+  // from, and the game itself. A part missing any of them shows no button.
+  const panelQuiz =
+    audioTrack.panelQuiz && audioTrack.comicUrl && audioTrack.audio ? audioTrack.panelQuiz : null;
+
+  // ── The practice window ───────────────────────────────────────────────
+  // The context preloads progress only for the built-in story slugs; any
+  // other story (the news shelf, a Builder story) is fetched here once, so
+  // its quiz tick is right too.
+  const progressKey = `${difficulty}:${resolvedStorySlug}`;
+  useEffect(() => {
+    if (!user || isInitialLoad || storyProgress[progressKey]) return;
+    refreshStoryProgress(difficulty, resolvedStorySlug);
+  }, [user, isInitialLoad, storyProgress, progressKey, difficulty, resolvedStorySlug, refreshStoryProgress]);
+
+  const quizCount = dbStory?.parts.find((p) => p.partNumber === level)?.quiz?.length ?? 0;
+  const comicQuestions = useMemo(() => (panelQuiz ? questionsFromClips(panelQuiz.clips).length : 0), [panelQuiz]);
+  const completedParts = user ? getStoryData(difficulty, resolvedStorySlug).completedParts : null;
+
+  // Only what this part has, the quiz first: a part with no quiz written, or
+  // fewer than the word game's 4 words, or no comic game, offers no tile for
+  // it. `done` is what puts the tick on a tile.
+  const practiceOptions = useMemo<PracticeOption[]>(() => {
+    const quizDone = (
+      completedParts ?? getGuestStoryProgress(difficulty, resolvedStorySlug).completedParts
+    ).includes(level);
+    const options: PracticeOption[] = [];
+    if (quizCount > 0) options.push({ kind: "quiz", count: quizCount, done: quizDone });
+    if (allVocabWords.length >= 4) {
+      options.push({
+        kind: "words",
+        count: allVocabWords.length,
+        done: allVocabWords.every((w) => learnedWords.has((w.audioKey ?? w.word).toLowerCase())),
+      });
+    }
+    if (comicQuestions > 0) {
+      options.push({
+        kind: "comic",
+        count: comicQuestions,
+        done: isPanelQuizDone(difficulty, resolvedStorySlug, level),
+      });
+    }
+    return options;
+    // localProgressTick is not read inside: it is the signal to read this
+    // browser's storage again after the guest quiz or the comic game wrote to it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizCount, completedParts, allVocabWords, learnedWords, comicQuestions, difficulty, resolvedStorySlug, level, localProgressTick]);
+
+  const practiceKinds = useMemo(() => practiceOptions.map((o) => o.kind), [practiceOptions]);
+  const practicesDone = practiceOptions.filter((o) => o.done).length;
+
+  const openPractice = useCallback(() => setShowPractice(true), []);
+  const closePractice = useCallback(() => setShowPractice(false), []);
+  const handlePickPractice = useCallback((kind: PracticeKind) => {
+    setShowPractice(false);
+    if (kind === "quiz") setShowQuiz(true);
+    else if (kind === "words") setShowVocabQuiz(true);
+    else setShowPanelQuiz(true);
+  }, []);
+
+  const handlePanelQuizFinish = useCallback(
+    (score: number, total: number) => {
+      if (!panelQuizPassed(score, total)) return;
+      markPanelQuizDone(difficulty, resolvedStorySlug, level);
+      setLocalProgressTick((n) => n + 1);
+    },
+    [difficulty, resolvedStorySlug, level],
+  );
   
   // useEffect(() => {
   // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
@@ -482,19 +575,36 @@ const Player = React.memo(() => {
             gradient, which a blur leaves looking the same, but on a phone the
             panel is the whole screen and the waveform redraws inside it every
             frame of playback — so the compositor re-blurred the full screen
-            60 times a second for no visible difference. */}
-        <div className="relative w-full h-full max-w-[1100px] md:h-auto md:mt-10 mx-auto md:p-10 bg-white/15 rounded-[3px] text-center animate-fade-in flex flex-col overflow-hidden">
-          {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks ── */}
-          <div className="shrink-0 relative flex items-center justify-center min-h-[52px] px-2">
+            60 times a second for no visible difference.
+            From md up the panel has a height (it used to be h-auto inside an
+            h-dvh overflow-hidden page, so a part with many words simply lost
+            its last rows off the bottom edge); what is inside scrolls. The
+            player is capped at 760 px so it stays a compact instrument; the
+            comic game is not, because its page is portrait and every pixel of
+            height is a bigger panel to tap. */}
+        <div
+          className={`relative w-full h-full max-w-[1100px] md:w-[calc(100%-3rem)] ${
+            showPanelQuiz && panelQuiz
+              ? "md:h-[calc(100dvh-2rem)]"
+              : "md:h-[calc(100dvh-4rem)] lg:h-[min(760px,calc(100dvh-4rem))]"
+          } mx-auto md:gap-4 md:px-8 md:pt-5 md:pb-7 bg-white/15 rounded-[3px] md:rounded-card text-center animate-fade-in flex flex-col overflow-hidden`}
+        >
+          {/* ── TOP ZONE: back button, title, feedback — fixed height, never shrinks.
+              Phone: title centred between two pinned buttons. Desktop: one
+              left-aligned row, with the story and part above the title. ── */}
+          <div className="shrink-0 relative flex items-center justify-center min-h-[52px] px-2 md:justify-start md:gap-2 md:px-0">
             <button
               onClick={() =>
                 showQuiz
                   ? setShowQuiz(false)
                   : showVocabQuiz
                     ? setShowVocabQuiz(false)
-                    : navigate(backPath)
+                    : showPanelQuiz
+                      ? setShowPanelQuiz(false)
+                      : navigate(backPath)
               }
-              className="absolute left-3 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm"
+              aria-label={t("player.back")}
+              className="absolute left-3 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm md:static md:-ml-2.5 md:h-10 md:w-10 md:shrink-0 md:justify-center md:rounded-full md:hover:bg-black/5"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -512,14 +622,20 @@ const Player = React.memo(() => {
               </svg>
             </button>
 
-            <h1 className="text-lg text-black font-bold px-10 truncate">
-              {audioTrack.title}
-            </h1>
+            <div className="min-w-0 md:flex-1 md:text-left">
+              <p className="hidden md:block truncate font-mono text-[10px] uppercase tracking-[0.16em] text-black/55">
+                {storyTitle ? `${storyTitle} · ` : ""}
+                {t("player.partOf", { n: level, total: audioTracks.length })}
+              </p>
+              <h1 className="text-lg text-black font-bold px-10 truncate md:px-0 md:text-[22px] md:font-extrabold md:leading-tight md:tracking-tight">
+                {audioTrack.title}
+              </h1>
+            </div>
 
             <button
               onClick={handleOpenFeedback}
               aria-label={t("controls.feedback", "Send feedback")}
-              className="absolute right-3 p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer"
+              className="absolute right-3 p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer md:static md:-mr-2 md:ml-auto md:shrink-0"
             >
               <IoChatbubbleEllipsesOutline className="w-6 h-6" />
             </button>
@@ -527,7 +643,7 @@ const Player = React.memo(() => {
 
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
-            <div className="flex-1 min-h-0 overflow-y-auto pb-[180px] flex flex-col justify-center">
+            <div className="flex-1 min-h-0 overflow-y-auto pb-[180px] md:pb-6 flex flex-col justify-center md:justify-center-safe">
               {quizLoading || !quizQuestions ? (
                 <p className="text-center text-black/50 text-sm py-10">
                   {quizLoadError ? t("player.quiz-load-error") : t("player.quiz-loading")}
@@ -554,6 +670,16 @@ const Player = React.memo(() => {
                 learnedWords={learnedWords}
               />
             </div>
+          ) : showPanelQuiz && panelQuiz ? (
+            <div className="flex-1 min-h-0">
+              <PanelQuiz
+                comicUrl={audioTrack.comicUrl ?? ""}
+                audioUrl={audioTrack.audio}
+                quiz={panelQuiz}
+                onClose={() => setShowPanelQuiz(false)}
+                onFinish={handlePanelQuizFinish}
+              />
+            </div>
           ) : (
             <div className="flex-1 min-h-0 flex flex-col relative">
               <WaveformPlayer
@@ -573,8 +699,9 @@ const Player = React.memo(() => {
                 comicUrl={audioTrack.comicUrl}
                 trackTitle={audioTrack.title}
                 hasListenedFully={hasListenedFully}
-                onOpenQuiz={() => setShowQuiz(true)}
-                onOpenVocabQuiz={() => setShowVocabQuiz(true)}
+                practices={practiceKinds}
+                practicesDone={practicesDone}
+                onOpenPractice={openPractice}
                 learnedWords={learnedWords}
               />
             </div>
@@ -582,6 +709,15 @@ const Player = React.memo(() => {
         </div>
       </div>
       {showFeedback && <FeedbackModal onClose={handleCloseFeedback} />}
+      {showPractice && practiceOptions.length > 0 && (
+        <PracticeModal
+          part={level}
+          nextPart={level < audioTracks.length ? level + 1 : null}
+          options={practiceOptions}
+          onPick={handlePickPractice}
+          onClose={closePractice}
+        />
+      )}
     </div>
   );
 });

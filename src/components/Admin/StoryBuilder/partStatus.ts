@@ -13,7 +13,7 @@
 
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 
-export type ElementId = "audio" | "markers" | "comic" | "intro" | "vocab" | "phrasal" | "quiz";
+export type ElementId = "audio" | "markers" | "comic" | "intro" | "vocab" | "phrasal" | "quiz" | "panels";
 
 /** Empty, partially filled, or finished. `n/a` is only ever for optional
  *  elements a story does not use — it reads as "nothing owed", not "missing". */
@@ -107,6 +107,20 @@ export const ELEMENTS: ElementSpec[] = [
     required: true,
     state: (p) => filled(p.quiz.length),
     count: (p) => p.quiz.length,
+  },
+  {
+    id: "panels",
+    short: "Cq",
+    label: "Comic quiz",
+    // Optional practice: a part without one simply shows no button for it.
+    // Done once it has panels and at least two lines to ask about.
+    required: false,
+    state: (p) => {
+      const quiz = p.panelQuiz;
+      if (!quiz) return "na";
+      return quiz.panels.length > 0 && quiz.clips.length >= 2 ? "done" : "partial";
+    },
+    count: (p) => p.panelQuiz?.clips.length ?? 0,
   },
 ];
 

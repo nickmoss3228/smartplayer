@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import {
   IoPlay,
   IoChevronBack,
@@ -9,14 +9,12 @@ import {
 
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
-import { ComicsDisplay } from "../../Player/Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
 
-// One set of button tokens for BOTH layouts. Desktop used to paint its pills
-// bg-black/90 on a bg-white/60 panel while mobile drew them transparent over
-// the page gradient, so the same control looked like two different products
-// depending on the viewport. These are the mobile values — desktop now shares
-// them, and the panel behind it went transparent to match (WaveformPlayer.tsx).
+// Both layouts draw straight on the level gradient, with no white panel
+// behind them. The phone's round pills use these two tokens; desktop groups
+// the same choices into segmented controls (segBtn below), and both share
+// GHOST_BTN for the round transport buttons.
 const ACTIVE_PILL = "bg-gray-700/30 text-white";
 const IDLE_PILL = "text-white/90 hover:bg-white/10";
 /** Round transport/utility button: no fill until hover. */
@@ -40,10 +38,8 @@ interface PlayerControlsProps {
   onNext?: () => void;
   canGoPrev?: boolean;
   canGoNext?: boolean;
-  storyIndex?: number;
-  comicSrc?: string | null;
-  comicsTitle?: string;
-  difficulty?: string;
+  /** Desktop: the volume control, set at the right end of the transport row. */
+  volumeControl?: React.ReactNode;
   isUserPaused?: boolean;
   isEnhancedSessionActive?: boolean;
   onOpenHelp?: () => void;
@@ -78,15 +74,12 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     onNext,
     canGoPrev = false,
     canGoNext = false,
-    storyIndex,
-    comicSrc,
-    comicsTitle,
-    difficulty,
+    volumeControl,
   }) => {
     const { t } = useTranslation();
-
-    const labelClass =
-      "text-white/60 text-[9px] uppercase tracking-[0.16em] font-mono whitespace-nowrap";
+    // Desktop's mode group is named by its visible label. Called before the
+    // mobile early return so the hook order never depends on the layout.
+    const modeLabelId = useId();
 
     const disabledClass = !isEnhancedMode
       ? "opacity-40 pointer-events-none cursor-not-allowed"
@@ -122,7 +115,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
       const repeatBtnBase =
         "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
       const speedBtnBase =
-        "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 h-[clamp(38px,11vw,52px)] px-[clamp(8px,3vw,14px)] min-w-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
+        "rounded-full flex items-center justify-center cursor-pointer font-medium transition-all active:scale-95 w-[clamp(38px,11vw,52px)] h-[clamp(38px,11vw,52px)] text-[clamp(11px,3.2vw,14px)]";
 
       return (
         <div className="relative flex flex-col w-full h-full justify-start gap-6">
@@ -251,154 +244,168 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     // ═══════════════════════════════════════════════════════════
     // DESKTOP LAYOUT
     // ═══════════════════════════════════════════════════════════
-    const showComics =
-      storyIndex != null && difficulty != null && difficulty !== "";
-
-    const pillBase =
-      "rounded-full w-10 h-10 flex items-center justify-center " +
-      "cursor-pointer text-xs font-medium " +
-      "transition-all duration-200 active:scale-95";
+    // Two rows and a footnote: the transport (help · prev · play · next ·
+    // volume), one settings bar (how to play · speed · repeats), and the
+    // keyboard shortcuts usePlayerControls already listens for — which nothing
+    // on screen used to mention. The comic left this row for the column above.
+    const deskLabel =
+      "text-white/70 text-[10px] uppercase tracking-[0.16em] font-mono whitespace-nowrap";
+    const segGroup = "inline-flex rounded-full bg-black/15 p-[3px]";
+    const segBtn = (on: boolean) =>
+      "h-[30px] min-w-10 cursor-pointer rounded-full px-2.5 text-[13px] font-semibold tabular-nums " +
+      "transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white " +
+      (on ? "bg-white text-ink" : "text-white/90 hover:bg-white/10");
+    const kbd = "mr-1.5 rounded-[3px] border border-white/40 px-1.5 py-px text-white/90";
 
     return (
-      <div className="flex flex-col items-center w-full gap-2">
-        {/* 1fr | auto | 1fr rather than one justify-between row: the two sides
-            hold different numbers of controls (three clusters left, two right),
-            so a plain flex row parked Play/Pause wherever their widths happened
-            to land — visibly off-centre. Equal side tracks pin it to the
-            panel's centre line whatever the clusters end up containing. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-end w-full gap-4">
-          {/* ══ LEFT: Help · Comics · Repeat ══ */}
-          <div className="flex items-end justify-evenly gap-4">
-            {/* ── HELP ── */}
-            <div className="flex flex-col items-center gap-1 min-w-[80px]">
-              <button
-                onClick={onOpenHelp}
-                disabled={!hasHelpAudio}
-                aria-label={
-                  hasHelpAudio
-                    ? t("controls.help", "Help")
-                    : t("controls.helpUnavailable", "No help audio for this part")
-                }
-                title={
-                  hasHelpAudio
-                    ? undefined
-                    : t("controls.helpUnavailable", "No help audio for this part")
-                }
-                className={`${GHOST_BTN} w-10 h-10
-                  disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:active:scale-100`}
-              >
-                <IoHelpCircle className="w-6 h-6" />
-              </button>
-              {/* The label dims with the button so the whole cluster reads as
-                  one unavailable control, not a live label over a dead icon. */}
-              <span className={`${labelClass} ${hasHelpAudio ? "" : "opacity-30"}`}>
-                {t("controls.help", "Help")}
-              </span>
-            </div>
+      <div className="flex w-full flex-col gap-4">
+        {/* 1fr | auto | 1fr rather than one justify-between row: equal side
+            tracks pin Play/Pause to the panel's centre line whatever the two
+            sides end up holding. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+          <button
+            type="button"
+            onClick={onOpenHelp}
+            disabled={!hasHelpAudio}
+            title={
+              hasHelpAudio
+                ? undefined
+                : t("controls.helpUnavailable", "No help audio for this part")
+            }
+            className="inline-flex cursor-pointer items-center gap-2 justify-self-start rounded-full py-1.5 pl-1.5 pr-3
+              text-sm font-semibold text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-white
+              disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <IoHelpCircle className="h-6 w-6" aria-hidden="true" />
+            {t("controls.help", "Help")}
+          </button>
 
-            {/* ── COMICS: circular comics button ── */}
-            <div
-              className="flex flex-col items-center gap-1 min-w-[80px]"
-              data-tour="tour-comics"
-            >
-              {showComics ? (
-                <>
-                  <ComicsDisplay
-                    storyIndex={storyIndex!}
-                    src={comicSrc}
-                    title={comicsTitle}
-                    difficulty={difficulty!}
-                    variant="circular" // ← circular shape
-                  />
-                  <span className={labelClass}>{t("controls.comics")}</span>
-                </>
-              ) : null}
-            </div>
-
-            {/* ── REPEAT ── */}
-            <div
-              className={`flex flex-col items-center gap-1 ${disabledClass}`}
-              data-tour="tour-repeat"
-            >
-              <div className="flex items-center gap-2">
-                {[3, 2, 1].map((count) => (
-                  <button
-                    key={count}
-                    className={`${pillBase} ${pillFor(repeatCount === count)}`}
-                    onClick={() => onRepeatCountChange(count)}
-                    title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
-                  >
-                    x{count}
-                  </button>
-                ))}
-              </div>
-              <span className={labelClass}>{t("controls.repeat")}</span>
-            </div>
-          </div>
-
-          {/* ══ CENTRE: PLAY / PAUSE ══ */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-5">
             <button
-              className={`p-2 border-none rounded-full cursor-pointer
-                transition-all duration-200 active:scale-95
-                flex items-center justify-center
-                ${
+              type="button"
+              onClick={onPrev}
+              disabled={!canGoPrev}
+              aria-label={t("controls.prevPhrase")}
+              className={`${GHOST_BTN} h-12 w-12 disabled:pointer-events-none disabled:opacity-30`}
+            >
+              <IoChevronBack className="h-7 w-7" />
+            </button>
+
+            <button
+              type="button"
+              onClick={onPlayPause}
+              aria-label={showPauseIcon ? t("controls.pause") : t("controls.play")}
+              className={`flex h-[76px] w-[76px] cursor-pointer items-center justify-center rounded-full border-none
+                text-white transition-all duration-200 active:scale-95 ${
                   buttonIsGreen
                     ? "bg-green-500 hover:bg-green-400"
                     : "bg-black/20 hover:bg-black/30"
-                } text-white`}
-              onClick={onPlayPause}
-              title={showPauseIcon ? "Pause" : "Play"}
+                }`}
             >
               {showPauseIcon ? (
-                <IoPause className="text-white w-[45px] h-[45px]" />
+                <IoPause className="h-10 w-10" />
               ) : (
-                <IoPlay className="text-white w-[45px] h-[45px]" />
+                <IoPlay className="ml-1 h-10 w-10" />
               )}
             </button>
-            <span className={labelClass}>
-              {showPauseIcon ? t("controls.pause") : t("controls.play")}
-            </span>
+
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canGoNext}
+              aria-label={t("controls.nextPhrase")}
+              className={`${GHOST_BTN} h-12 w-12 disabled:pointer-events-none disabled:opacity-30`}
+            >
+              <IoChevronForward className="h-7 w-7" />
+            </button>
           </div>
 
-          {/* ══ RIGHT: Speed · Enhanced toggle ══ */}
-          <div className="flex items-end justify-evenly gap-4">
-            {/* ── SPEED ── */}
-            <div
-              className={`flex flex-col items-center gap-1 ${disabledClass}`}
-              data-tour="tour-speed"
-            >
-              <div className="flex items-center gap-2">
-                {PLAYBACK_RATES.map((speed) => (
-                  <button
-                    key={speed}
-                    disabled={!isEnhancedMode}
-                    className={`${pillBase}
-                      disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed
-                      ${pillFor(playbackRate === speed)}`}
-                    onClick={() => onSpeedChange(speed)}
-                  >
-                    x{speed}
-                  </button>
-                ))}
-              </div>
-              <span className={labelClass}>{t("controls.speed")}</span>
-            </div>
+          <div className="justify-self-end">{volumeControl}</div>
+        </div>
 
-            {/* ── Enhanced toggle ── */}
-            <div className="flex flex-col items-center gap-1 min-w-[80px]">
-              <ToggleSwitch
-                checked={isEnhancedMode}
-                onChange={onToggleEnhancedMode}
-                label={
-                  isEnhancedMode
-                    ? t("controls.drillmode")
-                    : t("controls.freemode")
-                }
-              />
+        {/* One bar for how the part plays. «Подряд | По фразам» replaces the
+            toggle, whose «Режим практики» shared a word with the «Практика»
+            exercises; speed and repeats only drive the phrase-by-phrase mode,
+            so they grey out beside it outside that mode. Labels sit above, in
+            three columns (speed under Play), so the bar never wraps — inline
+            labels made it two ragged lines at laptop widths. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-x-3 rounded-card bg-black/10 px-3.5 pb-2.5 pt-2">
+          <div className="flex flex-col items-start gap-1.5 justify-self-start">
+            <span className={deskLabel} id={modeLabelId}>{t("controls.mode")}</span>
+            <div role="radiogroup" aria-labelledby={modeLabelId} className={segGroup}>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!isEnhancedMode}
+                onClick={() => isEnhancedMode && onToggleEnhancedMode()}
+                className={segBtn(!isEnhancedMode)}
+              >
+                {t("controls.modeFree")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={isEnhancedMode}
+                onClick={() => !isEnhancedMode && onToggleEnhancedMode()}
+                className={segBtn(isEnhancedMode)}
+              >
+                {t("controls.modePhrases")}
+              </button>
+            </div>
+          </div>
+
+          <div className={`flex flex-col items-center gap-1.5 ${disabledClass}`} data-tour="tour-speed">
+            <span className={deskLabel}>{t("controls.speed")}</span>
+            <div className={segGroup}>
+              {PLAYBACK_RATES.map((speed) => (
+                <button
+                  key={speed}
+                  type="button"
+                  disabled={!isEnhancedMode}
+                  aria-pressed={playbackRate === speed}
+                  onClick={() => onSpeedChange(speed)}
+                  className={segBtn(playbackRate === speed && isEnhancedMode)}
+                >
+                  {speed}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={`flex flex-col items-end gap-1.5 justify-self-end ${disabledClass}`} data-tour="tour-repeat">
+            <span className={deskLabel}>{t("controls.repeat")}</span>
+            <div className={segGroup}>
+              {[1, 2, 3].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  disabled={!isEnhancedMode}
+                  aria-pressed={repeatCount === count}
+                  onClick={() => onRepeatCountChange(count)}
+                  title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+                  className={segBtn(repeatCount === count && isEnhancedMode)}
+                >
+                  ×{count}
+                </button>
+              ))}
             </div>
           </div>
         </div>
+
+        <p className="hidden justify-center gap-5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/60 lg:flex">
+          <span>
+            <kbd className={kbd}>{t("controls.keySpace")}</kbd>
+            {t("controls.keyPause")}
+          </span>
+          <span>
+            <kbd className={kbd}>→</kbd>
+            {t("controls.keyNext")}
+          </span>
+          <span>
+            <kbd className={kbd}>R</kbd>
+            {t("controls.keyReplay")}
+          </span>
+        </p>
       </div>
     );
   },
