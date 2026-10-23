@@ -31,6 +31,11 @@ interface UseSegmentEngineOptions {
   /** Fired once each time a segment finishes its full auto-repeat cycle, with
    *  the repeat-count setting (1/2/3) that was active during that cycle. */
   onSegmentRepeatComplete?: (repeatCount: number) => void;
+  /** «Повтори за мной»: when set, each sentence ends parked on the next one,
+   *  paused, until this resolves — true to play on, false to stay put. */
+  repeatGate?:
+    | ((segmentSeconds: number, sentence: { index: number; start: number; end: number }) => Promise<boolean>)
+    | null;
 }
 
 export const useSegmentEngine = ({
@@ -48,6 +53,7 @@ export const useSegmentEngine = ({
   isEnhancedMode,
   userPlaybackRateRef,
   onSegmentRepeatComplete,
+  repeatGate = null,
 }: UseSegmentEngineOptions) => {
   const dispatch = useAppDispatch();
   const store = useStore<RootState>();
@@ -60,6 +66,7 @@ export const useSegmentEngine = ({
   const timeMarkersRef = useRef(timeMarkers);
   const onAudioCompleteRef = useRef(onAudioComplete);
   const onSegmentRepeatCompleteRef = useRef(onSegmentRepeatComplete);
+  const repeatGateRef = useRef(repeatGate);
   const currentRepeatRef = useRef(0);
   const isSegmentTransitioningRef = useRef(false);
   const pausedByVisibilityRef = useRef(false);
@@ -94,6 +101,9 @@ export const useSegmentEngine = ({
   useEffect(() => {
     onSegmentRepeatCompleteRef.current = onSegmentRepeatComplete;
   }, [onSegmentRepeatComplete]);
+  useEffect(() => {
+    repeatGateRef.current = repeatGate;
+  }, [repeatGate]);
 
   const getSegmentBounds = useCallback(
     (markerIndex: number): { start: number; end: number } =>
@@ -210,9 +220,42 @@ export const useSegmentEngine = ({
               const nextIdx = idx + 1;
               const markers = timeMarkersRef.current;
 
-              // If there are more segments to play, move to the next segment. 
+              const repeatGate = repeatGateRef.current;
+
+              // «Повтори за мной» — park on the next sentence (so the play
+              // button and the marker dots already point at it), unblock the
+              // engine, and wait for the student. Free Play and Controlled
+              // mode don't apply while it is on.
+              if (repeatGate) {
+                const { start, end } = getSegmentBounds(idx);
+                const hasNext = nextIdx < markers.length;
+                if (hasNext) {
+                  const nextMarker = markers[nextIdx];
+                  dispatch(setCurrentMarkerIndex(nextIdx));
+                  instance.setTime(typeof nextMarker === "object" ? nextMarker.time : nextMarker);
+                }
+                isSegmentTransitioningRef.current = false;
+                isPlayingRef.current = false;
+                const sentenceEnd = Math.min(end, durationSecondsRef.current || end);
+
+                repeatGate(sentenceEnd - start, { index: idx, start, end: sentenceEnd }).then((go) => {
+                  if (!go || isCancelled || !wavesurfer.current) return;
+                  if (!hasNext) {
+                    onAudioCompleteRef.current?.();
+                    return;
+                  }
+                  const seq = SPEED_SEQUENCES[repeatCountRef.current] ?? [1.0];
+                  const firstSpeed = seq[0] ?? 1.0;
+                  dispatch(setPlaybackRate(firstSpeed));
+                  playbackRateRef.current = firstSpeed;
+                  wavesurfer.current.setPlaybackRate(firstSpeed);
+                  isPlayingRef.current = true;
+                  wavesurfer.current.play();
+                });
+              }
+              // If there are more segments to play, move to the next segment.
               // Otherwise, stop playback and fire the onAudioComplete callback.
-              if (nextIdx < markers.length) {
+              else if (nextIdx < markers.length) {
                 // If we're in controlled mode, seek to the start of the next segment and update the current marker index in the store.
                 if (isControlledModeRef.current) {
                   const nextMarker = markers[nextIdx];
