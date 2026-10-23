@@ -72,6 +72,8 @@ export interface VocabEntry {
   audioKey: string;
   audioUrl?: string | null;
   image?: VocabImage | null;
+  /** Where the word is said in the part's transcript, as written there. Null: found from audioKey. */
+  anchor?: string | null;
 }
 
 /**
@@ -86,6 +88,19 @@ export interface PanelQuiz {
 
 export const PANEL_QUIZ_MAX_PANELS = 24;
 export const PANEL_QUIZ_MAX_CLIPS = 60;
+
+/** The speeds a part gets a pre-made slowed copy for, as the keys of SlowAudio.copies. */
+export const SLOW_SPEEDS = ["0.65", "0.8"] as const;
+
+/**
+ * Pre-made slowed copies of a part's audio (see story_part.slow_audio).
+ * `source` is the part's audioUrl, `?v=` version included, at the moment the
+ * copies were made; copies whose source no longer matches are stale.
+ */
+export interface SlowAudio {
+  source: string;
+  copies: Partial<Record<(typeof SLOW_SPEEDS)[number], string>>;
+}
 
 export interface QuizQuestion {
   question: string;
@@ -149,7 +164,15 @@ export interface StoryPartInput {
   quiz?: QuizQuestion[];
   intro?: PartIntro | null;
   panelQuiz?: PanelQuiz | null;
+  slowAudio?: SlowAudio | null;
+  /** What is said, for the word window's shape. Never sent to the player as text. */
+  transcript?: string | null;
+  /** The transcript in Russian, paragraph for paragraph. Sent only inside a part's handout. */
+  translation?: string | null;
 }
+
+/** Longest transcript a part may store. The longest real one is under 4 000 characters. */
+export const TRANSCRIPT_MAX_LENGTH = 20_000;
 
 export interface StoryAggregate extends Story {
   parts: Required<StoryPartInput>[];
@@ -287,6 +310,9 @@ export async function loadAggregate(id: string, tx: Tx = db()): Promise<StoryAgg
       comicUrl: part.comicUrl,
       intro: part.intro ?? null,
       panelQuiz: part.panelQuiz ?? null,
+      slowAudio: part.slowAudio ?? null,
+      transcript: part.transcript ?? null,
+      translation: part.translation ?? null,
       timeMarkers: byPart(markerRows, part.id).map((m) => ({
         time: m.time,
         label: m.label,
@@ -315,6 +341,7 @@ function toVocabEntry(row: {
   audioKey: string;
   audioUrl: string | null;
   image: VocabImage | null;
+  anchor: string | null;
 }): VocabEntry {
   return {
     word: row.word,
@@ -322,6 +349,7 @@ function toVocabEntry(row: {
     audioKey: row.audioKey,
     audioUrl: row.audioUrl,
     image: row.image ?? null,
+    anchor: row.anchor ?? null,
   };
 }
 
@@ -342,6 +370,66 @@ export async function distinctVocabKeys(
     .from(storyPartVocab)
     .where(eq(storyPartVocab.kind, kind));
   return rows.map((r) => r.audioKey);
+}
+
+/** One place a word appears: the копилка's row for it. */
+export interface VocabPlace {
+  key: string;
+  word: string;
+  kind: "vocabulary" | "phrasal";
+  audioUrl: string | null;
+  difficulty: string;
+  storyId: string;
+  storyName: string;
+  storyTitle: { en: string; ru: string };
+  partNumber: number;
+  partTitle: string;
+  /** The part's name in both locales, from its "before you listen" card, when it has one. */
+  partTitleLocalized: { en: string; ru: string } | null;
+}
+
+/**
+ * Every place in a PUBLISHED story where one of these keys is a word, in story
+ * and part order. Keys are lowercased audioKeys, the same as user_learned_word.
+ * The caller decides which of these places the student may see.
+ */
+export async function vocabPlaces(keys: readonly string[], tx: Tx = db()): Promise<VocabPlace[]> {
+  const unique = [...new Set(keys.map((k) => k.toLowerCase()).filter(Boolean))];
+  if (unique.length === 0) return [];
+  const rows = await tx
+    .select({
+      key: sql<string>`lower(${storyPartVocab.audioKey})`,
+      word: storyPartVocab.word,
+      kind: storyPartVocab.kind,
+      audioUrl: storyPartVocab.audioUrl,
+      difficulty: story.difficulty,
+      storyId: story.storyId,
+      storyName: story.storyName,
+      titleEn: story.titleEn,
+      titleRu: story.titleRu,
+      partNumber: storyPart.partNumber,
+      partTitle: storyPart.title,
+      intro: storyPart.intro,
+    })
+    .from(storyPartVocab)
+    .innerJoin(storyPart, eq(storyPart.id, storyPartVocab.partPk))
+    .innerJoin(story, eq(story.id, storyPart.storyPk))
+    .where(and(eq(story.published, true), inArray(sql`lower(${storyPartVocab.audioKey})`, unique)))
+    .orderBy(asc(story.difficulty), asc(story.storyId), asc(storyPart.partNumber), asc(storyPartVocab.ordinal));
+
+  return rows.map((r) => ({
+    key: r.key,
+    word: r.word,
+    kind: r.kind as VocabPlace["kind"],
+    audioUrl: r.audioUrl,
+    difficulty: r.difficulty,
+    storyId: r.storyId,
+    storyName: r.storyName,
+    storyTitle: { en: r.titleEn, ru: r.titleRu },
+    partNumber: r.partNumber,
+    partTitle: r.partTitle,
+    partTitleLocalized: r.intro?.title ?? null,
+  }));
 }
 
 // ── Writes ──────────────────────────────────────────────────────────────────
@@ -398,6 +486,9 @@ export async function replaceParts(
     comicUrl: part.comicUrl ?? null,
     intro: part.intro ?? null,
     panelQuiz: part.panelQuiz ?? null,
+    slowAudio: part.slowAudio ?? null,
+    transcript: part.transcript ?? null,
+    translation: part.translation ?? null,
   }));
 
   await tx.insert(storyPart).values(partRows);
@@ -415,6 +506,7 @@ export async function replaceParts(
         audioKey: entry.audioKey,
         audioUrl: entry.audioUrl ?? null,
         image: entry.image ?? null,
+        anchor: entry.anchor ?? null,
       }));
     return [...of(part.vocabulary, "vocabulary"), ...of(part.phrasalVerbs, "phrasal")];
   });
@@ -930,6 +1022,42 @@ export function normalizePanelQuiz(input: unknown): PanelQuiz | null {
 }
 
 /**
+ * Slowed copies in their one stored shape, or null for none. Keeps only the
+ * speeds in SLOW_SPEEDS with an https URL; no copy left means null.
+ */
+export function normalizeSlowAudio(input: unknown): SlowAudio | null {
+  if (!input || typeof input !== "object") return null;
+  const { source, copies } = input as Record<string, unknown>;
+  const isUrl = (v: unknown): v is string => typeof v === "string" && /^https:\/\/\S{1,2040}$/.test(v);
+  if (!isUrl(source) || !copies || typeof copies !== "object") return null;
+  const kept: SlowAudio["copies"] = {};
+  for (const speed of SLOW_SPEEDS) {
+    const url = (copies as Record<string, unknown>)[speed];
+    if (isUrl(url)) kept[speed] = url;
+  }
+  return Object.keys(kept).length > 0 ? { source, copies: kept } : null;
+}
+
+/** The copies that still match the part's audio, by speed; empty when none do. */
+export function freshSlowCopies(part: { audioUrl?: string | null; slowAudio?: SlowAudio | null }): SlowAudio["copies"] {
+  const slow = part.slowAudio;
+  return slow && part.audioUrl && slow.source === part.audioUrl ? { ...slow.copies } : {};
+}
+
+/** A trimmed transcript, or null for an empty or non-string one. Overlong text is cut, not refused. */
+export function normalizeTranscript(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const text = input.replace(/\r\n?/g, "\n").trim();
+  return text ? text.slice(0, TRANSCRIPT_MAX_LENGTH) : null;
+}
+
+function normalizeAnchor(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const text = input.replace(/\s+/g, " ").trim();
+  return text ? text.slice(0, 120) : null;
+}
+
+/**
  * The trims and defaults Mongoose applied on save (`trim: true` on part title,
  * vocab word and audioKey). Applied on every write so a Builder save and an
  * import store the same thing.
@@ -942,6 +1070,7 @@ function normalizeParts(parts: readonly StoryPartInput[]): StoryPartInput[] {
       audioKey: String(entry.audioKey ?? "").trim(),
       audioUrl: entry.audioUrl ?? null,
       image: normalizeVocabImage(entry.image),
+      anchor: normalizeAnchor(entry.anchor),
     }));
 
   return parts.map((part) => ({
@@ -952,6 +1081,10 @@ function normalizeParts(parts: readonly StoryPartInput[]): StoryPartInput[] {
     comicUrl: part.comicUrl ?? null,
     intro: normalizePartIntro(part.intro),
     panelQuiz: normalizePanelQuiz(part.panelQuiz),
+    slowAudio: normalizeSlowAudio(part.slowAudio),
+    transcript: normalizeTranscript(part.transcript),
+    // Same rules as the transcript it translates.
+    translation: normalizeTranscript(part.translation),
     timeMarkers: part.timeMarkers ?? [],
     vocabulary: vocab(part.vocabulary),
     phrasalVerbs: vocab(part.phrasalVerbs),

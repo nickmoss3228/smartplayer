@@ -13,7 +13,7 @@
 
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 
-export type ElementId = "audio" | "markers" | "comic" | "intro" | "vocab" | "phrasal" | "quiz" | "panels";
+export type ElementId = "audio" | "markers" | "comic" | "intro" | "transcript" | "vocab" | "phrasal" | "quiz" | "panels";
 
 /** Empty, partially filled, or finished. `n/a` is only ever for optional
  *  elements a story does not use — it reads as "nothing owed", not "missing". */
@@ -83,6 +83,14 @@ export const ELEMENTS: ElementSpec[] = [
       const complete = [intro.title, intro.description].every((pair) => pair.en && pair.ru);
       return complete ? "done" : "partial";
     },
+  },
+  {
+    id: "transcript",
+    short: "Tx",
+    label: "Transcript",
+    // Optional: without one the word window has no page of dots to draw.
+    required: false,
+    state: (p) => (p.transcript?.trim() ? "done" : "empty"),
   },
   {
     id: "vocab",

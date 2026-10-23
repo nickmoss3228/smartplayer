@@ -41,11 +41,14 @@ const AdminPanel = lazy(() => import("./components/Admin/AdminPanel"));
 const Room = lazy(() => import("./pages/Room"));
 const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
+const Kopilka = lazy(() => import("./pages/Kopilka"));
 const Onboarding = lazy(() => import("./modules/onboarding/OnboardingPage"));
 
 const Stories = lazy(() => import("./pages/Stories"));
 // Public and unauthenticated on purpose — see the note in Legal.tsx.
 const Legal = lazy(() => import("./pages/Legal"));
+// A student's shared «Послушай себя» recording; opened by people without an account.
+const ListenShared = lazy(() => import("./pages/ListenShared"));
 const CheckoutReturn = lazy(() => import("./pages/CheckoutReturn"));
 const FakeCheckout = lazy(() =>
   import("./pages/CheckoutReturn").then((m) => ({ default: m.FakeCheckout })),
@@ -88,6 +91,7 @@ function App() {
                 <Route path="/"                element={<Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
                 <Route path="/legal/:docId" element={<Legal />} />
+                <Route path="/listen/:shareId" element={<ListenShared />} />
                 {/* The storefront, switched off while the idea is being tested
                     (config/features.ts). The pages are untouched and still work;
                     they are simply unreachable, and every old link now lands on
@@ -149,6 +153,7 @@ function App() {
 
 
                 {/* ── Trial-accessible (open to guests) ── */}
+                <Route path="/kopilka"                       element={<Kopilka />} />
                 <Route path="/levels"                        element={<Levels />} />
                 <Route path="/levels/:difficulty"            element={<List />} />
                 <Route path="/levels/:difficulty/:storySlug" element={<DifficultyDetail />} />

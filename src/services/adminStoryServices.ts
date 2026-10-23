@@ -23,6 +23,8 @@ export interface VocabEntry {
   audioUrl: string;
   /** Shown to students instead of `word`; null or absent for none. */
   image?: VocabImage | null;
+  /** Exact transcript text to place this word on when automatic matching fails. */
+  anchor?: string | null;
 }
 
 export interface QuizQuestion {
@@ -38,6 +40,14 @@ export interface LocalizedText {
   ru: string;
 }
 
+export interface SlowAudio {
+  source: string;
+  copies: Record<string, string>;
+}
+
+/** The speeds the server makes slowed copies for (backend stories.repo.ts SLOW_SPEEDS). */
+export const SLOW_SPEEDS = ["0.65", "0.8"] as const;
+
 export interface StoryPart {
   partNumber: number;
   /** Track name shown to students. */
@@ -51,8 +61,17 @@ export interface StoryPart {
   comicUrl?: string | null;
   /** The level page's "before you listen" card; null when none is written. */
   intro?: PartIntro | null;
+  /** What is said in this part; only its shape reaches students. Null when none. */
+  transcript?: string | null;
+  /** The transcript in Russian, paragraph for paragraph, for the PDF handout. Null when none. */
+  translation?: string | null;
   /** The comic-page game; null when the part has none. */
   panelQuiz?: PanelQuiz | null;
+  /**
+   * The slowed copies of `audioUrl` the player plays at 0.65x and 0.8x, and
+   * the audio they were made from. Stale once `source` differs from audioUrl.
+   */
+  slowAudio?: SlowAudio | null;
   timeMarkers: TimeMarker[];
   vocabulary: VocabEntry[];
   phrasalVerbs: VocabEntry[];
@@ -387,6 +406,27 @@ export const saveQuiz = async (
 
 // Replaces the part's comic quiz whole. Pass null to remove it — the player
 // then shows no button for it.
+// Makes (or remakes) the part's 0.65x and 0.8x slowed copies on the server.
+// Takes several seconds per speed.
+export const makeSlowAudio = async (token: string, id: string, partNumber: number): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/slow-audio`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Stops the player using the part's slowed copies; it stretches the audio itself again.
+export const removeSlowAudio = async (token: string, id: string, partNumber: number): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/slow-audio`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
 export const savePanelQuiz = async (
   token: string,
   id: string,
@@ -400,6 +440,60 @@ export const savePanelQuiz = async (
   });
   const data = await parseOrThrow(res);
   return data.part;
+};
+
+export interface TranscriptReport {
+  matches: { key: string; text: string }[];
+  missing: string[];
+}
+
+export const saveTranscript = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  transcript: string | null
+): Promise<{ part: StoryPart; report: TranscriptReport }> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/transcript`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ transcript }),
+  });
+  return parseOrThrow(res);
+};
+
+export const saveTranslation = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  translation: string | null
+): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/translation`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ translation }),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Does not save. Without `words` the server uses the part's saved vocabulary
+// and phrasal verbs.
+export const previewTranscript = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  transcript: string,
+  words?: { audioKey: string; anchor: string | null }[]
+): Promise<{ report: TranscriptReport; shape: unknown }> => {
+  const res = await fetch(
+    `${API_URL}/api/admin/stories/${id}/parts/${partNumber}/transcript/preview`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify({ transcript, words }),
+    }
+  );
+  return parseOrThrow(res);
 };
 
 export const setStoryPublished = async (

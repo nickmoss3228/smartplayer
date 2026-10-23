@@ -222,6 +222,19 @@
     "completedCount": "",
     "levelLabel": "Level"
   },
+  "cast": {
+    "label": "Characters",
+    "count": "{{revealed}} of {{total}}",
+    "seeAll": "All",
+    "sheetTitle": "Characters",
+    "close": "Close",
+    "partShort": "Part {{part}}",
+    "fromPart": "From part {{part}}",
+    "meetInPart": "You'll meet them in part {{part}}",
+    "lockedHint": "Reach that part to find out who this is.",
+    "lockedAria": "Hidden character, arrives in part {{part}}",
+    "openAria": "More about {{name}}"
+  },
   "legal": {
     "backHome": "Back to the homepage",
     "updated": "Updated",
@@ -272,7 +285,7 @@
     "back": "Back"
   },
   "controls": {
-    "help": "Help",
+    "help": "SOS",
     "helpUnavailable": "No help audio for this part",
     "repeat": "Repeat",
     "comics": "Comics",
@@ -318,6 +331,41 @@
       "playingSlowly": "Playing slowly...",
       "playAgain": "Play Again",
       "slowerHint": "Click again for a slower version"
+    },
+    "eyebrow": "Quiz · part {{n}}",
+    "listen": {
+      "title": "Listen to the question",
+      "hint": "The answers unlock when it ends",
+      "playing": "Listen…",
+      "again": "Again",
+      "slower": "Slower",
+      "pick": "Pick an answer"
+    },
+    "right": "Right",
+    "wrong": "Not quite",
+    "streak": "{{count}} in a row",
+    "nextSoon": "Next question in a second",
+    "lastQuestion": "That was the last question",
+    "wrongMarked": "The right answer is marked",
+    "next": "Next",
+    "toResult": "Results",
+    "end": {
+      "of": "of {{total}}",
+      "passedNext": "Part {{n}} is open",
+      "passedLast": "Quiz passed",
+      "passMark": "The pass mark is {{pass}} of {{total}}.",
+      "failTitle": "Almost. You need {{pass}} of {{total}}",
+      "failSubNext": "Part {{n}} opens at {{pass}} of {{total}}.",
+      "failSubLast": "Try again: the pass mark is {{pass}} of {{total}}.",
+      "reward": "+{{amount}} BitAward",
+      "listenNext": "Listen to part {{n}}",
+      "again": "Try again",
+      "relisten": "Listen to part {{n}} again",
+      "backToPart": "Back to the part",
+      "saving": "Saving your result…",
+      "replay": "Hear question {{n}}",
+      "right": "right",
+      "wrong": "wrong"
     }
   },
   "login": {
@@ -393,6 +441,60 @@
       "back": "Back"
     },
     "phoneNumberOptional": "Phone number (optional)"
+  },
+  "onboarding": {
+    "stepOf": "Step {{n}} of {{total}}",
+    "next": "Next",
+    "back": "Back",
+    "start": "Start listening",
+    "starting": "One moment…",
+    "pickHint": "Pick one option",
+    "waitHint": "Watch it to the end — the button unlocks by itself",
+    "saveError": "Couldn't save. Check your connection and tap again.",
+    "level": {
+      "eyebrow": "About you",
+      "title": "What's your English level, as you see it?",
+      "hint": "Your answer picks the story to start with. You can switch levels any time.",
+      "options": {
+        "beginner": {
+          "label": "Just starting",
+          "hint": "I know some words and phrases"
+        },
+        "elementary": {
+          "label": "Elementary",
+          "hint": "I follow simple speech when it's slow"
+        },
+        "intermediate": {
+          "label": "Intermediate",
+          "hint": "I get by when travelling and in simple talk"
+        },
+        "upper_intermediate": {
+          "label": "Upper-intermediate",
+          "hint": "I watch shows, but with subtitles"
+        },
+        "advanced": {
+          "label": "Advanced",
+          "hint": "I read and speak freely"
+        }
+      }
+    },
+    "listening": {
+      "eyebrow": "About you",
+      "title": "How much English do you listen to?",
+      "hint": "Pick the closest one.",
+      "options": {
+        "none": "I hardly ever listen to English",
+        "subtitles": "Films and shows, with subtitles",
+        "no_subtitles": "Films, shows or podcasts without subtitles",
+        "courses": "I practise listening in class or with a tutor",
+        "immersion": "I hear English every day: work, travel, life"
+      }
+    },
+    "pick": {
+      "note": "We opened {{level}} based on your answer. You can switch any time.",
+      "change": "Other levels",
+      "dismiss": "Dismiss"
+    }
   },
   "forgotPassword": {
     "title": "Forgot Password?",
@@ -859,7 +961,12 @@
     "back": "Back",
     "startListening": "Start listening",
     "durationSeconds": "~{{s}} sec",
-    "durationMinutes": "~{{m}} min {{s}} sec"
+    "durationMinutes": "~{{m}} min {{s}} sec",
+    "downloadPdf": "PDF",
+    "downloadPdfLabel": "Download this part as a PDF: text, translation, words, grammar and the comic",
+    "preparingPdf": "Making the PDF…",
+    "pdfLocked": "The PDF opens with the full part.",
+    "pdfFailed": "Could not make the PDF. Try again."
   },
   "player": {
     "vocabulary": "Vocabulary",
@@ -1623,73 +1730,6 @@
     "days_one": "{{count}} day",
     "days_other": "{{count}} days"
   },
-  "onboarding": {
-    "stepOf": "Step {{n}} of {{total}}",
-    "next": "Next",
-    "back": "Back",
-    "start": "Start listening",
-    "starting": "One moment…",
-    "pickHint": "Pick one option",
-    "waitHint": "Watch it to the end — the button unlocks by itself",
-    "saveError": "Couldn't save. Check your connection and tap again.",
-    "level": {
-      "eyebrow": "About you",
-      "title": "What's your English level, as you see it?",
-      "hint": "Your answer picks the story to start with. You can switch levels any time.",
-      "options": {
-        "beginner": {
-          "label": "Just starting",
-          "hint": "I know some words and phrases"
-        },
-        "elementary": {
-          "label": "Elementary",
-          "hint": "I follow simple speech when it's slow"
-        },
-        "intermediate": {
-          "label": "Intermediate",
-          "hint": "I get by when travelling and in simple talk"
-        },
-        "upper_intermediate": {
-          "label": "Upper-intermediate",
-          "hint": "I watch shows, but with subtitles"
-        },
-        "advanced": {
-          "label": "Advanced",
-          "hint": "I read and speak freely"
-        }
-      }
-    },
-    "listening": {
-      "eyebrow": "About you",
-      "title": "How much English do you listen to?",
-      "hint": "Pick the closest one.",
-      "options": {
-        "none": "I hardly ever listen to English",
-        "subtitles": "Films and shows, with subtitles",
-        "no_subtitles": "Films, shows or podcasts without subtitles",
-        "courses": "I practise listening in class or with a tutor",
-        "immersion": "I hear English every day: work, travel, life"
-      }
-    },
-    "pick": {
-      "note": "We opened {{level}} based on your answer. You can switch any time.",
-      "change": "Other levels",
-      "dismiss": "Dismiss"
-    }
-  },
-  "cast": {
-    "label": "Characters",
-    "count": "{{revealed}} of {{total}}",
-    "seeAll": "All",
-    "sheetTitle": "Characters",
-    "close": "Close",
-    "partShort": "Part {{part}}",
-    "fromPart": "From part {{part}}",
-    "meetInPart": "You'll meet them in part {{part}}",
-    "lockedHint": "Reach that part to find out who this is.",
-    "lockedAria": "Hidden character, arrives in part {{part}}",
-    "openAria": "More about {{name}}"
-  },
   "panelQuiz": {
     "prompt": "Listen, then tap the panel where it happens",
     "playing": "Listen…",
@@ -1707,6 +1747,55 @@
     "again": "Play again",
     "back": "Back"
   },
+  "repeatMode": {
+    "button": "Repeat after me",
+    "buttonOn": "Turn off Repeat after me",
+    "listen": "Listen",
+    "yourTurn": "Your turn: say it",
+    "hearing": "I can hear you",
+    "sayAloud": "Say it aloud",
+    "noMic": "no mic",
+    "next": "OK, on to the next one",
+    "idle": "Press play and repeat each sentence",
+    "asking": "Allow the microphone so the player can hear you",
+    "skip": "Next",
+    "replayEyebrow": "part {{n}} · your recording",
+    "replayNote": "kept only on this device while you're in this part",
+    "onlyMe": "Just me",
+    "dialogue": "Narrator and me",
+    "play": "Play",
+    "pause": "Pause",
+    "position": "Position in the recording",
+    "preparing": "putting it together…",
+    "replayError": "couldn't put the recording together",
+    "done": "Done",
+    "share": "Share",
+    "shareConfirm": "This makes a link to the “{{version}}” recording. Anyone who opens the link can listen to it. The link works for 7 days.",
+    "shareCreate": "Create link",
+    "shareCancel": "Cancel",
+    "shareUploading": "Uploading the recording…",
+    "shareError": "Couldn't upload the recording.",
+    "shareRetry": "Try again",
+    "shareReady": "link to “{{version}}”",
+    "shareLink": "Link to the recording",
+    "shareCopy": "Copy",
+    "shareCopied": "Copied",
+    "shareUntil": "works until {{date}}",
+    "shareSend": "Send"
+  },
+  "listenShared": {
+    "eyebrow": "a student's recording · malako",
+    "title": "“{{story}}”, part {{part}}",
+    "titleNoStory": "Part {{part}}",
+    "me": "The student repeats each sentence after the narrator",
+    "dialogue": "The narrator and the student in turn",
+    "loading": "loading…",
+    "goneTitle": "This recording is no longer here",
+    "goneBody": "Recording links work for 7 days. Ask for a new one.",
+    "errorTitle": "Couldn't open the recording",
+    "errorBody": "Check your connection and reload the page.",
+    "cta": "Try it yourself"
+  },
   "practice": {
     "button": "Practice",
     "buttonProgress": "Practice, {{done}} of {{total}} done",
@@ -1716,6 +1805,7 @@
     "quizTitle": "Take the quiz",
     "wordsTitle": "Words",
     "comicTitle": "Find the scene",
+    "voiceTitle": "Hear yourself",
     "questions_one": "{{count}} question",
     "questions_other": "{{count}} questions",
     "words_one": "{{count}} word",
@@ -1733,5 +1823,268 @@
     "cardCount_other": "{{count}} exercises",
     "cardProgress": "{{done}} of {{total}} done",
     "gamesLabel": "Practice games"
+  },
+  "words": {
+    "eyebrow": "Words · part {{n}}",
+    "entryMeta": "{{total}} · {{count}} in your jar",
+    "inKopilka": "{{count}} of {{total}} in your word jar",
+    "filterAll": "All",
+    "filterNew": "New",
+    "filterMarked": "Bookmarks",
+    "hint": "Tap a word to hear it in English",
+    "stateLearned": "in your jar",
+    "stateNew": "new",
+    "statePhrasal": "phrasal verb",
+    "replay": "Again",
+    "bookmark": "Bookmark",
+    "bookmarked": "Bookmarked",
+    "notInText": "Not in the text:",
+    "legendWord": "word",
+    "legendPhrasal": "phrasal verb",
+    "lookLabel": "Page",
+    "lookInk": "Dark page",
+    "lookPaper": "Light page",
+    "close": "Close",
+    "viewLabel": "Word view",
+    "viewList": "List",
+    "viewText": "Text"
+  },
+  "wordGame": {
+    "start": "Tap to start",
+    "startHint": "You will hear a word in English",
+    "ask": "Which word did you hear?",
+    "askHint": "Tap its tile",
+    "listening": "Listen…",
+    "intoJar": "Into the jar",
+    "replay": "Hear the word again",
+    "lap": "Lap {{n}} · {{count}} left",
+    "stop": "Stop",
+    "wasWord": "That was «{{word}}»",
+    "staysOnBoard": "The word stays on the board",
+    "jarLabel": "Added this game: {{added}}, in your jar: {{total}}",
+    "boardEmpty": "Board cleared",
+    "boardLeft": "{{count}} left on the board",
+    "newInJar": "New words in your jar: {{count}}.",
+    "totalInJar": "Your jar holds {{count}}.",
+    "reward": "+{{count}} BitWord",
+    "notFirstTry": "Took more than one try",
+    "hear": "Hear «{{word}}»",
+    "openKopilka": "Open your word jar",
+    "again": "Play again",
+    "back": "Back"
+  },
+  "kopilka": {
+    "title": "Word jar",
+    "words_one": "{{count}} word",
+    "words_other": "{{count}} words",
+    "marks": "{{count}} bookmarked",
+    "fromStories_one": "from {{count}} story",
+    "fromStories_other": "from {{count}} stories",
+    "tabWords": "Words",
+    "tabMarks": "Bookmarks",
+    "part": "part {{n}}",
+    "open": "Open",
+    "recent": "Recent",
+    "repeatMarks": "Practise bookmarks",
+    "repeatMarksCount": "Practise bookmarks · {{count}}",
+    "reviewEyebrow": "Bookmarks",
+    "emptyWords": "Your word jar is empty for now. Words land here from the «Words» game that opens after each part.",
+    "emptyMarks": "No bookmarks yet. Bookmark a word in the word window or the game to come back to it.",
+    "loading": "Loading your word jar…",
+    "error": "Couldn't load your word jar. Check your connection and reload the page.",
+    "guestNote": "Your word jar lives in this browser until you sign up.",
+    "back": "Back",
+    "close": "Close"
+  },
+  "landing": {
+    "loading3d": "Loading 3D…",
+    "fallback3d": "3D could not start on this device, so here are the pictures.",
+    "scroll": "Scroll",
+    "tapPanel": "Tap a panel in 3D",
+    "hero": {
+      "lead": "English is spoken in conversations, in your headphones, in lectures. It is hard to follow by ear for three reasons: it is fast, it is easier to read than to hear, and words do not sound the way they are spelled. Here is how each one gets in the way, and what malako does about it.",
+      "problems": [
+        "Speed",
+        "Subtitles",
+        "Spelling"
+      ],
+      "scenes": [
+        "A conversation",
+        "On headphones",
+        "In a lecture"
+      ]
+    },
+    "speed": {
+      "eyebrow": "Problem 1 · speed",
+      "title": "Nobody learns a dance at full speed.",
+      "text": "You learn every move on its own, then link them, then dance in time with the music. Speech works the same way: at normal speed the words run together and the ear cannot pull them apart.",
+      "steps": [
+        "every move is visible",
+        "the moves link up",
+        "now it is a dance"
+      ],
+      "app": "The player does exactly this with every line: ×3 means 0.65, 0.8, then 1.0.",
+      "listen": "Hear a line the same way",
+      "stop": "Stop",
+      "count": [
+        "one",
+        "two",
+        "three",
+        "four"
+      ]
+    },
+    "subtitles": {
+      "eyebrow": "Problem 2 · subtitles",
+      "title": "Your eyes take the job from your ears.",
+      "text": "While there is text on screen, the brain chooses to read: it is easier. The visual area does the work, and the hearing area rests and does not learn. You understood the line, but you did not hear it.",
+      "toggle": "Subtitles",
+      "on": "on",
+      "off": "off",
+      "attention": "Where attention goes",
+      "ears": "Hearing",
+      "eyes": "Vision",
+      "noteOff": "Sound only: the hearing area works.",
+      "noteOn": "Text on screen: the visual area works, hearing rests.",
+      "hear": "hearing area",
+      "see": "visual area"
+    },
+    "spelling": {
+      "eyebrow": "Problem 3 · spelling",
+      "title": "Осень is spelled autumn. It sounds different.",
+      "text": "A word learned by eye gets read the Russian way, letter by letter: «аутумн». It actually sounds like «о́тэм», with no U and no N. When you hear the real word, your ear does not recognise it.",
+      "steps": [
+        "How it is spelled",
+        "How the eye reads it",
+        "How it sounds",
+        "How malako shows it"
+      ],
+      "ru": "Letter by letter",
+      "en": "Real sound",
+      "eye": "«аутумн»",
+      "ear": "«о́тэм»",
+      "ipa": "[ˈɔːtəm]",
+      "silent": "silent",
+      "chip": "осень",
+      "appNote": "meaning in Russian, sound in English"
+    },
+    "solve": {
+      "eyebrow": "How malako solves it",
+      "title": "Three answers, built into the player.",
+      "text": "One answer for each problem. Everything below really works: turn your sound on.",
+      "s1": {
+        "tag": "The answer to speed",
+        "title": "The player: slow, then fast",
+        "text": "Every line plays up to three times: 0.65×, 0.8×, 1.0×. Phrase by phrase to learn it, straight through once you are ready."
+      },
+      "s2": {
+        "tag": "The answer to subtitles",
+        "title": "Not one subtitle. Anywhere.",
+        "text": "The player shows no story text: only sound and the comic. There is no subtitles button either. Try pressing it.",
+        "cc": "Subtitles",
+        "marks": [
+          "The comic instead of text",
+          "Sound only",
+          "Words in Russian"
+        ]
+      },
+      "s3": {
+        "tag": "The answer to spelling",
+        "title": "Words in Russian. Sound in English.",
+        "text": "The part's words sit where they are said, and the text is dots: you see the rhythm, not the letters. Tap a word to hear it in English. You never see how it is spelled.",
+        "try": "Tap «осень»:",
+        "game": "Then the Words game: a word plays, you find its tile, and it flies into the jar."
+      }
+    },
+    "devices": {
+      "phone": "Phone",
+      "desktop": "Computer"
+    },
+    "player": {
+      "label": "The player",
+      "story": "Leo's Adventures · part 1 of 10",
+      "title": "Leo's Life",
+      "passOf": "pass {{n}} of {{total}}",
+      "tapPlay": "Press Play — sound will come on"
+    },
+    "given": {
+      "eyebrow": "What you get back",
+      "title": "One crutch we do hand you: the comic."
+    },
+    "levels": {
+      "lead": {
+        "easy": "Leo's Adventures",
+        "medium": "Maya's Adventures",
+        "hard": "Daniel's World"
+      },
+      "start": "Start with {{story}}"
+    },
+    "practice": {
+      "label": "After a part",
+      "title": "Questions are spoken too, never written.",
+      "text": "After a part comes a spoken quiz. Every question has a normal and a slow version. The answers unlock once you have heard the question.",
+      "tilesText": "Finish a part and practice opens. The quiz moves you on; words and scenes are optional."
+    },
+    "path": {
+      "label": "Where things are",
+      "title": "Five screens from your first tap to the first line.",
+      "text": "Nothing to set up. This is what you will see, in order.",
+      "steps": [
+        {
+          "tag": "Levels",
+          "title": "Pick your milk",
+          "text": "1%, 2,5% or 6%. Difficulty is sold the way milk is — by fat."
+        },
+        {
+          "tag": "Shelf",
+          "title": "Take a story",
+          "text": "Every level has its own stories plus News & Interesting Things. Leo's Adventures runs ten parts."
+        },
+        {
+          "tag": "Story",
+          "title": "Open a part",
+          "text": "Parts go in order. Characters appear as you reach them."
+        },
+        {
+          "tag": "Player",
+          "title": "Listen",
+          "text": "Each line comes back up to three times, each pass faster than the last. No text, no captions."
+        },
+        {
+          "tag": "Practice",
+          "title": "Practise",
+          "text": "A spoken quiz opens the next part. Two more games: words and Find the scene."
+        }
+      ]
+    },
+    "finder": {
+      "label": "Where to start",
+      "title": "Two questions, and we open your shelf.",
+      "text": "The same two questions the intro asks after sign-up. The level answer picks the shelf.",
+      "note": {
+        "none": "Start slow: 0.65× and three repeats is a normal pace for the first week.",
+        "subtitles": "Subtitles do the work for your ears. There are none here, and that is the point.",
+        "no_subtitles": "A good base. The quiz checks that you understood rather than guessed.",
+        "courses": "Add one part of a story a day to your classes — on your phone, on the way.",
+        "immersion": "Try ×1 at normal speed straight away — you can turn the repeats off in the player."
+      },
+      "result": "Your shelf",
+      "step": "Question {{n}} of 2",
+      "back": "Back",
+      "reset": "Answer again"
+    },
+    "final": {
+      "text": "The first three parts need no sign-up. You can switch levels at any time."
+    }
+  },
+  "handout": {
+    "site": "малако.рф",
+    "part": "part",
+    "grammar": "Grammar",
+    "tip": "Tip",
+    "text": "Text",
+    "vocabulary": "Words",
+    "phrasal": "Phrasal verbs",
+    "english": "English",
+    "russian": "Russian"
   }
 }

@@ -80,6 +80,19 @@ export interface PartIntro {
   durationSeconds: number | null;
 }
 
+/**
+ * What is said in a part, without the words of it: one array per paragraph of
+ *   n > 0  a word of n letters (drawn as n dots)
+ *   0      a sentence ends
+ *   "key"  one of the part's words (lowercased audioKey), where it is said
+ * `missing` lists the part's words the transcript does not contain. Built by
+ * the server (backend/src/helpers/textShape.js), which never sends the text.
+ */
+export interface TextShape {
+  paragraphs: (number | string)[][];
+  missing: string[];
+}
+
 export interface PublishedStoryPart {
   partNumber: number;
   /** Track name. Empty on parts created before the field existed. */
@@ -95,6 +108,17 @@ export interface PublishedStoryPart {
   quiz: PublishedQuizQuestion[];
   /** The comic-page game; null when the part has none (or it is locked/a preview). */
   panelQuiz?: PanelQuiz | null;
+  /**
+   * Pre-made slowed copies of `audioUrl` by speed ("0.65", "0.8"), only while
+   * they still match it. Empty on a locked part, and absent from older servers.
+   */
+  slowCopies?: Record<string, string>;
+  /**
+   * The word window's page: the transcript's shape with the part's words where
+   * they are said (see TextShape). Null when the part has no transcript, or is
+   * locked; absent from older servers.
+   */
+  textShape?: TextShape | null;
   /**
    * The caller has not paid for this part. The server sends the part number
    * and title and nothing else — no audio, no comic, no vocabulary, no quiz.
@@ -230,4 +254,6 @@ export const adaptPublishedStoryToTracks = (story: PublishedStory): AudioTrack[]
       helpAudio: part.helpAudio ?? [],
       comicUrl: part.comicUrl ?? null,
       panelQuiz: part.panelQuiz ?? null,
+      slowCopies: part.slowCopies ?? {},
+      textShape: part.textShape ?? null,
     }));
