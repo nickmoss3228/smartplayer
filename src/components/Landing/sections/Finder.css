@@ -1,0 +1,30 @@
+/*
+ * The shelf finder, ported from the guide's core.css (.fd-*) and scoped under
+ * .landing like the rest of the page. The colour variables are landing.css's.
+ * The dark-stage variants (.on-dark) are left out; the few .fd-res rules at the
+ * end stand in for inline styles the guide's script wrote.
+ */
+.landing .fd { display: flex; flex-direction: column; gap: 14px; }
+.landing .fd-q { font-size: 20px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; }
+.landing .fd-rail { display: flex; gap: 4px; }
+.landing .fd-rail span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.landing .fd-rail span i { display: block; height: 100%; background: var(--ink); transform-origin: left; transform: scaleX(0); transition: transform .3s var(--ease-enter); }
+.landing .fd-opts { display: grid; gap: 8px; }
+.landing .fd-opt { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border-radius: var(--radius-tile); border: 1px solid var(--line); background: var(--white); text-align: left; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.landing .fd-opt:hover { border-color: var(--line-strong); }
+.landing .fd-opt[aria-checked="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.landing .fd-opt .gl { width: 22px; flex: none; color: var(--dim); }
+.landing .fd-opt .ic { width: 34px; height: 34px; border-radius: var(--radius-tile); border: 1px solid var(--line); background: var(--room); display: flex; align-items: center; justify-content: center; flex: none; }
+.landing .fd-opt .ic svg { width: 18px; height: 18px; }
+.landing .fd-opt b { display: block; font-size: 15px; font-weight: 700; }
+.landing .fd-opt small { display: block; font-size: 13px; color: var(--dim); line-height: 1.35; }
+.landing .fd-res { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; padding: 16px; border-radius: var(--radius-card); background: var(--white); border: 1px solid var(--line); }
+.landing .fd-res .cov { width: 96px; aspect-ratio: 4 / 5; border-radius: var(--radius-tile); overflow: hidden; background: var(--line); }
+.landing .fd-res .cov img { width: 100%; height: 100%; object-fit: cover; }
+.landing .fd-res .fat { font-size: 30px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.landing .fd-nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.landing .fd-res .fd-info { min-width: 0; }
+.landing .fd-res .fd-shelf { display: flex; align-items: flex-end; gap: 12px; }
+.landing .fd-res .fd-glass { width: 34px; }
+.landing .fd-res .h3 { margin-top: 8px; }
+.landing .fd-res .body { font-size: 14px; margin-top: 4px; }

@@ -1,0 +1,1330 @@
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import type { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { createKit, damp, ease, clamp01, roundRect, INK, GREEN, RED, SANS, MONO } from './kit';
+import { makeFigure, applyPose, pose, STAND, SIT, HIP_Y, UNIT, FIGURE_SCALE, type Figure, type Pose } from './figures';
+import { DEFAULT_LOOK, type CharacterLook } from '../../../modules/character/look';
+import { applyDance, prepareDancer, keyBetween, keyOnCurve, REST, COUNT_PRINTS, type DanceKey } from './shuffle';
+import { landingStore, landingActions, setSubs, setTilesStep, type ComicGameState } from '../landingStore';
+import type { DifficultySlug } from '../../../types/storyGroups';
+
+/**
+ * The landing's 3D (option C of the landing guide): one WebGL canvas that
+ * moves between the two pinned stages, one scene per chapter of the cards.
+ *
+ *   0  English where you meet it: a conversation, headphones, a lecture
+ *   1  speed: a dancer learning a step at 0.65×, 0.8×, then 1.0×
+ *   2  subtitles: a head whose visual area takes over when text appears
+ *   3  spelling: AUTUMN read letter by letter, then as it sounds
+ *   4  the comic page in eight panels, for «Найди сцену»
+ *   5  the three milk glasses
+ *
+ * The cards drive it through landingStore (and the scene writes back the
+ * dancer's clock and its own automatic flips); taps here call the actions the
+ * cards register, so this file never imports a card.
+ */
+
+export interface SceneCopy {
+  /** The three hero places, under each stage. */
+  scenes: string[];
+  hear: string;
+  see: string;
+  eye: string;
+  ear: string;
+  ipa: string;
+  silent: string;
+  appNote: string;
+  chip: string;
+}
+
+export interface SceneLeo {
+  markers: number[];
+  /** Which phrase the dancer counts to. */
+  dancePhrase: number;
+  comicUrl: string | null;
+  panels: { x: number; y: number; w: number; h: number }[] | null;
+}
+
+export interface LandingSceneOptions {
+  /** The pinned stage of each track, in page order. */
+  stages: HTMLElement[];
+  /** The tracks; `data-first` is each one's first chapter. */
+  tracks: HTMLElement[];
+  copy: SceneCopy;
+  /** The ×3 ladder: SPEED_SEQUENCES[3]. */
+  speeds: number[];
+  /** The first frame is on screen. */
+  onReady: () => void;
+  /** WebGL would not start, or the context was lost: the page falls back to stills. */
+  onFail: (reason: string) => void;
+}
+
+export interface LandingScene {
+  /** Leo's part 1 arrived: the comic can be cut and the dancer timed to the real phrase. */
+  setLeo: (leo: SceneLeo) => void;
+  dispose: () => void;
+}
+
+const SHELF_FILL: Record<DifficultySlug, number> = { easy: 0.28, medium: 0.58, hard: 0.92 };
+
+export function createLandingScene(opts: LandingSceneOptions): LandingScene | null {
+  const { copy } = opts;
+  const canvas = document.createElement('canvas');
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  } catch {
+    opts.onFail('webgl');
+    return null;
+  }
+  if (!renderer.getContext()) {
+    opts.onFail('no context');
+    return null;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.95;
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const room = new RoomEnvironment();
+  const envTarget = pmrem.fromScene(room, 0.04);
+  scene.environment = envTarget.texture;
+  room.dispose();
+  pmrem.dispose();
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 1, 10);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xc8d3dc, 0.55));
+  const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  keyLight.position.set(3, 6, 6);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0xdfeef5, 0.5);
+  fillLight.position.set(-5, 2, 3);
+  scene.add(fillLight);
+
+  const C_INK = new THREE.Color(INK);
+  const C_GREEN = new THREE.Color(GREEN);
+  const C_RED = new THREE.Color(RED);
+  const C_IDLE = new THREE.Color(0xd9e1e8);
+
+  const kit = createKit();
+  const { clay, inkMat, outline, fatLine, canvasTex, label, shadow, own, setOpacity } = kit;
+
+  // The app's characters (modules/character), in the landing's own material: flat colour from the vertices, as in the school.
+  // Not tone-mapped: the scene's filmic curve washes these flat colours out, and in the school they are shown as picked.
+  const figMat = new THREE.MeshLambertMaterial({ vertexColors: true, toneMapped: false, color: 0xd6d6d6 });
+  const look = (over: Partial<CharacterLook>): CharacterLook => ({ ...DEFAULT_LOOK, ...over });
+
+  /* ════ 1 · the dancer ═══════════════════════════════════════════════ */
+  const gDance = new THREE.Group();
+  scene.add(gDance);
+  const dancer = makeFigure(look({ hair: 'spiky', hairColor: '#3b2a1e', skin: '#e8b98a', top: 'tee', topColor: '#4a9d5c', bottom: 'shorts', bottomColor: '#2e3a58', hat: 'cap', hatColor: '#2b2d2f' }), figMat);
+  prepareDancer(dancer);
+  // Turned towards profile: knee lifts and kicks read sideways instead of straight at the lens.
+  dancer.root.rotation.y = 0.6;
+  gDance.add(dancer.root);
+  {
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(1.25, 72), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, envMapIntensity: 0.6 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.002;
+    gDance.add(floor);
+    const rim = fatLine(new THREE.EllipseCurve(0, 0, 1.25, 1.25).getPoints(96), INK, 2, 0, true);
+    rim.rotation.x = -Math.PI / 2;
+    gDance.add(rim);
+  }
+  const dShadow = shadow(0.9, 0.6);
+  dShadow.position.y = 0.002;
+  dancer.root.add(dShadow);
+  // Footprints: where the foot that lands on each count stands, turned the way it points.
+  const footTex = (on: boolean) =>
+    canvasTex(128, 256, (c, w, h) => {
+      c.fillStyle = on ? '#0f151c' : '#c8d3dc';
+      c.beginPath();
+      c.ellipse(w / 2, h * 0.36, w * 0.3, h * 0.26, 0, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.ellipse(w / 2, h * 0.8, w * 0.22, h * 0.14, 0, 0, Math.PI * 2);
+      c.fill();
+    });
+  const FOOT = [footTex(false), footTex(true)];
+  const prints: { m: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; n: THREE.Sprite; nOn: THREE.Sprite }[] = [];
+  COUNT_PRINTS.forEach((f, k) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.22), new THREE.MeshBasicMaterial({ map: FOOT[0], transparent: true, depthWrite: false, toneMapped: false }));
+    m.rotation.order = 'YXZ';
+    m.rotation.set(-Math.PI / 2, f.yaw, 0);
+    m.position.set(f.x, 0.004, f.z + 0.02);
+    dancer.root.add(m);
+    // The counts stand in a row in front of the dancer, like a metronome: shuffle footwork is
+    // too compact for a number beside every print.
+    const n = label(String(k + 1), { h: 0.14, mono: true, font: 500, fg: '#5b6b7a' });
+    n.position.set((k - 1.5) * 0.3, 0.06, 0.95);
+    gDance.add(n);
+    const nOn = label(String(k + 1), { h: 0.14, mono: true, font: 500, fg: '#ffffff', bg: '#0f151c', border: '#0f151c' });
+    nOn.position.copy(n.position);
+    nOn.visible = false;
+    gDance.add(nOn);
+    prints.push({ m, n, nOn });
+  });
+  applyDance(dancer, REST);
+  // The ladder clock: one pass = the phrase at that rate, four counts of two half-counts each.
+  const RATES = opts.speeds;
+  const HALVES = 8;
+  const GAP = 0.38;
+  const END_GAP = 0.6;
+  let phraseLen = 1.9;
+  const passDur = (r: number) => phraseLen / r;
+  const cycle = () => RATES.reduce((s, r) => s + passDur(r) + GAP, 0) - GAP + END_GAP;
+  /** `beat` is the count (0-3, -1 between passes); `j` the half-count within the pass, `u` how far into it. */
+  interface Clock { pass: number; rate: number; beat: number; j: number; u: number }
+  const halfOf = (pass: number, rate: number, e: number): Clock => {
+    const h = passDur(rate) / HALVES;
+    const j = Math.min(HALVES - 1, Math.floor(e / h));
+    // Slow passes hold each position (every move visible); the full-speed pass never stops.
+    const hold = rate < 0.7 ? 0.45 : rate < 0.9 ? 0.2 : 0;
+    return { pass, rate, beat: Math.floor(j / 2), j, u: clamp01((e - j * h) / (h * (1 - hold))) };
+  };
+  const between = (pass: number, rate: number): Clock => ({ pass, rate, beat: -1, j: 0, u: 0 });
+  const ladderAt = (time: number): Clock => {
+    const al = landingStore.get().ladder;
+    if (al.on) {
+      const pass = Math.min(al.pass, RATES.length - 1);
+      const r = RATES[pass];
+      if (al.gap) return between(pass, r);
+      const e = (performance.now() - al.start) / 1000;
+      return halfOf(pass, r, Math.min(e, passDur(r) - 0.001));
+    }
+    let x = time % cycle();
+    for (let i = 0; i < RATES.length; i++) {
+      const d = passDur(RATES[i]);
+      if (x < d) return halfOf(i, RATES[i], x);
+      x -= d;
+      const gap = i < RATES.length - 1 ? GAP : END_GAP;
+      if (x < gap) return between(i, RATES[i]);
+      x -= gap;
+    }
+    return between(RATES.length - 1, 1);
+  };
+  const easeSine = (u: number) => 0.5 - 0.5 * Math.cos(Math.PI * u);
+  /** Dev only: hold the dancer at one rate / half-count / progress, for the scripted checks. */
+  let pinned: { rate: number; j: number; u: number } | null = null;
+  const danceAt = (time: number): { key: DanceKey; L: Clock } => {
+    const L = pinned ? { pass: RATES.indexOf(pinned.rate), rate: pinned.rate, beat: Math.floor(pinned.j / 2), j: pinned.j, u: pinned.u } : ladderAt(time);
+    if (L.beat < 0) return { key: REST, L };
+    // 1.0×: one continuous movement through every half-count, like the real thing.
+    if (L.rate >= 0.99) return { key: keyOnCurve(L.j, L.u), L };
+    // 0.8×: linked, each position still lands; 0.65×: every position held.
+    return { key: keyBetween(L.j, L.rate >= 0.79 ? easeSine(L.u) : ease(L.u)), L };
+  };
+
+  /* ════ 0 · English where you meet it ════════════════════════════════ */
+  const gPeople = new THREE.Group();
+  scene.add(gPeople);
+  // A speech bubble whose tail points down at the speaker: tail on the left
+  // (the bubble grows to the right) or on the right (it grows to the left).
+  const bubble = (text: string, x: number, y: number, right = false) => {
+    const fs = 60;
+    const meas = document.createElement('canvas').getContext('2d');
+    if (meas) meas.font = `700 ${fs}px ${SANS}`;
+    const W = Math.ceil(meas ? meas.measureText(text).width : text.length * 32) + 80;
+    const H = 150;
+    const t = canvasTex(W, H, (c, w, h) => {
+      roundRect(c, 4, 4, w - 8, h - 40, 30);
+      c.fillStyle = '#ffffff';
+      c.fill();
+      c.lineWidth = 6;
+      c.strokeStyle = '#0f151c';
+      c.stroke();
+      const x0 = right ? w - 84 : 46;
+      const x1 = right ? w - 40 : 40;
+      const x2 = right ? w - 46 : 84;
+      c.beginPath();
+      c.moveTo(x0, h - 39);
+      c.lineTo(x1, h - 6);
+      c.lineTo(x2, h - 39);
+      c.closePath();
+      c.fillStyle = '#ffffff';
+      c.fill();
+      c.beginPath();
+      c.moveTo(x0, h - 37);
+      c.lineTo(x1, h - 6);
+      c.lineTo(x2, h - 37);
+      c.stroke();
+      c.fillStyle = '#0f151c';
+      c.font = `700 ${fs}px ${SANS}`;
+      c.textBaseline = 'middle';
+      c.fillText(text, 40, (h - 36) / 2 + 4);
+    });
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, toneMapped: false, opacity: 0 }));
+    const bh = 0.27;
+    sp.scale.set((bh * W) / H, bh, 1);
+    sp.center.set(right ? 0.94 : 0.06, 0);
+    sp.position.set(x, y, 0.2);
+    sp.renderOrder = 20;
+    return sp;
+  };
+  const stageFloor = (group: THREE.Group, name: string) => {
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(1.3, 72), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, envMapIntensity: 0.6 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.002;
+    group.add(floor);
+    const rim = fatLine(new THREE.EllipseCurve(0, 0, 1.3, 1.3).getPoints(96), INK, 2, 0, true);
+    rim.rotation.x = -Math.PI / 2;
+    group.add(rim);
+    // Below the rim's front edge, so the name never sits on the line.
+    const l = label(name, { h: 0.19, fg: '#0f151c' });
+    l.position.set(0, -0.2, 1.42);
+    group.add(l);
+  };
+  const person = (group: THREE.Group, x: number, z: number, ry: number, p: Pose, who: CharacterLook): Figure => {
+    const d = makeFigure(who, figMat);
+    d.root.position.set(x, 0, z);
+    d.root.rotation.y = ry;
+    applyPose(d.P, p);
+    group.add(d.root);
+    const sh = shadow(0.7, 0.45);
+    sh.position.set(x, 0.003, z);
+    group.add(sh);
+    return d;
+  };
+  interface Bubble { sprite: THREE.Sprite; want: number }
+  interface Vignette { g: THREE.Group; bubbles: Bubble[]; rings: Line2[]; update: (t: number, local: number) => void }
+  const VIGN: Vignette[] = [];
+  const mkBubble = (sprite: THREE.Sprite): Bubble => ({ sprite, want: 0 });
+  {
+    // a conversation
+    const g = new THREE.Group();
+    stageFloor(g, copy.scenes[0] ?? '');
+    const a = person(g, -0.5, 0.05, 0.75, STAND, look({ hair: 'curly', hairColor: '#1f1f22', skin: '#a9714a', top: 'hoodie', topColor: '#4a7fd6' }));
+    const b = person(g, 0.5, 0.05, -0.75, STAND, look({ hair: 'ponytail', hairColor: '#d9733a', skin: '#f2c48d', top: 'shirt', topColor: '#d97a4a', bottom: 'skirt', bottomColor: '#3d4557', glasses: 'glasses' }));
+    const ba = mkBubble(bubble('So, what do you do?', -0.62, 1.98));
+    const bb = mkBubble(bubble("I'm a designer, actually.", 0.62, 1.98, true));
+    g.add(ba.sprite, bb.sprite);
+    VIGN.push({
+      g,
+      bubbles: [ba, bb],
+      rings: [],
+      update(t, local) {
+        const turn = Math.floor(local / 1.9) % 2;
+        const into = local % 1.9;
+        [a, b].forEach((d, i) => {
+          const talk = i === turn;
+          const w = Math.sin(t * 6 + i);
+          // The speaker gestures with the outer arm (a's left, b's right), so the
+          // hand stays in front of their own body instead of reaching into the listener.
+          const armX = -0.45 - 0.15 * w;
+          const armEl = -1.25 - 0.2 * w;
+          const speaking: Partial<Pose> = { nk: [0.04 * Math.sin(t * 5), 0.1 * Math.sin(t * 1.7), 0], sp: [0.03, 0.05 * w, 0] };
+          const gesture: Partial<Pose> = i === 0 ? { shL: [armX, 0, -0.35], elL: armEl } : { shR: [armX, 0, 0.35], elR: armEl };
+          const listening: Partial<Pose> = { nk: [0.1 * Math.max(0, Math.sin(t * 3.2)), 0, i === 0 ? -0.06 : 0.06], elL: -0.3, elR: -0.3 };
+          applyPose(d.P, pose(talk ? { ...speaking, ...gesture } : listening));
+        });
+        // One line at a time: both bubbles sit over the pair, so the reply waits until the last line has gone.
+        const on = into > 0.3 && into < 1.6;
+        ba.want = turn === 0 && on && bb.sprite.material.opacity < 0.05 ? 1 : 0;
+        bb.want = turn === 1 && on && ba.sprite.material.opacity < 0.05 ? 1 : 0;
+      },
+    });
+  }
+  {
+    // headphones
+    const g = new THREE.Group();
+    stageFloor(g, copy.scenes[1] ?? '');
+    const d = person(g, 0, 0.1, 0.3, STAND, look({ hair: 'bun', hairColor: '#1f1f22', skin: '#c98c5b', top: 'sweater', topColor: '#7b4fa3', bottomColor: '#3d4557' }));
+    // Block headphones, like everything else on these people: a band over the hair, a cup on each side of the head.
+    const hp = new THREE.Group();
+    hp.position.y = 0.16;
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.045, 0.07), inkMat);
+    band.position.y = 0.215;
+    hp.add(band);
+    for (const s of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.05), inkMat);
+      post.position.set(0.168 * s, 0.15, 0);
+      hp.add(post);
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 0.12), inkMat);
+      c.position.set(0.168 * s, 0.03, 0);
+      hp.add(c);
+    }
+    d.P.neck.add(hp);
+    const phone = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.015), inkMat);
+    phone.position.set(0, -0.23, 0.07);
+    phone.rotation.x = -0.4;
+    d.P.elR.add(phone);
+    const rings = [0, 1, 2].map(() => {
+      const r = fatLine(new THREE.EllipseCurve(0, 0, 1, 1).getPoints(48), GREEN, 2, 0, true);
+      g.add(r);
+      return r;
+    });
+    const chip = mkBubble(bubble('Podcast · English', -0.62, 2.05));
+    g.add(chip.sprite);
+    const hw = new THREE.Vector3();
+    VIGN.push({
+      g,
+      bubbles: [chip],
+      rings,
+      update(t) {
+        const beat = Math.sin(t * Math.PI * 2 * 1.9);
+        applyPose(d.P, pose({
+          nk: [0.11 * beat, 0.08 * Math.sin(t * 0.9), 0], hy: -0.015 * Math.abs(beat), hrz: 0.025 * Math.sin(t * Math.PI * 1.9),
+          shR: [-0.95, 0, -0.05], elR: -1.15, shL: [0.05, 0, -0.12 - 0.05 * beat], knL: 0.05 + 0.06 * Math.max(0, beat), anL: -0.05 * Math.max(0, beat),
+        }));
+        hp.getWorldPosition(hw);
+        g.worldToLocal(hw);
+        rings.forEach((r, k) => {
+          const ph = (t * 0.8 + k / 3) % 1;
+          r.position.set(hw.x, hw.y, hw.z + 0.05);
+          r.scale.setScalar(0.18 + ph * 0.45);
+          r.material.opacity = Math.sin(ph * Math.PI) * 0.8;
+        });
+        chip.want = 1;
+      },
+    });
+  }
+  {
+    // a lecture
+    const g = new THREE.Group();
+    stageFloor(g, copy.scenes[2] ?? '');
+    const boardTex = canvasTex(900, 540, (c, w, h) => {
+      c.fillStyle = '#ffffff';
+      c.fillRect(0, 0, w, h);
+      c.fillStyle = '#5b6b7a';
+      c.font = `500 34px ${MONO}`;
+      c.fillText('LECTURE 3', 50, 80);
+      c.fillStyle = '#0f151c';
+      c.font = `800 70px ${SANS}`;
+      c.fillText('Present Simple', 50, 175);
+      c.font = `600 46px ${SANS}`;
+      c.fillText('I live  →  he lives', 50, 280);
+      c.fillText('I work  →  she works', 50, 350);
+      c.strokeStyle = '#e5484d';
+      c.lineWidth = 6;
+      c.beginPath();
+      c.moveTo(325, 292);
+      c.lineTo(372, 292);
+      c.stroke();
+      c.beginPath();
+      c.moveTo(376, 362);
+      c.lineTo(420, 362);
+      c.stroke();
+    });
+    const board = new THREE.Group();
+    board.position.set(0.45, 0, -0.55);
+    board.rotation.y = -0.15;
+    g.add(board);
+    const panel = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.9, 0.05, 3, 0.02), clay);
+    panel.position.y = 1.86;
+    board.add(panel);
+    outline(panel, 0.012);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.42, 0.82), new THREE.MeshBasicMaterial({ map: boardTex, toneMapped: false }));
+    face.position.set(0, 1.86, 0.027);
+    board.add(face);
+    for (const x of [-0.6, 0.6]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.42, 8), inkMat);
+      leg.position.set(x, 0.71, -0.02);
+      board.add(leg);
+    }
+    const lect = person(g, -0.72, -0.15, 0.55, STAND, look({ hair: 'short', hairColor: '#8a8a8a', skin: '#e8b98a', top: 'shirt', topColor: '#c8b48a', bottomColor: '#2e3a58', glasses: 'glasses' }));
+    // A seated character's thighs rest at the hips' height less half a thigh: the stool comes up to there.
+    const seatTop = (HIP_Y + SIT.hy * UNIT - 0.08) * FIGURE_SCALE;
+    const pupils: [number, number, CharacterLook][] = [
+      [-0.12, 0.72, look({ hair: 'long', hairColor: '#e8c873', skin: '#f7d7b5', top: 'tee', topColor: '#3f9aa8', bottomColor: '#3d4557' })],
+      [0.78, 0.62, look({ hair: 'spiky', hairColor: '#6b4423', skin: '#8a5a3b', top: 'hoodie', topColor: '#d97a4a', hat: 'beanie', hatColor: '#7b4fa3' })],
+    ];
+    const studs = pupils.map(([x, z, who]) => {
+      const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, seatTop, 18), clay);
+      stool.position.set(x, seatTop / 2, z + 0.02);
+      g.add(stool);
+      outline(stool, 0.012);
+      return person(g, x, z, Math.PI - 0.15, SIT, who);
+    });
+    const say = mkBubble(bubble("Let's start with the basics.", -0.95, 2.02));
+    g.add(say.sprite);
+    VIGN.push({
+      g,
+      bubbles: [say],
+      rings: [],
+      update(t) {
+        const w = Math.sin(t * 2.2);
+        applyPose(lect.P, pose({ shR: [-0.25, 0, 1.25 + 0.12 * w], elR: -0.25, nk: [0, -0.35 + 0.35 * Math.max(0, Math.sin(t * 0.9)), 0], sp: [0, 0.1, 0], shL: [-0.5, 0, -0.2], elL: -0.9 }));
+        studs.forEach((s, i) => applyPose(s.P, { ...SIT, nk: [0.06 * Math.sin(t * 1.3 + i), 0.08 * Math.sin(t * 0.7 + i * 2), 0] }));
+        say.want = 1;
+      },
+    });
+  }
+  const carousel = new THREE.Group();
+  gPeople.add(carousel);
+  const RING = 3.1;
+  VIGN.forEach((v, i) => {
+    const a = (i * 2 * Math.PI) / 3;
+    v.g.position.set(Math.sin(a) * RING, 0, Math.cos(a) * RING);
+    v.g.rotation.y = a;
+    carousel.add(v.g);
+  });
+  carousel.position.z = -RING;
+  const HOLD = 3.8;
+  const MOVE = 1.1;
+  const SLOT = HOLD + MOVE;
+
+  /* ════ 2 · the head: ears vs eyes ═══════════════════════════════════ */
+  const gHead = new THREE.Group();
+  scene.add(gHead);
+  const HEAD_D = 0.36;
+  const FRONT = HEAD_D / 2 + 0.04;
+  const headShape = new THREE.Shape();
+  headShape.moveTo(-0.55, -1.45);
+  headShape.lineTo(-0.55, -0.85);
+  headShape.bezierCurveTo(-0.55, -0.62, -0.88, -0.45, -0.94, -0.1);
+  headShape.bezierCurveTo(-1.04, 0.45, -0.75, 1.07, -0.1, 1.13);
+  headShape.bezierCurveTo(0.45, 1.18, 0.83, 0.86, 0.87, 0.45);
+  headShape.bezierCurveTo(0.89, 0.32, 0.9, 0.25, 0.94, 0.17);
+  headShape.quadraticCurveTo(0.9, 0.1, 0.93, 0.04);
+  headShape.bezierCurveTo(1.0, -0.08, 1.1, -0.2, 1.12, -0.28);
+  headShape.quadraticCurveTo(1.09, -0.36, 0.98, -0.36);
+  headShape.quadraticCurveTo(1.01, -0.42, 1.01, -0.47);
+  headShape.quadraticCurveTo(0.97, -0.5, 1.0, -0.54);
+  headShape.quadraticCurveTo(1.0, -0.6, 0.95, -0.64);
+  headShape.bezierCurveTo(0.98, -0.72, 0.96, -0.84, 0.84, -0.88);
+  headShape.bezierCurveTo(0.7, -0.92, 0.45, -0.88, 0.35, -0.95);
+  headShape.lineTo(0.32, -1.45);
+  headShape.lineTo(-0.55, -1.45);
+  const headGeo = new THREE.ExtrudeGeometry(headShape, { depth: HEAD_D, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.03, bevelSegments: 4, curveSegments: 24 });
+  headGeo.translate(0, 0, -HEAD_D / 2);
+  gHead.add(new THREE.Mesh(headGeo, clay));
+  gHead.add(fatLine(headShape.getPoints(24), INK, 2.4, FRONT + 0.004));
+  const brainShape = new THREE.Shape();
+  brainShape.moveTo(-0.78, 0.25);
+  brainShape.bezierCurveTo(-0.82, 0.64, -0.45, 0.96, -0.05, 0.96);
+  brainShape.bezierCurveTo(0.36, 0.96, 0.67, 0.72, 0.65, 0.38);
+  brainShape.bezierCurveTo(0.64, 0.15, 0.46, 0.05, 0.3, 0.05);
+  brainShape.bezierCurveTo(0.2, -0.13, -0.12, -0.19, -0.29, -0.05);
+  brainShape.bezierCurveTo(-0.46, -0.02, -0.73, -0.05, -0.78, 0.25);
+  const brainMesh = new THREE.Mesh(new THREE.ShapeGeometry(brainShape, 32), new THREE.MeshStandardMaterial({ color: 0xf1f4f7, roughness: 0.8 }));
+  brainMesh.position.z = FRONT + 0.006;
+  gHead.add(brainMesh);
+  gHead.add(fatLine(brainShape.getPoints(32), INK, 1.8, FRONT + 0.012));
+  // a few folds, so it reads as a brain
+  const FOLDS = [
+    [[-0.6, 0.55], [-0.4, 0.7], [-0.2, 0.6], [0.0, 0.78]],
+    [[-0.1, 0.35], [0.1, 0.5], [0.3, 0.42], [0.5, 0.6]],
+    [[-0.55, 0.2], [-0.35, 0.35], [-0.2, 0.25]],
+    [[0.15, 0.82], [0.3, 0.68], [0.5, 0.75]],
+  ];
+  FOLDS.forEach((arr) => {
+    const curve = new THREE.CatmullRomCurve3(arr.map(([x, y]) => new THREE.Vector3(x, y, 0)));
+    gHead.add(fatLine(curve.getPoints(24), 0xb8c4cf, 1.4, FRONT + 0.011));
+  });
+  const region = (cx: number, cy: number, rx: number, ry: number, rot: number) => {
+    const s = new THREE.Shape();
+    s.absellipse(0, 0, rx, ry, 0, Math.PI * 2, false, 0);
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(s, 32), new THREE.MeshStandardMaterial({ color: C_IDLE.clone(), roughness: 0.5, emissive: 0x000000 }));
+    m.position.set(cx, cy, FRONT + 0.016);
+    m.rotation.z = rot;
+    gHead.add(m);
+    const l = fatLine(s.getPoints(48), INK, 1.4, 0.002);
+    l.position.copy(m.position);
+    l.rotation.z = rot;
+    gHead.add(l);
+    return m;
+  };
+  const AUD = { x: -0.04, y: 0.12 };
+  const VIS = { x: -0.6, y: 0.33 };
+  const audR = region(AUD.x, AUD.y, 0.27, 0.1, 0.12);
+  const visR = region(VIS.x, VIS.y, 0.15, 0.22, -0.2);
+  const EAR = { x: -0.14, y: -0.22 };
+  {
+    const ear = new THREE.Shape();
+    ear.moveTo(0.04, 0.16);
+    ear.bezierCurveTo(-0.1, 0.2, -0.16, 0.05, -0.12, -0.06);
+    ear.bezierCurveTo(-0.09, -0.16, -0.02, -0.2, 0.04, -0.14);
+    ear.bezierCurveTo(0.06, -0.06, 0.07, 0.08, 0.04, 0.16);
+    const em = new THREE.Mesh(new THREE.ExtrudeGeometry(ear, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.012, bevelSegments: 3 }), clay);
+    em.position.set(EAR.x, EAR.y, FRONT - 0.01);
+    gHead.add(em);
+    const el = fatLine(ear.getPoints(16), INK, 2, 0.08);
+    el.position.set(EAR.x, EAR.y, FRONT - 0.01);
+    gHead.add(el);
+    const eye = new THREE.Mesh(new THREE.CircleGeometry(0.045, 24), new THREE.MeshBasicMaterial({ color: INK }));
+    eye.scale.set(1.3, 0.8, 1);
+    eye.position.set(0.8, 0.12, FRONT + 0.006);
+    gHead.add(eye);
+  }
+  // sound converging on the ear
+  const headRings = [0, 1, 2].map(() => {
+    const r = fatLine(new THREE.EllipseCurve(0, 0, 1, 1).getPoints(64), GREEN, 2.2, 0, true);
+    r.position.set(EAR.x - 0.04, EAR.y, FRONT + 0.1);
+    gHead.add(r);
+    return r;
+  });
+  // the caption, in front of the face
+  const CAP = { x: 1.3, y: 0.82 };
+  const capTex = canvasTex(1024, 224, (c, w, h) => {
+    roundRect(c, 6, 6, w - 12, h - 12, 26);
+    c.fillStyle = '#0f151c';
+    c.fill();
+    c.fillStyle = '#eef4f8';
+    c.font = `700 64px ${SANS}`;
+    c.textBaseline = 'middle';
+    c.textAlign = 'center';
+    c.fillText('I like the way you move', w / 2 + 40, h / 2 + 4);
+    roundRect(c, 40, h / 2 - 30, 92, 60, 10);
+    c.lineWidth = 6;
+    c.strokeStyle = '#eef4f8';
+    c.stroke();
+    c.font = `500 34px ${MONO}`;
+    c.fillText('CC', 86, h / 2 + 3);
+  });
+  const caption = new THREE.Mesh(new THREE.PlaneGeometry(1.75, 0.38), new THREE.MeshBasicMaterial({ map: capTex, transparent: true, toneMapped: false, depthWrite: false }));
+  caption.position.set(CAP.x, CAP.y, FRONT + 0.3);
+  caption.renderOrder = 10;
+  gHead.add(caption);
+  // particle streams: ear → hearing area, caption → eye → visual area
+  const dotGeo = new THREE.SphereGeometry(0.026, 10, 8);
+  const earPath = new THREE.QuadraticBezierCurve3(new THREE.Vector3(EAR.x, EAR.y, FRONT + 0.06), new THREE.Vector3(-0.2, -0.02, FRONT + 0.1), new THREE.Vector3(AUD.x, AUD.y, FRONT + 0.05));
+  const eyePath = new THREE.CubicBezierCurve3(new THREE.Vector3(CAP.x - 0.5, CAP.y - 0.2, FRONT + 0.28), new THREE.Vector3(0.95, 0.2, FRONT + 0.15), new THREE.Vector3(0.4, 0.5, FRONT + 0.08), new THREE.Vector3(VIS.x, VIS.y, FRONT + 0.05));
+  const mkStream = (color: number, n: number) => {
+    const m = new THREE.InstancedMesh(dotGeo, new THREE.MeshBasicMaterial({ color, transparent: true, toneMapped: false }), n);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    gHead.add(m);
+    return m;
+  };
+  const earDots = mkStream(GREEN, 7);
+  const eyeDots = mkStream(RED, 12);
+  const audLbl = label(copy.hear, { h: 0.17, fg: '#0f151c' });
+  audLbl.position.set(0.12, -0.62, FRONT + 0.2);
+  gHead.add(audLbl);
+  const visLbl = label(copy.see, { h: 0.17, fg: '#0f151c' });
+  visLbl.position.set(-0.85, 1.2, FRONT + 0.2);
+  gHead.add(visLbl);
+  gHead.add(fatLine([new THREE.Vector2(AUD.x + 0.05, AUD.y - 0.08), new THREE.Vector2(0.1, -0.52)], INK, 1.2, FRONT + 0.03));
+  gHead.add(fatLine([new THREE.Vector2(VIS.x - 0.05, VIS.y + 0.2), new THREE.Vector2(-0.8, 1.1)], INK, 1.2, FRONT + 0.03));
+  let subsAmount = 0;
+  const dm = new THREE.Matrix4();
+  const dq = new THREE.Quaternion();
+  const ds = new THREE.Vector3();
+  const dp = new THREE.Vector3();
+
+  /* ════ 3 · autumn ════════════════════════════════════════════════════ */
+  const gTiles = new THREE.Group();
+  scene.add(gTiles);
+  const TW = 0.6;
+  const TH = 0.76;
+  const PITCH = 0.7;
+  const faceTex = (txt: string, fg: string, bg: string) =>
+    canvasTex(256, 320, (c, w, h) => {
+      c.fillStyle = bg;
+      c.fillRect(0, 0, w, h);
+      c.fillStyle = fg;
+      c.font = `800 200px ${SANS}`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(txt, w / 2, h / 2 + 12);
+    });
+  const LAT = 'AUTUMN'.split('');
+  const CYR = ['А', 'У', 'Т', 'У', 'М', 'Н'];
+  const SND = ['о́', '', 'т', 'э', 'м', 'N'];
+  type Face = 'lat' | 'cyr' | 'snd';
+  interface Tile {
+    g: THREE.Group;
+    i: number;
+    T: Record<Face, THREE.Texture>;
+    face: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+    body: THREE.Mesh<RoundedBoxGeometry, THREE.MeshStandardMaterial>;
+    cur: Face;
+    want: Face;
+    flip: number;
+    x: number;
+    y: number;
+    s: number;
+    o: number;
+  }
+  const tiles: Tile[] = LAT.map((ch, i) => {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new RoundedBoxGeometry(TW, TH, 0.16, 4, 0.05), clay.clone());
+    outline(body, 0.012);
+    g.add(body);
+    const T: Record<Face, THREE.Texture> = {
+      lat: faceTex(ch, '#0f151c', '#ffffff'),
+      cyr: faceTex(CYR[i], '#c2262b', '#fff1f1'),
+      snd: faceTex(SND[i] || ' ', i === 5 ? '#9aa8b5' : '#15803d', '#ecfdf3'),
+    };
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(TW - 0.08, TH - 0.08), new THREE.MeshBasicMaterial({ map: T.lat, toneMapped: false, transparent: true }));
+    face.position.z = 0.0815;
+    g.add(face);
+    g.position.x = (i - 2.5) * PITCH;
+    gTiles.add(g);
+    return { g, i, T, face, body, cur: 'lat', want: 'lat', flip: 1, x: g.position.x, y: 0, s: 1, o: 1 };
+  });
+  const chipTex = canvasTex(720, 220, (c, w, h) => {
+    roundRect(c, 6, 6, w - 12, h - 12, 40);
+    c.fillStyle = '#ffffff';
+    c.fill();
+    c.lineWidth = 8;
+    c.strokeStyle = '#0f151c';
+    c.stroke();
+    c.fillStyle = '#0f151c';
+    c.beginPath();
+    c.arc(140, h / 2, 62, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.moveTo(112, h / 2 - 18);
+    c.lineTo(130, h / 2 - 18);
+    c.lineTo(156, h / 2 - 40);
+    c.lineTo(156, h / 2 + 40);
+    c.lineTo(130, h / 2 + 18);
+    c.lineTo(112, h / 2 + 18);
+    c.closePath();
+    c.fill();
+    c.fillStyle = '#0f151c';
+    c.font = `800 112px ${SANS}`;
+    c.textBaseline = 'middle';
+    c.fillText(copy.chip, 240, h / 2 + 6);
+  });
+  const chip = new THREE.Mesh(new RoundedBoxGeometry(2.3, 0.7, 0.14, 4, 0.06), clay.clone());
+  outline(chip, 0.012);
+  const chipFace = new THREE.Mesh(new THREE.PlaneGeometry(2.26, 0.69), new THREE.MeshBasicMaterial({ map: chipTex, toneMapped: false, transparent: true }));
+  chipFace.position.z = 0.072;
+  chip.add(chipFace);
+  chip.scale.setScalar(0.001);
+  gTiles.add(chip);
+  const tLbl = {
+    written: label('autumn', { h: 0.26, mono: true, font: 500, fg: '#0f151c' }),
+    eye: label(`${copy.eye}  ✕`, { h: 0.34, fg: '#ffffff', bg: '#e5484d', border: '#e5484d', font: 800 }),
+    ear: label(`${copy.ear}  ${copy.ipa}`, { h: 0.34, fg: '#ffffff', bg: '#15803d', border: '#15803d', font: 800 }),
+    silent: label(copy.silent, { h: 0.22, fg: '#5b6b7a' }),
+    app: label(copy.appNote, { h: 0.27, fg: '#0f151c' }),
+  };
+  tLbl.written.position.set(0, 0.76, 0.1);
+  tLbl.eye.position.set(0, -0.78, 0.1);
+  tLbl.ear.position.set(-0.35, -0.78, 0.1);
+  tLbl.silent.position.set(1.75, -1.24, 0.1);
+  tLbl.app.position.set(0, -0.76, 0.1);
+  Object.values(tLbl).forEach((l) => {
+    l.material.opacity = 0;
+    gTiles.add(l);
+  });
+  const STEP_MS = 3400;
+
+  /* ════ 4 · the comic page in eight panels ═══════════════════════════ */
+  const gComic = new THREE.Group();
+  scene.add(gComic);
+  const PHH = 3.4;
+  const DEPTH = [0.55, -0.25, 0.2, 0.62, -0.05, 0.42, -0.35, 0.15];
+  interface Panel {
+    g: THREE.Group;
+    i: number;
+    mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
+    frame: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+    home: THREE.Vector3;
+    lift: number;
+    flash: number;
+    color: THREE.Color;
+  }
+  let panels: Panel[] = [];
+  let comicSeen: ComicGameState | null | undefined;
+  const buildComic = (url: string, boxes: NonNullable<SceneLeo['panels']>) => {
+    kit.texture(url, (tex) => {
+      if (disposed) return;
+      const img = tex.image as { width?: number; height?: number } | undefined;
+      const aspect = img?.width && img?.height ? img.width / img.height : 1024 / 1536;
+      const PWW = PHH * aspect;
+      panels = boxes.map((b, i) => {
+        const geo = new THREE.PlaneGeometry(b.w * PWW, b.h * PHH);
+        const uv = geo.attributes.uv;
+        for (let k = 0; k < uv.count; k++) uv.setXY(k, b.x + uv.getX(k) * b.w, 1 - b.y - b.h + uv.getY(k) * b.h);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, envMapIntensity: 0.3 }));
+        const frame = new THREE.Mesh(new THREE.PlaneGeometry(b.w * PWW + 0.08, b.h * PHH + 0.08), new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0, toneMapped: false, depthWrite: false }));
+        frame.position.z = -0.01;
+        own(frame.material);
+        const g = new THREE.Group();
+        g.add(frame, mesh);
+        const home = new THREE.Vector3((b.x + b.w / 2 - 0.5) * PWW, (0.5 - b.y - b.h / 2) * PHH, 0);
+        g.position.copy(home);
+        mesh.userData.panel = i;
+        gComic.add(g);
+        return { g, i, mesh, frame, home, lift: 0, flash: 0, color: new THREE.Color(INK) };
+      });
+      const cShadow = shadow(2.8, 0.9);
+      cShadow.position.set(0, -1.95, 0);
+      gComic.add(cShadow);
+      comicSeen = undefined;
+    });
+  };
+  const followComic = (g: ComicGameState | null) => {
+    panels.forEach((p) => {
+      p.lift = 0;
+      p.flash = 0;
+    });
+    if (g?.phase !== 'feedback' || g.answer === null) return;
+    const ok = panels[g.answer];
+    if (ok) {
+      ok.lift = 0.7;
+      ok.flash = 1;
+      ok.color.copy(C_GREEN);
+    }
+    if (g.chosen !== null && g.chosen !== g.answer && panels[g.chosen]) {
+      const bad = panels[g.chosen];
+      bad.flash = 1;
+      bad.color.copy(C_RED);
+      bad.lift = 0.25;
+    }
+  };
+
+  /* ════ 5 · the glasses ═══════════════════════════════════════════════ */
+  const gGlass = new THREE.Group();
+  scene.add(gGlass);
+  const GH = 1.5;
+  const RT = 0.4;
+  const RB = 0.27;
+  const profile = (fill: number, inset: boolean) => {
+    const pts = [new THREE.Vector2(0, inset ? 0.05 : 0)];
+    const top = inset ? Math.max(0.06, fill * (GH - 0.07)) : GH;
+    pts.push(new THREE.Vector2(RB - 0.06 - (inset ? 0.025 : 0), inset ? 0.05 : 0));
+    pts.push(new THREE.Vector2(RB - (inset ? 0.025 : 0), inset ? 0.1 : 0.06));
+    for (let k = 1; k <= 12; k++) {
+      const y = 0.06 + ((top - 0.06) * k) / 12;
+      pts.push(new THREE.Vector2(RB + (RT - RB) * (y / GH) - (inset ? 0.025 : 0), y));
+    }
+    if (inset) pts.push(new THREE.Vector2(0, top));
+    return pts;
+  };
+  const LEVELS: DifficultySlug[] = ['easy', 'medium', 'hard'];
+  const ACCENT: Record<DifficultySlug, number> = { easy: 0x00c951, medium: 0xff6900, hard: 0xad46ff };
+  interface Glass {
+    g: THREE.Group;
+    d: DifficultySlug;
+    milk: THREE.Mesh<THREE.LatheGeometry, THREE.MeshStandardMaterial>;
+    hit: THREE.Mesh;
+    fill: number;
+    target: number;
+    lift: number;
+    last: number;
+  }
+  const glasses: Glass[] = LEVELS.map((d, i) => {
+    const g = new THREE.Group();
+    const shell = new THREE.Mesh(
+      new THREE.LatheGeometry(profile(1, false), 48),
+      new THREE.MeshPhysicalMaterial({ color: ACCENT[d], transparent: true, opacity: 0.2, roughness: 0.05, side: THREE.DoubleSide, depthWrite: false, envMapIntensity: 1.4, clearcoat: 1 }),
+    );
+    shell.renderOrder = 1;
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(RT, 0.02, 8, 64), new THREE.MeshStandardMaterial({ color: ACCENT[d], roughness: 0.3 }));
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = GH;
+    // Milk is white and opaque: drawn after the glass so the tint never colours it.
+    const milk = new THREE.Mesh(new THREE.LatheGeometry(profile(0.1, true), 48), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.32, envMapIntensity: 0.6, transparent: true, opacity: 1 }));
+    milk.renderOrder = 3;
+    const hit = new THREE.Mesh(new THREE.CylinderGeometry(RT + 0.08, RB + 0.08, GH + 0.2, 12), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.y = GH / 2;
+    hit.userData.level = d;
+    const sh = shadow(1.0, 0.5);
+    sh.position.y = 0.003;
+    g.add(sh, milk, shell, rim, hit);
+    g.position.x = (i - 1) * 1.1;
+    g.position.y = -GH / 2;
+    gGlass.add(g);
+    return { g, d, milk, hit, fill: 0.04, target: SHELF_FILL[d], lift: 0, last: 0 };
+  });
+
+  /* ── chapters: which object, and how the camera frames it ────────── */
+  const GROUPS = [gPeople, gDance, gHead, gTiles, gComic, gGlass];
+  interface Frame { c: [number, number, number]; w: number; h: number; dw?: number; dh?: number; up?: number; my?: number }
+  const FRAMES: Frame[] = [
+    // dw/dh: a looser frame on desktop, where the scene has the right half; up: camera
+    // height above the target; my: a lower target on phones, so the name under the floor fits the band
+    { c: [0, 1.05, 0], w: 3.1, h: 2.7, dw: 3.5, dh: 3.7, up: 0.7, my: 0.85 },
+    { c: [0, 0.85, 0], w: 2.6, h: 2.05 },
+    { c: [0.5, 0.05, 0], w: 4.0, h: 3.0 },
+    { c: [0, -0.15, 0], w: 4.6, h: 2.3 },
+    { c: [0, 0, 0], w: 2.6, h: 3.6 },
+    { c: [0, -0.05, 0], w: 3.4, h: 2.1 },
+  ];
+  /** How present each chapter's scene is, 0…1; it fades and slides on this. */
+  const vis: number[] = GROUPS.map((_, i) => (i === 0 ? 1 : 0));
+  let shown = 0;
+  own(caption.material, audLbl.material, visLbl.material);
+  VIGN.forEach((v) => {
+    v.bubbles.forEach((b) => own(b.sprite.material));
+    v.rings.forEach((r) => own(r.material));
+  });
+  headRings.forEach((r) => own(r.material));
+  tiles.forEach((tl) => own(tl.face.material, tl.body.material));
+  Object.values(tLbl).forEach((l) => own(l.material));
+  GROUPS.forEach((g, i) => (g.visible = i === 0));
+
+  const { stages, tracks } = opts;
+  let activeTrack = 0;
+  let chapter = 0;
+  let natural = 0;
+  let visible = true;
+  let W = 1;
+  let H = 1;
+  let desktop = false;
+  const resize = () => {
+    const st = stages[activeTrack];
+    const w = st.clientWidth || window.innerWidth;
+    const h = st.clientHeight || window.innerHeight;
+    // A page opened in a hidden tab or a pane still opening measures 0×0: keep the last good size
+    // (an aspect of 0 or Infinity would put the camera at infinity, and its easing would never come back).
+    if (w < 2 || h < 2) return;
+    W = w;
+    H = h;
+    desktop = W >= 960;
+    renderer.setSize(W, H, false);
+    camera.aspect = W / H;
+    if (desktop) camera.setViewOffset(W, H, -W * 0.22, 0, W, H);
+    else camera.clearViewOffset();
+    camera.updateProjectionMatrix();
+    kit.setResolution(W, H);
+  };
+  const camFor = (i: number) => {
+    const f = FRAMES[i];
+    const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2;
+    const fh = desktop ? 0.7 : 0.84;
+    const fw = desktop ? 0.5 : 0.9;
+    const fwid = desktop && f.dw ? f.dw : f.w;
+    const fhgt = desktop && f.dh ? f.dh : f.h;
+    const d = Math.max(fhgt / (fh * tanH), fwid / (fw * tanH * camera.aspect));
+    return { x: f.c[0], y: !desktop && f.my !== undefined ? f.my : f.c[1], z: d, up: f.up ?? 0.15 };
+  };
+  stages[0].appendChild(canvas);
+  resize();
+  const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => resize()) : null;
+  stages.forEach((s) => ro?.observe(s));
+  window.addEventListener('resize', resize);
+  const camNow = camFor(0);
+  camera.position.set(camNow.x, camNow.y + camNow.up, camNow.z);
+  const camLook = new THREE.Vector3(camNow.x, camNow.y, 0);
+
+  // Which track is on screen, and which of its cards has passed the reading line (62% down).
+  const pick = () => {
+    const vh = window.innerHeight;
+    let t = -1;
+    tracks.forEach((tr, i) => {
+      const r = tr.getBoundingClientRect();
+      if (t < 0 && r.bottom > 0 && r.top < vh) t = i;
+    });
+    visible = t >= 0;
+    if (!visible) return;
+    if (t !== activeTrack) {
+      activeTrack = t;
+      stages[t].appendChild(canvas);
+      resize();
+    }
+    const first = Number(tracks[t].dataset.first ?? 0);
+    const cards = tracks[t].querySelectorAll<HTMLElement>('.ch > .card');
+    let c = first;
+    for (let i = 1; i < cards.length; i++) if (cards[i].getBoundingClientRect().top < vh * 0.62) c = first + i;
+    natural = c;
+  };
+  window.addEventListener('scroll', pick, { passive: true });
+  pick();
+
+  /* ── taps ─────────────────────────────────────────────────────────── */
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let down: { x: number; y: number; t: number } | null = null;
+  let pointerX = 0;
+  let pointerY = 0;
+  const hitTest = (cx: number, cy: number, list: THREE.Object3D[]) => {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const h = ray.intersectObjects(list, true);
+    return h.length ? h[0].object : null;
+  };
+  const targetsFor = (): THREE.Object3D[] =>
+    chapter === 4 ? panels.map((p) => p.mesh)
+      : chapter === 5 ? glasses.map((g) => g.hit)
+        : chapter === 3 ? [...tiles.map((tl) => tl.body), chip]
+          : chapter === 2 ? [caption, audR, visR]
+            : [];
+  const onDown = (e: PointerEvent) => {
+    down = { x: e.clientX, y: e.clientY, t: performance.now() };
+  };
+  const onMove = (e: PointerEvent) => {
+    const r = canvas.getBoundingClientRect();
+    pointerX = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pointerY = ((e.clientY - r.top) / r.height) * 2 - 1;
+    if (e.pointerType === 'mouse') canvas.style.cursor = hitTest(e.clientX, e.clientY, targetsFor()) ? 'pointer' : '';
+  };
+  const onUp = (e: PointerEvent) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    const held = performance.now() - down.t;
+    down = null;
+    if (moved > 10 || held > 500) return;
+    const o = hitTest(e.clientX, e.clientY, targetsFor());
+    if (!o) return;
+    const s = landingStore.get();
+    if (chapter === 4) {
+      if (s.comic?.phase === 'asking' && typeof o.userData.panel === 'number') landingActions.comicAnswer?.(o.userData.panel);
+      else if (!s.comic || s.comic.phase === 'idle' || s.comic.phase === 'done') landingActions.comicListen?.();
+    } else if (chapter === 5) {
+      if (o.userData.level) landingStore.set({ level: o.userData.level as DifficultySlug });
+    } else if (chapter === 3) {
+      landingActions.sayAutumn?.(s.tiles.step === 1 ? 'en' : 'ru');
+    } else if (chapter === 2) {
+      setSubs(!s.subs.on, true);
+    }
+  };
+  canvas.addEventListener('pointerdown', onDown);
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', onUp);
+
+  /* ── the loop ─────────────────────────────────────────────────────── */
+  let disposed = false;
+  let raf = 0;
+  let running = false;
+  let first = true;
+  let last = performance.now();
+  const t0 = last;
+  let lastSubsFlip = last;
+  let lastStepAt = last;
+  let lastPass = -2;
+  let lastBeat = -2;
+
+  const frame = (now: number) => {
+    running = false;
+    if (disposed || !visible || document.hidden) return;
+    // A frame's timestamp can be earlier than the last performance.now() taken
+    // outside the loop; a negative step would push every easing away from its target.
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
+    last = Math.max(last, now);
+    const time = (now - t0) / 1000;
+    const S = landingStore.get();
+    chapter = S.focus && now < S.focus.until && activeTrack === 0 ? S.focus.ch : natural;
+
+    // one scene at a time: the shown one leaves before the next one arrives
+    if (shown !== chapter && vis[shown] < 0.04) {
+      vis[shown] = 0;
+      shown = chapter;
+    }
+    GROUPS.forEach((g, i) => {
+      vis[i] = damp(vis[i], i === shown && shown === chapter ? 1 : 0, 7, dt);
+      g.visible = vis[i] > 0.01;
+      g.scale.setScalar(Math.max(0.001, 0.88 + 0.12 * vis[i]));
+      g.position.y = (1 - vis[i]) * (i < chapter ? 0.5 : -0.5);
+      if (g.visible) setOpacity(g, vis[i]);
+    });
+
+    // the camera eases to the chapter's frame; the pointer nudges it
+    const cf = camFor(chapter);
+    // Never stay lost: a camera that ever reached a non-number jumps back to the frame.
+    if (![camera.position.x, camera.position.y, camera.position.z, camLook.x, camLook.y].every(Number.isFinite)) {
+      camera.position.set(cf.x, cf.y + cf.up, cf.z);
+      camLook.set(cf.x, cf.y, 0);
+    }
+    camera.position.x = damp(camera.position.x, cf.x + pointerX * 0.25, 3, dt);
+    camera.position.y = damp(camera.position.y, cf.y - pointerY * 0.15 + cf.up, 3, dt);
+    camera.position.z = damp(camera.position.z, cf.z, 3, dt);
+    camLook.x = damp(camLook.x, cf.x, 3, dt);
+    camLook.y = damp(camLook.y, cf.y, 3, dt);
+    camera.lookAt(camLook);
+
+    // 0 · people: one place at a time, turning on a carousel
+    if (gPeople.visible) {
+      const n = Math.floor(time / SLOT);
+      const local = time - n * SLOT;
+      // The page opens on the conversation, already in place; the carousel turns only after that.
+      const u = n === 0 || local >= MOVE ? 1 : ease(local / MOVE);
+      carousel.rotation.y = -((n - 1 + u) * 2 * Math.PI) / 3;
+      VIGN.forEach((v, i) => {
+        const a = (i * 2 * Math.PI) / 3 + carousel.rotation.y;
+        v.g.visible = Math.cos(a) > 0.25;
+        const active = ((n % 3) + 3) % 3 === i;
+        if (v.g.visible) v.update(time, active ? Math.max(0, local - (n === 0 ? 0 : MOVE)) : 0);
+        v.bubbles.forEach((b) => {
+          const shownNow = active && (n === 0 ? local > 0.6 : local > MOVE + 0.2);
+          b.sprite.material.opacity = damp(b.sprite.material.opacity, (shownNow ? b.want : 0) * vis[0], 8, dt);
+        });
+      });
+    }
+
+    // 1 · the dancer
+    if (gDance.visible) {
+      const { key, L } = danceAt(time);
+      applyDance(dancer, key);
+      dShadow.position.x = key.hx * UNIT;
+      prints.forEach((pr, k) => {
+        const on = L.beat === k || (L.beat < 0 && k === 3);
+        pr.m.material.map = on ? FOOT[1] : FOOT[0];
+        pr.n.visible = !on;
+        pr.nOn.visible = on;
+      });
+      if (L.pass !== lastPass || L.beat !== lastBeat) {
+        lastPass = L.pass;
+        lastBeat = L.beat;
+        landingStore.set({ ladderUI: { pass: L.pass, beat: L.beat } });
+      }
+      gDance.rotation.y = Math.sin(time * 0.3) * 0.12;
+    }
+
+    // 2 · the head
+    if (gHead.visible) {
+      if (!S.subs.user && now - lastSubsFlip > 4600) {
+        setSubs(!S.subs.on);
+        lastSubsFlip = now;
+      }
+      subsAmount = damp(subsAmount, S.subs.on ? 1 : 0, 4, dt);
+      const s = subsAmount;
+      audR.material.color.copy(C_IDLE).lerp(C_GREEN, 1 - s * 0.85);
+      audR.material.emissive.copy(C_GREEN).multiplyScalar((1 - s) * (0.35 + 0.15 * Math.sin(time * 5)));
+      visR.material.color.copy(C_IDLE).lerp(C_RED, s);
+      visR.material.emissive.copy(C_RED).multiplyScalar(s * (0.35 + 0.15 * Math.sin(time * 5)));
+      headRings.forEach((r, k) => {
+        const ph = (time * 0.7 + k / 3) % 1;
+        r.scale.setScalar(0.75 - ph * 0.6);
+        r.material.opacity = Math.sin(ph * Math.PI) * (1 - s * 0.75) * vis[2];
+      });
+      caption.material.opacity = s * vis[2];
+      caption.scale.setScalar(0.85 + 0.15 * s);
+      const stream = (mesh: THREE.InstancedMesh, path: THREE.Curve<THREE.Vector3>, n: number, amt: number, speed: number) => {
+        for (let k = 0; k < n; k++) {
+          const u = (time * speed + k / n) % 1;
+          path.getPoint(u, dp);
+          const sc = amt > 0.02 ? (0.6 + 0.6 * Math.sin(u * Math.PI)) * amt : 0.0001;
+          dm.compose(dp, dq, ds.set(sc, sc, sc));
+          mesh.setMatrixAt(k, dm);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+      };
+      stream(earDots, earPath, 7, 1 - s * 0.85, 0.55);
+      stream(eyeDots, eyePath, 12, s, 0.45);
+      audLbl.material.opacity = (0.45 + 0.55 * (1 - s)) * vis[2];
+      visLbl.material.opacity = (0.45 + 0.55 * s) * vis[2];
+      gHead.rotation.y = -0.22 + Math.sin(time * 0.4) * 0.06;
+    }
+
+    // 3 · autumn
+    if (gTiles.visible) {
+      const TS = S.tiles;
+      if (now - lastStepAt > STEP_MS && now - TS.user > 12000) {
+        setTilesStep((TS.step + 1) % 4);
+        lastStepAt = now;
+      }
+      if (TS.user && now - TS.user < 200) lastStepAt = now;
+      const st = TS.step;
+      tiles.forEach((tl) => {
+        const i = tl.i;
+        let want: Face = 'lat';
+        let x = (i - 2.5) * PITCH;
+        let y = 0;
+        let s = 1;
+        let o = 1;
+        if (st === 1) want = 'cyr';
+        if (st === 2) {
+          want = 'snd';
+          const order: Record<number, number> = { 0: 0, 1: 0, 2: 1, 3: 2, 4: 3 };
+          if (i <= 4) x = (order[i] - 1.5) * PITCH;
+          if (i === 1) {
+            s = 0.001;
+            o = 0;
+          }
+          if (i === 3) s = 0.82;
+          if (i === 5) {
+            x = 1.75;
+            y = -0.62;
+            s = 0.7;
+            o = 0.45;
+          }
+        }
+        if (st === 3) {
+          want = 'snd';
+          x = 0;
+          y = 0;
+          s = 0.001;
+          o = 0;
+        }
+        if (tl.want !== want) {
+          tl.want = want;
+          tl.flip = 0;
+        }
+        if (tl.flip < 1) {
+          tl.flip = Math.min(1, tl.flip + dt * 2.6 * (1 - i * 0.04));
+          if (tl.flip >= 0.5 && tl.cur !== tl.want) {
+            tl.cur = tl.want;
+            tl.face.material.map = tl.T[tl.cur];
+            tl.face.material.needsUpdate = true;
+          }
+        }
+        tl.x = damp(tl.x, x, 6, dt);
+        tl.y = damp(tl.y, y, 6, dt);
+        tl.s = damp(tl.s, s, 6, dt);
+        tl.o = damp(tl.o, o, 6, dt);
+        tl.g.position.set(tl.x, tl.y, 0);
+        tl.g.rotation.y = (tl.flip < 0.5 ? tl.flip : tl.flip - 1) * Math.PI;
+        tl.g.rotation.x = Math.sin(time * 1.2 + i) * 0.04;
+        tl.g.scale.setScalar(Math.max(0.001, tl.s));
+        tl.face.material.opacity = tl.o * vis[3];
+        tl.body.material.opacity = tl.o * vis[3];
+        tl.body.material.transparent = tl.o < 0.99;
+      });
+      const cs = st === 3 ? 1 : 0.001;
+      chip.scale.setScalar(Math.max(0.001, damp(chip.scale.x, cs, 6, dt)));
+      chip.rotation.y = Math.sin(time * 0.9) * 0.12;
+      const fade = (l: THREE.Sprite, on: boolean) => {
+        l.material.opacity = damp(l.material.opacity, on ? vis[3] : 0, 6, dt);
+      };
+      fade(tLbl.written, st === 0);
+      fade(tLbl.eye, st === 1);
+      fade(tLbl.ear, st === 2);
+      fade(tLbl.silent, st === 2);
+      fade(tLbl.app, st === 3);
+    }
+
+    // 4 · the comic
+    if (gComic.visible) {
+      if (S.comic !== comicSeen) {
+        comicSeen = S.comic;
+        followComic(S.comic);
+      }
+      gComic.rotation.y = Math.sin(time * 0.35) * 0.16 + pointerX * 0.22 - 0.1;
+      gComic.rotation.x = 0.06 + pointerY * 0.06;
+      const asking = S.comic?.phase === 'asking';
+      const feedback = S.comic?.phase === 'feedback';
+      panels.forEach((p, i) => {
+        p.g.position.x = p.home.x * 1.08;
+        p.g.position.y = p.home.y * 1.06;
+        p.g.position.z = damp(p.g.position.z, (DEPTH[i % DEPTH.length] ?? 0) * 0.9 + p.lift, 7, dt);
+        p.g.rotation.y = i % 2 ? 0.06 : -0.06;
+        const fm = p.frame.material;
+        const want = p.flash > 0 ? 1 : asking ? 0.3 + 0.2 * Math.sin(time * 4 + i) : 0.15;
+        fm.opacity = damp(fm.opacity, want * vis[4], 8, dt);
+        fm.color.copy(p.flash > 0 ? p.color : C_INK);
+        p.mesh.material.color.setScalar(feedback && p.flash === 0 ? 0.55 : 1);
+      });
+    }
+
+    // 5 · the glasses
+    if (gGlass.visible) {
+      gGlass.rotation.x = 0.16;
+      glasses.forEach((gl, i) => {
+        const sel = gl.d === S.level;
+        gl.fill = damp(gl.fill, vis[5] > 0.5 ? gl.target : 0.04, 2.4, dt);
+        if (Math.abs(gl.last - gl.fill) > 0.004) {
+          gl.milk.geometry.dispose();
+          gl.milk.geometry = new THREE.LatheGeometry(profile(gl.fill, true), 48);
+          gl.last = gl.fill;
+        }
+        gl.lift = damp(gl.lift, sel ? 0.25 : 0, 6, dt);
+        gl.g.position.y = -GH / 2 + gl.lift;
+        gl.g.rotation.y = time * (sel ? 0.5 : 0.12) + i;
+        gl.g.scale.setScalar(sel ? 1.08 : 0.94);
+      });
+    }
+
+    renderer.render(scene, camera);
+    if (first) {
+      first = false;
+      opts.onReady();
+    }
+    loop();
+  };
+  const loop = () => {
+    if (running || disposed) return;
+    running = true;
+    raf = requestAnimationFrame(frame);
+  };
+  const io =
+    typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(() => {
+          pick();
+          if (visible) {
+            last = performance.now();
+            loop();
+          }
+        }, { threshold: 0 })
+      : null;
+  tracks.forEach((tr) => io?.observe(tr));
+  const onVisibility = () => {
+    if (!document.hidden) {
+      last = performance.now();
+      loop();
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+  const onLost = (e: Event) => {
+    e.preventDefault();
+    opts.onFail('context lost');
+  };
+  canvas.addEventListener('webglcontextlost', onLost);
+  loop();
+
+  // For the scripted browser checks (dev only): where things are on screen, and the camera.
+  if (import.meta.env.DEV) {
+    (window as unknown as { __landing3d?: unknown }).__landing3d = {
+      get chapter() {
+        return chapter;
+      },
+      get track() {
+        return activeTrack;
+      },
+      get cam() {
+        return { pos: camera.position.toArray().map((v) => +v.toFixed(2)), look: camLook.toArray().map((v) => +v.toFixed(2)), vis: vis.map((v) => +v.toFixed(2)), shown, chapter };
+      },
+      get bubbles() {
+        return VIGN.map((v) => v.bubbles.map((b) => +b.sprite.material.opacity.toFixed(2)));
+      },
+      /** Freeze the dancer at a rate, half-count (0-7) and progress (0-1); null lets it dance again. */
+      pinDance(p: { rate: number; j: number; u: number } | null) {
+        pinned = p;
+      },
+      proj(x: number, y: number, z: number) {
+        const v = new THREE.Vector3(x, y, z).project(camera);
+        const r = canvas.getBoundingClientRect();
+        return [Math.round(r.left + ((v.x + 1) / 2) * r.width), Math.round(r.top + ((1 - v.y) / 2) * r.height)];
+      },
+      at(kind: 'panel' | 'glass', i: number) {
+        const obj = kind === 'panel' ? panels[i]?.mesh : glasses[i]?.hit;
+        if (!obj) return null;
+        const v = new THREE.Vector3();
+        obj.getWorldPosition(v);
+        v.project(camera);
+        const r = canvas.getBoundingClientRect();
+        return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+      },
+    };
+  }
+
+  return {
+    setLeo(leo) {
+      const a = leo.markers[leo.dancePhrase];
+      const b = leo.markers[leo.dancePhrase + 1];
+      if (Number.isFinite(a) && Number.isFinite(b) && b > a) phraseLen = b - a;
+      if (leo.comicUrl && leo.panels?.length && panels.length === 0) buildComic(leo.comicUrl, leo.panels);
+    },
+    dispose() {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', pick);
+      window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('webglcontextlost', onLost);
+      ro?.disconnect();
+      io?.disconnect();
+      const textures = new Set<THREE.Texture>();
+      scene.traverse((n) => {
+        const mesh = n as THREE.Mesh;
+        mesh.geometry?.dispose();
+        const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
+        (Array.isArray(mat) ? mat : mat ? [mat] : []).forEach((m) => {
+          const map = (m as THREE.MeshBasicMaterial).map;
+          if (map) textures.add(map);
+          m.dispose();
+        });
+      });
+      FOOT.forEach((t) => textures.add(t));
+      tiles.forEach((tl) => Object.values(tl.T).forEach((t) => textures.add(t)));
+      textures.forEach((t) => t.dispose());
+      envTarget.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      canvas.remove();
+      if (import.meta.env.DEV) delete (window as unknown as { __landing3d?: unknown }).__landing3d;
+    },
+  };
+}

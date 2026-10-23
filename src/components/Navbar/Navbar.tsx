@@ -9,7 +9,7 @@ import {
   // IoPeopleOutline,
   IoBookOutline,
 } from "react-icons/io5";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
@@ -48,12 +48,6 @@ const Navbar = () => {
   const { character } = useCharacter();
   const { count: cartCount } = useCart();
   const navigate = useNavigate();
-
-  // The homepage hero already renders the brand name at full size directly
-  // below the navbar, so repeating it here just prints it twice. The mark
-  // itself stays — it is the "go home" control, not decoration.
-  const { pathname } = useLocation();
-  const isHomepage = pathname === "/";
 
   const portrait = useCharacterPortrait(character);
 
@@ -101,13 +95,11 @@ const Navbar = () => {
                 aria-label={t("brand")}
               >
                 <BrandMark className="w-8 h-8" />
-                {/* aria-label on the button already names this control, so
-                    dropping the visible text costs nothing to a screen reader. */}
-                {!isHomepage && (
-                  <span className="text-2xl font-extrabold lowercase tracking-tight">
-                    {t("brand")}
-                  </span>
-                )}
+                {/* Shown on every page, the landing included: its hero has no
+                    big title of its own, so this is where the name lives. */}
+                <span className="text-2xl font-extrabold lowercase tracking-tight">
+                  {t("brand")}
+                </span>
               </button>
             </div>
 

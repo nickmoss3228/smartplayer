@@ -31,7 +31,8 @@ export const SHADOW_MATERIAL = new THREE.MeshBasicMaterial({
   depthWrite: false,
 });
 
-function mergeBoxes(parts: Part[]): THREE.BufferGeometry {
+/** Boxes as one vertex-coloured geometry. Exported for the landing, which hinges the same parts at knees and elbows. */
+export function mergeBoxes(parts: Part[]): THREE.BufferGeometry {
   const positions: number[] = [];
   const normals: number[] = [];
   const colors: number[] = [];

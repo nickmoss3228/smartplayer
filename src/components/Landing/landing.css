@@ -1,0 +1,312 @@
+/*
+ * The landing (/), built from option C of the landing guide
+ * (docs/landing-guide/c.html, approved 2026-10-16). Plain CSS rather than
+ * utilities because the page is one composition: pinned 3D tracks, cards that
+ * scroll beneath them on a phone and sit beside them from 960px, and a still
+ * version for reduced motion or no WebGL — the class names below are that
+ * structure, kept as they were reviewed.
+ *
+ * Everything is scoped under .landing. The colours are the app's own tokens
+ * (App.css @theme), aliased to the short names the design was written with;
+ * the level accents are themes.levelprogress's, which App.css does not define.
+ */
+.landing {
+  --ink: var(--color-ink);
+  --room: var(--color-room);
+  --white: #ffffff;
+  --line: var(--color-line);
+  --line-strong: var(--color-line-strong);
+  --dim: var(--color-dim);
+  --muted: var(--color-muted);
+  --signal: var(--color-signal);
+  --signal-ink: var(--color-signal-ink);
+  --panel-text: var(--color-panel-text);
+  --panel-dim: var(--color-panel-dim);
+  --panel-line: var(--color-panel-line);
+  --easy: #00c951;
+  --easy-2: #00bba6;
+  --medium: #ff6900;
+  --hard: #ad46ff;
+  --ok: #15803d;
+  --ok-line: #00c951;
+  --gutter: 16px;
+  /* Navbar.tsx is fixed, h-13: the page starts below it and the 3D band pins under it. */
+  --nav-h: 52px;
+  position: relative;
+  padding-top: var(--nav-h);
+  background: var(--room);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* clip, not hidden: hidden would make this a scroll container and unpin the sticky stages. */
+  overflow-x: clip;
+}
+@media (min-width: 640px) { .landing { --gutter: 32px; } }
+@media (min-width: 1024px) { .landing { --gutter: 56px; } }
+/* Tailwind's preflight already zeroes margins and makes images blocks. These two
+   join its base layer rather than sitting unlayered: an unlayered rule would beat
+   the utilities of the app components placed on this page (quiz, word window,
+   word game), whatever their specificity. */
+@layer base {
+  .landing h1, .landing h2, .landing h3 { text-wrap: balance; }
+  .landing :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+}
+
+/* ── type ─────────────────────────────────────────────────────────────── */
+.landing .micro { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .16em; color: var(--dim); line-height: 1.5; }
+.landing .eyebrow { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: .18em; color: var(--dim); }
+.landing .h-display { font-size: clamp(48px, 13vw, 112px); font-weight: 800; letter-spacing: -.055em; line-height: .92; text-transform: lowercase; }
+.landing .h2 { font-size: clamp(26px, 5.6vw, 40px); font-weight: 800; letter-spacing: -.03em; line-height: 1.08; }
+.landing .h3 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
+.landing .body { font-size: 15px; line-height: 1.6; color: var(--dim); max-width: 36em; }
+.landing .tnum { font-variant-numeric: tabular-nums; }
+.landing .ico { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+
+/* ── buttons (the same shapes as components/ui/buttonStyles.ts) ───────── */
+.landing .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border-radius: 3px; border: 0; font: inherit; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color .15s ease-out, box-shadow .15s ease-out, color .15s ease-out, transform .15s ease-out; -webkit-tap-highlight-color: transparent; }
+.landing .btn:active { transform: translateY(1px); }
+.landing .btn:disabled { opacity: .45; cursor: default; transform: none; }
+.landing .btn svg { width: 18px; height: 18px; flex: none; }
+.landing .btn-primary { background: var(--ink); color: var(--white); }
+.landing .btn-primary:hover { background: #1d2733; }
+.landing .btn-secondary { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.landing .btn-secondary:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+.landing .btn-light { background: var(--white); color: var(--ink); }
+.landing .btn-light:hover { background: #e9eef2; }
+/* The one uppercase CTA (design manifest §5). */
+.landing .btn-hero { width: 100%; max-width: 340px; font-size: 14px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+.landing .btn-sm { height: 40px; padding: 0 14px; font-size: 14px; }
+.landing .link-quiet { color: var(--dim); font-size: 14px; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line-strong); background: none; border: 0; padding: 6px 0; cursor: pointer; font-family: inherit; }
+.landing .link-quiet:hover { color: var(--ink); }
+
+/* ── reveal on scroll (Reveal.tsx adds .in once seen) ─────────────────── */
+.landing .rv { transition: opacity .7s var(--ease-enter), transform .7s var(--ease-enter); transition-delay: var(--d, 0ms); }
+.landing .rv.armed:not(.in) { opacity: 0; transform: translateY(18px); }
+@media (prefers-reduced-motion: reduce) { .landing .rv.armed:not(.in) { opacity: 1; transform: none; } }
+
+/* ── device frames: the real screenshots in a phone or a browser window ── */
+.landing .phone { position: relative; width: min(300px, 78vw); aspect-ratio: 390 / 844; border-radius: 44px; padding: 10px; background: #0b1016; box-shadow: 0 0 0 1px #2b3644, 0 30px 60px -20px rgba(15, 21, 28, .45), 0 12px 24px -12px rgba(15, 21, 28, .35); flex: none; max-width: 100%; }
+/* The shots have no status bar, so the frame draws one (--sb is its colour)
+   and the shot starts below it: nothing in the app hides under the island. */
+.landing .phone::before { content: ''; position: absolute; top: 17px; left: 50%; width: 27%; height: 19px; transform: translateX(-50%); background: #0b1016; border-radius: 12px; z-index: 3; }
+.landing .phone > .screen { position: relative; width: 100%; height: 100%; border-radius: 34px; overflow: hidden; background: var(--sb, #fbfcfd); padding-top: 30px; }
+.landing .phone > .screen::before { content: '9:41'; position: absolute; left: 11%; top: 8px; font: 600 11px/14px var(--font-sans); color: var(--sbc, var(--ink)); letter-spacing: .01em; }
+.landing .phone > .screen::after { content: ''; position: absolute; right: 10%; top: 11px; width: 18px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--sbc, var(--ink)); background: linear-gradient(90deg, var(--sbc, var(--ink)) 70%, transparent 70%) 2px 2px / 12px 4px no-repeat; opacity: .85; }
+.landing .phone > .screen > img { width: 100%; height: 100% !important; object-fit: cover; object-position: top; }
+.landing .phone.sm { width: min(220px, 60vw); border-radius: 34px; padding: 8px; }
+.landing .phone.sm::before { top: 13px; height: 14px; }
+.landing .phone.sm > .screen { border-radius: 27px; padding-top: 24px; }
+.landing .phone.sm > .screen::before { top: 6px; font-size: 9px; }
+.landing .phone.sm > .screen::after { top: 9px; width: 14px; height: 7px; background-size: 9px 3px; }
+.landing .phone.green > .screen { --sb: #00c369; }
+.landing .phone.dark > .screen { --sb: #0a4a34; --sbc: #eef4f8; }
+.landing .browser { position: relative; width: 100%; max-width: 100%; border-radius: 10px; overflow: hidden; background: #0b1016; box-shadow: 0 0 0 1px var(--line), 0 30px 60px -24px rgba(15, 21, 28, .35); }
+.landing .browser-bar { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; background: #e9eef2; border-bottom: 1px solid var(--line); }
+.landing .browser-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); flex: none; }
+.landing .browser img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+
+/* ── the slogan, under the navbar's name ──────────────────────────────── */
+/* It floats over the top of the hero instead of taking a row of its own, so the hero starts right under the navbar. */
+.landing .slogan-bar { position: absolute; top: var(--nav-h); left: 0; right: 0; z-index: 4; display: flex; justify-content: center; padding: 8px var(--gutter); font-size: 13px; font-weight: 500; color: var(--dim); text-align: center; pointer-events: none; }
+@media (min-width: 960px) { .landing .slogan-bar { font-size: 14px; } }
+/* Without the 3D there is no stage to float over. */
+.landing.no3d .slogan-bar { position: relative; top: 0; }
+
+/* ── pinned 3D tracks ───────────────────────────────────────────────── */
+.landing .wrap { max-width: 1160px; margin: 0 auto; padding-inline: var(--gutter); }
+.landing .track { position: relative; }
+/* Phones: the 3D is a band pinned under the navbar and the cards scroll
+   beneath it, so the explanation never hides behind its own text.
+   From 960px it fills the screen, behind the cards on the left. */
+.landing .stage { position: sticky; top: var(--nav-h); height: 46svh; z-index: 3; overflow: hidden; background: var(--room); border-bottom: 1px solid var(--line); }
+.landing .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(55% 40% at 50% 28%, rgba(0, 201, 81, .07), transparent 70%), radial-gradient(45% 35% at 80% 75%, rgba(173, 70, 255, .05), transparent 70%); }
+@media (min-width: 960px) { .landing .stage::before { background: radial-gradient(40% 50% at 72% 45%, rgba(0, 201, 81, .07), transparent 70%), radial-gradient(30% 35% at 85% 80%, rgba(173, 70, 255, .05), transparent 70%); } }
+.landing .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
+.landing .stage .boot { position: absolute; left: 50%; top: 28%; transform: translate(-50%, -50%); font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.landing .ch { position: relative; z-index: 1; padding: 16px var(--gutter) 8px; }
+.landing .ch:last-child { padding-bottom: 40svh; }
+.landing .card { position: relative; width: 100%; max-width: 520px; margin: 0 auto; padding: 18px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 24px 48px -28px rgba(15, 21, 28, .35); display: flex; flex-direction: column; gap: 10px; }
+.landing .card h1 { font-size: clamp(32px, 9vw, 52px); font-weight: 800; letter-spacing: -.045em; line-height: 1; }
+.landing .card h1 .soft { color: var(--muted); display: block; }
+.landing .card h2 { font-size: clamp(24px, 6.6vw, 34px); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; }
+.landing .card p { font-size: 15px; line-height: 1.5; color: var(--dim); }
+.landing .card .cta { display: flex; flex-direction: column; gap: 10px; align-items: stretch; margin-top: 4px; }
+.landing .card .cta .btn { width: 100%; max-width: none; }
+.landing .card .cta .link-quiet { text-align: center; }
+.landing .card .scroll { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+.landing .card .scroll svg { width: 14px; height: 14px; transform: rotate(90deg); animation: lp-nudge 1.6s ease-in-out infinite; }
+@keyframes lp-nudge { 50% { transform: rotate(90deg) translateX(4px); } }
+.landing .probs { display: flex; gap: 6px; flex-wrap: wrap; }
+.landing .probs span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--room); border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+.landing .probs b { width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: var(--white); font-family: var(--font-mono); font-size: 10px; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+.landing .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.landing .app-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-tile); background: var(--room); border: 1px solid var(--line); font-size: 14px; line-height: 1.45; color: var(--ink); }
+.landing .app-note svg { width: 18px; height: 18px; margin-top: 1px; flex: none; }
+
+/* problem 1: the ladder */
+.landing .ladder { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.landing .ladder > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--radius-tile); border: 1px solid var(--line); background: var(--white); transition: background-color .2s, border-color .2s, color .2s, transform .2s; }
+.landing .ladder b { font-family: var(--font-mono); font-size: 15px; font-weight: 500; }
+.landing .ladder small { font-size: 11.5px; line-height: 1.3; color: var(--dim); }
+.landing .ladder > div.on { background: var(--ink); border-color: var(--ink); color: var(--white); transform: translateY(-2px); }
+.landing .ladder > div.on small { color: var(--panel-dim); }
+.landing .beats { display: flex; gap: 4px; }
+.landing .beats span { flex: 1; text-align: center; padding: 3px 0; border-radius: 3px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--room); transition: background-color .12s, color .12s; }
+.landing .beats span.on { background: var(--easy); color: var(--ink); }
+
+/* problem 2: attention + the switch */
+.landing .switch { display: inline-flex; align-items: center; gap: 10px; border: 0; background: none; padding: 4px 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--ink); align-self: flex-start; }
+.landing .switch i { position: relative; width: 46px; height: 26px; border-radius: 13px; background: var(--line-strong); transition: background-color .2s; flex: none; }
+.landing .switch i::after { content: ''; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--white); box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .25s var(--ease-enter); }
+.landing .switch[aria-checked="true"] i { background: var(--signal); }
+.landing .switch[aria-checked="true"] i::after { transform: translateX(20px); }
+.landing .switch small { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 500; }
+.landing .att { display: grid; gap: 6px; }
+.landing .att-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--line); }
+.landing .att-bar i { display: block; height: 100%; transition: flex-grow .6s var(--ease-enter); }
+.landing .att-bar .e1 { background: var(--easy); }
+.landing .att-bar .e2 { background: var(--signal); }
+.landing .att-leg { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; }
+.landing .att-leg span { display: inline-flex; align-items: center; gap: 6px; }
+.landing .att-leg span::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--easy); }
+.landing .att-leg span + span::before { background: var(--signal); }
+.landing .att-leg span + span { transition: opacity .3s; }
+/* Subtitles off: hearing only, and no red anywhere. */
+.landing .att.ears .att-leg span + span { opacity: 0; }
+.landing .card p.att-note { font-size: 13px; color: var(--ink); font-weight: 600; min-height: 2.6em; }
+
+/* problem 3: the four steps */
+.landing .steps4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.landing .steps4 button { border: 1px solid var(--line); background: var(--white); border-radius: var(--radius-tile); padding: 7px 4px; font: inherit; font-size: 11.5px; font-weight: 700; line-height: 1.25; color: var(--dim); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.landing .steps4 button b { font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--muted); }
+.landing .steps4 button[aria-current="true"] { border-color: var(--ink); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.landing .steps4 button[aria-current="true"] b { color: var(--signal); }
+
+/* the levels card */
+.landing .lvl-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.landing .lvl-pick button { border: 1px solid var(--line); border-radius: var(--radius-tile); background: var(--white); color: var(--dim); padding: 8px 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font: inherit; }
+.landing .lvl-pick b { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -.03em; }
+.landing .lvl-pick small { font-size: 11px; font-weight: 600; }
+.landing .lvl-pick button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
+.landing .tap-hint { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+.landing .tap-hint i { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); animation: lp-blink 1.4s infinite; }
+@keyframes lp-blink { 50% { opacity: .25; } }
+
+/* «Что мы даём взамен»: the comic's reason, folded */
+.landing .taken { display: grid; gap: 8px; }
+.landing .taken details { border-top: 1px solid var(--line); padding-top: 8px; }
+.landing .taken summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.landing .taken summary::-webkit-details-marker { display: none; }
+.landing .taken summary .slg { padding: 3px 8px; border-radius: var(--radius-chip); background: var(--ink); color: var(--white); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; flex: none; }
+.landing .taken summary .pl { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; background: var(--room); display: flex; align-items: center; justify-content: center; flex: none; transition: transform .25s; }
+.landing .taken summary .pl svg { width: 12px; height: 12px; }
+.landing .taken details[open] .pl { transform: rotate(45deg); }
+.landing .taken details p { margin-top: 6px; font-size: 14px; }
+
+.landing .still { display: none; }
+@media (min-width: 960px) {
+  .landing .stage { top: 0; height: 100vh; margin-bottom: -100vh; z-index: 0; background: transparent; border-bottom: 0; }
+  /* The first stage starts behind the see-through navbar, where it pins anyway, so the hero
+     is mid-screen from the first frame rather than a navbar's height lower until you scroll. */
+  .landing .track[data-first="0"] > .stage { margin-top: calc(-1 * var(--nav-h)); }
+  .landing .ch { display: flex; flex-direction: column; justify-content: center; padding-inline: max(var(--gutter), calc((100vw - 1160px) / 2 + var(--gutter))); align-items: flex-start; min-height: 120vh; padding-block: 0; pointer-events: none; }
+  .landing .ch:last-child { padding-bottom: 0; }
+  .landing .ch.first { min-height: 100vh; }
+  .landing .card { pointer-events: auto; position: sticky; top: calc(50vh - 250px); margin: 0; max-width: 450px; padding: 26px; }
+  .landing .ch.first .card { max-width: 520px; }
+  .landing .card h1 { font-size: 54px; }
+  .landing .card .cta { flex-direction: row; align-items: center; }
+  .landing .card .cta .btn { width: auto; }
+}
+
+/* The still version: reduced motion, or WebGL that would not start. */
+.landing.no3d .stage { display: none; }
+.landing.no3d .ch { min-height: 0; padding-block: 28px; pointer-events: auto; }
+.landing.no3d .card { position: static; }
+.landing.no3d .still { display: block; margin-bottom: 4px; }
+.landing.no3d .only3d { display: none !important; }
+.landing .fallback-note { display: none; }
+.landing.no3d .fallback-note { display: block; text-align: center; padding: 18px var(--gutter) 0; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.landing.no3d .still-tiles { display: grid; gap: 8px; font-family: var(--font-mono); font-size: 18px; }
+.landing .still-tiles div { display: flex; gap: 10px; align-items: center; }
+.landing .still-tiles small { font-family: var(--font-sans); font-size: 12px; color: var(--dim); width: 7.5em; flex: none; }
+.landing.no3d .still-glasses { display: flex; gap: 12px; justify-content: center; }
+.landing .still-glasses > * { width: 64px; }
+
+/* ── the regular sections ───────────────────────────────────────────── */
+.landing section.reg { position: relative; z-index: 2; background: var(--room); padding-block: 72px; border-top: 1px solid var(--line); }
+@media (min-width: 900px) { .landing section.reg { padding-block: 104px; } }
+.landing .sec-head { display: flex; flex-direction: column; gap: 12px; max-width: 660px; }
+
+/* solutions */
+.landing .sol { display: grid; gap: 24px; margin-top: 56px; align-items: start; }
+.landing .sol > * { min-width: 0; }
+.landing .sol-text { display: flex; flex-direction: column; gap: 12px; }
+.landing .sol-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--white); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.landing .sol-tag b { width: 22px; height: 22px; border-radius: 50%; background: var(--easy); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 500; letter-spacing: 0; }
+.landing .sol h3 { font-size: clamp(24px, 5.6vw, 34px); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; }
+.landing .sol-text p:not(.cc-msg) { color: var(--dim); font-size: 16px; }
+.landing .sol-shots { display: flex; gap: 14px; align-items: flex-end; margin-top: 6px; }
+.landing .sol-shots .phone { width: 120px; border-radius: 22px; padding: 5px; }
+.landing .sol-shots .phone::before { top: 9px; height: 9px; }
+.landing .sol-shots .phone > .screen { border-radius: 18px; padding-top: 14px; }
+.landing .sol-shots .phone > .screen::before, .landing .sol-shots .phone > .screen::after { display: none; }
+.landing .sol-shots .browser { flex: 1; max-width: 340px; }
+.landing .sol-shots .browser-bar { height: 20px; }
+.landing .sol-shots .browser-bar i { width: 6px; height: 6px; }
+.landing .sol-shots figcaption { font-size: 12px; color: var(--dim); margin-top: 6px; }
+.landing .sol-shots figure { margin: 0; min-width: 0; }
+.landing .cc { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; height: 48px; padding: 0 16px 0 10px; border-radius: 3px; border: 1px solid var(--line-strong); background: var(--white); font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; }
+.landing .cc .ccb { font-family: var(--font-mono); font-size: 12px; padding: 3px 6px; border: 1.5px solid currentColor; border-radius: 4px; position: relative; }
+.landing .cc.no { animation: lp-shake .4s; color: var(--signal-ink); border-color: var(--signal); }
+.landing .cc.no .ccb::after { content: ''; position: absolute; left: -4px; right: -4px; top: 50%; height: 2px; background: currentColor; transform: rotate(-20deg); }
+@keyframes lp-shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.landing .cc-msg { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--signal-ink); min-height: 1.4em; }
+.landing .marked { position: relative; display: flex; justify-content: center; padding: 10px 0; }
+.landing .marked .phone { width: min(280px, 72vw); }
+.landing .mk { position: absolute; z-index: 5; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--ink); color: var(--white); font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 10px 24px -12px rgba(15, 21, 28, .6); }
+.landing .mk i { width: 8px; height: 8px; border-radius: 50%; background: var(--easy); flex: none; }
+.landing .mk.k1 { top: 20%; left: 50%; transform: translateX(-108%); }
+.landing .mk.k2 { top: 56%; left: 50%; transform: translateX(4%); }
+.landing .mk.k3 { top: 77%; left: 50%; transform: translateX(-104%); }
+@media (max-width: 420px) { .landing .mk.k1 { transform: translateX(-80%); } .landing .mk.k2 { transform: translateX(-20%); } .landing .mk.k3 { transform: translateX(-75%); } }
+.landing .autumn-chip { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; min-height: 52px; padding: 8px 18px 8px 10px; border-radius: var(--radius-tile); border: 1px solid var(--line); background: var(--white); font: inherit; font-size: 18px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.landing .autumn-chip .spk { width: 34px; height: 34px; border-radius: 50%; background: var(--room); display: flex; align-items: center; justify-content: center; }
+.landing .autumn-chip .spk svg { width: 18px; height: 18px; }
+.landing .autumn-chip.playing { border-color: var(--ink); }
+.landing .autumn-chip.playing .spk { background: var(--ink); color: var(--white); }
+.landing .democard { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-card); padding: 16px; }
+@media (min-width: 640px) { .landing .democard { padding: 22px; } }
+@media (min-width: 960px) {
+  .landing .sol { grid-template-columns: 1fr 1.05fr; gap: 56px; }
+  .landing .sol.flip > :first-child { order: 2; }
+}
+
+/* practice, path, loop, finder, the end */
+.landing .grid2 { display: grid; gap: 28px; margin-top: 36px; }
+.landing .grid2 > * { min-width: 0; }
+@media (min-width: 900px) { .landing .grid2 { grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; } }
+.landing .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.landing .tile { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius-card); background: var(--ink); color: var(--panel-text); min-height: 108px; }
+.landing .tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; }
+.landing .tile svg { width: 26px; height: 26px; flex: none; }
+.landing .tile b { font-size: 16px; }
+.landing .tile small { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--panel-dim); }
+.landing .tile .dot { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--panel-dim); }
+.landing .tile .dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
+.landing .fan { margin: 36px calc(-1 * var(--gutter)) 0; display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 26px var(--gutter) 24px; perspective: 1200px; scrollbar-width: none; list-style: none; }
+.landing .fan::-webkit-scrollbar { display: none; }
+.landing .fan li { flex: none; width: 210px; scroll-snap-align: center; display: flex; flex-direction: column; gap: 12px; }
+.landing .fan .phone { width: 100%; transition: transform .5s var(--ease-enter); transform: rotateY(-12deg) rotateX(3deg); }
+.landing .fan li:nth-child(even) .phone { transform: rotateY(12deg) rotateX(3deg); }
+.landing .fan li:hover .phone { transform: none; }
+.landing .fan .n { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.landing .fan h3 { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.landing .fan p { font-size: 14px; color: var(--dim); line-height: 1.5; }
+@media (min-width: 1100px) { .landing .fan { justify-content: center; overflow: visible; } }
+.landing .final { text-align: center; }
+.landing .final .slogan { margin-top: 8px; font-size: 17px; font-weight: 500; color: var(--dim); }
+.landing .final .btn-hero { margin-top: 26px; }
+.landing footer { padding-block: 26px 40px; text-align: center; border-top: 1px solid var(--line); position: relative; z-index: 2; background: var(--room); }
