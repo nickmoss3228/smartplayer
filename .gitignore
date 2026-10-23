@@ -61,6 +61,14 @@ public/sitemap.xml
 dev-sms.log
 backend/dev-sms.log
 
+# Python bytecode (audio-worker).
+__pycache__/
+*.pyc
+
+# «Послушай себя» share links, trial storage (helpers/voiceShareStore.js):
+# students' recorded voices. Never commit.
+backend/data/voice-shares/
+
 # Claude Code personal settings — permission grants are per-developer, and this
 # repo is public. The team-wide .claude/settings.json is NOT ignored.
 .claude/settings.local.json
