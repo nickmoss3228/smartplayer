@@ -5,6 +5,8 @@ import {
   publicQuizLimiter,
   phraseRepeatLimiter,
   vocabCompleteLimiter,
+  vocabLookupLimiter,
+  vocabBookmarkLimiter,
 } from "../middleware/rateLimit.js";
 import {
   getProgress,
@@ -14,6 +16,9 @@ import {
   syncListeningTime,
   getAchievements,
   getLearnedWords,
+  getVocabBookmarks,
+  setVocabBookmark,
+  lookupVocab,
   completeVocabQuiz,
   migrateGuestProgress,
   getWallet,
@@ -58,6 +63,10 @@ router.get("/progress/overview",                   authenticateToken, getOvervie
 router.get("/progress/story/:difficulty/:storyId", authenticateToken, getStoryProgress);
 router.get("/progress/achievements",               authenticateToken, getAchievements);
 router.get("/progress/vocab-learned",              authenticateToken, getLearnedWords);
+router.get("/progress/vocab-bookmarks",            authenticateToken, getVocabBookmarks);
+router.put("/progress/vocab-bookmarks",            authenticateToken, vocabBookmarkLimiter, setVocabBookmark);
+// Public: a guest's копилка lives in their browser and is looked up from there.
+router.post("/progress/vocab-lookup",              optionalAuth, vocabLookupLimiter, lookupVocab);
 // Limiters sit AFTER authenticateToken so they can key by user id — see the
 // byUser note in middleware/rateLimit.js.
 router.post("/progress/vocab-complete",            authenticateToken, vocabCompleteLimiter, completeVocabQuiz);

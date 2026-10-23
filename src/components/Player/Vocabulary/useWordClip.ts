@@ -10,9 +10,8 @@ interface UseWordClipArgs {
 }
 
 /**
- * Play / stop one vocabulary clip. Shared by the phone's chips (VocabChip) and
- * the desktop word rail (WordRow) so the two layouts cannot drift apart on how
- * a word is played, stopped, or keyed.
+ * Play / stop one vocabulary clip, for a row of the desktop word list
+ * (WordRail's list view), keyed the same way as everywhere else.
  */
 export function useWordClip({ word, audioKey, audioUrl = "", onPlay, volume = 1 }: UseWordClipArgs) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -45,7 +44,7 @@ export function useWordClip({ word, audioKey, audioUrl = "", onPlay, volume = 1 
     audio.addEventListener("pause", () => setIsPlaying(false));
     audio.addEventListener("error", () => {
       setIsPlaying(false);
-      console.warn(`[VocabChip] Could not load audio for "${word}" key: "${key}"`);
+      console.warn(`[WordRail] Could not load audio for "${word}" key: "${key}"`);
     });
   }, [word, audioKey, audioUrl, onPlay, volume]);
 

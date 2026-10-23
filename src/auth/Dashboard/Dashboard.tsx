@@ -26,6 +26,7 @@ import RankModal from "./RankModal";
 import ChangePasswordModal from "./ChangePasswordModal";
 import AchievementsRow from "./AchievementsRow";
 import WalletRow from "./WalletRow";
+import KopilkaCard from "./KopilkaCard";
 import AccuracyTrendChart from "./charts/AccuracyTrendChart";
 import WeeklyActivityChart from "./charts/WeeklyActivityChart";
 import { buildWeeklySeries } from "./charts/progressChartData";
@@ -224,6 +225,8 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <KopilkaCard />
 
         {/* ── Your character ── */}
         <Suspense

@@ -1,77 +1,83 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-export type PlayState = "idle" | "playing-fast" | "played-fast" | "playing-slow" | "played-slow";
+export type QuestionSpeed = "fast" | "slow";
 
 interface UseQuestionAudioProps {
   fastSrc?: string;
   slowSrc?: string;
 }
 
+/**
+ * One quiz question's recording: play it at normal or slow speed, and know
+ * when it has been heard to the end — the answers stay locked until then.
+ *
+ * A clip that fails to load or play counts as heard. Otherwise a broken file
+ * would lock the answers for good, and the student could never finish the quiz.
+ *
+ * `progress()` reads the playhead (0–1) without re-rendering, for a ring the
+ * caller animates itself.
+ */
 export function useQuestionAudio({ fastSrc, slowSrc }: UseQuestionAudioProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playState, setPlayState] = useState<PlayState>("idle");
+  const [playing, setPlaying] = useState<QuestionSpeed | null>(null);
+  const [heard, setHeard] = useState(false);
 
-  // Cleanup on unmount or when sources change
+  const release = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.pause();
+    audioRef.current = null;
+  };
+
+  // A new question starts unheard.
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
+    release();
+    setPlaying(null);
+    setHeard(false);
+    return release;
   }, [fastSrc, slowSrc]);
 
-  // Reset when the question changes (sources change)
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    setPlayState("idle");
-  }, [fastSrc, slowSrc]);
-
-  const playAudio = useCallback(
-    (src: string, onEnd: () => void) => {
-      console.log("Attempting to play:", src); // <-- add this
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      const audio = new Audio(src); // <-- encode spaces in path
+  const play = useCallback(
+    (speed: QuestionSpeed = "fast") => {
+      const src = speed === "slow" && slowSrc ? slowSrc : fastSrc;
+      if (!src) return;
+      release();
+      const audio = new Audio(src);
       audioRef.current = audio;
-      audio.play().catch(console.error);
-      audio.addEventListener("ended", onEnd, { once: true });
+      const finish = () => {
+        if (audioRef.current !== audio) return;
+        audioRef.current = null;
+        setPlaying(null);
+        setHeard(true);
+      };
+      audio.onended = finish;
+      audio.onerror = finish;
+      setPlaying(speed);
+      audio.play().catch((error: unknown) => {
+        // Blocked autoplay is not a broken clip: the student taps to play it.
+        if (error instanceof DOMException && error.name === "NotAllowedError") {
+          if (audioRef.current === audio) audioRef.current = null;
+          setPlaying(null);
+          return;
+        }
+        finish();
+      });
     },
-    []
+    [fastSrc, slowSrc],
   );
 
-  const handlePress = useCallback(() => {
-    if (!fastSrc) return;
-
-    if (playState === "idle" || playState === "played-slow") {
-      // (Re)play fast version
-      setPlayState("playing-fast");
-      playAudio(fastSrc, () => setPlayState("played-fast"));
-    } else if (playState === "playing-fast") {
-      // Already playing fast — do nothing (or you could restart)
-      return;
-    } else if (playState === "played-fast") {
-      // Play slow version on second click
-      if (!slowSrc) return;
-      setPlayState("playing-slow");
-      playAudio(slowSrc, () => setPlayState("played-slow"));
-    } else if (playState === "playing-slow") {
-      // Already playing slow — do nothing
-      return;
-    }
-  }, [fastSrc, slowSrc, playState, playAudio]);
-
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    setPlayState("idle");
+    release();
+    setPlaying(null);
   }, []);
 
-  return { playState, handlePress, stop };
+  const progress = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration || !Number.isFinite(audio.duration)) return 0;
+    return Math.min(1, audio.currentTime / audio.duration);
+  }, []);
+
+  return { playing, heard, play, stop, progress, hasSlow: Boolean(slowSrc) };
 }

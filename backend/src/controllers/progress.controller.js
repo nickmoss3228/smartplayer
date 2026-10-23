@@ -2,6 +2,7 @@
 import {
   db,
   progress as progressRepo,
+  stories as storiesRepo,
   userDocs,
   users as usersRepo,
   wallet as walletRepo,
@@ -206,12 +207,14 @@ export async function getQuiz(req, res) {
 }
 
 // ── POST /progress/quiz/:difficulty/:storyId/:partNumber/check-answer ──────
-// Public behind optionalAuth, same reasoning as getQuiz above. This only ever answers
-// "was that one option right or wrong" — it never reveals the full answer
-// key, and it doesn't touch progress/rewards on its own. The authoritative,
-// reward-granting grading still happens in completeLevel below, which
-// re-scores the whole submission server-side regardless of what this
-// endpoint said during the quiz.
+// Public behind optionalAuth, same reasoning as getQuiz above. Answers "was
+// that option right", and — once an answer is in — which option was, so a
+// student who missed learns the answer instead of only that they missed. That
+// gives nothing away: the same student could already find it by retrying, and
+// it is one question per request, never the whole key. It doesn't touch
+// progress/rewards on its own. The authoritative, reward-granting grading
+// still happens in completeLevel below, which re-scores the whole submission
+// server-side regardless of what this endpoint said during the quiz.
 export async function checkQuizAnswer(req, res) {
   try {
     const { difficulty, storyId, partNumber } = req.params;
@@ -230,7 +233,8 @@ export async function checkQuizAnswer(req, res) {
     if (!answerKey || questionIndex < 0 || questionIndex >= answerKey.length)
       return res.status(400).json({ message: "Invalid question for this part" });
 
-    res.json({ correct: selectedOption === answerKey[questionIndex] });
+    const correctOption = answerKey[questionIndex];
+    res.json({ correct: selectedOption === correctOption, correctOption });
   } catch (error) {
     console.error("Check quiz answer error:", error);
     res.status(500).json({ message: "Server error" });
@@ -413,6 +417,16 @@ export async function migrateGuestProgress(req, res) {
       await progressRepo.addLearnedWords(userId, learnedWords);
     }
 
+    // A guest's bookmarks, kept in the browser until now. Malformed or unknown
+    // keys are dropped quietly: a bad entry must not cost the guest the rest.
+    const { vocabBookmarks } = req.body;
+    if (Array.isArray(vocabBookmarks) && vocabBookmarks.length > 0) {
+      const keys = normalizeVocabKeys(vocabBookmarks.slice(0, MAX_BOOKMARKS));
+      const { known } = await partitionVocabKeys(keys);
+      const room = MAX_BOOKMARKS - (await progressRepo.vocabBookmarkCount(userId));
+      if (room > 0) await progressRepo.addVocabBookmarks(userId, known.slice(0, room));
+    }
+
     const [user, wordsLearned, questionsAnswered, uniqueStoriesCount] = await Promise.all([
       usersRepo.findById(userId),
       progressRepo.learnedWordCount(userId),
@@ -518,6 +532,106 @@ export async function getLearnedWords(req, res) {
     res.json({ learnedWords: await progressRepo.learnedWords(req.user._id) });
   } catch (error) {
     console.error("Get learned words error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// ── Vocabulary bookmarks ────────────────────────────────────────────────────
+// Words a student chose to come back to (the «Закладки» tab of the копилка).
+// Separate from the learned set and worth nothing, so there is nothing to forge:
+// the checks only keep the table to real words and a sane size.
+
+// Far more than anyone bookmarks; a cap so one account cannot grow the table forever.
+const MAX_BOOKMARKS = 1000;
+
+/** Lowercased, trimmed, de-duplicated strings of a sane length; anything else dropped. */
+function normalizeVocabKeys(values) {
+  return [
+    ...new Set(
+      values
+        .filter((v) => typeof v === "string" && v.length <= MAX_WORD_LENGTH)
+        .map((v) => v.toLowerCase().trim())
+        .filter(Boolean),
+    ),
+  ];
+}
+
+// GET /progress/vocab-bookmarks → { bookmarks: string[] }, newest first
+export async function getVocabBookmarks(req, res) {
+  try {
+    res.json({ bookmarks: await progressRepo.vocabBookmarks(req.user._id) });
+  } catch (error) {
+    console.error("Get vocab bookmarks error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// PUT /progress/vocab-bookmarks  { key, bookmarked } → { bookmarks }
+// Sets one word's bookmark to the given state, so a repeated request (a double
+// tap, a retry) cannot flip it back.
+export async function setVocabBookmark(req, res) {
+  try {
+    const { key, bookmarked } = req.body ?? {};
+    const [word] = normalizeVocabKeys([key]);
+    if (!word || typeof bookmarked !== "boolean") {
+      return res.status(400).json({ message: "key must be a word key and bookmarked a boolean" });
+    }
+    const userId = req.user._id;
+
+    if (bookmarked) {
+      const { known } = await partitionVocabKeys([word]);
+      if (known.length === 0) return res.status(400).json({ message: "Unknown word" });
+      if ((await progressRepo.vocabBookmarkCount(userId)) >= MAX_BOOKMARKS) {
+        return res.status(409).json({ message: `At most ${MAX_BOOKMARKS} bookmarks`, code: "BOOKMARKS_FULL" });
+      }
+      await progressRepo.addVocabBookmarks(userId, [word]);
+    } else {
+      await progressRepo.removeVocabBookmark(userId, word);
+    }
+    res.json({ bookmarks: await progressRepo.vocabBookmarks(userId) });
+  } catch (error) {
+    console.error("Set vocab bookmark error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+// POST /progress/vocab-lookup  { keys } → { places }
+// Turns word keys (a копилка, a list of bookmarks) into what the копилка draws:
+// the Russian word, its clip, and the story and part it is from — one entry per
+// place the word appears. Public behind optionalAuth, because a guest's копилка
+// lives in their browser; and a place is only returned from a part the caller
+// may open, so this never shows the words of a part they have not unlocked.
+const MAX_LOOKUP_KEYS = 1500;
+
+export async function lookupVocab(req, res) {
+  try {
+    const { keys } = req.body ?? {};
+    if (!Array.isArray(keys) || keys.length > MAX_LOOKUP_KEYS) {
+      return res.status(400).json({ message: `keys must be an array of at most ${MAX_LOOKUP_KEYS} strings` });
+    }
+    const places = await storiesRepo.vocabPlaces(normalizeVocabKeys(keys));
+
+    const catalog = await getCatalog();
+    const accessByStory = new Map();
+    const visible = places.filter((place) => {
+      const id = `${place.difficulty}/${place.storyId}`;
+      if (!accessByStory.has(id)) {
+        accessByStory.set(
+          id,
+          accessFor(req.user?.entitlements, place.difficulty, place.storyId, {
+            authenticated: Boolean(req.user),
+            catalog,
+            paywallEnabled: config.payments.paywallEnabled,
+            signupWallEnabled: config.payments.signupWallEnabled,
+          }),
+        );
+      }
+      return isPartVisible(accessByStory.get(id), place.partNumber);
+    });
+
+    res.json({ places: visible });
+  } catch (error) {
+    console.error("Vocab lookup error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }
