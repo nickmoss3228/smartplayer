@@ -963,7 +963,8 @@
     ],
     "stepCounter": "Шаг {{current}} из {{total}}",
     "next": "Далее",
-    "letsGo": "Поехали!"
+    "letsGo": "Поехали!",
+    "skip": "Пропустить"
   },
   "storyModal": {
     "grammarFocus": "Грамматика",

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
@@ -51,43 +51,89 @@ const sameRect = (a: SpotRect | null, b: SpotRect | null) =>
   a === b || (!!a && !!b && a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h);
 
 // ─── Tooltip layout ───────────────────────────────────────────────────────────
-const TIP_WIDTH  = 310;
-const TIP_MARGIN = 14;
+const TIP_WIDTH   = 310;
+const TIP_MARGIN  = 12; // min distance from the viewport edge
+const TIP_GAP     = 16; // distance from the spotlight
+const ARROW_INSET = 20; // keeps the arrow off the card's rounded corners
+
+type Side = "top" | "bottom" | "left" | "right";
 
 interface Layout {
-  style: React.CSSProperties;
-  side: "top" | "bottom";
+  left: number;
+  top: number;
+  width: number;
+  side: Side | null; // null: no side had room, the card sits over the target with no arrow
   arrowOffset: number;
 }
 
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+// The card is measured (cardH) and every result is clamped to the viewport, so
+// it can never be pushed off screen: a tall target (the desktop word rail, the
+// player on a short phone) used to send it above the top edge, Next included.
 function resolveLayout(
-  rect: SpotRect,
+  rect: SpotRect | null,
   preferred: "top" | "bottom",
   vw: number,
   vh: number,
+  cardH: number,
 ): Layout {
-  const cx = rect.x + rect.w / 2;
+  const width   = Math.min(TIP_WIDTH, vw - TIP_MARGIN * 2);
+  const maxLeft = Math.max(TIP_MARGIN, vw - width - TIP_MARGIN);
+  const maxTop  = Math.max(TIP_MARGIN, vh - cardH - TIP_MARGIN);
 
-  let left = cx - TIP_WIDTH / 2;
-  left = Math.max(TIP_MARGIN, Math.min(vw - TIP_WIDTH - TIP_MARGIN, left));
-  const arrowOffset = cx - left;
+  if (!rect) {
+    return {
+      left: (vw - width) / 2,
+      top:  clamp((vh - cardH) / 2, TIP_MARGIN, maxTop),
+      width, side: null, arrowOffset: 0,
+    };
+  }
 
-  const spaceBelow = vh - rect.y - rect.h;
+  // Aim at the part of the spotlight that is actually on screen.
+  const cx = (Math.max(rect.x, 0) + Math.min(rect.x + rect.w, vw)) / 2;
+  const cy = (Math.max(rect.y, 0) + Math.min(rect.y + rect.h, vh)) / 2;
+
+  // Where the card would go on each side. A side counts only if the card lands
+  // fully on screen there, which also rules out the side of a target that is
+  // itself still off screen (mid-scroll, or a container that can't scroll it in).
+  const alongX = clamp(cx - width / 2, TIP_MARGIN, maxLeft);
+  const alongY = clamp(cy - cardH / 2, TIP_MARGIN, maxTop);
+  const spots: Record<Side, { left: number; top: number }> = {
+    top:    { left: alongX, top: rect.y - TIP_GAP - cardH },
+    bottom: { left: alongX, top: rect.y + rect.h + TIP_GAP },
+    left:   { left: rect.x - TIP_GAP - width,  top: alongY },
+    right:  { left: rect.x + rect.w + TIP_GAP, top: alongY },
+  };
+  const onScreen = ({ left, top }: { left: number; top: number }) =>
+    left >= TIP_MARGIN && left <= maxLeft && top >= TIP_MARGIN && top <= maxTop;
+
+  const order: Side[] = preferred === "top"
+    ? ["top", "bottom", "right", "left"]
+    : ["bottom", "top", "right", "left"];
+  const side = order.find((s) => onScreen(spots[s]));
+
+  if (side) {
+    const { left, top } = spots[side];
+    const arrowOffset = side === "top" || side === "bottom"
+      ? clamp(cx - left, ARROW_INSET, width - ARROW_INSET)
+      : clamp(cy - top,  ARROW_INSET, cardH - ARROW_INSET);
+    return { left, top, width, side, arrowOffset };
+  }
+
+  // Nowhere fits: overlap the target as little as possible, on the roomier side.
   const spaceAbove = rect.y;
-  const side: "top" | "bottom" =
-    preferred === "bottom" && spaceBelow >= 180 ? "bottom"
-    : preferred === "top"  && spaceAbove >= 180 ? "top"
-    : spaceBelow >= spaceAbove                  ? "bottom"
-    : "top";
-
-  const style: React.CSSProperties =
-    side === "bottom"
-      ? { position: "fixed", left, top: rect.y + rect.h + 16, width: TIP_WIDTH }
-      : { position: "fixed", left, top: rect.y - 16,          width: TIP_WIDTH,
-          transform: "translateY(-100%)" };
-
-  return { style, side, arrowOffset };
+  const spaceBelow = vh - (rect.y + rect.h);
+  const top = clamp(spaceBelow >= spaceAbove ? spots.bottom.top : spots.top.top, TIP_MARGIN, maxTop);
+  return { left: alongX, top, width, side: null, arrowOffset: 0 };
 }
+
+// clientWidth/Height leave out the desktop scrollbar, and on mobile Safari
+// clientHeight is the viewport with the toolbars shown, the safe one to fit.
+const readViewport = () => ({
+  w: document.documentElement.clientWidth  || window.innerWidth,
+  h: document.documentElement.clientHeight || window.innerHeight,
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const GuidedTour: React.FC = () => {
@@ -96,8 +142,10 @@ export const GuidedTour: React.FC = () => {
   const [step,    setStep]    = useState(0);
   const [visible, setVisible] = useState(false);
   const [rect,    setRect]    = useState<SpotRect | null>(null);
-  const [vp,      setVp]      = useState({ w: window.innerWidth, h: window.innerHeight });
-  const rafRef = useRef<number>(0);
+  const [vp,      setVp]      = useState(readViewport);
+  const [cardH,   setCardH]   = useState(0);
+  const rafRef  = useRef<number>(0);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // ── Build translated steps array, re-derived whenever language changes ──────
   // useMemo re-runs when `t` identity changes (i.e. on language switch).
@@ -119,16 +167,41 @@ export const GuidedTour: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    const onResize = () => setVp(readViewport());
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
+    };
   }, []);
+
+  // The card's height decides which side it fits on, and it changes with the
+  // step's text and the viewport width. Measured before paint, so the first
+  // frame of a step is already placed correctly; the observer catches the
+  // rest (a web font arriving late).
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!visible || !el) return;
+    const measure = () => setCardH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [visible, step, steps, vp]);
 
   const dismiss = useCallback(() => {
     localStorage.setItem(TOUR_KEY, "1");
     cancelAnimationFrame(rafRef.current);
     setVisible(false);
   }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") dismiss(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible, dismiss]);
 
   const goNext = useCallback(() => {
     if (step < steps.length - 1) setStep((s) => s + 1);
@@ -174,13 +247,15 @@ export const GuidedTour: React.FC = () => {
   const current = steps[step];
   const isLast  = step === steps.length - 1;
 
-  const layout: Layout = rect
-    ? resolveLayout(rect, current.side, vp.w, vp.h)
-    : {
-        style:       { position: "fixed", left: vp.w / 2 - TIP_WIDTH / 2, top: vp.h / 2, width: TIP_WIDTH },
-        side:        "bottom",
-        arrowOffset: TIP_WIDTH / 2,
-      };
+  const layout: Layout = resolveLayout(rect, current.side, vp.w, vp.h, cardH);
+
+  // The arrow sits on the card edge that faces the spotlight.
+  const arrowStyle: React.CSSProperties | null =
+      layout.side === "bottom" ? { top: -7,    left: layout.arrowOffset - 8 }
+    : layout.side === "top"    ? { bottom: -7, left: layout.arrowOffset - 8 }
+    : layout.side === "right"  ? { left: -7,   top:  layout.arrowOffset - 8 }
+    : layout.side === "left"   ? { right: -7,  top:  layout.arrowOffset - 8 }
+    : null;
 
   return createPortal(
     <>
@@ -231,24 +306,40 @@ export const GuidedTour: React.FC = () => {
       </svg>
 
       {/* ── 3. Tooltip card ── */}
-      <div style={{ ...layout.style, zIndex: 9998 }}>
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={current.title}
+        style={{
+          position:  "fixed",
+          left:      layout.left,
+          top:       layout.top,
+          width:     layout.width,
+          maxHeight: vp.h - TIP_MARGIN * 2,
+          zIndex:    9998,
+          display:   "flex",
+        }}
+      >
 
         {/* Connector arrow */}
-        <div
-          style={{
-            position: "absolute",
-            left:     layout.arrowOffset - 8,
-            ...(layout.side === "bottom" ? { top: -7 } : { bottom: -7 }),
-            width:       16,
-            height:      16,
-            background:  "white",
-            transform:   "rotate(45deg)",
-            borderRadius: 3,
-          }}
-        />
+        {arrowStyle && (
+          <div
+            style={{
+              position: "absolute",
+              ...arrowStyle,
+              width:       16,
+              height:      16,
+              background:  "white",
+              transform:   "rotate(45deg)",
+              borderRadius: 3,
+            }}
+          />
+        )}
 
-        {/* Card body */}
-        <div className="relative bg-white rounded-[3px] shadow-xl px-5 pt-5 pb-4 flex flex-col gap-2.5">
+        {/* Card body — only the description scrolls, so on a very short
+            screen the buttons stay visible */}
+        <div className="relative min-h-0 w-full bg-white rounded-[3px] shadow-xl px-5 pt-5 pb-4 flex flex-col gap-2.5">
 
           {/* Progress dots */}
           <div className="flex items-center justify-center gap-1.5">
@@ -275,12 +366,21 @@ export const GuidedTour: React.FC = () => {
           </h3>
 
           {/* Description */}
-          <p className="text-[13px] text-gray-600 leading-relaxed text-center">
+          <p className="min-h-0 overflow-y-auto text-[13px] text-gray-600 leading-relaxed text-center">
             {current.body}
           </p>
 
           {/* Footer */}
-          <div className="flex items-center justify-end mt-2">
+          <div className="flex shrink-0 items-center justify-between gap-3 mt-2">
+            {!isLast ? (
+              <button
+                onClick={dismiss}
+                className="px-1 py-2 text-[13px] font-medium text-gray-500 hover:text-gray-900
+                           cursor-pointer transition-colors"
+              >
+                {t("guidedTour.skip")}
+              </button>
+            ) : <span />}
             <button
               onClick={goNext}
               className="flex items-center gap-1.5 px-4 py-2 rounded-[3px]

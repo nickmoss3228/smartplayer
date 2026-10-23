@@ -951,7 +951,8 @@
     ],
     "stepCounter": "Step {{current}} of {{total}}",
     "next": "Next",
-    "letsGo": "Let's go!"
+    "letsGo": "Let's go!",
+    "skip": "Skip"
   },
   "storyModal": {
     "grammarFocus": "Grammar",
