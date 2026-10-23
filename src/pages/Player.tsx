@@ -821,6 +821,7 @@ const Player = React.memo(() => {
                 onOpenPractice={openPractice}
                 learnedWords={learnedWords}
                 repeatGate={repeat.enabled ? repeat.waitForRepeat : null}
+                onRepeatModeExit={repeat.toggle}
               />
             </div>
           )}

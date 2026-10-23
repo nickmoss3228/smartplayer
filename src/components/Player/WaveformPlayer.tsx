@@ -64,6 +64,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     practicesDone = 0,
     learnedWords,
     repeatGate = null,
+    onRepeatModeExit,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
@@ -95,10 +96,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     } = useEnhancedMode();
 
     // «Повтори за мной» waits between sentences, so it needs the sentence
-    // engine: turning it on switches Free Play back to Enhanced.
+    // engine: turning it on switches Free Play back to Enhanced, and picking
+    // Free Play turns it off (otherwise the effect snaps the switch back).
     useEffect(() => {
       if (repeatGate && !isEnhancedMode) handleToggleEnhancedMode();
     }, [repeatGate, isEnhancedMode, handleToggleEnhancedMode]);
+
+    const toggleMode = () => {
+      if (isEnhancedMode && repeatGate) onRepeatModeExit?.();
+      handleToggleEnhancedMode();
+    };
 
     // ── Wrap onAudioComplete so completion resets the session ─────────────────
     const handleAudioComplete = useCallback(() => {
@@ -434,7 +441,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               playbackRate={playbackRate}
               onSpeedChange={changePlaybackRate}
               isEnhancedMode={isEnhancedMode}
-              onToggleEnhancedMode={handleToggleEnhancedMode}
+              onToggleEnhancedMode={toggleMode}
               isEnhancedSessionActive={isEnhancedSessionActive}
               layout="mobile"
               onPrev={handlePrevMarker}
@@ -507,7 +514,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                   playbackRate={playbackRate}
                   onSpeedChange={changePlaybackRate}
                   isEnhancedMode={isEnhancedMode}
-                  onToggleEnhancedMode={handleToggleEnhancedMode}
+                  onToggleEnhancedMode={toggleMode}
                   isEnhancedSessionActive={isEnhancedSessionActive}
                   layout="desktop"
                   onPrev={handlePrevMarker}
