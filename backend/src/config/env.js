@@ -123,6 +123,11 @@ export const config = {
         baseUrl: process.env.YANDEX_BASE_URL, // public read URL prefix, matches frontend's VITE_YOS_BASE_URL
     },
 
+    // The audio-worker service that makes the PSOLA-slowed copies of a part's
+    // audio (audio-worker/README.md). Unset means none are made, and the
+    // player stretches the audio itself, as it always did.
+    audioWorkerUrl: process.env.AUDIO_WORKER_URL?.trim().replace(/\/+$/, '') || null,
+
     // Where the browser lives. Read straight from process.env in
     // controllers/password.controller.js and services/email.service.js for
     // historical reasons; surfaced here because the payment return URL needs

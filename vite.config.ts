@@ -65,9 +65,9 @@ export default defineConfig({
             return "vendor-three";
           }
 
-          // Audio engine: wavesurfer plus the time-stretching worklet used
-          // for slowed-down playback without pitch shift.
-          if (id.includes("wavesurfer") || id.includes("soundtouch")) {
+          // Audio engine. Slowed playback uses copies made on the server
+          // (useSlowCopies), so there is no in-browser stretcher to bundle.
+          if (id.includes("wavesurfer")) {
             return "vendor-audio";
           }
 
