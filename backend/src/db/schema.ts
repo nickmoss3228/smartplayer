@@ -380,6 +380,26 @@ export const userLearnedWord = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.word] })],
 );
 
+// ── user_vocab_bookmark ─────────────────────────────────────────────────────
+//
+// Words a student chose to come back to. Separate from user_learned_word: that
+// set is words the student has PROVEN they know (the копилка, and what BitWord
+// pays for); a bookmark is a wish, and a word can be in both. Keyed the same
+// way — the lowercased audioKey, global across stories — so a bookmark made in
+// one story shows wherever the word appears. Pays nothing, so no ledger.
+
+export const userVocabBookmark = pgTable(
+  "user_vocab_bookmark",
+  {
+    userId: fk("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    word: text().notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.word] })],
+);
+
 // ── progress ────────────────────────────────────────────────────────────────
 
 export const progress = pgTable(
@@ -621,6 +641,27 @@ export const storyPart = pgTable(
       panels: { x: number; y: number; w: number; h: number }[];
       clips: { start: number; end: number; panel: number }[];
     }>(),
+    // Pre-made slowed copies of `audio_url` (PSOLA, made by the audio-worker
+    // service), which the player plays instead of stretching the audio itself.
+    // `source` is the exact versioned audio_url they were made from: once the
+    // audio is replaced they no longer match it and are never served. Rule 3:
+    // written whole by one endpoint, read whole by the player. NULL means none
+    // have been made. Shape: SlowAudio in repos/stories.repo.ts.
+    slowAudio: jsonb("slow_audio").$type<{
+      source: string;
+      copies: Record<string, string>;
+    }>(),
+    // What is said in the part, as the author typed it (stage directions in
+    // square brackets are allowed and ignored). Never sent to the player: the
+    // word window draws only its SHAPE — a dot per letter, the sentence ends,
+    // and the part's words where they are said (helpers/textShape.js). NULL
+    // means no transcript, and the window falls back to an invented shape.
+    transcript: text("transcript"),
+    // The transcript in Russian, paragraph for paragraph (blank lines separate
+    // paragraphs, as in the transcript, so the handout can set them side by
+    // side). Only ever sent inside a part's handout, to a caller who may open
+    // the part. NULL: no translation yet, and the handout leaves it out.
+    translation: text("translation"),
   },
   (t) => [uniqueIndex("story_part_story_number_key").on(t.storyPk, t.partNumber)],
 );
@@ -657,6 +698,10 @@ export const storyPartVocab = pgTable(
       box: { x: number; y: number; w: number; h: number } | null;
       aspect: number | null;
     }>(),
+    // Where the word is said in the part's transcript, exactly as written there
+    // ("didn’t start" is not findable from the key "start up"). NULL: found
+    // automatically from audioKey, inflections included (helpers/textShape.js).
+    anchor: text("anchor"),
   },
   (t) => [
     uniqueIndex("story_part_vocab_part_kind_ordinal_key").on(t.partPk, t.kind, t.ordinal),

@@ -23,6 +23,8 @@ import {
 import { getCatalog, invalidateCatalog } from "../helpers/catalogStore.js";
 import { config } from "../config/env.js";
 import { signAudioUrl } from "../helpers/signedAudio.js";
+import { makeSlowCopies, SlowCopyError } from "../services/slowCopies.js";
+import { buildTextShape, cleanTranscript, describeMatches, markWords } from "../helpers/textShape.js";
 
 const MAX_PARTS = 20;
 const MAX_QUIZ_QUESTIONS = 10;
@@ -701,7 +703,12 @@ export async function saveMarkers(req, res) {
 
     const result = await mutatePart(req, (part) => {
       part.timeMarkers = sorted;
-      if (audioUrl) part.audioUrl = audioUrl;
+      if (audioUrl && audioUrl !== part.audioUrl) {
+        part.audioUrl = audioUrl;
+        // Slowed copies of the old audio would never be served again (their
+        // source no longer matches); drop them so the Builder says "none".
+        part.slowAudio = null;
+      }
     });
 
     await sendMutation(res, result, async (story) => {
@@ -959,6 +966,141 @@ export async function savePanelQuiz(req, res) {
   }
 }
 
+const TRANSCRIPT_ERROR = `transcript must be a string of at most ${storiesRepo.TRANSCRIPT_MAX_LENGTH} characters, or null to clear it`;
+const validTranscript = (t) =>
+  t === null || (typeof t === "string" && t.length <= storiesRepo.TRANSCRIPT_MAX_LENGTH);
+
+/** The Builder's report for one part: where each word landed, and which it could not find. */
+const transcriptReport = (part) =>
+  describeMatches(part.transcript, [...(part.vocabulary ?? []), ...(part.phrasalVerbs ?? [])]);
+
+// PUT /api/admin/stories/:id/parts/:partNumber/transcript  { transcript }
+// What is said in the part. The player only ever gets its shape (see
+// helpers/textShape.js); the answer carries the match report so the Builder can
+// show which words it placed, and where.
+export async function saveTranscript(req, res) {
+  try {
+    const transcript = req.body?.transcript;
+    if (transcript === undefined || !validTranscript(transcript)) {
+      return res.status(400).json({ error: `Invalid transcript: ${TRANSCRIPT_ERROR}.` });
+    }
+    const result = await mutatePart(req, (part) => {
+      part.transcript = storiesRepo.normalizeTranscript(transcript);
+    });
+    sendMutation(res, result, (story) => {
+      const part = savedPart(story, req);
+      res.json({ part, report: transcriptReport(part) });
+    });
+  } catch (error) {
+    console.error("saveTranscript error:", error);
+    res.status(500).json({ error: "Failed to save the transcript." });
+  }
+}
+
+// PUT /api/admin/stories/:id/parts/:partNumber/translation  { translation }
+// The transcript in Russian, for the part's handout. Same limits as the
+// transcript; null clears it.
+export async function saveTranslation(req, res) {
+  try {
+    const translation = req.body?.translation;
+    if (translation === undefined || !validTranscript(translation)) {
+      return res.status(400).json({
+        error: `Invalid translation: ${TRANSCRIPT_ERROR.replace("transcript", "translation")}.`,
+      });
+    }
+    const result = await mutatePart(req, (part) => {
+      part.translation = storiesRepo.normalizeTranscript(translation);
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("saveTranslation error:", error);
+    res.status(500).json({ error: "Failed to save the translation." });
+  }
+}
+
+// POST /api/admin/stories/:id/parts/:partNumber/transcript/preview  { transcript, words? }
+// The same report and the shape, for text that has not been saved yet, so the
+// Builder can show it while the author types. `words` (audioKey + anchor) stands
+// in for the part's saved words when the author is editing anchors too.
+export async function previewTranscript(req, res) {
+  try {
+    const { transcript, words } = req.body ?? {};
+    if (transcript === undefined || !validTranscript(transcript)) {
+      return res.status(400).json({ error: `Invalid transcript: ${TRANSCRIPT_ERROR}.` });
+    }
+    if (words !== undefined && (!Array.isArray(words) || words.length > 200)) {
+      return res.status(400).json({ error: "words must be an array of at most 200 entries." });
+    }
+    const story = await storiesRepo.loadStoryJson(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+    const part = story.parts.find((p) => p.partNumber === Number(req.params.partNumber));
+    if (!part) return res.status(404).json({ error: "Part not found." });
+
+    const entries = (words ?? [...part.vocabulary, ...part.phrasalVerbs])
+      .filter((w) => typeof w?.audioKey === "string")
+      .map((w) => ({ audioKey: w.audioKey, anchor: typeof w.anchor === "string" ? w.anchor : null }));
+    res.json({
+      report: describeMatches(transcript, entries),
+      shape: buildTextShape(transcript, entries),
+    });
+  } catch (error) {
+    console.error("previewTranscript error:", error);
+    res.status(500).json({ error: "Failed to preview the transcript." });
+  }
+}
+
+// POST /api/admin/stories/:id/parts/:partNumber/slow-audio
+// Makes (or remakes) the 0.65x and 0.8x copies of the part's current audio
+// through the audio-worker service. Takes several seconds per speed, which is
+// why it is its own request rather than part of the upload.
+export async function makePartSlowAudio(req, res) {
+  try {
+    const story = await storiesRepo.loadStoryJson(req.params.id);
+    if (!story) return res.status(404).json({ error: "Story not found." });
+    const part = story.parts.find((p) => p.partNumber === Number(req.params.partNumber));
+    if (!part) return res.status(404).json({ error: "Part not found." });
+
+    let slowAudio;
+    try {
+      slowAudio = await makeSlowCopies(story, part);
+    } catch (error) {
+      if (error instanceof SlowCopyError) return res.status(error.status).json({ error: error.message });
+      throw error;
+    }
+
+    const result = await mutatePart(req, (current) => {
+      if (current.audioUrl !== slowAudio.source) {
+        return {
+          halt: {
+            status: 409,
+            body: { error: "The part's audio changed while the copies were being made. Make them again." },
+          },
+        };
+      }
+      current.slowAudio = slowAudio;
+    });
+    sendMutation(res, result, (saved) => res.json({ part: savedPart(saved, req) }));
+  } catch (error) {
+    console.error("makePartSlowAudio error:", error);
+    res.status(500).json({ error: "Failed to make the slowed copies." });
+  }
+}
+
+// DELETE /api/admin/stories/:id/parts/:partNumber/slow-audio
+// Stops the player using the copies; it stretches the audio itself again. The
+// objects stay in the bucket and are overwritten by the next "make".
+export async function removePartSlowAudio(req, res) {
+  try {
+    const result = await mutatePart(req, (part) => {
+      part.slowAudio = null;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("removePartSlowAudio error:", error);
+    res.status(500).json({ error: "Failed to remove the slowed copies." });
+  }
+}
+
 function validateQuizList(quiz) {
   if (!Array.isArray(quiz)) return "must be an array";
   if (quiz.length > MAX_QUIZ_QUESTIONS) return `at most ${MAX_QUIZ_QUESTIONS} questions`;
@@ -1059,7 +1201,13 @@ const lockPart = (part) => ({
   phrasalVerbs: [],
   quiz: [],
   panelQuiz: null,
+  slowCopies: {},
+  textShape: null,
 });
+
+// The public copy of a word. `anchor` is Builder bookkeeping, a fragment of the
+// transcript, which never leaves the server (see helpers/textShape.js).
+const publicWord = ({ anchor, ...word }) => word;
 
 const openPart = (part) => ({
   partNumber: part.partNumber,
@@ -1072,8 +1220,11 @@ const openPart = (part) => ({
   // The level page's "before you listen" card. Not `preview` — the caller
   // below sets that to `true` on a timed-sample part, which would erase it.
   intro: part.intro ?? null,
-  vocabulary: part.vocabulary,
-  phrasalVerbs: part.phrasalVerbs,
+  vocabulary: part.vocabulary.map(publicWord),
+  phrasalVerbs: part.phrasalVerbs.map(publicWord),
+  // The word window's page of dots: the transcript's shape with the words where
+  // they are said, never its text. Null when the part has no transcript.
+  textShape: buildTextShape(part.transcript, [...part.vocabulary, ...part.phrasalVerbs]),
   // Never send correctAnswer to the client — same rule as getPublicQuiz in quizData.js.
   // Stored bucket-relative; resolved for THIS environment on the way out.
   quiz: part.quiz.map(({ correctAnswer, ...rest }) => ({
@@ -1087,7 +1238,15 @@ const openPart = (part) => ({
   // nothing and records nothing, so there is no score worth forging. The day
   // it rewards anything, grading moves server-side the way the quiz's did.
   panelQuiz: part.panelQuiz ?? null,
+  // Speed -> slowed copy, only while the copies still match audioUrl. Signed
+  // below with the audio itself.
+  slowCopies: storiesRepo.freshSlowCopies(part),
 });
+
+const signAll = async (byKey) =>
+  Object.fromEntries(
+    await Promise.all(Object.entries(byKey ?? {}).map(async ([key, url]) => [key, await signAudioUrl(url)])),
+  );
 
 // GET /api/stories/:difficulty/:storyId
 //
@@ -1125,6 +1284,7 @@ export async function getPublishedStory(req, res) {
           ...open,
           audioUrl: open.audioUrl ? await signAudioUrl(open.audioUrl) : open.audioUrl,
           helpAudio: await Promise.all((open.helpAudio ?? []).map((url) => signAudioUrl(url))),
+          slowCopies: await signAll(open.slowCopies),
         };
       }),
     );
@@ -1156,6 +1316,67 @@ export async function getPublishedStory(req, res) {
     });
   } catch (error) {
     console.error("getPublishedStory error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+const handoutWord = (kind) => ({ word, definition, audioKey }) => ({
+  kind,
+  en: audioKey,
+  ru: word,
+  definition: definition ?? "",
+});
+
+// GET /api/stories/:difficulty/:storyId/parts/:partNumber/handout
+//
+// Everything the part's PDF prints: the transcript as text with the part's
+// words marked, its translation, the words, the grammar card and the comic
+// page. This is the one place the transcript leaves the server as text, so it
+// answers only a caller who may open the part outright — the same rule as the
+// audio, minus the timed sample: a preview is a listen, not a lesson.
+export async function getPartHandout(req, res) {
+  try {
+    const { difficulty, storyId } = req.params;
+    const partNumber = Number(req.params.partNumber);
+    const aggregate = await storiesRepo.loadPublishedAggregate(difficulty, storyId);
+    const part = aggregate?.parts.find((p) => p.partNumber === partNumber);
+    if (!part) return res.status(404).json({ message: "Part not found." });
+
+    const access = accessFor(req.user?.entitlements, difficulty, storyId, {
+      authenticated: Boolean(req.user),
+      catalog: await getCatalog(),
+      paywallEnabled: config.payments.paywallEnabled,
+      signupWallEnabled: config.payments.signupWallEnabled,
+    });
+    if (!isPartVisible(access, partNumber) || isPreviewPart(access, partNumber)) {
+      return res.status(403).json({ message: "This part is locked." });
+    }
+
+    const words = [
+      ...part.vocabulary.map(handoutWord("vocabulary")),
+      ...part.phrasalVerbs.map(handoutWord("phrasal")),
+    ];
+    const translation = cleanTranscript(part.translation);
+
+    res.json({
+      difficulty,
+      storyId,
+      storyName: aggregate.storyName,
+      storyTitle: { en: aggregate.titleEn, ru: aggregate.titleRu },
+      totalParts: aggregate.totalParts,
+      partNumber,
+      title: part.title ?? "",
+      intro: part.intro ?? null,
+      comicUrl: part.comicUrl ?? null,
+      // Paragraphs of runs; a run with `word` is words[word], said there.
+      text: markWords(part.transcript, [...part.vocabulary, ...part.phrasalVerbs]),
+      // One string per paragraph, lined up with `text` by the author. Null
+      // when there is none yet.
+      translation: translation ? translation.split("\n") : null,
+      words,
+    });
+  } catch (error) {
+    console.error("getPartHandout error:", error);
     res.status(500).json({ message: "Server error" });
   }
 }

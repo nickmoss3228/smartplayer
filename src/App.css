@@ -186,6 +186,63 @@
   will-change: transform, opacity;
 }
 
+/* ── Practice games (quiz, words) ───────────────────────────────────────────
+   One entrance curve for everything that arrives; the playing bars loop only
+   while a recording plays, because then they ARE the content. */
+@keyframes quiz-pip-in { from { opacity: 0; transform: scale(0.4); } }
+@keyframes quiz-reveal-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes quiz-eq { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.4); } }
+@keyframes word-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+.quiz-pip-in { animation: quiz-pip-in 420ms var(--ease-enter) both; }
+.quiz-reveal-in { animation: quiz-reveal-in 420ms var(--ease-enter) both; }
+.quiz-eq-bar { height: 26px; animation: quiz-eq 0.9s ease-in-out infinite; }
+.quiz-eq-bar:nth-child(odd) { height: 16px; }
+.word-shake { animation: word-shake 360ms ease-in-out; }
+.word-eq-bar { height: 12px; animation: quiz-eq 0.8s ease-in-out infinite; }
+
+/* ── «Повтори за мной» (RepeatModeBar) ──────────────────────────────────────
+   The strip slides in once when the mode turns on. The listening bars and the
+   ring around the microphone loop only while there is a sentence playing or a
+   student to wait for — then they are the content. The countdown (no
+   microphone) is a bar shrinking from full to empty over the wait. */
+@keyframes repeat-bar-in { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes repeat-text-in { from { opacity: 0; transform: translateY(3px); } }
+@keyframes repeat-ring { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.9); } }
+@keyframes repeat-countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes repeat-head-on { 0% { transform: scale(1); } 40% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.repeat-bar-in { animation: repeat-bar-in 320ms var(--ease-enter) both; }
+.repeat-text-in { animation: repeat-text-in 220ms var(--ease-enter) both; }
+.repeat-listen-bar { height: 16px; animation: quiz-eq 0.7s ease-in-out infinite; }
+.repeat-ring { animation: repeat-ring 1.6s ease-out infinite; }
+.repeat-countdown { animation-name: repeat-countdown; animation-timing-function: linear; animation-fill-mode: both; }
+.repeat-head-on { animation: repeat-head-on 360ms var(--ease-enter); }
+
+/* The word window's page of dots: a word of n letters is n dots on the
+   baseline, a sentence ends in one heavier dot. The page's look sets the ink. */
+.word-vars-ink { --word-dot: rgb(238 244 248 / 0.46); --word-end: var(--color-panel-text); }
+.word-vars-paper { --word-dot: rgb(15 21 28 / 0.42); --word-end: var(--color-ink); }
+.word-vars-clear { --word-dot: rgb(255 255 255 / 0.62); --word-end: #fff; }
+.word-dots {
+  display: inline-block;
+  height: 1em;
+  width: calc(var(--n) * 0.44em);
+  vertical-align: -0.12em;
+  background-image: radial-gradient(circle at 50% 62%, var(--word-dot) 1.25px, transparent 1.75px);
+  background-size: 0.44em 100%;
+  background-repeat: repeat-x;
+}
+.word-end {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 0.3em 0 0.08em;
+  border-radius: 9999px;
+  background: var(--word-end);
+  vertical-align: 0.02em;
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────────────────
    Applies to the whole app, not just the ladder: nothing here was honouring the
    preference before. Animations are collapsed rather than removed so anything

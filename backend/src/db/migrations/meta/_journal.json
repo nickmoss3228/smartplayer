@@ -71,6 +71,27 @@
       "when": 1791136281676,
       "tag": "0009_picture_practice",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791972351567,
+      "tag": "0010_part_slow_audio",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792045121153,
+      "tag": "0011_words_transcript_bookmarks",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792753858484,
+      "tag": "0012_part_translation",
+      "breakpoints": true
     }
   ]
 }

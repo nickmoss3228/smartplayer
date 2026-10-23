@@ -4,8 +4,9 @@ import {
   IoChevronBack,
   IoChevronForward,
   IoPause,
-  IoHelpCircle, // ← add this
 } from "react-icons/io5";
+import { MdSos } from "react-icons/md";
+import { TbLifebuoy } from "react-icons/tb";
 
 import { ToggleSwitch } from "../../../modules/toggle/ToggleSwitch";
 import { PLAYBACK_RATES } from "../hooks/constants";
@@ -126,7 +127,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               disabled={!hasHelpAudio}
               aria-label={
                 hasHelpAudio
-                  ? t("controls.help", "Help")
+                  ? t("controls.help", "SOS")
                   : t("controls.helpUnavailable", "No help audio for this part")
               }
               title={
@@ -140,7 +141,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
      transition-all duration-200 active:scale-95 cursor-pointer shadow-sm
      disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100"
             >
-              <IoHelpCircle className="w-[clamp(22px,6.5vw,30px)] h-[clamp(22px,6.5vw,30px)]" />
+              <MdSos className="w-[clamp(30px,8.5vw,38px)] h-[clamp(30px,8.5vw,38px)]" />
             </button>
 
             {/* transport group: justify-evenly instead of a capped gap → spreads with width */}
@@ -276,8 +277,8 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
               text-sm font-semibold text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-white
               disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
           >
-            <IoHelpCircle className="h-6 w-6" aria-hidden="true" />
-            {t("controls.help", "Help")}
+            <TbLifebuoy className="h-6 w-6" aria-hidden="true" />
+            {t("controls.help", "SOS")}
           </button>
 
           <div className="flex items-center gap-5">

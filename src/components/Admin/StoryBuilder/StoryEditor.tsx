@@ -18,6 +18,8 @@ import type { StoryCategory } from "../../../types/storyGroups";
 import PartVocabWordsEditor from "./PartVocabWordsEditor";
 import PartQuizEditor from "./PartQuizEditor";
 import PartIntroEditor from "./PartIntroEditor";
+import PartTranscriptEditor from "./PartTranscriptEditor";
+import PartTranslationEditor from "./PartTranslationEditor";
 import PartPanelQuizEditor from "./PartPanelQuizEditor";
 
 interface StoryEditorProps {
@@ -40,12 +42,13 @@ const PREVIEW_PART = 1;
  *  panel. Everything else is one column, one editor. */
 const PANEL_FOR: Record<
   ElementId,
-  "audio" | "comics" | "intro" | "vocabulary" | "phrasal" | "quiz" | "panels"
+  "audio" | "comics" | "intro" | "transcript" | "vocabulary" | "phrasal" | "quiz" | "panels"
 > = {
   audio: "audio",
   markers: "audio",
   comic: "comics",
   intro: "intro",
+  transcript: "transcript",
   vocab: "vocabulary",
   phrasal: "phrasal",
   quiz: "quiz",
@@ -485,6 +488,25 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           part={part}
           onPartUpdated={handlePartUpdated}
         />
+      )}
+      {part && step === "transcript" && (
+        // Keyed per part: the draft and the anchors belong to one part only.
+        <>
+          <PartTranscriptEditor
+            key={`${story._id}:${part.partNumber}`}
+            token={token}
+            story={story}
+            part={part}
+            onPartUpdated={handlePartUpdated}
+          />
+          <PartTranslationEditor
+            key={`${story._id}:${part.partNumber}:translation`}
+            token={token}
+            story={story}
+            part={part}
+            onPartUpdated={handlePartUpdated}
+          />
+        </>
       )}
       {part && step === "vocabulary" && (
         <PartVocabWordsEditor

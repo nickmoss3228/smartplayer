@@ -1,9 +1,10 @@
-import React, { useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useRef, useCallback, useEffect, useId, useMemo, useState } from "react";
 import { WaveformPlayerProps } from "../../types";
 import { useAppSelector } from "../../hooks/hooks";
 import { useListeningTimer } from "../../hooks/useListeningTimer";
 
 import { useWavesurferInit } from "./hooks/useWavesurferInit";
+import { useSlowCopies } from "./hooks/useSlowCopies";
 import { useSegmentEngine } from "./hooks/useSegmentEngine";
 import { usePlayerControls } from "./hooks/usePlayerControls";
 import { useVocabAudio } from "./hooks/useVocabAudio";
@@ -19,8 +20,12 @@ import FeedbackModal from "../Feedback/FeedbackModal";
 import { WaveformDisplay } from "./WaveformDisplay";
 import { PlayerControls } from "./Controls/PlayerControls";
 import { VolumeControl } from "./Controls/VolumeControl";
-import { VocabularyRow } from "./Vocabulary/VocabularyRow";
 import { WordRail } from "./Vocabulary/WordRail";
+import { WordsButton } from "./Vocabulary/WordsButton";
+import { WordWindow } from "./Vocabulary/WordWindow";
+import Sheet from "../Sheet/Sheet";
+import { wordKey, type WindowWord } from "../../modules/vocab/textShape";
+import { useWordLook, wordPageClass } from "../../modules/vocab/wordLook";
 import ComicsDisplay from "./Comics/ComicsDisplay";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,6 +33,7 @@ import {
   IoGridOutline,
   IoListOutline,
   IoLockClosedOutline,
+  IoMicOutline,
   IoVolumeHighOutline,
 } from "react-icons/io5";
 import type { PracticeKind } from "./Practice/PracticeModal";
@@ -37,6 +43,7 @@ import { useWallet } from "../../context/WalletContext";
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
   ({
     audioUrl,
+    slowCopies,
     trackId,
     subtitles,
     timeMarkers,
@@ -48,12 +55,15 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     trackTitle,
     vocabulary,
     phrasalVerbs,
+    textShape,
+    storySlug,
     helpAudioUrls,
     hasListenedFully,
     practices = [],
     onOpenPractice,
     practicesDone = 0,
     learnedWords,
+    repeatGate = null,
   }) => {
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
@@ -83,6 +93,12 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       setIsEnhancedSessionActive,
       handleToggleEnhancedMode,
     } = useEnhancedMode();
+
+    // «Повтори за мной» waits between sentences, so it needs the sentence
+    // engine: turning it on switches Free Play back to Enhanced.
+    useEffect(() => {
+      if (repeatGate && !isEnhancedMode) handleToggleEnhancedMode();
+    }, [repeatGate, isEnhancedMode, handleToggleEnhancedMode]);
 
     // ── Wrap onAudioComplete so completion resets the session ─────────────────
     const handleAudioComplete = useCallback(() => {
@@ -117,6 +133,10 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       onAudioComplete: handleAudioComplete,
     });
 
+    // Plays the part's PSOLA-slowed copies at 0.65x and 0.8x, with WaveSurfer
+    // muted as the clock; the browser stretches the audio when there are none.
+    useSlowCopies({ wavesurfer, isInitialized, copies: slowCopies, volume, isMuted, playbackRate });
+
     const {
       getSegmentBounds,
       currentRepeatRef,
@@ -140,6 +160,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       isEnhancedMode,
       userPlaybackRateRef,
       onSegmentRepeatComplete: handleSegmentRepeatComplete,
+      repeatGate,
     });
 
     const {
@@ -187,6 +208,28 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const currentVocabulary = vocabulary;
     const currentPhrasalVerbs = phrasalVerbs;
 
+    // The word window's words: vocabulary then phrasal verbs, one entry per key.
+    const windowWords = useMemo<WindowWord[]>(() => {
+      const seen = new Set<string>();
+      const out: WindowWord[] = [];
+      const add = (list: typeof vocabulary, phrasal: boolean) => {
+        for (const w of list) {
+          const key = wordKey(w);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push({ key, word: w.word, audioKey: w.audioKey, audioUrl: w.audioUrl, phrasal });
+        }
+      };
+      add(vocabulary, false);
+      add(phrasalVerbs, true);
+      return out;
+    }, [vocabulary, phrasalVerbs]);
+    const learnedInPart = windowWords.filter((w) => learnedWords?.has(w.key)).length;
+    const wordSeed = `${storySlug}-${trackId}`;
+    const [wordsOpen, setWordsOpen] = useState(false);
+    const wordsTitleId = useId();
+    const [wordLook] = useWordLook();
+
     const handleVolumeChange = useVolumeControl(wavesurfer);
 
     const { canGoPrev, canGoNext, handlePrevMarker, handleNextMarker } =
@@ -228,6 +271,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       quiz: <IoListOutline key="quiz" size={16} />,
       words: <IoVolumeHighOutline key="words" size={16} />,
       comic: <IoGridOutline key="comic" size={16} />,
+      voice: <IoMicOutline key="voice" size={16} />,
     };
     const practiceButton = (
       <button
@@ -344,25 +388,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
             </div>
 
             <div className="shrink-0 flex flex-col gap-2">
-              {currentVocabulary.length > 0 && (
+              {windowWords.length > 0 && (
                 <div className="shrink-0" data-tour="tour-vocabulary">
-                  <VocabularyRow
-                    words={currentVocabulary}
-                    onPlay={(_key, audioUrl) => playVocabWord(audioUrl)}
-                    volume={isMuted ? 0 : volume}
-                    learnedWords={learnedWords}
-                  />
-                </div>
-              )}
-
-              {currentPhrasalVerbs.length > 0 && (
-                <div className="shrink-0" data-tour="tour-phrasal-verbs">
-                  <VocabularyRow
-                    words={currentPhrasalVerbs}
-                    onPlay={(_key, audioUrl) => playVocabWord(audioUrl)}
-                    volume={isMuted ? 0 : volume}
-                    learnedWords={learnedWords}
-                  />
+                  <WordsButton total={windowWords.length} learned={learnedInPart} onOpen={() => setWordsOpen(true)} />
                 </div>
               )}
 
@@ -498,6 +526,10 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 <WordRail
                   vocabulary={currentVocabulary}
                   phrasalVerbs={currentPhrasalVerbs}
+                  words={windowWords}
+                  shape={textShape}
+                  seed={wordSeed}
+                  partNumber={Number(trackId)}
                   onPlay={playWord}
                   volume={isMuted ? 0 : volume}
                   learnedWords={learnedWords}
@@ -517,6 +549,29 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
         />
 
         {feedback.isOpen && <FeedbackModal onClose={feedback.close} />}
+
+        {wordsOpen && (
+          <Sheet
+            onClose={() => setWordsOpen(false)}
+            labelledBy={wordsTitleId}
+            widthClass="sm:max-w-xl"
+            panelClass={`${wordPageClass(wordLook)} rounded-t-[20px] sm:rounded-card h-[88dvh] sm:h-[80vh]`}
+            handleClass={wordLook === "ink" ? "bg-white/25" : "bg-black/20"}
+          >
+            <WordWindow
+              variant="sheet"
+              words={windowWords}
+              shape={textShape}
+              seed={wordSeed}
+              partNumber={Number(trackId)}
+              learnedWords={learnedWords}
+              onPlay={playWord}
+              volume={isMuted ? 0 : volume}
+              onClose={() => setWordsOpen(false)}
+              titleId={wordsTitleId}
+            />
+          </Sheet>
+        )}
       </div>
     );
   },

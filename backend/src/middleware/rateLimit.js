@@ -126,6 +126,17 @@ export const vocabCompleteLimiter = make("vocab-complete", 60 * MINUTE, 60, {
   keyGenerator: byUser,
 });
 
+// Bookmarking a word is one tap and pays nothing; the ceiling only stops a
+// script from churning the table. A student going through a long part and
+// changing their mind a few times stays far below it.
+export const vocabBookmarkLimiter = make("vocab-bookmark", 60 * MINUTE, 400, {
+  keyGenerator: byUser,
+});
+
+// The копилка page looks its words up once per visit (and a guest's lives in
+// the browser, so this is public). Per IP, like the other public endpoints.
+export const vocabLookupLimiter = make("vocab-lookup", 1 * MINUTE, 30);
+
 // Creating an order is cheap for us but calls out to the payment provider, and
 // each one leaves a `pending` row for the reconciler to chase. Keyed by USER
 // like the two above: the thing worth capping is how many orders one account
@@ -148,6 +159,11 @@ export const passwordChangeLimiter = make("password-change", 15 * MINUTE, 5, {
 
 // Spam surface — an unmoderated row straight into Mongo.
 export const feedbackLimiter = make("feedback", 60 * MINUTE, 5);
+
+// «Послушай себя» share links: an upload of a few MB, open to guests. Ten an
+// hour is several parts' worth for a student and little use to anyone
+// treating the endpoint as file hosting.
+export const voiceShareLimiter = make("voice-share", 60 * MINUTE, 10);
 
 // Public quiz endpoints (guests take quizzes before signing up). Generous:
 // a student legitimately fires one check-answer per question.

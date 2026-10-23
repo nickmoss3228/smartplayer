@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { IoCheckmark, IoClose } from "react-icons/io5";
 
-export type PracticeKind = "quiz" | "words" | "comic";
+export type PracticeKind = "quiz" | "words" | "comic" | "voice";
 
 export interface PracticeOption {
   kind: PracticeKind;
@@ -69,10 +69,20 @@ const ComicArt = ({ className }: { className: string }) => (
   </svg>
 );
 
+/** The narrator's line, then the student's own answering it. */
+const VoiceArt = ({ className }: { className: string }) => (
+  <svg viewBox="0 0 120 64" className={className} aria-hidden="true">
+    <path {...line} d="M10 22v-4M18 26v-12M26 24v-8M34 28v-16M42 23v-6M50 25v-10" />
+    <path {...accent} d="M70 46v-4M78 50v-12M86 47v-6M94 52v-16M102 48v-8M110 46v-4" />
+    <path {...line} d="M56 32h8" strokeDasharray="2 3" />
+  </svg>
+);
+
 const ART: Record<PracticeKind, React.FC<{ className: string }>> = {
   quiz: QuizArt,
   words: WordsArt,
   comic: ComicArt,
+  voice: VoiceArt,
 };
 
 // Desktop game grid: one column per game up to four (more wrap at three).
@@ -115,7 +125,7 @@ export const PracticeModal: React.FC<PracticeModalProps> = ({ part, nextPart, op
 
   const meta = (o: PracticeOption) => {
     if (o.kind === "words") return t("practice.words", { count: o.count });
-    if (o.kind === "comic") return t("practice.lines", { count: o.count });
+    if (o.kind === "comic" || o.kind === "voice") return t("practice.lines", { count: o.count });
     const unlock = !nextPart
       ? t("practice.lastPart")
       : o.done

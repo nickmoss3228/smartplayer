@@ -18,12 +18,18 @@ import { storyKey } from "../config/priceCatalog";
 import { useCatalog } from "../context/CatalogContext";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
-import { IoChatbubbleEllipsesOutline } from "react-icons/io5";
+import { IoChatbubbleEllipsesOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { useAppSelector } from "../hooks/hooks";
+import { useRepeatMode } from "../components/Player/hooks/useRepeatMode";
+import { RepeatModeBar } from "../components/Player/RepeatMode/RepeatModeBar";
+import { RepeatReplay } from "../components/Player/RepeatMode/RepeatReplay";
+import { uploadVoiceShare, voiceSharePageUrl } from "../services/voiceShareServices";
 import FeedbackModal from "../components/Feedback/FeedbackModal";
 import { resolveStory, findResolvedTrack, withLocalizedTitles } from "../modules/story/resolveStory";
 import { useAppLocale } from "../types/storyGroups";
 import { useVocabAudio } from "../components/Player/hooks/useVocabAudio";
-import { VocabQuiz } from "../components/Player/Vocabulary/VocabQuiz";
+import { WordBoard } from "../components/Player/Vocabulary/WordBoard";
+import { wordKey, type WindowWord } from "../modules/vocab/textShape";
 import { PanelQuiz } from "../components/Player/PanelQuiz/PanelQuiz";
 import {
   PracticeModal,
@@ -110,6 +116,8 @@ const Player = React.memo(() => {
   const [showPanelQuiz, setShowPanelQuiz] = useState(false);
   // The practice window: opens by itself when a part ends, and from «Практика».
   const [showPractice, setShowPractice] = useState(false);
+  // «Послушай себя»: the student's own recording from «Повтори за мной».
+  const [showReplay, setShowReplay] = useState(false);
   // Bumped when progress kept in this browser changes (a guest's quiz, the
   // comic game), so the ticks in the practice window are read again.
   const [localProgressTick, setLocalProgressTick] = useState(0);
@@ -161,6 +169,7 @@ const Player = React.memo(() => {
     setShowQuiz(false);
     setShowPanelQuiz(false);
     setShowPractice(false);
+    setShowReplay(false);
     setQuizResults(null);
     setQuizQuestions(null);
     setQuizLoadError(false);
@@ -328,13 +337,6 @@ const Player = React.memo(() => {
     [selectedTrackId, audioTracks],
   );
 
-  const handleTimeJump = useCallback((time: number) => {
-    if (wavesurferRef.current) {
-      wavesurferRef.current.seekTo(time / wavesurferRef.current.getDuration());
-      wavesurferRef.current.play();
-    }
-  }, []);
-
   const handleWavesurferMount = useCallback(
     (wavesurfer: WaveSurferInstance) => {
       wavesurferRef.current = wavesurfer;
@@ -450,6 +452,17 @@ const Player = React.memo(() => {
     [resolvedTrack],
   );
 
+  // The word game's board: the same words, one tile per key.
+  const boardWords = useMemo<WindowWord[]>(() => {
+    const seen = new Set<string>();
+    return allVocabWords.flatMap((w) => {
+      const key = wordKey(w);
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [{ key, word: w.word, audioKey: w.audioKey, audioUrl: w.audioUrl, phrasal: w.type === "phrasal" }];
+    });
+  }, [allVocabWords]);
+
   // Every entry already carries a resolved URL, so there is nothing to look
   // up and no folder-path fallback left to disagree with.
   const playVocabWordUnified = useCallback(
@@ -476,9 +489,50 @@ const Player = React.memo(() => {
   const comicQuestions = useMemo(() => (panelQuiz ? questionsFromClips(panelQuiz.clips).length : 0), [panelQuiz]);
   const completedParts = user ? getStoryData(difficulty, resolvedStorySlug).completedParts : null;
 
+  // ── «Повтори за мной» ─────────────────────────────────────────────────
+  // After each sentence the player waits for the student to say it back —
+  // listening through the microphone, or for a fixed time without one — and
+  // only then plays the next. Any part with sentence markers, any level.
+  // What they said is kept for «Послушай себя» in the practice window.
+  const isPlaying = useAppSelector((state) => state.player.isPlaying);
+  const playerVisible = !showQuiz && !showVocabQuiz && !(showPanelQuiz && panelQuiz) && !showReplay;
+  const canRepeat = (audioTrack.timeMarkers?.length ?? 0) > 0;
+  const repeat = useRepeatMode({
+    isPlaying,
+    resetKey: `${difficulty}-${storySlug}-${level}-${playerVisible}`,
+    partKey: `${difficulty}-${storySlug}-${level}`,
+  });
+  const { buildTrack, preloadOriginal } = repeat;
+  const buildReplay = useCallback(
+    (kind: "me" | "dialogue") => buildTrack(kind, audioTrack.audio),
+    [buildTrack, audioTrack.audio],
+  );
+  // «Поделиться»: the version on screen goes up, a link comes back.
+  const { buildShareWav } = repeat;
+  const shareReplay = useCallback(
+    async (kind: "me" | "dialogue") => {
+      const wav = await buildShareWav(kind, audioTrack.audio);
+      if (!wav) throw new Error("Nothing recorded");
+      const made = await uploadVoiceShare(wav, {
+        storyTitle: storyTitle ?? "",
+        partTitle: audioTrack.title,
+        part: level,
+        difficulty,
+        kind,
+      });
+      return { url: voiceSharePageUrl(made.id), expiresAt: made.expiresAt };
+    },
+    [buildShareWav, audioTrack.audio, audioTrack.title, storyTitle, level, difficulty],
+  );
+  const hasTakes = repeat.takeCount > 0;
+  useEffect(() => {
+    if (hasTakes) preloadOriginal(audioTrack.audio);
+  }, [hasTakes, preloadOriginal, audioTrack.audio]);
+
   // Only what this part has, the quiz first: a part with no quiz written, or
   // fewer than the word game's 4 words, or no comic game, offers no tile for
-  // it. `done` is what puts the tick on a tile.
+  // it. `done` is what puts the tick on a tile. «Послушай себя» appears once
+  // the student has said something in «Повтори за мной» and is never "done".
   const practiceOptions = useMemo<PracticeOption[]>(() => {
     const quizDone = (
       completedParts ?? getGuestStoryProgress(difficulty, resolvedStorySlug).completedParts
@@ -499,11 +553,12 @@ const Player = React.memo(() => {
         done: isPanelQuizDone(difficulty, resolvedStorySlug, level),
       });
     }
+    if (repeat.takeCount > 0) options.push({ kind: "voice", count: repeat.takeCount, done: false });
     return options;
     // localProgressTick is not read inside: it is the signal to read this
     // browser's storage again after the guest quiz or the comic game wrote to it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizCount, completedParts, allVocabWords, learnedWords, comicQuestions, difficulty, resolvedStorySlug, level, localProgressTick]);
+  }, [quizCount, completedParts, allVocabWords, learnedWords, comicQuestions, difficulty, resolvedStorySlug, level, localProgressTick, repeat.takeCount]);
 
   const practiceKinds = useMemo(() => practiceOptions.map((o) => o.kind), [practiceOptions]);
   const practicesDone = practiceOptions.filter((o) => o.done).length;
@@ -514,6 +569,7 @@ const Player = React.memo(() => {
     setShowPractice(false);
     if (kind === "quiz") setShowQuiz(true);
     else if (kind === "words") setShowVocabQuiz(true);
+    else if (kind === "voice") setShowReplay(true);
     else setShowPanelQuiz(true);
   }, []);
 
@@ -601,7 +657,9 @@ const Player = React.memo(() => {
                     ? setShowVocabQuiz(false)
                     : showPanelQuiz
                       ? setShowPanelQuiz(false)
-                      : navigate(backPath)
+                      : showReplay
+                        ? setShowReplay(false)
+                        : navigate(backPath)
               }
               aria-label={t("player.back")}
               className="absolute left-3 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm md:static md:-ml-2.5 md:h-10 md:w-10 md:shrink-0 md:justify-center md:rounded-full md:hover:bg-black/5"
@@ -627,47 +685,104 @@ const Player = React.memo(() => {
                 {storyTitle ? `${storyTitle} · ` : ""}
                 {t("player.partOf", { n: level, total: audioTracks.length })}
               </p>
-              <h1 className="text-lg text-black font-bold px-10 truncate md:px-0 md:text-[22px] md:font-extrabold md:leading-tight md:tracking-tight">
+              <h1
+                className={`text-lg text-black font-bold truncate md:px-0 md:text-[22px] md:font-extrabold md:leading-tight md:tracking-tight ${
+                  canRepeat && playerVisible ? "px-[5.5rem]" : "px-10"
+                }`}
+              >
                 {audioTrack.title}
               </h1>
             </div>
 
-            <button
-              onClick={handleOpenFeedback}
-              aria-label={t("controls.feedback", "Send feedback")}
-              className="absolute right-3 p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer md:static md:-mr-2 md:ml-auto md:shrink-0"
-            >
-              <IoChatbubbleEllipsesOutline className="w-6 h-6" />
-            </button>
+            <div className="absolute right-1 flex items-center md:static md:ml-auto md:-mr-2 md:shrink-0">
+              {canRepeat && playerVisible && (
+                <button
+                  type="button"
+                  onClick={repeat.toggle}
+                  aria-pressed={repeat.enabled}
+                  aria-label={repeat.enabled ? t("repeatMode.buttonOn") : t("repeatMode.button")}
+                  title={repeat.enabled ? t("repeatMode.buttonOn") : t("repeatMode.button")}
+                  className={`relative grid h-10 w-10 cursor-pointer place-items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal ${
+                    repeat.enabled
+                      ? "bg-ink text-white shadow-lg repeat-head-on"
+                      : "text-black/50 hover:bg-black/5 hover:text-black/80"
+                  }`}
+                >
+                  {repeat.enabled && repeat.mic === "off" ? (
+                    <IoMicOffOutline className="h-[22px] w-[22px]" />
+                  ) : (
+                    <IoMicOutline className="h-[22px] w-[22px]" />
+                  )}
+                  {/* Red is "live": the microphone is open. */}
+                  {repeat.enabled && repeat.mic === "on" && (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-signal ring-2 ring-ink" aria-hidden="true" />
+                  )}
+                </button>
+              )}
+              <button
+                onClick={handleOpenFeedback}
+                aria-label={t("controls.feedback", "Send feedback")}
+                className="p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer"
+              >
+                <IoChatbubbleEllipsesOutline className="w-6 h-6" />
+              </button>
+            </div>
           </div>
+
+          {playerVisible && (
+            <RepeatModeBar
+              phase={repeat.phase}
+              mic={repeat.mic}
+              count={repeat.count}
+              levelRef={repeat.levelRef}
+              onSkip={repeat.skip}
+            />
+          )}
 
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
-            <div className="flex-1 min-h-0 overflow-y-auto pb-[180px] md:pb-6 flex flex-col justify-center md:justify-center-safe">
+            // The quiz fills what is left of the panel, in the Practice
+            // window's ink, and scrolls inside itself.
+            <div className="flex-1 min-h-0 flex flex-col px-3 pb-3 md:px-0 md:pb-0">
               {quizLoading || !quizQuestions ? (
-                <p className="text-center text-black/50 text-sm py-10">
+                <p className="m-auto text-center text-black/50 text-sm py-10">
                   {quizLoadError ? t("player.quiz-load-error") : t("player.quiz-loading")}
                 </p>
               ) : (
                 <Quiz
-                  onTimeJump={handleTimeJump}
                   questions={quizQuestions}
                   difficulty={difficulty}
                   storyId={resolvedStorySlug}
                   partNumber={level}
+                  nextPart={level < audioTracks.length ? level + 1 : null}
                   onQuizComplete={handleQuizComplete}
+                  onClose={() => setShowQuiz(false)}
+                  onNextPart={() =>
+                    navigate(`/levels/${difficulty}/${resolvedStorySlug}/${level + 1}`)
+                  }
                   isSubmitting={isSubmitting}
                 />
               )}
             </div>
           ) : showVocabQuiz ? (
-            <div className="flex-1 min-h-0">
-              <VocabQuiz
-                words={allVocabWords}
+            <div className="flex-1 min-h-0 flex flex-col px-3 pb-3 md:px-0 md:pb-0">
+              <WordBoard
+                words={boardWords}
                 onPlay={playVocabWordUnified}
                 onClose={() => setShowVocabQuiz(false)}
                 onComplete={markLearned}
                 learnedWords={learnedWords}
+                eyebrow={t("words.eyebrow", { n: level })}
+              />
+            </div>
+          ) : showReplay && repeat.takeCount > 0 ? (
+            <div className="flex-1 min-h-0 flex flex-col px-3 pb-3 md:px-0 md:pb-0">
+              <RepeatReplay
+                part={level}
+                count={repeat.takeCount}
+                build={buildReplay}
+                share={shareReplay}
+                onClose={() => setShowReplay(false)}
               />
             </div>
           ) : showPanelQuiz && panelQuiz ? (
@@ -685,9 +800,11 @@ const Player = React.memo(() => {
               <WaveformPlayer
                 key={`${difficulty}-${level}`}
                 audioUrl={audioTrack.audio}
+                slowCopies={audioTrack.slowCopies}
                 trackId={audioTrack.id}
                 vocabulary={resolvedTrack?.vocabulary ?? []}
                 phrasalVerbs={resolvedTrack?.phrasalVerbs ?? []}
+                textShape={audioTrack.textShape ?? null}
                 difficulty={difficulty}
                 level={String(level)}
                 subtitles={audioTrack.subtitles}
@@ -703,6 +820,7 @@ const Player = React.memo(() => {
                 practicesDone={practicesDone}
                 onOpenPractice={openPractice}
                 learnedWords={learnedWords}
+                repeatGate={repeat.enabled ? repeat.waitForRepeat : null}
               />
             </div>
           )}

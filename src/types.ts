@@ -1,5 +1,5 @@
 import WaveSurfer from "wavesurfer.js";
-import type { PanelQuiz } from "./services/storyServices";
+import type { PanelQuiz, TextShape } from "./services/storyServices";
 import type { PracticeKind } from "./components/Player/Practice/PracticeModal";
 
 export interface Subtitle {
@@ -23,6 +23,10 @@ export interface AudioTrack {
   comicUrl?: string | null;
   /** The comic-page game ("where did it happen?"); null when the part has none. */
   panelQuiz?: PanelQuiz | null;
+  /** Pre-made slowed copies of `audio`, by speed ("0.65", "0.8"); empty when there are none. */
+  slowCopies?: Record<string, string>;
+  /** The word window's page of dots; null when the part has no transcript. */
+  textShape?: TextShape | null;
 }
 export interface TimeMarker {
   time: number;
@@ -32,6 +36,8 @@ export interface TimeMarker {
 
 export interface WaveformPlayerProps {
   audioUrl: string;
+  /** Pre-made slowed copies of `audioUrl`, by speed; played instead of stretching (useSlowCopies). */
+  slowCopies?: Record<string, string>;
   trackId: string;
   difficulty: string;
   storySlug: string;
@@ -46,6 +52,8 @@ export interface WaveformPlayerProps {
    */
   vocabulary: { word: string; definition: string; audioKey: string; audioUrl: string }[];
   phrasalVerbs: { word: string; definition: string; audioKey: string; audioUrl: string }[];
+  /** The part's transcript shape for the word window; null draws an invented page. */
+  textShape?: TextShape | null;
   level: string; // "easy" | "medium" | "hard"
   onAudioComplete?: () => void;
   subtitles: {
@@ -69,6 +77,10 @@ export interface WaveformPlayerProps {
   practicesDone?: number;
   /** Vocab word keys (lowercased audioKey ?? word) already answered correctly */
   learnedWords?: Set<string>;
+  /** «Повтори за мной» is on: wait after each sentence until this resolves (useRepeatMode). */
+  repeatGate?:
+    | ((segmentSeconds: number, sentence: { index: number; start: number; end: number }) => Promise<boolean>)
+    | null;
 }
 
 export interface Meaning {

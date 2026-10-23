@@ -7,6 +7,7 @@ import feedbackRoutes from "./feedback.routes.js";
 import adminRoutes from "./admin.routes.js";
 import { adminStoryRoutes, publicStoryRoutes } from "./story.routes.js";
 import sessionRoutes from "./session.routes.js";
+import voiceShareRoutes from "./voiceShare.routes.js";
 import { paymentsRoutes } from "./payments.routes.js";
 import { getCatalogConfig } from "../controllers/catalog.controller.js";
 import { asyncHandler } from "../helpers/asyncHandler.js";
@@ -19,6 +20,7 @@ router.use("/", progressRoutes);
 router.use("/", passwordRoutes); // was missing the path
 router.use("/sessions", sessionRoutes);   // -> /api/sessions
 router.use("/feedback", feedbackRoutes); // -> /api/feedback
+router.use("/voice-shares", voiceShareRoutes); // -> /api/voice-shares (trial: disk storage)
 router.use("/admin", adminRoutes);       // -> /api/admin/login
 router.use("/admin/stories", adminStoryRoutes); // -> /api/admin/stories
 // Public: the shop must price itself for visitors who have not signed up.

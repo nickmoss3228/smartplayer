@@ -26,8 +26,14 @@ import {
   savePhrasalVerbs,
   saveQuiz,
   savePanelQuiz,
+  saveTranscript,
+  saveTranslation,
+  previewTranscript,
+  makePartSlowAudio,
+  removePartSlowAudio,
   setStoryPublished,
   getPublishedStory,
+  getPartHandout,
   listPublishedStories,
 } from "../controllers/story.controller.js";
 
@@ -56,6 +62,11 @@ adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
 adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVerbs);
 adminRouter.put("/:id/parts/:partNumber/quiz", adminAuth, saveQuiz);
 adminRouter.put("/:id/parts/:partNumber/panel-quiz", adminAuth, savePanelQuiz);
+adminRouter.put("/:id/parts/:partNumber/transcript", adminAuth, saveTranscript);
+adminRouter.post("/:id/parts/:partNumber/transcript/preview", adminAuth, previewTranscript);
+adminRouter.put("/:id/parts/:partNumber/translation", adminAuth, saveTranslation);
+adminRouter.post("/:id/parts/:partNumber/slow-audio", adminAuth, makePartSlowAudio);
+adminRouter.delete("/:id/parts/:partNumber/slow-audio", adminAuth, removePartSlowAudio);
 adminRouter.patch("/:id/publish", adminAuth, setStoryPublished);
 
 // Public — the player fetches a published story's content here.
@@ -69,5 +80,6 @@ adminRouter.patch("/:id/publish", adminAuth, setStoryPublished);
 const publicRouter = Router();
 publicRouter.get("/:difficulty", optionalAuth, listPublishedStories);
 publicRouter.get("/:difficulty/:storyId", optionalAuth, getPublishedStory);
+publicRouter.get("/:difficulty/:storyId/parts/:partNumber/handout", optionalAuth, getPartHandout);
 
 export { adminRouter as adminStoryRoutes, publicRouter as publicStoryRoutes };
