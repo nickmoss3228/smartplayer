@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { SHOP_ENABLED } from '../../config/features';
 import { useLevelProgressPage } from './useLevelProgressPage';
 import { LevelProgressHeader } from './LevelProgressHeader';
-import { LevelProgressBar } from './LevelProgressBar';
+import { LevelSegments } from './LevelSegments';
 import { LevelGrid } from './LevelGrid';
-import { LevelLegend } from './LevelLegend';
 import { CongratsModal } from '../../modules/levelprogress/congratsModule';
 import { LevelProgressSkeleton } from '../../modules/levelprogress/LevelProgressSkeleton';
 import { StoryPreviewModal } from '../../modules/storypreview/StoryPreviewModal';
@@ -13,7 +12,7 @@ import type { LevelProgressProps } from '../../types/LevelProgress';
 import { PaywallModal } from '../Paywall/PaywallModal';
 import { storyKey } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
-import { CastStrip } from '../../modules/cast/CastStrip';
+import { CastStack } from '../../modules/cast/CastStack';
 import { CastSheet } from '../../modules/cast/CastSheet';
 import { downloadPartHandout } from '../../modules/handout/downloadHandout';
 import type { HandoutLabels } from '../../modules/handout/handoutModel';
@@ -23,7 +22,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const {
     difficulty, storyTitle, theme,
     audioTracks, comics, completedLevels, totalLevels,
-    lastListenedLevel, progressPercentage, navigationState,
+    lastListenedLevel, navigationState,
     isLoading, getLevelData, isPartLocked,
     showCongrats, previewLevel, previewData,
     handleLevelCardClick, handleStartListening,
@@ -72,19 +71,26 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   if (isLoading) return <LevelProgressSkeleton />;
 
+  // One screen, no scroll: the page is exactly the viewport under the fixed
+  // 52px navbar and the grid takes whatever height the header and the
+  // progress bar leave (LevelGrid). It scrolls only if the grid's minimum row
+  // height cannot fit — a phone held sideways.
   return (
-    <div className={`min-h-screen bg-room p-8 transition-all duration-1000 ease-in-out`}>
-      <div className="max-w-4xl pt-12 mx-auto">
+    <div className="flex h-[100dvh] flex-col overflow-y-auto bg-room pt-13">
+      <div className="@container mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 px-4 pt-3 pb-4 md:gap-5 md:px-8 md:pt-7 md:pb-8">
 
-        <LevelProgressHeader difficulty={difficulty} theme={theme} storyTitle={storyTitle} />
-
-        <CastStrip cards={castCards} accent={theme.accent} onOpen={handleOpenCast} />
-
-        <LevelProgressBar
-          completedCount={completedLevels.length}
-          totalLevels={totalLevels}
-          progressPercentage={progressPercentage}
+        <LevelProgressHeader
+          difficulty={difficulty}
           theme={theme}
+          storyTitle={storyTitle}
+          aside={<CastStack cards={castCards} accent={theme.accent} onOpen={handleOpenCast} />}
+        />
+
+        <LevelSegments
+          totalLevels={totalLevels}
+          completedLevels={completedLevels}
+          lastListenedLevel={lastListenedLevel}
+          accent={theme.accent}
         />
 
         <LevelGrid
@@ -101,8 +107,6 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           onLevelClick={handleLevelCardClick}
         />
       </div>
-
-      <LevelLegend theme={theme} />
 
       <CongratsModal
         isOpen={showCongrats}

@@ -220,7 +220,11 @@
     "locked": "Не выполнен",
     "overallProgress": "Общий прогресс",
     "completedCount": "",
-    "levelLabel": "Уровень"
+    "levelLabel": "Уровень",
+    "back": "Вернуться",
+    "doneOf": "Пройдено {{done}} из {{total}}",
+    "currentPart": "Сейчас: часть {{part}}",
+    "allDone": "Всё пройдено"
   },
   "cast": {
     "label": "Герои",

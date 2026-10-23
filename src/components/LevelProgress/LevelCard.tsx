@@ -43,13 +43,13 @@ export const LevelCard: React.FC<Props> = ({
   return (
     <div
       onClick={() => onClick(level)}
-      className="group cursor-pointer animate-scale-in flex flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
+      className="group cursor-pointer animate-scale-in flex min-h-0 flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Square cover */}
+      {/* Cover — fills the grid cell, whatever shape the screen leaves it */}
       <div
         className={`
-          relative w-full aspect-square rounded-card overflow-hidden
+          relative w-full flex-1 min-h-0 rounded-card overflow-hidden
           bg-gradient-to-br from-white/30 to-white/10 transition-shadow duration-300
           ${getStatusRingClass(status)}
         `}
@@ -70,7 +70,7 @@ export const LevelCard: React.FC<Props> = ({
             draggable={false}
             className={`
               w-full h-full object-cover object-center
-              scale-[1.65] group-hover:scale-[1.82]
+              scale-[1.35] md:scale-[1.65] md:group-hover:scale-[1.82]
               transition-transform duration-500 ease-out
               ${isLocked ? 'brightness-50' : ''}
             `}
@@ -139,11 +139,19 @@ export const LevelCard: React.FC<Props> = ({
             {isFree ? t('trial.free') : t('shelf.previewBadge', { seconds: previewSeconds })}
           </div>
         )}
+        {/* Title on the art — phone tiles are too short for a line under them */}
+        <div
+          className={`md:hidden absolute inset-x-0 bottom-0 z-10 px-2 pt-5 pb-1.5
+            bg-gradient-to-t from-black/80 to-transparent
+            text-xs font-bold leading-tight line-clamp-2 ${isLocked ? 'text-white/60' : 'text-white'}`}
+        >
+          {trackTitle}
+        </div>
       </div>
 
       {/* Title */}
       <div
-        className={`text-sm font-medium leading-tight line-clamp-2 px-0.5 transition-colors ${
+        className={`max-md:hidden flex-none text-sm font-medium leading-tight line-clamp-2 min-h-[2lh] px-0.5 transition-colors ${
           isLocked ? 'text-black/35' : 'text-black/80'
         }`}
       >

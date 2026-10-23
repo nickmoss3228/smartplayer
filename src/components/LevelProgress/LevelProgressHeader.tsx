@@ -7,39 +7,50 @@ interface Props {
   difficulty: string;
   theme: Theme;
   storyTitle?: string;
+  /** Sits at the right end of the row — the story's characters. */
+  aside?: React.ReactNode;
 }
 
-export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme, storyTitle }) => {
+/**
+ * One left-aligned row: back, level + story title, characters. It used to be
+ * a centred two-line block with 40px under it; on a phone that alone pushed
+ * the first part card past the middle of the screen.
+ */
+export const LevelProgressHeader: React.FC<Props> = ({ difficulty, theme, storyTitle, aside }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
-    <div className="relative flex items-center mb-10 animate-fade-in">
+    <div className="flex flex-none items-center gap-1 md:gap-4 animate-fade-in">
       <button
         onClick={() => navigate(`/levels/${difficulty}`)}
-        className="absolute left-0 flex items-center gap-1.5 text-black/60 cursor-pointer hover:text-black transition-colors text-sm z-10"
+        aria-label={t('levelProgress.back')}
+        className="-ml-2 flex h-11 flex-none items-center gap-1.5 px-2 text-sm text-black/60 cursor-pointer hover:text-black transition-colors"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4"
+          className="h-5 w-5 md:h-4 md:w-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
           strokeWidth={2}
+          aria-hidden
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        <span className="hidden sm:inline">Вернуться</span>
+        <span className="hidden md:inline">{t('levelProgress.back')}</span>
       </button>
 
-      <div className="w-full text-center px-14 sm:px-20 transform transition-all duration-700 ease-in-out">
-        <div className="text-sm sm:text-2xl font-bold text-black/80 mb-1 sm:mb-2 tracking-wider transition-all duration-700 animate-slide-down">
+      <div className="min-w-0 flex-1">
+        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
           {t(`levelProgress.${difficulty}Title`)}
         </div>
-        <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-black transition-all duration-700 animate-slide-up break-words">
+        <h1 className="m-0 text-[22px] md:text-[32px] font-extrabold tracking-[-0.03em] leading-tight text-ink line-clamp-2 break-words animate-slide-up">
           {storyTitle ?? theme.subtitle}
         </h1>
       </div>
+
+      {aside}
     </div>
   );
 };

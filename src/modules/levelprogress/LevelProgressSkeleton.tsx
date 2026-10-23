@@ -1,45 +1,33 @@
 // components/LevelProgressSkeleton.tsx
 import React from "react";
 
+/** The same one-screen frame as LevelProgress, so nothing jumps when it loads. */
 export const LevelProgressSkeleton: React.FC = () => {
   return (
-    <div className="min-h-screen bg-room p-8 animate-pulse">
-      <div className="max-w-4xl pt-16 mx-auto">
-        {/* Header skeleton */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="w-10 h-10 bg-gray-200 rounded-full" />
-          <div className="text-center flex-1 px-4">
-            <div className="h-6 bg-gray-200 rounded-[3px] w-48 mx-auto mb-2" />
-            <div className="h-10 bg-gray-200 rounded-[3px] w-64 mx-auto" />
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-room pt-13 animate-pulse">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 px-4 pt-3 pb-4 md:gap-5 md:px-8 md:pt-7 md:pb-8">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-gray-200" />
+          <div className="flex-1">
+            <div className="mb-2 h-3 w-20 rounded-chip bg-gray-200" />
+            <div className="h-7 w-56 rounded-chip bg-gray-200" />
           </div>
-          <div className="w-10 h-10 bg-gray-200 rounded-full" />
+          <div className="h-9 w-24 rounded-full bg-gray-200" />
         </div>
 
-        {/* Legend skeleton */}
-        <div className="flex justify-center gap-4 mb-12">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-gray-200 rounded-[3px]" />
-              <div className="w-16 h-4 bg-gray-200 rounded-[3px]" />
-            </div>
-          ))}
+        {/* Segments */}
+        <div className="flex flex-col gap-1.5">
+          <div className="h-3 w-32 rounded-chip bg-gray-200" />
+          <div className="h-1.5 w-full rounded-full bg-gray-200" />
         </div>
 
-        {/* Progress bar skeleton */}
-        <div className="bg-gray-100 rounded-[3px] p-6 mb-8">
-          <div className="flex justify-between mb-4">
-            <div className="h-6 bg-gray-200 rounded-[3px] w-40" />
-            <div className="h-6 bg-gray-200 rounded-[3px] w-24" />
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3" />
-        </div>
-
-        {/* Grid skeleton */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+        {/* Grid — the common 10-part shape */}
+        <div className="grid flex-1 min-h-0 grid-cols-2 grid-rows-5 gap-2 md:grid-cols-5 md:grid-rows-2 md:gap-5">
           {Array.from({ length: 10 }, (_, i) => (
             <div
               key={i}
-              className="aspect-square rounded-[3px] bg-gray-100"
+              className="rounded-card bg-gray-100"
               style={{ animationDelay: `${i * 50}ms` }}
             />
           ))}

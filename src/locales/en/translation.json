@@ -220,7 +220,11 @@
     "locked": "Not Completed",
     "overallProgress": "My Progress",
     "completedCount": "",
-    "levelLabel": "Level"
+    "levelLabel": "Level",
+    "back": "Back",
+    "doneOf": "{{done}} of {{total}} done",
+    "currentPart": "Now: part {{part}}",
+    "allDone": "All done"
   },
   "cast": {
     "label": "Characters",
