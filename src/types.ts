@@ -81,6 +81,8 @@ export interface WaveformPlayerProps {
   repeatGate?:
     | ((segmentSeconds: number, sentence: { index: number; start: number; end: number }) => Promise<boolean>)
     | null;
+  /** The student picked «Подряд» while «Повтори за мной» was on: turn it off. */
+  onRepeatModeExit?: () => void;
 }
 
 export interface Meaning {
