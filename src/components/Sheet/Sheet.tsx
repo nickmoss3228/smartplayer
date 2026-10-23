@@ -21,6 +21,13 @@ interface SheetProps {
   labelledBy?: string;
   /** Tailwind max-width for the panel; the sheet is full width on phones */
   widthClass?: string;
+  /**
+   * The panel's surface and corners. The Dashboard windows keep the default;
+   * the player's word window brings its own (ink or paper, rounder, taller).
+   */
+  panelClass?: string;
+  /** The handle's colour on that surface. */
+  handleClass?: string;
   children: React.ReactNode;
 }
 
@@ -70,6 +77,8 @@ const Sheet: React.FC<SheetProps> = ({
   onClose,
   labelledBy,
   widthClass = "max-w-md",
+  panelClass = "bg-white rounded-t-[3px] sm:rounded-[3px] max-h-[88vh] sm:max-h-[85vh]",
+  handleClass = "bg-black/20",
   children,
 }) => {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -218,7 +227,7 @@ const Sheet: React.FC<SheetProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
-          className="bg-white rounded-t-[3px] sm:rounded-[3px] w-full max-h-[88vh] sm:max-h-[85vh] overflow-hidden flex flex-col dialog-panel-in shadow-xl"
+          className={`${panelClass} w-full overflow-hidden flex flex-col dialog-panel-in shadow-xl`}
         >
           {/* The tongue. Phones only: a centred dialog is not dragged. */}
           <div
@@ -227,7 +236,7 @@ const Sheet: React.FC<SheetProps> = ({
             data-sheet-handle=""
             className="sm:hidden flex-shrink-0 flex justify-center pt-2 pb-1 touch-none cursor-grab active:cursor-grabbing"
           >
-            <span className="block w-10 h-1.5 rounded-full bg-black/20" />
+            <span className={`block w-10 h-1.5 rounded-full ${handleClass}`} />
           </div>
           {children}
         </div>

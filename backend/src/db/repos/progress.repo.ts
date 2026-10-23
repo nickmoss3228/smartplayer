@@ -17,6 +17,7 @@ import {
   progressLevelResult,
   storyProgress,
   userLearnedWord,
+  userVocabBookmark,
 } from "../schema.js";
 import type { Tx } from "../client.js";
 import type {
@@ -328,11 +329,13 @@ export async function completeStoryPart(
 
 // ── user_learned_word ───────────────────────────────────────────────────────
 
+/** Learned word keys, oldest first — the копилка's "recent" words are the tail. */
 export async function learnedWords(userId: string, tx: Tx = db()): Promise<string[]> {
   const rows = await tx
     .select({ word: userLearnedWord.word })
     .from(userLearnedWord)
-    .where(eq(userLearnedWord.userId, userId));
+    .where(eq(userLearnedWord.userId, userId))
+    .orderBy(sql`${userLearnedWord.learnedAt} ASC`, userLearnedWord.word);
   return rows.map((r) => r.word);
 }
 
@@ -378,6 +381,46 @@ export async function learnedWordCount(userId: string, tx: Tx = db()): Promise<n
     .from(userLearnedWord)
     .where(eq(userLearnedWord.userId, userId));
   return row?.n ?? 0;
+}
+
+// ── user_vocab_bookmark ─────────────────────────────────────────────────────
+
+/** Bookmarked word keys, newest first. */
+export async function vocabBookmarks(userId: string, tx: Tx = db()): Promise<string[]> {
+  const rows = await tx
+    .select({ word: userVocabBookmark.word })
+    .from(userVocabBookmark)
+    .where(eq(userVocabBookmark.userId, userId))
+    .orderBy(sql`${userVocabBookmark.createdAt} DESC`, userVocabBookmark.word);
+  return rows.map((r) => r.word);
+}
+
+export async function vocabBookmarkCount(userId: string, tx: Tx = db()): Promise<number> {
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)`.mapWith(Number) })
+    .from(userVocabBookmark)
+    .where(eq(userVocabBookmark.userId, userId));
+  return row?.n ?? 0;
+}
+
+/** Bookmark words. Idempotent: a word already bookmarked keeps its original date. */
+export async function addVocabBookmarks(
+  userId: string,
+  words: readonly string[],
+  tx: Tx = db(),
+): Promise<void> {
+  const unique = [...new Set(words.map((w) => w.toLowerCase()).filter(Boolean))];
+  if (unique.length === 0) return;
+  await tx
+    .insert(userVocabBookmark)
+    .values(unique.map((word) => ({ userId, word })))
+    .onConflictDoNothing({ target: [userVocabBookmark.userId, userVocabBookmark.word] });
+}
+
+export async function removeVocabBookmark(userId: string, word: string, tx: Tx = db()): Promise<void> {
+  await tx
+    .delete(userVocabBookmark)
+    .where(and(eq(userVocabBookmark.userId, userId), eq(userVocabBookmark.word, word.toLowerCase())));
 }
 
 /** Used by the admin panel when clearing a user's vocab progress. */

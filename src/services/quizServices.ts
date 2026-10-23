@@ -17,16 +17,26 @@ export const fetchQuizQuestions = async (
   return res.data.questions;
 };
 
+/** Whether the pick was right, and which option was — sent once an answer is in. */
+export interface AnswerCheck {
+  correct: boolean;
+  /** Absent from servers older than the reveal; the quiz then only marks the pick. */
+  correctOption?: number;
+}
+
 export const checkQuizAnswer = async (
   difficulty: string,
   storyId: string,
   partNumber: number,
   questionIndex: number,
   selectedOption: number,
-): Promise<boolean> => {
+): Promise<AnswerCheck> => {
   const res = await axios.post(
     `${API_BASE}/api/progress/quiz/${difficulty}/${storyId}/${partNumber}/check-answer`,
     { questionIndex, selectedOption },
   );
-  return res.data.correct;
+  return {
+    correct: res.data.correct === true,
+    correctOption: typeof res.data.correctOption === "number" ? res.data.correctOption : undefined,
+  };
 };

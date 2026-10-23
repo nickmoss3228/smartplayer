@@ -3,9 +3,11 @@
 // icon/color per currency never drifts between surfaces.
 import {
   IoDiamondOutline,
-  IoBookmarkOutline,
   IoChatbubbleEllipsesOutline,
 } from "react-icons/io5";
+// BitWord is the копилка's coin — one per new word in the jar — so it wears the
+// jar. It used the bookmark icon until word bookmarks arrived and needed it.
+import { JarIcon } from "../modules/vocab/JarIcon";
 import { Wallet } from "../types/Wallet";
 
 export interface CurrencyMeta {
@@ -29,7 +31,7 @@ export const CURRENCIES: CurrencyMeta[] = [
   {
     key: "bitWord",
     label: "BitWord",
-    icon: IoBookmarkOutline,
+    icon: JarIcon,
     chipClasses: "bg-sky-50 text-sky-600",
     textClasses: "text-sky-600",
   },

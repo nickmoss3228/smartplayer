@@ -1,7 +1,11 @@
 import React, { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IoCheckmark, IoVolumeHigh } from "react-icons/io5";
+import { IoCheckmark, IoDocumentTextOutline, IoListOutline, IoVolumeHigh } from "react-icons/io5";
+import type { TextShape } from "../../../services/storyServices";
+import type { WindowWord } from "../../../modules/vocab/textShape";
+import { useRailView } from "../../../modules/vocab/railView";
 import { useWordClip } from "./useWordClip";
+import { WordWindow } from "./WordWindow";
 
 interface RailWord {
   word: string;
@@ -51,6 +55,11 @@ WordRow.displayName = "WordRow";
 interface WordRailProps {
   vocabulary: RailWord[];
   phrasalVerbs: RailWord[];
+  /** The same words for the text view, with the part's transcript shape. */
+  words: WindowWord[];
+  shape: TextShape | null | undefined;
+  seed: string;
+  partNumber: number;
   onPlay: PlayFn;
   volume: number;
   /** Keys (lowercased audioKey ?? word) the student has already answered correctly */
@@ -64,14 +73,22 @@ type TabId = "vocab" | "phrasal";
 const keyOf = (w: RailWord) => (w.audioKey ?? w.word).toLowerCase();
 
 /**
- * The desktop player's right-hand column: how many of the part's words are
- * known, the words and the phrasal verbs as two tabs of rows, and the practice
- * card at the foot. The list scrolls inside the rail, so a part with many words
- * never pushes anything off the screen. Phones keep VocabularyRow's chips.
+ * The desktop player's right-hand column. By default, as it always was: how
+ * many of the part's words are known, the words and the phrasal verbs as two
+ * tabs of rows, and the practice card at the foot. The switch at the top turns
+ * the column into the word window's page of text (WordWindow), drawn straight
+ * on the level's colour like the list; the choice is remembered on this device.
+ * Either way the content scrolls inside the column, so a part with many words
+ * never pushes anything off the screen. Phones open the text from one button
+ * (WordsButton) and have no list.
  */
 export const WordRail: React.FC<WordRailProps> = ({
   vocabulary,
   phrasalVerbs,
+  words,
+  shape,
+  seed,
+  partNumber,
   onPlay,
   volume,
   learnedWords,
@@ -80,6 +97,7 @@ export const WordRail: React.FC<WordRailProps> = ({
   const { t } = useTranslation();
   const baseId = useId();
   const tabRefs = useRef<Record<TabId, HTMLButtonElement | null>>({ vocab: null, phrasal: null });
+  const [view, setView] = useRailView();
 
   const tabs = (
     [
@@ -103,9 +121,55 @@ export const WordRail: React.FC<WordRailProps> = ({
     tabRefs.current[next.id]?.focus();
   };
 
+  // The view switch, in the look of the player's «Подряд / По фразам» control.
+  const viewSwitch = total > 0 && (
+    <div className="flex shrink-0 items-center" role="group" aria-label={t("words.viewLabel")}>
+      <div className="inline-flex rounded-full bg-black/10 p-1">
+        {(
+          [
+            { id: "list", label: t("words.viewList"), Icon: IoListOutline },
+            { id: "text", label: t("words.viewText"), Icon: IoDocumentTextOutline },
+          ] as const
+        ).map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            aria-pressed={view === id}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+              view === id ? "bg-white text-ink" : "text-white hover:bg-white/10"
+            }`}
+          >
+            <Icon size={15} aria-hidden="true" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3.5" data-tour="tour-vocabulary">
-      {total > 0 && active && (
+      {viewSwitch}
+
+      {total > 0 && view === "text" && (
+        // No page of its own: white on the level's colour, like the list.
+        <div className="flex min-h-0 flex-1 flex-col">
+          <WordWindow
+            variant="rail"
+            surface="clear"
+            words={words}
+            shape={shape}
+            seed={seed}
+            partNumber={partNumber}
+            learnedWords={learnedWords}
+            onPlay={onPlay}
+            volume={volume}
+          />
+        </div>
+      )}
+
+      {total > 0 && view === "list" && active && (
         <>
           <div className="flex shrink-0 flex-col gap-2">
             <div className="flex items-baseline justify-between gap-3">

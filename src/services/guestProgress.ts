@@ -24,6 +24,8 @@ interface GuestProgressData {
   // key: `${difficulty}:${storySlug}`
   stories: Record<string, GuestStoryProgress>;
   learnedWords: string[];
+  /** Words the guest bookmarked to come back to, newest first. */
+  vocabBookmarks: string[];
 }
 
 export interface GuestMigrationPayload {
@@ -33,6 +35,7 @@ export interface GuestMigrationPayload {
     results: { partNumber: number; correctAnswers: number; totalQuestions: number }[];
   }[];
   learnedWords: string[];
+  vocabBookmarks: string[];
 }
 
 const defaultStoryProgress = (): GuestStoryProgress => ({
@@ -44,6 +47,7 @@ const defaultStoryProgress = (): GuestStoryProgress => ({
 const defaultProgressData = (): GuestProgressData => ({
   stories: {},
   learnedWords: [],
+  vocabBookmarks: [],
 });
 
 const storyKey = (difficulty: string, storySlug: string) => `${difficulty}:${storySlug}`;
@@ -56,6 +60,7 @@ function getGuestProgressData(): GuestProgressData {
     return {
       stories: parsed.stories ?? {},
       learnedWords: Array.isArray(parsed.learnedWords) ? parsed.learnedWords : [],
+      vocabBookmarks: Array.isArray(parsed.vocabBookmarks) ? parsed.vocabBookmarks : [],
     };
   } catch {
     return defaultProgressData();
@@ -137,11 +142,25 @@ export function saveGuestLearnedWords(words: string[]): string[] {
   return data.learnedWords;
 }
 
+export function getGuestVocabBookmarks(): string[] {
+  return getGuestProgressData().vocabBookmarks;
+}
+
+/** Set one word's bookmark; returns the guest's bookmarks, newest first. */
+export function setGuestVocabBookmark(key: string, bookmarked: boolean): string[] {
+  const data = getGuestProgressData();
+  const rest = data.vocabBookmarks.filter((k) => k !== key);
+  data.vocabBookmarks = bookmarked ? [key, ...rest] : rest;
+  saveGuestProgressData(data);
+  return data.vocabBookmarks;
+}
+
 export function hasGuestProgress(): boolean {
   const data = getGuestProgressData();
   return (
     Object.values(data.stories).some((s) => s.completedParts.length > 0) ||
-    data.learnedWords.length > 0
+    data.learnedWords.length > 0 ||
+    data.vocabBookmarks.length > 0
   );
 }
 
@@ -161,7 +180,7 @@ export function buildGuestMigrationPayload(): GuestMigrationPayload {
       return { difficulty, storyId, results };
     });
 
-  return { stories, learnedWords: data.learnedWords };
+  return { stories, learnedWords: data.learnedWords, vocabBookmarks: data.vocabBookmarks };
 }
 
 export function clearGuestProgress(): void {
