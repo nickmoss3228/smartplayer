@@ -1,6 +1,7 @@
 // StoryPreviewModal.tsx
-import { IoBulbOutline, IoChevronDown, IoClose, IoHeadsetOutline } from 'react-icons/io5';
-import React, { useState } from "react";
+import { IoBulbOutline, IoChevronDown, IoClose, IoDownloadOutline, IoHeadsetOutline } from 'react-icons/io5';
+import React, { useEffect, useState } from "react";
+import { HandoutLockedError } from "../handout/handoutApi";
 import { Theme } from "../../types/LevelProgress.ts";
 import type { StoryPreview } from "./partPreview";
 import { useTranslation } from "react-i18next";
@@ -12,13 +13,37 @@ interface StoryPreviewModalProps {
   onStart: () => void;
   preview: StoryPreview | null;
   theme: Theme;
+  /**
+   * Makes and saves the part's PDF (modules/handout). Absent when the part
+   * cannot have one — a timed preview, or the Builder's card preview — and the
+   * button is not drawn.
+   */
+  onDownloadPdf?: () => Promise<void>;
 }
 
+type PdfState = "idle" | "working" | "locked" | "failed";
+
 export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
-  preview, theme, isOpen, onClose, onStart,
+  preview, theme, isOpen, onClose, onStart, onDownloadPdf,
 }) => {
   const { t } = useTranslation();  // ← use hook, not standalone t import
   const [showDetails, setShowDetails] = useState(false);
+  const [pdfState, setPdfState] = useState<PdfState>("idle");
+
+  // A message about the last part's PDF must not greet the next part.
+  const previewId = preview?.id;
+  useEffect(() => setPdfState("idle"), [previewId]);
+
+  const handleDownloadPdf = async () => {
+    if (!onDownloadPdf || pdfState === "working") return;
+    setPdfState("working");
+    try {
+      await onDownloadPdf();
+      setPdfState("idle");
+    } catch (error) {
+      setPdfState(error instanceof HandoutLockedError ? "locked" : "failed");
+    }
+  };
 
   if (!isOpen || !preview) return null;
 
@@ -186,6 +211,11 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
 
         {/* ── Action buttons — flex-shrink-0 keeps them ALWAYS visible ── */}
         <div className="flex-shrink-0 px-6 pb-6 pt-3 border-t border-white/5">
+          {(pdfState === "locked" || pdfState === "failed") && (
+            <p role="status" className="text-xs text-white/60 text-center mb-2">
+              {t(pdfState === "locked" ? "storyModal.pdfLocked" : "storyModal.pdfFailed")}
+            </p>
+          )}
           <div className="flex gap-3">
             <button
               onClick={onClose}
@@ -194,6 +224,28 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             >
               {t("storyModal.back")}
             </button>
+            {onDownloadPdf && (
+              <button
+                onClick={handleDownloadPdf}
+                disabled={pdfState === "working"}
+                aria-label={t("storyModal.downloadPdfLabel")}
+                title={t("storyModal.downloadPdfLabel")}
+                aria-busy={pdfState === "working"}
+                // Icon only on phones: three labels in one row wrap "Start listening".
+                className="shrink-0 px-3.5 sm:px-4 py-3 rounded-[3px] border border-white/15 text-white/70
+                           hover:text-white hover:border-white/30 transition-all text-sm font-medium
+                           flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
+              >
+                {pdfState === "working" ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-white/25 border-t-white animate-spin" aria-hidden />
+                ) : (
+                  <IoDownloadOutline size={16} aria-hidden />
+                )}
+                <span className="hidden sm:inline">
+                  {pdfState === "working" ? t("storyModal.preparingPdf") : t("storyModal.downloadPdf")}
+                </span>
+              </button>
+            )}
             <button
               onClick={onStart}
               className={`flex-1 py-3 rounded-[3px] bg-gradient-to-r ${theme.progressGradient}

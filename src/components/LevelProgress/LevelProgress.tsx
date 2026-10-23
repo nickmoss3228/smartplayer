@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SHOP_ENABLED } from '../../config/features';
 import { useLevelProgressPage } from './useLevelProgressPage';
 import { LevelProgressHeader } from './LevelProgressHeader';
@@ -14,6 +15,8 @@ import { storyKey } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
 import { CastStrip } from '../../modules/cast/CastStrip';
 import { CastSheet } from '../../modules/cast/CastSheet';
+import { downloadPartHandout } from '../../modules/handout/downloadHandout';
+import type { HandoutLabels } from '../../modules/handout/handoutModel';
 
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const catalog = useCatalog();
@@ -36,6 +39,36 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     handleOpenCast,
     handleCloseCast,
   } = useLevelProgressPage(props);
+  const { t, i18n } = useTranslation();
+  const storySlug = props.storySlug ?? 'leo';
+
+  // The PDF carries the part's text, so it is offered only where the server
+  // will hand it out: an owned story or a free part, never the timed preview.
+  const canDownloadPdf = previewLevel !== null && (storyOwned || previewLevel <= freeParts);
+  const handleDownloadPdf = async () => {
+    if (previewLevel === null) return;
+    const label = (key: string) => t(`handout.${key}`);
+    const labels: HandoutLabels = {
+      site: label('site'),
+      level: t(`levelProgress.${difficulty}Title`),
+      fat: t(`levels.fat${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`),
+      part: label('part'),
+      grammar: label('grammar'),
+      tip: label('tip'),
+      text: label('text'),
+      vocabulary: label('vocabulary'),
+      phrasal: label('phrasal'),
+      english: label('english'),
+      russian: label('russian'),
+    };
+    await downloadPartHandout({
+      difficulty,
+      storyId: storySlug,
+      partNumber: previewLevel,
+      locale: i18n.language?.startsWith('ru') ? 'ru' : 'en',
+      labels,
+    });
+  };
 
   if (isLoading) return <LevelProgressSkeleton />;
 
@@ -95,6 +128,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         onStart={handleStartListening}
         preview={previewData}
         theme={theme}
+        onDownloadPdf={canDownloadPdf ? handleDownloadPdf : undefined}
       />
 
       {/* One gate for everyone. A guest sees the same offer and is asked to
@@ -105,7 +139,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         isOpen={SHOP_ENABLED && showPaywall && !storyOwned}
         theme={theme}
         storyTitle={storyTitle}
-        requiredSkus={catalog.skusGranting(storyKey(difficulty, props.storySlug ?? 'leo'))}
+        requiredSkus={catalog.skusGranting(storyKey(difficulty, storySlug))}
         onClose={() => setShowPaywall(false)}
       />
     </div>
