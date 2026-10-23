@@ -93,6 +93,37 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Makes the PSOLA-slowed copies of story audio (0.65x and 0.8x) that the
+  # player plays instead of stretching the audio itself. The backend calls it
+  # at AUDIO_WORKER_URL=http://audio-worker:8000 after an upload. Shared by
+  # production and staging: it keeps no state. No profile, so a bare
+  # `docker compose up -d` starts it; the backend workflows never touch it.
+  # `expose`, never `ports`: it has no authentication. Praat inside it is
+  # GPLv3, which is why it is its own service; see audio-worker/README.md.
+  audio-worker:
+    build:
+      context: ./audio-worker
+    image: ${AUDIO_WORKER_IMAGE:-smartplayer-audio-worker}:${TAG:-latest}
+    container_name: smartplayer-audio-worker
+    restart: unless-stopped
+    expose:
+      - "8000"
+    networks: [smartplayer-net]
+    # Measured 2026-10-14: ~100 MB idle, ~210 MB peak on the longest part
+    # (162 s at 0.65x). One job at a time, so this does not grow with load.
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # ── Staging ─────────────────────────────────────────────────────────────
   # A second copy of the stack for testing unreleased work, served from
   # test.малако.рф on this same VM. Deployed from the `staging` git branch by

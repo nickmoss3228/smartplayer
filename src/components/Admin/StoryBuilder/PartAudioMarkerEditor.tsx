@@ -28,6 +28,7 @@ import {
   suggestMarkers,
 } from "./audioAnalysis";
 import MarkerTrack from "./MarkerTrack";
+import PartSlowCopies from "./PartSlowCopies";
 
 interface PartAudioMarkerEditorProps {
   token: string;
@@ -98,6 +99,8 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   const [zoom, setZoom] = useState(0);
 
   const [uploading, setUploading] = useState(false);
+  // A recording uploaded in this editor gets its slow copies without a click.
+  const [justUploaded, setJustUploaded] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [error, setError] = useState("");
@@ -422,6 +425,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         );
         onPartUpdated(updated);
         setSaveState("saved");
+        setJustUploaded(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed.");
       } finally {
@@ -688,6 +692,14 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
       {uploading && <p className="text-xs text-gray-500">Uploading the recording…</p>}
+
+      <PartSlowCopies
+        token={token}
+        storyId={story._id}
+        part={part}
+        onPartUpdated={onPartUpdated}
+        autoStart={justUploaded}
+      />
 
       {issues.length > 0 && (
         <ul className="rounded-[3px] border border-amber-200 bg-amber-50 px-3 py-2 space-y-1">
