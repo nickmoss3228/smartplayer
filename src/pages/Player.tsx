@@ -698,6 +698,7 @@ const Player = React.memo(() => {
               {canRepeat && playerVisible && (
                 <button
                   type="button"
+                  data-tour="tour-mic"
                   onClick={repeat.toggle}
                   aria-pressed={repeat.enabled}
                   aria-label={repeat.enabled ? t("repeatMode.buttonOn") : t("repeatMode.button")}

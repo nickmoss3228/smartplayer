@@ -945,6 +945,14 @@
         "body": "We solve the main problem first: learning to hear spoken English. English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. So first you hear the word and understand it — learning how to write it comes later."
       },
       {
+        "title": "Repeat after me",
+        "body": "Tap the microphone and the player will stop after each sentence and wait for you to say it aloud. Once you finish, it moves on by itself. Your browser will ask for microphone access; without it, the player just waits a few seconds."
+      },
+      {
+        "title": "Why say it aloud?",
+        "body": "Children listen first, then repeat after grown-ups — that's how the sounds of a new language become their own. A phrase you have said yourself is easier for your ear to catch later. You can play your takes back under Practice, on the \"Hear yourself\" tile. The recording stays on this device only."
+      },
+      {
         "title": "Take the Quiz",
         "body": "Once you've listened to the full story this button lights up! Take the quiz and find out how many facts you caught. Good luck!"
       }
