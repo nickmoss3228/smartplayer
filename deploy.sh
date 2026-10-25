@@ -110,9 +110,9 @@ push() {
 }
 
 # ---------------------------------------------------------------------------
-# The VM authenticates via its attached service account, fetching a fresh token
-# from the metadata endpoint. Nothing long-lived is stored on disk. Any IAM
-# token baked into ~/.docker/config.json is expired and must be replaced.
+# The VM is outside Yandex Cloud (reg.ru since 2026-10-25), so it has no
+# metadata token. It logs in with a pull-only authorized key of
+# smartplayer-vm-sa at ~/registry-key.json (chmod 600).
 # ---------------------------------------------------------------------------
 deploy() {
   local svc="$1"
@@ -122,11 +122,8 @@ set -euo pipefail
 SVC="$1"; REGISTRY="$2"
 IMG="$REGISTRY/smartplayer-$SVC"
 
-TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
-  "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
-  | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
-[ -z "$TOKEN" ] && { echo "ERROR: could not get IAM token from metadata"; exit 1; }
-echo "$TOKEN" | docker login --username iam --password-stdin cr.yandex >/dev/null
+[ -s ~/registry-key.json ] || { echo "ERROR: ~/registry-key.json missing"; exit 1; }
+docker login --username json_key --password-stdin cr.yandex < ~/registry-key.json >/dev/null
 
 # Snapshot what is currently deployed BEFORE pulling over :latest.
 docker tag "$IMG:latest" "$IMG:rollback" 2>/dev/null && echo "rollback tag updated" || true

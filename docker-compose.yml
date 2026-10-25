@@ -552,6 +552,12 @@ services:
 networks:
   smartplayer-net:
     driver: bridge
+    # The reg.ru VM's NIC has MTU 1450 (OpenStack overlay); Docker defaults to
+    # 1500. With the mismatch, TCP connects but large replies (TLS handshakes,
+    # pages) are dropped, so HTTPS hangs "after connect" for most visitors and
+    # Let's Encrypt's tls-alpn-01 challenge times out. Must not exceed the NIC.
+    driver_opts:
+      com.docker.network.driver.mtu: "1450"
 
 volumes:
   caddy_data:
