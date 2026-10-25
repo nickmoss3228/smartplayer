@@ -248,8 +248,10 @@
    the page's width/height (--fr) from modules/comics/comicFocus. The image is
    made just large enough for that panel to cover the tile, then centred on
    it, so no gutter shows whatever shape the tile is. The tile is the size
-   container `cqw`/`cqh` measure. Unlayered, so it beats the card's scale-*
-   and w-full/h-full utilities. */
+   container `cqw`/`cqh` measure. Unlayered, so it beats the card's
+   w-full/h-full utilities. The card's phone zoom (scale-[1.35]) is left off
+   in LevelCard instead of overridden here: the build's CSS minifier dropped
+   a `scale: none` override, so production showed every panel magnified. */
 @media (max-width: 767.98px) {
   .comic-focus {
     container-type: size;
@@ -262,8 +264,6 @@
     height: auto;
     left: calc(50cqw - (var(--fx) + var(--fw) / 2) * var(--iw));
     top: calc(50cqh - (var(--fy) + var(--fh) / 2) * var(--iw) / var(--fr));
-    scale: none;
-    transform: none;
   }
 }
 

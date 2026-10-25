@@ -85,7 +85,7 @@ export const LevelCard: React.FC<Props> = ({
             style={focusVars}
             className={`
               w-full h-full object-cover object-center
-              scale-[1.35] md:scale-[1.65] md:group-hover:scale-[1.82]
+              ${focus ? '' : 'scale-[1.35]'} md:scale-[1.65] md:group-hover:scale-[1.82]
               transition-[scale,opacity] duration-500 ease-out
               ${ready ? 'opacity-100' : 'opacity-0'}
               ${isLocked ? 'brightness-50' : ''}
