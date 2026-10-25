@@ -2,6 +2,7 @@ import { IoMusicalNotesOutline } from 'react-icons/io5';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Theme } from '../../types/LevelProgress';
+import { useComicFocus } from '../../modules/comics/useComicFocus';
 
 interface Props {
   level: number;
@@ -39,6 +40,18 @@ export const LevelCard: React.FC<Props> = ({
 
   const isFree = level <= freeParts;
   const isPreview = !isFree && previewSeconds !== null && level === 1;
+  // Phone tiles zoom onto one clean panel so no gutter crosses a face or the
+  // caption (App.css .comic-focus); desktop keeps the whole-page crop.
+  const { focus, ready } = useComicFocus(comicSrc);
+  const focusVars = focus
+    ? ({
+        '--fx': focus.x,
+        '--fy': focus.y,
+        '--fw': focus.w,
+        '--fh': focus.h,
+        '--fr': focus.aspect,
+      } as React.CSSProperties)
+    : undefined;
 
   return (
     <div
@@ -49,7 +62,7 @@ export const LevelCard: React.FC<Props> = ({
       {/* Cover — fills the grid cell, whatever shape the screen leaves it */}
       <div
         className={`
-          relative w-full flex-1 min-h-0 rounded-card overflow-hidden
+          comic-focus relative w-full flex-1 min-h-0 rounded-card overflow-hidden
           bg-gradient-to-br from-white/30 to-white/10 transition-shadow duration-300
           ${getStatusRingClass(status)}
         `}
@@ -68,10 +81,13 @@ export const LevelCard: React.FC<Props> = ({
             src={comicSrc}
             alt={trackTitle}
             draggable={false}
+            data-focus={focus ? '' : undefined}
+            style={focusVars}
             className={`
               w-full h-full object-cover object-center
               scale-[1.35] md:scale-[1.65] md:group-hover:scale-[1.82]
-              transition-transform duration-500 ease-out
+              transition-[scale,opacity] duration-500 ease-out
+              ${ready ? 'opacity-100' : 'opacity-0'}
               ${isLocked ? 'brightness-50' : ''}
             `}
           />

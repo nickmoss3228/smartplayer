@@ -243,6 +243,30 @@
   vertical-align: 0.02em;
 }
 
+/* ── Phone part tiles zoomed onto one comic panel ──────────────────────────
+   LevelCard sets the panel (--fx/--fy/--fw/--fh, fractions of the page) and
+   the page's width/height (--fr) from modules/comics/comicFocus. The image is
+   made just large enough for that panel to cover the tile, then centred on
+   it, so no gutter shows whatever shape the tile is. The tile is the size
+   container `cqw`/`cqh` measure. Unlayered, so it beats the card's scale-*
+   and w-full/h-full utilities. */
+@media (max-width: 767.98px) {
+  .comic-focus {
+    container-type: size;
+  }
+  .comic-focus > img[data-focus] {
+    --iw: max(calc(100cqw / var(--fw)), calc(100cqh * var(--fr) / var(--fh)));
+    position: absolute;
+    max-width: none;
+    width: var(--iw);
+    height: auto;
+    left: calc(50cqw - (var(--fx) + var(--fw) / 2) * var(--iw));
+    top: calc(50cqh - (var(--fy) + var(--fh) / 2) * var(--iw) / var(--fr));
+    scale: none;
+    transform: none;
+  }
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────────────────
    Applies to the whole app, not just the ladder: nothing here was honouring the
    preference before. Animations are collapsed rather than removed so anything
