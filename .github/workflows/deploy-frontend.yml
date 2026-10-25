@@ -65,12 +65,10 @@ jobs:
           script: |
             set -e
             cd ~/smartplayer
-            # Authenticate to the registry using the VM's own attached service
-            # account, so no registry credentials are ever stored on the box.
-            TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
-              "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token" \
-              | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
-            echo "$TOKEN" | sudo docker login --username iam --password-stdin cr.yandex
+            # The VM is outside Yandex Cloud, so there is no metadata token.
+            # It logs in with an authorized key of smartplayer-vm-sa
+            # (images.puller only), kept at ~/registry-key.json, chmod 600.
+            sudo docker login --username json_key --password-stdin cr.yandex < ~/registry-key.json
             # TAG=latest lives in ~/smartplayer/.env on the VM
             sudo docker compose pull frontend
             sudo docker compose up -d frontend
