@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { IoChevronForward } from 'react-icons/io5';
+import { SceneSlot } from './SceneSlot';
 
 /**
  * Chapter 0: the promise, the three problems by name, and the way in.
@@ -17,6 +18,7 @@ export function HeroCard() {
   return (
     <section className="ch first" data-ch="0">
       <div className="card">
+        <SceneSlot ch={0} />
         <div className="still">
           <div className="probs">
             {scenes.map((name, i) => (

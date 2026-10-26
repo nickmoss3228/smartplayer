@@ -6,6 +6,7 @@ import autumnRu from '../../../assets/landing/autumn-ru.wav';
 import type { AudioOwner } from '../landingAudio';
 import { focusChapter, landingActions, setTilesStep, useLanding } from '../landingStore';
 import { useLandingData } from '../leoPart1';
+import { SceneSlot } from './SceneSlot';
 
 /** The «autumn» clip this card is playing, and how to cut it short. */
 interface Clip {
@@ -99,6 +100,7 @@ export function SpellingCard() {
   return (
     <section className="ch" data-ch="3">
       <div className="card">
+        <SceneSlot ch={3} />
         <div className="still still-tiles">
           <div><small>{steps[0]}</small><b>AUTUMN</b></div>
           <div style={{ color: 'var(--signal-ink)' }}>

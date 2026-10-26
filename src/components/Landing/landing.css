@@ -108,25 +108,26 @@
 .landing .browser img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
 
 /* ── the slogan, under the navbar's name ──────────────────────────────── */
-/* It floats over the top of the hero instead of taking a row of its own, so the hero starts right under the navbar. */
-.landing .slogan-bar { position: absolute; top: var(--nav-h); left: 0; right: 0; z-index: 4; display: flex; justify-content: center; padding: 8px var(--gutter); font-size: 13px; font-weight: 500; color: var(--dim); text-align: center; pointer-events: none; }
-@media (min-width: 960px) { .landing .slogan-bar { font-size: 14px; } }
+.landing .slogan-bar { position: relative; z-index: 4; display: flex; justify-content: center; padding: 14px var(--gutter) 2px; font-size: 13px; font-weight: 500; color: var(--dim); text-align: center; }
+/* From 960px it floats over the top of the stage instead of taking a row of its own, so the hero is mid-screen. */
+@media (min-width: 960px) { .landing .slogan-bar { position: absolute; top: var(--nav-h); left: 0; right: 0; padding: 8px var(--gutter); font-size: 14px; pointer-events: none; } }
 /* Without the 3D there is no stage to float over. */
 .landing.no3d .slogan-bar { position: relative; top: 0; }
 
 /* ── pinned 3D tracks ───────────────────────────────────────────────── */
 .landing .wrap { max-width: 1160px; margin: 0 auto; padding-inline: var(--gutter); }
 .landing .track { position: relative; }
-/* Phones: the 3D is a band pinned under the navbar and the cards scroll
-   beneath it, so the explanation never hides behind its own text.
-   From 960px it fills the screen, behind the cards on the left. */
-.landing .stage { position: sticky; top: var(--nav-h); height: 46svh; z-index: 3; overflow: hidden; background: var(--room); border-bottom: 1px solid var(--line); }
+/* Phones: no pinned band — each card opens with its own window onto the scene
+   (.slot, SceneSlot.tsx) and the page reads straight down, nothing covering the text.
+   From 960px the 3D fills the screen on a pinned stage, behind the cards on the left. */
+.landing .stage { display: none; position: sticky; overflow: hidden; }
+.landing .slot { position: relative; margin: -18px -18px 6px; aspect-ratio: 5 / 4; overflow: hidden; border-radius: 15px 15px 0 0; border-bottom: 1px solid var(--line); background: radial-gradient(60% 50% at 50% 42%, rgba(0, 201, 81, .07), transparent 70%), linear-gradient(180deg, #f8fafc, #eef2f6); }
+.landing .slot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .landing .stage::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(55% 40% at 50% 28%, rgba(0, 201, 81, .07), transparent 70%), radial-gradient(45% 35% at 80% 75%, rgba(173, 70, 255, .05), transparent 70%); }
 @media (min-width: 960px) { .landing .stage::before { background: radial-gradient(40% 50% at 72% 45%, rgba(0, 201, 81, .07), transparent 70%), radial-gradient(30% 35% at 85% 80%, rgba(173, 70, 255, .05), transparent 70%); } }
 .landing .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; }
 .landing .stage .boot { position: absolute; left: 50%; top: 28%; transform: translate(-50%, -50%); font-family: var(--font-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.landing .ch { position: relative; z-index: 1; padding: 16px var(--gutter) 8px; }
-.landing .ch:last-child { padding-bottom: 40svh; }
+.landing .ch { position: relative; z-index: 1; padding: 12px var(--gutter); }
 .landing .card { position: relative; width: 100%; max-width: 520px; margin: 0 auto; padding: 18px; border-radius: 16px; background: var(--white); border: 1px solid var(--line); box-shadow: 0 24px 48px -28px rgba(15, 21, 28, .35); display: flex; flex-direction: column; gap: 10px; }
 .landing .card h1 { font-size: clamp(32px, 9vw, 52px); font-weight: 800; letter-spacing: -.045em; line-height: 1; }
 .landing .card h1 .soft { color: var(--muted); display: block; }
@@ -207,7 +208,8 @@
 
 .landing .still { display: none; }
 @media (min-width: 960px) {
-  .landing .stage { top: 0; height: 100vh; margin-bottom: -100vh; z-index: 0; background: transparent; border-bottom: 0; }
+  .landing .stage { display: block; top: 0; height: 100vh; margin-bottom: -100vh; z-index: 0; }
+  .landing .slot { display: none; }
   /* The first stage starts behind the see-through navbar, where it pins anyway, so the hero
      is mid-screen from the first frame rather than a navbar's height lower until you scroll. */
   .landing .track[data-first="0"] > .stage { margin-top: calc(-1 * var(--nav-h)); }

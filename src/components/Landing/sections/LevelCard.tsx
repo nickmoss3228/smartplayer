@@ -4,6 +4,7 @@ import { IoArrowForward } from 'react-icons/io5';
 import MilkGlass from '../../Levels/MilkGlass';
 import type { DifficultySlug } from '../../../types/storyGroups';
 import { landingStore, useLanding } from '../landingStore';
+import { SceneSlot } from './SceneSlot';
 
 const LEVELS: DifficultySlug[] = ['easy', 'medium', 'hard'];
 
@@ -30,6 +31,7 @@ export function LevelCard() {
   return (
     <section className="ch" data-ch="5">
       <div className="card">
+        <SceneSlot ch={5} />
         {/* Only built without the scene: the glasses keep a wave going on the main thread, which nobody sees behind display:none. */}
         {!is3d && (
           <div className="still still-glasses">
