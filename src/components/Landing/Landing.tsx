@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import './landing.css';
 import Slogan from '../Brand/Slogan';
+import './landing.css';
 import { useAuth } from '../../context/AuthContext';
 import { useVocabProgress } from '../Player/hooks/useVocabProgress';
 import { useVocabAudio } from '../Player/hooks/useVocabAudio';
@@ -18,7 +18,6 @@ import { Solutions } from './sections/Solutions';
 import { ComicCard } from './sections/ComicCard';
 import { LevelCard } from './sections/LevelCard';
 import { Practice } from './sections/Practice';
-import { PathFan } from './sections/PathFan';
 import { LoopSection } from './sections/LoopSection';
 import { Finder } from './sections/Finder';
 import { FinalCta, LandingFooter } from './sections/FinalCta';
@@ -130,9 +129,11 @@ export default function Landing() {
     <LandingDataContext.Provider value={ctx}>
       <div className={is3d ? 'landing' : 'landing no3d'}>
         {failed3d && <p className="fallback-note">{t('landing.fallback3d')}</p>}
-        <div className="slogan-bar">
-          <Slogan />
-        </div>
+        {/* The name, larger than anything else on the page, and its slogan. The navbar drops the name here. */}
+        <header className="brand-top">
+          <p className="brand-word">{t('brand')}</p>
+          <Slogan className="brand-slogan" />
+        </header>
 
         {/* ═══ Track A · the three problems ═══ */}
         <div className="track" data-first="0" ref={trackA}>
@@ -157,7 +158,6 @@ export default function Landing() {
 
         <main>
           <Practice />
-          <PathFan />
           <LoopSection />
           <Finder />
           <FinalCta />

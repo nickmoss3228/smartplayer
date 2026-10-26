@@ -58,17 +58,23 @@ interface AuthShellProps {
  * right. The machine shows AuthPanel — the method, animated — and nothing
  * else beside it: no headline competing with the card's own heading.
  *
- * Under lg the panel becomes a band above the form rather than disappearing,
- * because phones are where students actually practise. The drawing is capped
- * lower there so the sign-in button stays within reach. Layout.tsx hides the
- * site navbar on these routes, so the panel's own header row is the only
- * identity and way out these screens have — see `AuthShellHeader` below.
+ * Under lg the screen is one column that fits a phone without scrolling: the
+ * header row on a slim dark strip, then the form, then the panel filling
+ * whatever height is left at the bottom (AuthPanel hides its drawing when
+ * that is too little, as on a long sign-up form). Layout.tsx hides the site
+ * navbar on these routes, so the header row is the only identity and way out
+ * these screens have — see `AuthShellHeader` below.
  */
 export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
-  <div className="min-h-screen flex flex-col lg:flex-row bg-room text-ink">
-    <aside className="flex-none lg:w-[42%] lg:max-w-[560px] bg-ink text-panel-text px-4 pt-6 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-6 lg:gap-10">
+  <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-room text-ink">
+    <div className="lg:hidden flex-none bg-ink text-panel-text px-4 py-3 [@media(max-height:700px)]:py-2 sm:px-8">
       <AuthShellHeader />
-      <div className="lg:flex-1 flex flex-col justify-center gap-10">
+    </div>
+    <aside className="order-last lg:order-none flex-1 min-h-0 lg:flex-none lg:w-[42%] lg:max-w-[560px] bg-ink text-panel-text px-4 pt-4 pb-4 sm:px-8 lg:px-12 lg:py-14 flex flex-col gap-6 lg:gap-10">
+      <div className="hidden lg:block">
+        <AuthShellHeader />
+      </div>
+      <div className="flex-1 min-h-0 flex flex-col justify-center gap-10">
         <AuthPanel />
         {aside && <div className="hidden lg:block">{aside}</div>}
       </div>
@@ -79,8 +85,8 @@ export const AuthShell = ({ aside, asideFoot, children }: AuthShellProps) => (
       )}
     </aside>
 
-    <main className="flex-1 flex items-start lg:items-center justify-center px-4 py-6 sm:px-8 sm:py-10 lg:p-14">
-      <div className="w-full max-w-[460px] bg-white border border-line rounded-[3px] p-6 sm:p-10 animate-fade-in">
+    <main className="flex-none lg:flex-1 flex items-start lg:items-center justify-center px-4 py-4 [@media(max-height:700px)]:py-2 sm:px-8 sm:py-10 lg:p-14">
+      <div className="w-full max-w-[460px] bg-white border border-line rounded-[3px] p-6 [@media(max-height:700px)]:p-5 sm:p-10 animate-fade-in">
         {children}
       </div>
     </main>
@@ -181,7 +187,7 @@ export const CardTitle = ({ children }: { children: ReactNode }) => (
 )
 
 export const CardLede = ({ children }: { children: ReactNode }) => (
-  <p className="m-0 mb-7 text-[15px] leading-relaxed text-dim">{children}</p>
+  <p className="m-0 mb-7 [@media(max-height:700px)]:mb-4 text-[15px] leading-relaxed text-dim">{children}</p>
 )
 
 /* ── messages ──────────────────────────────────────────────────────────── */
@@ -557,7 +563,7 @@ export const QuietLink = ({ to, children }: { to: string; children: ReactNode })
 
 /** The "впервые здесь" rule between the form and the alternative action. */
 export const Divider = ({ children }: { children: ReactNode }) => (
-  <div className="flex items-center gap-3.5 my-7">
+  <div className="flex items-center gap-3.5 my-7 [@media(max-height:700px)]:my-4">
     <span className="flex-1 h-px bg-line" />
     <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-muted">{children}</span>
     <span className="flex-1 h-px bg-line" />

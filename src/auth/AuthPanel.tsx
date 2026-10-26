@@ -19,7 +19,7 @@
  * The whole panel is aria-hidden: it illustrates, it does not inform, and five
  * rotating descriptions would be noise to a screen reader sitting on a form.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useReducedMotion } from 'framer-motion'
 import { SceneStage, STAGE_H } from '../components/Method/MethodScene'
@@ -40,12 +40,15 @@ const FADE_MS = 400
 const sceneSeconds = (s: (typeof SCENES)[number]) => SCENE_CYCLE_S[s.id] * s.rounds
 
 /**
- * Under lg the panel is a band above the form, and every pixel it takes pushes
- * the sign-in button further down a phone screen — so the drawing is capped
- * lower there. Read from matchMedia rather than rendering two panels and
- * hiding one: two would run two clocks and two random starts.
+ * Under lg the panel sits under the form and gets only the height the screen
+ * has left (AuthShell), so the page never scrolls for it: it measures that
+ * height and scales the drawing into it, and below MIN_PHONE_STAGE_H shows
+ * just the caption row. Read from matchMedia rather than rendering two panels
+ * and hiding one: two would run two clocks and two random starts.
  */
-const PHONE_MAX_STAGE_H = 210
+const MIN_PHONE_STAGE_H = 90
+/** The caption row under the drawing, and the gap above it. */
+const CAPTION_H = 36
 const LG = '(min-width: 1024px)'
 
 const useIsLg = () => {
@@ -64,7 +67,24 @@ export const AuthPanel = () => {
   const reduce = useReducedMotion()
   const [index, setIndex] = useState(() => Math.floor(Math.random() * SCENES.length))
   const [visible, setVisible] = useState(true)
-  const maxStageHeight = useIsLg() ? STAGE_H : PHONE_MAX_STAGE_H
+  const isLg = useIsLg()
+  const box = useRef<HTMLDivElement>(null)
+  const [room, setRoom] = useState(0)
+
+  // Phones: how tall the space left under the form is.
+  useLayoutEffect(() => {
+    const el = box.current
+    if (isLg || !el) return
+    const measure = () => setRoom(el.clientHeight)
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [isLg])
+
+  const maxStageHeight = isLg ? STAGE_H : Math.min(STAGE_H, room - CAPTION_H)
+  const showStage = isLg || maxStageHeight >= MIN_PHONE_STAGE_H
 
   const scene = reduce ? SCENES[0] : SCENES[index]
 
@@ -79,14 +99,16 @@ export const AuthPanel = () => {
     return () => { clearTimeout(out); clearTimeout(next) }
   }, [index, reduce, scene])
 
-  return (
-    <div aria-hidden="true" className="flex flex-col gap-5 lg:gap-7 w-full">
-      <SceneStage
-        scene={scene.id}
-        maxHeight={maxStageHeight}
-        playKey={`${scene.id}-${index}`}
-        style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
-      />
+  const body = (
+    <>
+      {showStage && (
+        <SceneStage
+          scene={scene.id}
+          maxHeight={maxStageHeight}
+          playKey={`${scene.id}-${index}`}
+          style={{ opacity: visible ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-4">
         <p className="m-0 font-mono text-[10px] lg:text-[11px] tracking-[0.16em] uppercase text-[#7d8d9c]">
@@ -104,6 +126,20 @@ export const AuthPanel = () => {
           </div>
         )}
       </div>
+    </>
+  )
+
+  if (isLg) {
+    return (
+      <div aria-hidden="true" className="flex flex-col gap-5 lg:gap-7 w-full">
+        {body}
+      </div>
+    )
+  }
+  // A phone: the box takes the height it is given and nothing more, so it never pushes the page longer.
+  return (
+    <div aria-hidden="true" ref={box} className="relative flex-1 min-h-4 w-full">
+      <div className="absolute inset-0 flex flex-col justify-end gap-5">{body}</div>
     </div>
   )
 }

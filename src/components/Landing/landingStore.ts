@@ -11,19 +11,6 @@ import type { DifficultySlug } from '../../types/storyGroups';
  * what lets a selector compare by reference.
  */
 
-/** «Найди сцену» as the card plays it; the 3D comic lifts and tints panels from it. */
-export interface ComicGameState {
-  /** Index into the round's order of clips. */
-  i: number;
-  score: number;
-  phase: 'idle' | 'playing' | 'asking' | 'feedback' | 'done';
-  /** The panel the student picked, during feedback. */
-  chosen: number | null;
-  /** The panel the current clip belongs to. */
-  answer: number | null;
-  heard: boolean;
-}
-
 export interface LandingState {
   /** The 3D scene is on. Off for reduced motion, or when WebGL would not start: the cards then show stills. */
   is3d: boolean;
@@ -49,7 +36,6 @@ export interface LandingState {
   /** What the dancer's clock shows, for the speed card's ladder and four counts. */
   ladderUI: { pass: number; beat: number };
   level: DifficultySlug;
-  comic: ComicGameState | null;
 }
 
 const prefersReducedMotion = () =>
@@ -63,7 +49,6 @@ const initial = (): LandingState => ({
   ladder: { on: false, pass: 0, start: 0, gap: true },
   ladderUI: { pass: -1, beat: -1 },
   level: 'easy',
-  comic: null,
 });
 
 let state = initial();
@@ -117,10 +102,6 @@ export const setTilesStep = (step: number, byUser = false) =>
  * these registers it while it is mounted, so the scene never imports a card.
  */
 export const landingActions: {
-  /** The comic game: answer with this panel. */
-  comicAnswer?: (panel: number) => void;
-  /** The comic game: play the current clip (or restart a finished round). */
-  comicListen?: () => void;
   /** Problem 3: play «аутумн» or «о́тэм», moving the tiles to that step. */
   sayAutumn?: (which: 'ru' | 'en') => void;
 } = {};

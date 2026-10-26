@@ -5,7 +5,7 @@ import type { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { createKit, damp, ease, clamp01, roundRect, INK, GREEN, RED, SANS, MONO } from './kit';
 import { makeFigure, applyPose, pose, STAND, SIT, SEAT_TOP, HEAD_Y, FOREARM, UNIT, FIGURE_SCALE, type Figure, type Pose, type PersonLook } from './figures';
 import { applyDance, prepareDancer, keyBetween, keyOnCurve, REST, COUNT_PRINTS, type DanceKey } from './shuffle';
-import { landingStore, landingActions, setSubs, setTilesStep, type ComicGameState } from '../landingStore';
+import { landingStore, landingActions, setSubs, setTilesStep } from '../landingStore';
 import type { DifficultySlug } from '../../../types/storyGroups';
 
 /**
@@ -103,7 +103,6 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   fillLight.position.set(-5, 2, 3);
   scene.add(fillLight);
 
-  const C_INK = new THREE.Color(INK);
   const C_GREEN = new THREE.Color(GREEN);
   const C_RED = new THREE.Color(RED);
   const C_IDLE = new THREE.Color(0xd9e1e8);
@@ -713,12 +712,8 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
     frame: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
     home: THREE.Vector3;
-    lift: number;
-    flash: number;
-    color: THREE.Color;
   }
   let panels: Panel[] = [];
-  let comicSeen: ComicGameState | null | undefined;
   const buildComic = (url: string, boxes: NonNullable<SceneLeo['panels']>) => {
     kit.texture(url, (tex) => {
       if (disposed) return;
@@ -737,36 +732,14 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
         g.add(frame, mesh);
         const home = new THREE.Vector3((b.x + b.w / 2 - 0.5) * PWW, (0.5 - b.y - b.h / 2) * PHH, 0);
         g.position.copy(home);
-        mesh.userData.panel = i;
         gComic.add(g);
-        return { g, i, mesh, frame, home, lift: 0, flash: 0, color: new THREE.Color(INK) };
+        return { g, i, mesh, frame, home };
       });
       const cShadow = shadow(2.8, 0.9);
       cShadow.position.set(0, -1.95, 0);
       gComic.add(cShadow);
-      comicSeen = undefined;
     });
   };
-  const followComic = (g: ComicGameState | null) => {
-    panels.forEach((p) => {
-      p.lift = 0;
-      p.flash = 0;
-    });
-    if (g?.phase !== 'feedback' || g.answer === null) return;
-    const ok = panels[g.answer];
-    if (ok) {
-      ok.lift = 0.7;
-      ok.flash = 1;
-      ok.color.copy(C_GREEN);
-    }
-    if (g.chosen !== null && g.chosen !== g.answer && panels[g.chosen]) {
-      const bad = panels[g.chosen];
-      bad.flash = 1;
-      bad.color.copy(C_RED);
-      bad.lift = 0.25;
-    }
-  };
-
   /* ════ 5 · the glasses ═══════════════════════════════════════════════ */
   const gGlass = new THREE.Group();
   scene.add(gGlass);
@@ -1047,8 +1020,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     return h.length ? h[0].object : null;
   };
   const targetsFor = (): THREE.Object3D[] =>
-    chapter === 4 ? panels.map((p) => p.mesh)
-      : chapter === 5 ? glasses.map((g) => g.hit)
+    chapter === 5 ? glasses.map((g) => g.hit)
         : chapter === 3 ? [...tiles.map((tl) => tl.body), chip]
           : chapter === 2 ? [caption, audR, visR]
             : [];
@@ -1070,10 +1042,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     const o = hitTest(e.clientX, e.clientY, targetsFor());
     if (!o) return;
     const s = landingStore.get();
-    if (chapter === 4) {
-      if (s.comic?.phase === 'asking' && typeof o.userData.panel === 'number') landingActions.comicAnswer?.(o.userData.panel);
-      else if (!s.comic || s.comic.phase === 'idle' || s.comic.phase === 'done') landingActions.comicListen?.();
-    } else if (chapter === 5) {
+    if (chapter === 5) {
       if (o.userData.level) landingStore.set({ level: o.userData.level as DifficultySlug });
     } else if (chapter === 3) {
       landingActions.sayAutumn?.(s.tiles.step === 1 ? 'en' : 'ru');
@@ -1289,24 +1258,15 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
 
     // 4 · the comic
     if (gComic.visible) {
-      if (S.comic !== comicSeen) {
-        comicSeen = S.comic;
-        followComic(S.comic);
-      }
       gComic.rotation.y = Math.sin(time * 0.35) * 0.16 + pointerX * 0.22 - 0.1;
       gComic.rotation.x = 0.06 + pointerY * 0.06;
-      const asking = S.comic?.phase === 'asking';
-      const feedback = S.comic?.phase === 'feedback';
       panels.forEach((p, i) => {
         p.g.position.x = p.home.x * 1.08;
         p.g.position.y = p.home.y * 1.06;
-        p.g.position.z = damp(p.g.position.z, (DEPTH[i % DEPTH.length] ?? 0) * 0.9 + p.lift, 7, dt);
+        p.g.position.z = damp(p.g.position.z, (DEPTH[i % DEPTH.length] ?? 0) * 0.9, 7, dt);
         p.g.rotation.y = i % 2 ? 0.06 : -0.06;
         const fm = p.frame.material;
-        const want = p.flash > 0 ? 1 : asking ? 0.3 + 0.2 * Math.sin(time * 4 + i) : 0.15;
-        fm.opacity = damp(fm.opacity, want * vis[4], 8, dt);
-        fm.color.copy(p.flash > 0 ? p.color : C_INK);
-        p.mesh.material.color.setScalar(feedback && p.flash === 0 ? 0.55 : 1);
+        fm.opacity = damp(fm.opacity, 0.15 * vis[4], 8, dt);
       });
     }
 

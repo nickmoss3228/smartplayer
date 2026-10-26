@@ -10,7 +10,7 @@ export const SCENE_CYCLE_S: Record<SceneId, number> = {
   subtitles: 7,
   word: 9,
   comic: 7,
-  loop: 10,
+  loop: 12,
 };
 
 /** The order the login panel plays them in. The order is the argument. */

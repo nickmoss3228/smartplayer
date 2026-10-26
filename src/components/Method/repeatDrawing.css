@@ -1,0 +1,43 @@
+/*
+ * The listen-and-repeat drawing (RepeatDrawing.tsx): one 11 s cycle — the
+ * narrator's track draws in, «your turn», yours draws in, then both replay while
+ * the face smiles. Paused until the drawing is on screen (.rp-run); with reduced
+ * motion, the finished picture. `.rp-cyc` also times anything that lights up in
+ * step with it (the landing's three steps).
+ */
+.rp-draw svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rp-lbl { font-family: var(--font-mono); font-size: 8px; letter-spacing: .16em; text-transform: uppercase; fill: var(--color-dim); }
+.rp-lbl.rp-you { fill: #15803d; }
+.rp-pill { font-family: var(--font-sans); font-size: 11px; font-weight: 700; fill: #ffffff; }
+.rp-together { font-family: var(--font-sans); font-size: 12px; font-weight: 800; fill: var(--color-ink); }
+.rp-dim { font-weight: 500; fill: var(--color-dim); }
+.rp-cyc { animation-duration: 11s; animation-iteration-count: infinite; animation-timing-function: linear; animation-play-state: paused; }
+.rp-run .rp-cyc { animation-play-state: running; }
+.rp-w1 { animation-name: rp-w1; }
+.rp-w2 { animation-name: rp-w2; }
+.rp-turn { animation-name: rp-turn; }
+.rp-rec { animation-name: rp-rec; }
+.rp-replay { animation-name: rp-replay; }
+.rp-h1 { animation-name: rp-h1; }
+.rp-h2 { animation-name: rp-h2; }
+.rp-smile { animation-name: rp-smile; }
+.rp-plain { animation-name: rp-plain; }
+.rp-open { animation-name: rp-open; }
+.rp-mouth { transform-box: fill-box; transform-origin: center; animation: rp-talk .32s ease-in-out infinite; }
+.rp-ring { transform-box: fill-box; transform-origin: center; animation: rp-ring 1.2s ease-out infinite; }
+@keyframes rp-w1 { 0% { clip-path: inset(0 100% 0 0); } 28%, 97% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes rp-w2 { 0%, 38% { clip-path: inset(0 100% 0 0); } 64%, 97% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes rp-turn { 0%, 28% { opacity: 0; } 31%, 37% { opacity: 1; } 40%, 100% { opacity: 0; } }
+@keyframes rp-rec { 0%, 37% { opacity: 0; } 40%, 63% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes rp-replay { 0%, 65% { opacity: 0; } 68%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rp-h1 { 0%, 68% { transform: translateX(0); opacity: 0; } 69% { opacity: 1; } 82% { transform: translateX(178px); opacity: 1; } 83%, 100% { opacity: 0; transform: translateX(178px); } }
+@keyframes rp-h2 { 0%, 82% { transform: translateX(0); opacity: 0; } 83% { opacity: 1; } 96% { transform: translateX(170px); opacity: 1; } 97%, 100% { opacity: 0; transform: translateX(170px); } }
+@keyframes rp-smile { 0%, 86% { opacity: 0; } 89%, 98% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rp-plain { 0%, 37% { opacity: 1; } 40%, 63% { opacity: 0; } 66%, 86% { opacity: 1; } 89%, 98% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes rp-open { 0%, 37% { opacity: 0; } 40%, 63% { opacity: 1; } 66%, 100% { opacity: 0; } }
+@keyframes rp-talk { 0%, 100% { transform: scaleY(.5); } 50% { transform: scaleY(1.2); } }
+@keyframes rp-ring { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .rp-draw .rp-cyc, .rp-mouth, .rp-ring { animation: none; }
+  .rp-turn, .rp-rec, .rp-open, .rp-plain, .rp-h1, .rp-h2 { opacity: 0; }
+}

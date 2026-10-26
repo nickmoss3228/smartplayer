@@ -5,6 +5,7 @@ import {
   IoWaterOutline,
   IoVolumeHighOutline,
   IoEarOutline,
+  IoMicOutline,
   IoImagesOutline,
   IoHelpCircleOutline,
 } from 'react-icons/io5';
@@ -15,6 +16,7 @@ const LOOP_ICONS: IconType[] = [
   IoWaterOutline,
   IoVolumeHighOutline,
   IoEarOutline,
+  IoMicOutline,
   IoImagesOutline,
   IoHelpCircleOutline,
 ];
@@ -23,8 +25,8 @@ const LOOP_ICONS: IconType[] = [
 const REVEAL_STEP_S = 0.45;
 
 /**
- * The five steps a student physically performs in every story
- * (`howToUse.loop.s1..s5`). Numbered, unlike the guide's section labels —
+ * The six steps a student physically performs in every story
+ * (`howToUse.loop.s1..s6`). Numbered, unlike the guide's section labels —
  * this genuinely is a sequence, so the numbers carry information.
  *
  * Shared by /how-to-use (static) and the last onboarding slide, where
@@ -33,10 +35,10 @@ const REVEAL_STEP_S = 0.45;
 export const LoopSteps: React.FC<{ reveal?: boolean }> = ({ reveal = false }) => {
   const { t } = useTranslation();
 
-  const steps = [1, 2, 3, 4, 5].map((n) => ({
-    Icon: LOOP_ICONS[n - 1],
-    title: t(`howToUse.loop.s${n}.title`),
-    text: t(`howToUse.loop.s${n}.text`),
+  const steps = LOOP_ICONS.map((Icon, i) => ({
+    Icon,
+    title: t(`howToUse.loop.s${i + 1}.title`),
+    text: t(`howToUse.loop.s${i + 1}.text`),
   }));
 
   return (
@@ -47,8 +49,7 @@ export const LoopSteps: React.FC<{ reveal?: boolean }> = ({ reveal = false }) =>
           initial={reveal ? { opacity: 0, y: 8 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...motionEnter, delay: reveal ? i * REVEAL_STEP_S : 0 }}
-          className={`flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5
-            ${i === 4 ? 'sm:col-span-2' : ''}`}
+          className="flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5"
         >
           <span
             aria-hidden

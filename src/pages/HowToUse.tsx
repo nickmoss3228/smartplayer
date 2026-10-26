@@ -4,6 +4,11 @@ import {
   IoChevronBack,
   IoEarOutline,
   IoArrowForward,
+  IoMicOutline,
+  IoRepeatOutline,
+  IoHeadsetOutline,
+  IoShareSocialOutline,
+  IoLockClosedOutline,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import MilkGlass from '../components/Levels/MilkGlass';
@@ -12,6 +17,7 @@ import { METHOD_GROUPS, groupByScene } from '../components/Homepage/WhyClouds/wh
 import { LoopSteps } from '../components/Method/LoopSteps';
 import { MethodBlock } from '../components/Method/MethodBlock';
 import { ScenePanel } from '../components/Method/MethodScene';
+import { RepeatDrawing } from '../components/Method/RepeatDrawing';
 import { buttonPrimary } from '../components/ui/buttonStyles';
 
 /**
@@ -35,9 +41,11 @@ import { buttonPrimary } from '../components/ui/buttonStyles';
  *   what we take    → the three crutches removed on purpose
  *   what you get    → the one crutch handed back (comics / visual memory)
  *
- * Above them sits the thing the old page never said plainly: the five steps a
+ * Above them sits the thing the old page never said plainly: the six steps a
  * student physically performs. The clouds explain *why*; the loop explains
- * *what you do*, and it comes first.
+ * *what you do*, and it comes first. Right after it, «Повторяй вслух»: how the
+ * recording works («Повтори за мной», «Послушай себя», sharing), with the
+ * landing's listen-and-repeat drawing.
  *
  * The pictures are the login screen's five method scenes (Method/MethodScene),
  * the same ones the homepage pop-ups and the onboarding slides show. Questions
@@ -49,6 +57,9 @@ import { buttonPrimary } from '../components/ui/buttonStyles';
 // whyCloudsData.ts, shared with the onboarding slides.
 
 const LEVEL_IDS = ['easy', 'medium', 'hard'] as const;
+
+/** The recording, in the order it is used: howToUse.repeat.steps[0..3]. */
+const REPEAT_ICONS = [IoMicOutline, IoRepeatOutline, IoHeadsetOutline, IoShareSocialOutline];
 const LEVEL_FILL: Record<(typeof LEVEL_IDS)[number], number> = {
   easy: 0.28,
   medium: 0.58,
@@ -90,7 +101,7 @@ const HowToUse: React.FC = () => {
   // first one intersecting the viewport at all.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
-    const ids = ['do', ...METHOD_GROUPS.flatMap((g) => g.ids), 'levels'];
+    const ids = ['do', 'repeat', ...METHOD_GROUPS.flatMap((g) => g.ids), 'levels'];
     const nodes = ids
       .map((id) => document.getElementById(id))
       .filter((n): n is HTMLElement => n !== null);
@@ -129,6 +140,7 @@ const HowToUse: React.FC = () => {
 
         <nav className="flex flex-col gap-0.5" aria-label={t('howToUse.nav.title')}>
           <RailLink href="#do" label={t('howToUse.nav.doIt')} active={active === 'do'} />
+          <RailLink href="#repeat" label={t('howToUse.nav.repeat')} active={active === 'repeat'} />
 
           {METHOD_GROUPS.map((g) => (
             <React.Fragment key={g.key}>
@@ -202,6 +214,50 @@ const HowToUse: React.FC = () => {
 
             <ScenePanel scene="loop" caption={false} className="mb-6" />
             <LoopSteps />
+          </section>
+
+          {/* ═══════════════ REPEAT OUT LOUD ═══════════════
+              The recording: what to press, what happens, where it goes. */}
+          <section id="repeat" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
+              {t('howToUse.repeat.label')}
+            </p>
+            <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
+              {t('howToUse.repeat.title')}
+            </h2>
+            <p className="mt-3 mb-8 max-w-xl text-sm leading-relaxed text-gray-500">
+              {t('howToUse.repeat.text')}
+            </p>
+
+            <div className="relative mb-6 aspect-[16/10] overflow-hidden rounded-[3px] border border-gray-200 bg-gradient-to-b from-white to-room">
+              <RepeatDrawing />
+            </div>
+
+            <ol className="grid gap-3 sm:grid-cols-2">
+              {(t('howToUse.repeat.steps', { returnObjects: true }) as { title: string; text: string }[]).map((step, i) => {
+                const Icon = REPEAT_ICONS[i] ?? IoMicOutline;
+                return (
+                  <li key={step.title} className="flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5">
+                    <span
+                      aria-hidden
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[3px] border border-line bg-room text-ink"
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <p className="font-mono text-[10px] tracking-[0.16em] text-gray-400">{String(i + 1).padStart(2, '0')}</p>
+                      <h3 className="mt-0.5 text-[15px] text-gray-900">{step.title}</h3>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-600">{step.text}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-gray-500">
+              <IoLockClosedOutline aria-hidden className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              {t('howToUse.repeat.note')}
+            </p>
           </section>
 
           {/* ═══════════════ THE SIX QUESTIONS ═══════════════ */}

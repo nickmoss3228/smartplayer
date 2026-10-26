@@ -2,41 +2,21 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoVolumeHigh } from 'react-icons/io5';
 import autumnEn from '../../../assets/landing/autumn-en.wav';
-import desktopPlayer from '../../../assets/landing/d2-player.webp';
-import phonePlayer from '../../../assets/landing/m2-player.webp';
-import { useWordLook, wordPageClass } from '../../../modules/vocab/wordLook';
-import { WordWindow } from '../../Player/Vocabulary/WordWindow';
+import desktopPlayer from '../../../assets/landing/d3-player.webp';
+import phonePlayer from '../../../assets/landing/m3-player.webp';
+import wordsWindow from '../../../assets/landing/m4-words.webp';
 import type { AudioOwner, EndReason } from '../landingAudio';
 import { useLandingData } from '../leoPart1';
 import { Reveal } from '../Reveal';
-import { DemoPlayer } from './DemoPlayer';
+import { AppWindow, Screens } from './Screens';
 
 /**
- * «Как малако это решает»: three answers to the three problems, each with
- * something that works (docs/landing-guide/c.html, the solutions section). The
- * speed answer is the mini player, the subtitles answer is a button that
- * refuses, the spelling answer is the app's own word window.
+ * «Как малако это решает»: the player's answer to each difficulty above (docs/
+ * landing-guide/c.html, the solutions section). The speed answer is the
+ * player, the subtitles answer is a button that refuses, the spelling answer
+ * is a picture of the app's word window and the word «осень», spoken.
+ * The player is screenshots, on a computer and a phone; the word list is its window.
  */
-
-function Tag({ n, children }: { n: number; children: ReactNode }) {
-  return (
-    <span className="sol-tag">
-      <b>{n}</b>
-      <span>{children}</span>
-    </span>
-  );
-}
-
-/** The player's phone screenshot, in a phone. */
-function PhoneShot() {
-  return (
-    <div className="phone green">
-      <div className="screen">
-        <img src={phonePlayer} alt="" loading="lazy" width={780} height={1688} />
-      </div>
-    </div>
-  );
-}
 
 function Mark({ at, children }: { at: 'k1' | 'k2' | 'k3'; children: ReactNode }) {
   return (
@@ -144,35 +124,6 @@ function AutumnChip() {
   );
 }
 
-/**
- * The app's word window on Leo's part 1, drawn on its own page (ink or paper,
- * the visitor's pick, as in the app) and sized as a panel: the window is made
- * to fill whatever holds it, and scrolls inside.
- */
-function WordPanel() {
-  const { leo, learnedWords, playWord, failed } = useLandingData();
-  const [look] = useWordLook();
-
-  return (
-    <div
-      aria-busy={!leo && !failed ? true : undefined}
-      className={`flex h-[36rem] flex-col overflow-hidden rounded-card border pt-5 shadow-[0_24px_48px_-28px_rgba(15,21,28,0.5)] ${wordPageClass(look)} ${look === 'ink' ? 'border-transparent' : 'border-line'}`}
-    >
-      {leo && (
-        <WordWindow
-          variant="sheet"
-          words={leo.words}
-          shape={leo.shape}
-          seed="leo-1"
-          partNumber={1}
-          learnedWords={learnedWords}
-          onPlay={playWord}
-        />
-      )}
-    </div>
-  );
-}
-
 export function Solutions() {
   const { t } = useTranslation();
   const marks = t('landing.solve.s2.marks', { returnObjects: true }) as string[];
@@ -188,41 +139,22 @@ export function Solutions() {
 
         <article className="sol">
           <Reveal className="sol-text">
-            <Tag n={1}>{t('landing.solve.s1.tag')}</Tag>
             <h3>{t('landing.solve.s1.title')}</h3>
             <p>{t('landing.solve.s1.text')}</p>
-            <div className="sol-shots">
-              <figure>
-                <PhoneShot />
-                <figcaption>{t('landing.devices.phone')}</figcaption>
-              </figure>
-              <figure style={{ flex: 1 }}>
-                <div className="browser">
-                  <div className="browser-bar">
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                  <img src={desktopPlayer} alt="" loading="lazy" width={1600} height={1000} />
-                </div>
-                <figcaption>{t('landing.devices.desktop')}</figcaption>
-              </figure>
-            </div>
           </Reveal>
           <Reveal delay={120}>
-            <DemoPlayer />
+            <Screens desktop={desktopPlayer} mobile={phonePlayer} label={t('landing.solve.s1.shot')} />
           </Reveal>
         </article>
 
         <article className="sol flip">
           <Reveal className="sol-text">
-            <Tag n={2}>{t('landing.solve.s2.tag')}</Tag>
             <h3>{t('landing.solve.s2.title')}</h3>
             <p>{t('landing.solve.s2.text')}</p>
             <CaptionsButton />
           </Reveal>
           <Reveal delay={120} className="marked">
-            <PhoneShot />
+            <img className="screens-solo" src={phonePlayer} alt="" loading="lazy" width={780} height={1688} />
             <Mark at="k1">{marks[0]}</Mark>
             <Mark at="k2">{marks[2]}</Mark>
             <Mark at="k3">{marks[1]}</Mark>
@@ -231,7 +163,6 @@ export function Solutions() {
 
         <article className="sol">
           <Reveal className="sol-text">
-            <Tag n={3}>{t('landing.solve.s3.tag')}</Tag>
             <h3>{t('landing.solve.s3.title')}</h3>
             <p>{t('landing.solve.s3.text')}</p>
             <p className="micro">{t('landing.solve.s3.try')}</p>
@@ -239,7 +170,7 @@ export function Solutions() {
             <p>{t('landing.solve.s3.game')}</p>
           </Reveal>
           <Reveal delay={120}>
-            <WordPanel />
+            <AppWindow desktop={wordsWindow} mobile={wordsWindow} label={t('landing.solve.s3.shot')} />
           </Reveal>
         </article>
       </div>
