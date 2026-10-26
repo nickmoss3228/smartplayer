@@ -3,8 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { createKit, damp, ease, clamp01, roundRect, INK, GREEN, RED, SANS, MONO } from './kit';
-import { makeFigure, applyPose, pose, STAND, SIT, HIP_Y, UNIT, FIGURE_SCALE, type Figure, type Pose } from './figures';
-import { DEFAULT_LOOK, type CharacterLook } from '../../../modules/character/look';
+import { makeFigure, applyPose, pose, STAND, SIT, SEAT_TOP, HEAD_Y, FOREARM, UNIT, FIGURE_SCALE, type Figure, type Pose, type PersonLook } from './figures';
 import { applyDance, prepareDancer, keyBetween, keyOnCurve, REST, COUNT_PRINTS, type DanceKey } from './shuffle';
 import { landingStore, landingActions, setSubs, setTilesStep, type ComicGameState } from '../landingStore';
 import type { DifficultySlug } from '../../../types/storyGroups';
@@ -112,15 +111,14 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   const kit = createKit();
   const { clay, inkMat, outline, fatLine, canvasTex, label, shadow, own, setOpacity } = kit;
 
-  // The app's characters (modules/character), in the landing's own material: flat colour from the vertices, as in the school.
-  // Not tone-mapped: the scene's filmic curve washes these flat colours out, and in the school they are shown as picked.
-  const figMat = new THREE.MeshLambertMaterial({ vertexColors: true, toneMapped: false, color: 0xd6d6d6 });
-  const look = (over: Partial<CharacterLook>): CharacterLook => ({ ...DEFAULT_LOOK, ...over });
+  // Everybody's one material (figures.ts): colour from the vertices, softly lit like the rest of the scene.
+  const figMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0, envMapIntensity: 0.55 });
+  const look = (l: PersonLook) => l;
 
   /* ════ 1 · the dancer ═══════════════════════════════════════════════ */
   const gDance = new THREE.Group();
   scene.add(gDance);
-  const dancer = makeFigure(look({ hair: 'spiky', hairColor: '#3b2a1e', skin: '#e8b98a', top: 'tee', topColor: '#4a9d5c', bottom: 'shorts', bottomColor: '#2e3a58', hat: 'cap', hatColor: '#2b2d2f' }), figMat);
+  const dancer = makeFigure(look({ skin: '#d9a77c', hair: 'short', hairColor: '#2b1d14', top: 'tee', topColor: '#2f6f5e', bottom: 'trousers', bottomColor: '#262b33', shoeColor: '#f4f4f2', soleColor: '#dcdcd8' }), figMat);
   prepareDancer(dancer);
   // Turned towards profile: knee lifts and kicks read sideways instead of straight at the lens.
   dancer.root.rotation.y = 0.6;
@@ -277,7 +275,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     l.position.set(0, -0.2, 1.42);
     group.add(l);
   };
-  const person = (group: THREE.Group, x: number, z: number, ry: number, p: Pose, who: CharacterLook): Figure => {
+  const person = (group: THREE.Group, x: number, z: number, ry: number, p: Pose, who: PersonLook): Figure => {
     const d = makeFigure(who, figMat);
     d.root.position.set(x, 0, z);
     d.root.rotation.y = ry;
@@ -296,8 +294,8 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     // a conversation
     const g = new THREE.Group();
     stageFloor(g, copy.scenes[0] ?? '');
-    const a = person(g, -0.5, 0.05, 0.75, STAND, look({ hair: 'curly', hairColor: '#1f1f22', skin: '#a9714a', top: 'hoodie', topColor: '#4a7fd6' }));
-    const b = person(g, 0.5, 0.05, -0.75, STAND, look({ hair: 'ponytail', hairColor: '#d9733a', skin: '#f2c48d', top: 'shirt', topColor: '#d97a4a', bottom: 'skirt', bottomColor: '#3d4557', glasses: 'glasses' }));
+    const a = person(g, -0.5, 0.05, 0.75, STAND, look({ skin: '#b98260', hair: 'short', hairColor: '#1e1a17', beard: true, top: 'jacket', topColor: '#2f3e57', innerColor: '#eef1f3', bottom: 'trousers', bottomColor: '#6b6f75', shoeColor: '#5a3d2b' }));
+    const b = person(g, 0.5, 0.05, -0.75, STAND, look({ skin: '#dfa985', hair: 'long', hairColor: '#4a2e1f', glasses: true, top: 'sweater', topColor: '#c2754f', bottom: 'trousers', bottomColor: '#2d3340', shoeColor: '#1f2125' }));
     const ba = mkBubble(bubble('So, what do you do?', -0.62, 1.98));
     const bb = mkBubble(bubble("I'm a designer, actually.", 0.62, 1.98, true));
     g.add(ba.sprite, bb.sprite);
@@ -331,24 +329,22 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     // headphones
     const g = new THREE.Group();
     stageFloor(g, copy.scenes[1] ?? '');
-    const d = person(g, 0, 0.1, 0.3, STAND, look({ hair: 'bun', hairColor: '#1f1f22', skin: '#c98c5b', top: 'sweater', topColor: '#7b4fa3', bottomColor: '#3d4557' }));
-    // Block headphones, like everything else on these people: a band over the hair, a cup on each side of the head.
+    const d = person(g, 0, 0.1, 0.3, STAND, look({ skin: '#8d5a3c', hair: 'curly', hairColor: '#17130f', top: 'hoodie', topColor: '#6f7a4e', bottom: 'trousers', bottomColor: '#3c4a63', shoeColor: '#f2f2ef', soleColor: '#d9d9d4' }));
+    // Over-ear headphones: a band over the hair, a cushioned cup on each ear.
     const hp = new THREE.Group();
-    hp.position.y = 0.16;
-    const band = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.045, 0.07), inkMat);
-    band.position.y = 0.215;
+    hp.position.y = HEAD_Y;
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.128, 0.011, 8, 32, Math.PI), inkMat);
+    band.position.y = 0.004;
     hp.add(band);
     for (const s of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.05), inkMat);
-      post.position.set(0.168 * s, 0.15, 0);
-      hp.add(post);
-      const c = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 0.12), inkMat);
-      c.position.set(0.168 * s, 0.03, 0);
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.034, 20), inkMat);
+      c.rotation.z = Math.PI / 2;
+      c.position.set(0.112 * s, -0.004, 0);
       hp.add(c);
     }
     d.P.neck.add(hp);
-    const phone = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.015), inkMat);
-    phone.position.set(0, -0.23, 0.07);
+    const phone = new THREE.Mesh(new RoundedBoxGeometry(0.072, 0.148, 0.01, 2, 0.004), inkMat);
+    phone.position.set(0, -FOREARM - 0.02, 0.05);
     phone.rotation.x = -0.4;
     d.P.elR.add(phone);
     const rings = [0, 1, 2].map(() => {
@@ -424,12 +420,12 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       leg.position.set(x, 0.71, -0.02);
       board.add(leg);
     }
-    const lect = person(g, -0.72, -0.15, 0.55, STAND, look({ hair: 'short', hairColor: '#8a8a8a', skin: '#e8b98a', top: 'shirt', topColor: '#c8b48a', bottomColor: '#2e3a58', glasses: 'glasses' }));
-    // A seated character's thighs rest at the hips' height less half a thigh: the stool comes up to there.
-    const seatTop = (HIP_Y + SIT.hy * UNIT - 0.08) * FIGURE_SCALE;
-    const pupils: [number, number, CharacterLook][] = [
-      [-0.12, 0.72, look({ hair: 'long', hairColor: '#e8c873', skin: '#f7d7b5', top: 'tee', topColor: '#3f9aa8', bottomColor: '#3d4557' })],
-      [0.78, 0.62, look({ hair: 'spiky', hairColor: '#6b4423', skin: '#8a5a3b', top: 'hoodie', topColor: '#d97a4a', hat: 'beanie', hatColor: '#7b4fa3' })],
+    const lect = person(g, -0.72, -0.15, 0.55, STAND, look({ skin: '#e3b48f', hair: 'receding', hairColor: '#a7a39c', beard: true, glasses: true, top: 'jacket', topColor: '#6e5a45', innerColor: '#cfe0ee', bottom: 'trousers', bottomColor: '#3a3d42', shoeColor: '#3b2a20' }));
+    // A seated person's thighs rest on the stool (figures.ts SEAT_TOP).
+    const seatTop = SEAT_TOP * FIGURE_SCALE;
+    const pupils: [number, number, PersonLook][] = [
+      [-0.12, 0.72, look({ skin: '#f3d2b8', hair: 'bun', hairColor: '#c99a5b', top: 'sweater', topColor: '#4f7a6a', bottom: 'trousers', bottomColor: '#2d3340', shoeColor: '#e9e6df' })],
+      [0.78, 0.62, look({ skin: '#a8714e', hair: 'side', hairColor: '#24180f', top: 'shirt', topColor: '#d8b25a', innerColor: '#d8b25a', bottom: 'trousers', bottomColor: '#3e4655', shoeColor: '#2a2420' })],
     ];
     const studs = pupils.map(([x, z, who]) => {
       const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, seatTop, 18), clay);
@@ -446,7 +442,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       rings: [],
       update(t) {
         const w = Math.sin(t * 2.2);
-        applyPose(lect.P, pose({ shR: [-0.25, 0, 1.25 + 0.12 * w], elR: -0.25, nk: [0, -0.35 + 0.35 * Math.max(0, Math.sin(t * 0.9)), 0], sp: [0, 0.1, 0], shL: [-0.5, 0, -0.2], elL: -0.9 }));
+        applyPose(lect.P, pose({ shR: [-0.45, 0, 1.7 + 0.1 * w], elR: -0.2, nk: [0, -0.35 + 0.35 * Math.max(0, Math.sin(t * 0.9)), 0], sp: [0, 0.1, 0], shL: [-0.5, 0, -0.2], elL: -0.9 }));
         studs.forEach((s, i) => applyPose(s.P, { ...SIT, nk: [0.06 * Math.sin(t * 1.3 + i), 0.08 * Math.sin(t * 0.7 + i * 2), 0] }));
         say.want = 1;
       },
@@ -828,16 +824,16 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
 
   /* ── chapters: which object, and how the camera frames it ────────── */
   const GROUPS = [gPeople, gDance, gHead, gTiles, gComic, gGlass];
-  interface Frame { c: [number, number, number]; w: number; h: number; dw?: number; dh?: number; up?: number; my?: number }
+  interface Frame { c: [number, number, number]; w: number; h: number; dw?: number; dh?: number; pw?: number; ph?: number; up?: number; my?: number }
   const FRAMES: Frame[] = [
-    // dw/dh: a looser frame on desktop, where the scene has the right half; up: camera
-    // height above the target; my: a lower target on phones, so the name under the floor fits the band
-    { c: [0, 1.05, 0], w: 3.1, h: 2.7, dw: 3.5, dh: 3.7, up: 0.7, my: 0.85 },
+    // dw/dh: a looser frame on desktop, where the scene has the right half; pw/ph: the frame in a
+    // phone card's window (SceneSlot); up: camera height above the target; my: the target on phones
+    { c: [0, 1.05, 0], w: 3.1, h: 2.7, dw: 3.5, dh: 3.7, pw: 2.85, ph: 2.85, up: 0.7, my: 0.86 },
     { c: [0, 0.85, 0], w: 2.6, h: 2.05 },
-    { c: [0.5, 0.05, 0], w: 4.0, h: 3.0 },
+    { c: [0.5, 0.05, 0], w: 4.0, h: 3.0, pw: 4.6 },
     { c: [0, -0.15, 0], w: 4.6, h: 2.3 },
     { c: [0, 0, 0], w: 2.6, h: 3.6 },
-    { c: [0, -0.05, 0], w: 3.4, h: 2.1 },
+    { c: [0, -0.05, 0], w: 3.4, h: 2.1, pw: 3.9, ph: 2.7, my: 0.08 },
   ];
   /** How present each chapter's scene is, 0…1; it fades and slides on this. */
   const vis: number[] = GROUPS.map((_, i) => (i === 0 ? 1 : 0));
@@ -853,6 +849,10 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   GROUPS.forEach((g, i) => (g.visible = i === 0));
 
   const { stages, tracks } = opts;
+  // Phones: every card has its own slot (SceneSlot.tsx) and the canvas moves into the one on screen.
+  const slots = tracks.flatMap((tr) => [...tr.querySelectorAll<HTMLElement>('.slot')]);
+  const phone = window.matchMedia('(max-width: 959px)');
+  let host: HTMLElement = stages[0];
   let activeTrack = 0;
   let chapter = 0;
   let natural = 0;
@@ -861,9 +861,8 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   let H = 1;
   let desktop = false;
   const resize = () => {
-    const st = stages[activeTrack];
-    const w = st.clientWidth || window.innerWidth;
-    const h = st.clientHeight || window.innerHeight;
+    const w = host.clientWidth || window.innerWidth;
+    const h = host.clientHeight || window.innerHeight;
     // A page opened in a hidden tab or a pane still opening measures 0×0: keep the last good size
     // (an aspect of 0 or Infinity would put the camera at infinity, and its easing would never come back).
     if (w < 2 || h < 2) return;
@@ -882,8 +881,8 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2;
     const fh = desktop ? 0.7 : 0.84;
     const fw = desktop ? 0.5 : 0.9;
-    const fwid = desktop && f.dw ? f.dw : f.w;
-    const fhgt = desktop && f.dh ? f.dh : f.h;
+    const fwid = desktop ? (f.dw ?? f.w) : (f.pw ?? f.w);
+    const fhgt = desktop ? (f.dh ?? f.h) : (f.ph ?? f.h);
     const d = Math.max(fhgt / (fh * tanH), fwid / (fw * tanH * camera.aspect));
     return { x: f.c[0], y: !desktop && f.my !== undefined ? f.my : f.c[1], z: d, up: f.up ?? 0.15 };
   };
@@ -891,14 +890,129 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   resize();
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => resize()) : null;
   stages.forEach((s) => ro?.observe(s));
+  slots.forEach((s) => ro?.observe(s));
   window.addEventListener('resize', resize);
   const camNow = camFor(0);
   camera.position.set(camNow.x, camNow.y + camNow.up, camNow.z);
   const camLook = new THREE.Vector3(camNow.x, camNow.y, 0);
 
+  /* ── phones: the slots ───────────────────────────────────────────── */
+  // Each slot keeps a still of its scene, so a card scrolling in never shows an empty window:
+  // drawn when the slot comes near the screen, and again from the live frame when the canvas leaves it.
+  const stills = new Map<HTMLElement, HTMLCanvasElement>();
+  const stillOf = (slot: HTMLElement) => {
+    let c = stills.get(slot);
+    if (!c) {
+      c = document.createElement('canvas');
+      c.className = 'still3d';
+      slot.prepend(c);
+      stills.set(slot, c);
+    }
+    return c;
+  };
+  const freezeInto = (slot: HTMLElement) => {
+    const c = stillOf(slot);
+    c.width = canvas.width;
+    c.height = canvas.height;
+    c.getContext('2d')?.drawImage(canvas, 0, 0);
+  };
+  const showGroups = () =>
+    GROUPS.forEach((g, i) => {
+      g.visible = vis[i] > 0.01;
+      g.scale.setScalar(Math.max(0.001, 0.88 + 0.12 * vis[i]));
+      g.position.y = (1 - vis[i]) * (i < chapter ? 0.5 : -0.5);
+      if (g.visible) setOpacity(g, vis[i]);
+    });
+  /** The slot's chapter, settled and framed, drawn into its still; then the live picture is put back. */
+  const preview = (slot: HTMLElement) => {
+    const ch = Number(slot.dataset.slot);
+    GROUPS.forEach((g, i) => {
+      g.visible = i === ch;
+      if (i === ch) {
+        g.scale.setScalar(1);
+        g.position.y = 0;
+        setOpacity(g, 1);
+      }
+    });
+    const keep = camera.position.clone();
+    const cf = camFor(ch);
+    camera.position.set(cf.x, cf.y + cf.up, cf.z);
+    camera.lookAt(cf.x, cf.y, 0);
+    renderer.render(scene, camera);
+    freezeInto(slot);
+    camera.position.copy(keep);
+    camera.lookAt(camLook);
+    showGroups();
+    renderer.render(scene, camera);
+  };
+  const previewed = new Set<HTMLElement>();
+  const near =
+    typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          (entries) =>
+            entries.forEach((e) => {
+              const slot = e.target as HTMLElement;
+              if (e.isIntersecting && slot !== host && !previewed.has(slot) && phone.matches) {
+                previewed.add(slot);
+                preview(slot);
+              }
+            }),
+          { rootMargin: '60% 0px' },
+        )
+      : null;
+  slots.forEach((s) => near?.observe(s));
+
+  /** The canvas into another stage or slot; the slot it leaves keeps a still of the last frame. */
+  const moveTo = (el: HTMLElement) => {
+    if (host.classList.contains('slot')) {
+      renderer.render(scene, camera);
+      freezeInto(host);
+      stillOf(host).style.visibility = '';
+    }
+    host = el;
+    el.appendChild(canvas);
+    if (el.classList.contains('slot')) stillOf(el).style.visibility = 'hidden';
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, phone.matches ? 2 : 1.75));
+    resize();
+  };
+  /** Straight to a chapter, no fade or camera flight: its slot was showing it as a still already. */
+  const jumpTo = (ch: number) => {
+    vis.fill(0);
+    vis[ch] = 1;
+    shown = ch;
+    chapter = ch;
+    natural = ch;
+    showGroups();
+    const cf = camFor(ch);
+    camera.position.set(cf.x, cf.y + cf.up, cf.z);
+    camLook.set(cf.x, cf.y, 0);
+    camera.lookAt(camLook);
+  };
+
   // Which track is on screen, and which of its cards has passed the reading line (62% down).
+  // On phones: which slot shows the most of itself.
   const pick = () => {
     const vh = window.innerHeight;
+    if (phone.matches) {
+      let best: HTMLElement | null = null;
+      let most = 0;
+      for (const s of slots) {
+        const r = s.getBoundingClientRect();
+        const seen = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        if (seen > most) {
+          most = seen;
+          best = s;
+        }
+      }
+      visible = !!best;
+      if (!best) return;
+      if (best !== host) {
+        activeTrack = tracks.findIndex((tr) => tr.contains(best));
+        moveTo(best);
+        jumpTo(Number(best.dataset.slot));
+      }
+      return;
+    }
     let t = -1;
     tracks.forEach((tr, i) => {
       const r = tr.getBoundingClientRect();
@@ -906,10 +1020,9 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     });
     visible = t >= 0;
     if (!visible) return;
-    if (t !== activeTrack) {
+    if (t !== activeTrack || host !== stages[t]) {
       activeTrack = t;
-      stages[t].appendChild(canvas);
-      resize();
+      moveTo(stages[t]);
     }
     const first = Number(tracks[t].dataset.first ?? 0);
     const cards = tracks[t].querySelectorAll<HTMLElement>('.ch > .card');
@@ -917,7 +1030,6 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     for (let i = 1; i < cards.length; i++) if (cards[i].getBoundingClientRect().top < vh * 0.62) c = first + i;
     natural = c;
   };
-  window.addEventListener('scroll', pick, { passive: true });
   pick();
 
   /* ── taps ─────────────────────────────────────────────────────────── */
@@ -993,7 +1105,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     last = Math.max(last, now);
     const time = (now - t0) / 1000;
     const S = landingStore.get();
-    chapter = S.focus && now < S.focus.until && activeTrack === 0 ? S.focus.ch : natural;
+    chapter = !phone.matches && S.focus && now < S.focus.until && activeTrack === 0 ? S.focus.ch : natural;
 
     // one scene at a time: the shown one leaves before the next one arrives
     if (shown !== chapter && vis[shown] < 0.04) {
@@ -1041,9 +1153,15 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       });
     }
 
-    // 1 · the dancer
+    // 1 · the dancer. Its clock drives the card's ladder too, so it keeps time even while
+    // another scene is showing (on a phone the card's button can be below the dancer's window).
+    const { key, L } = danceAt(time);
+    if (L.pass !== lastPass || L.beat !== lastBeat) {
+      lastPass = L.pass;
+      lastBeat = L.beat;
+      landingStore.set({ ladderUI: { pass: L.pass, beat: L.beat } });
+    }
     if (gDance.visible) {
-      const { key, L } = danceAt(time);
       applyDance(dancer, key);
       dShadow.position.x = key.hx * UNIT;
       prints.forEach((pr, k) => {
@@ -1052,11 +1170,6 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
         pr.n.visible = !on;
         pr.nOn.visible = on;
       });
-      if (L.pass !== lastPass || L.beat !== lastBeat) {
-        lastPass = L.pass;
-        lastBeat = L.beat;
-        landingStore.set({ ladderUI: { pass: L.pass, beat: L.beat } });
-      }
       gDance.rotation.y = Math.sin(time * 0.3) * 0.12;
     }
 
@@ -1226,17 +1339,19 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     running = true;
     raf = requestAnimationFrame(frame);
   };
-  const io =
-    typeof IntersectionObserver !== 'undefined'
-      ? new IntersectionObserver(() => {
-          pick();
-          if (visible) {
-            last = performance.now();
-            loop();
-          }
-        }, { threshold: 0 })
-      : null;
+  /** Where the canvas belongs now; the loop starts again if it had stopped off screen. */
+  const wake = () => {
+    pick();
+    if (visible && !running) {
+      last = performance.now();
+      loop();
+    }
+  };
+  const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(wake, { threshold: 0 }) : null;
   tracks.forEach((tr) => io?.observe(tr));
+  window.addEventListener('scroll', wake, { passive: true });
+  window.addEventListener('resize', wake);
+  phone.addEventListener('change', wake);
   const onVisibility = () => {
     if (!document.hidden) {
       last = performance.now();
@@ -1297,7 +1412,11 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', pick);
+      window.removeEventListener('scroll', wake);
+      window.removeEventListener('resize', wake);
+      phone.removeEventListener('change', wake);
+      near?.disconnect();
+      stills.forEach((c) => c.remove());
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibility);
       canvas.removeEventListener('pointerdown', onDown);

@@ -7,6 +7,7 @@ import { SPEED_SEQUENCES } from '../../Player/hooks/constants';
 import type { AudioOwner, LandingAudio } from '../landingAudio';
 import { focusChapter, landingStore, useLanding, type LandingState } from '../landingStore';
 import { DANCE_PHRASE, useLandingData } from '../leoPart1';
+import { SceneSlot } from './SceneSlot';
 
 /** Leo's phrase at 0.65, 0.8 and 1.0: the three passes the player makes of every line. */
 const RATES = SPEED_SEQUENCES[3];
@@ -128,6 +129,7 @@ export function SpeedCard() {
   return (
     <section className="ch" data-ch="1">
       <div className="card">
+        <SceneSlot ch={1} />
         <StillScene scene="passes" />
         <p className="eyebrow">{t('landing.speed.eyebrow')}</p>
         <h2>{t('landing.speed.title')}</h2>

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { StillScene } from './StillScene';
 import { focusChapter, landingStore, setSubs, useLanding } from '../landingStore';
+import { SceneSlot } from './SceneSlot';
 
 /**
  * Chapter 2, problem 2: while there is text on screen the eyes do the work and
@@ -20,6 +21,7 @@ export function SubtitlesCard() {
   return (
     <section className="ch" data-ch="2">
       <div className="card">
+        <SceneSlot ch={2} />
         <StillScene scene="subtitles" />
         <p className="eyebrow">{t('landing.subtitles.eyebrow')}</p>
         <h2>{t('landing.subtitles.title')}</h2>

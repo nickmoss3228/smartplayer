@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { IoAdd } from 'react-icons/io5';
 import { useLanding } from '../landingStore';
 import { ComicGame } from './ComicGame';
+import { SceneSlot } from './SceneSlot';
 
 /**
  * Chapter 4: what the app gives back for taking the subtitles away, the comic,
@@ -16,6 +17,7 @@ export function ComicCard() {
   return (
     <section className="ch" data-ch="4">
       <div className="card">
+        <SceneSlot ch={4} />
         <p className="eyebrow">{t('landing.given.eyebrow')}</p>
         <h2>{t('landing.given.title')}</h2>
         <div className="taken">
