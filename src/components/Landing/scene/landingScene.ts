@@ -1024,10 +1024,11 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       activeTrack = t;
       moveTo(stages[t]);
     }
-    const first = Number(tracks[t].dataset.first ?? 0);
+    // A card's scene is its data-scene, else its data-ch (a drawn card shows the scene before it).
     const cards = tracks[t].querySelectorAll<HTMLElement>('.ch > .card');
-    let c = first;
-    for (let i = 1; i < cards.length; i++) if (cards[i].getBoundingClientRect().top < vh * 0.62) c = first + i;
+    const sceneOf = (card: HTMLElement) => Number(card.parentElement?.dataset.scene ?? card.parentElement?.dataset.ch ?? 0);
+    let c = Number(tracks[t].dataset.first ?? 0);
+    for (let i = 1; i < cards.length; i++) if (cards[i].getBoundingClientRect().top < vh * 0.62) c = sceneOf(cards[i]);
     natural = c;
   };
   pick();
