@@ -9,7 +9,7 @@ import {
   // IoPeopleOutline,
   IoBookOutline,
 } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
@@ -46,6 +46,7 @@ const Navbar = () => {
   const { user } = useAuth();
   const { character } = useCharacter();
   const navigate = useNavigate();
+  const onLanding = useLocation().pathname === "/";
 
   const portrait = useCharacterPortrait(character);
 
@@ -93,11 +94,14 @@ const Navbar = () => {
                 aria-label={t("brand")}
               >
                 <BrandMark className="w-8 h-8" />
-                {/* Shown on every page, the landing included: its hero has no
-                    big title of its own, so this is where the name lives. */}
-                <span className="text-2xl font-extrabold lowercase tracking-tight">
-                  {t("brand")}
-                </span>
+                {/* The landing opens on the name in large type (Landing.tsx), so
+                    there the navbar keeps only the mark; everywhere else the
+                    name lives here. */}
+                {!onLanding && (
+                  <span className="text-2xl font-extrabold lowercase tracking-tight">
+                    {t("brand")}
+                  </span>
+                )}
               </button>
             </div>
 

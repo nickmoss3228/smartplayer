@@ -4,7 +4,8 @@ import { IoChevronForward } from 'react-icons/io5';
 import { SceneSlot } from './SceneSlot';
 
 /**
- * Chapter 0: the promise — listen and repeat — and the way in.
+ * Chapter 0: the promise — listen and repeat, that's it — and the way in.
+ * The name and its slogan sit above it, as the page's own header (Landing.tsx).
  *
  * The `.probs` row is the still version's stand-in for the 3D scene (hidden
  * while the 3D runs).
@@ -24,10 +25,9 @@ export function HeroCard() {
             ))}
           </div>
         </div>
-        <p className="eyebrow">{t('homepage.eyebrow')}</p>
         <h1>
-          <span className="soft">{t('landing.hero.title1')}</span>
-          <span>{t('landing.hero.title2')}</span>
+          <span>{t('landing.hero.title1')}</span>
+          <span className="soft">{t('landing.hero.title2')}</span>
         </h1>
         <p>{t('landing.hero.lead')}</p>
         <div className="cta">

@@ -23,7 +23,6 @@ export function SubtitlesCard() {
       <div className="card">
         <SceneSlot ch={2} />
         <StillScene scene="subtitles" />
-        <p className="eyebrow">{t('landing.subtitles.eyebrow')}</p>
         <h2>{t('landing.subtitles.title')}</h2>
         <p>{t('landing.subtitles.text')}</p>
         <button type="button" className="switch" role="switch" aria-checked={on} onClick={toggle}>

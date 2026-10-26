@@ -107,17 +107,18 @@
 
 /* ── E · the five-step loop, walked round a ring ─────────────────── 10s ── */
 .ap-e { position: relative; width: 300px; height: 300px; margin: 0 auto; }
-.ap-e-node { position: absolute; width: 40px; height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #2b3644; border-radius: 2px; background: #0f151c; color: #7d8d9c; font-size: 12px; animation: ap-node 10s infinite; }
-.ap-e-prog { animation: ap-prog 10s infinite linear; }
+.ap-e-node { position: absolute; width: 40px; height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid #2b3644; border-radius: 2px; background: #0f151c; color: #7d8d9c; font-size: 12px; animation: ap-node 12s infinite; }
+.ap-e-prog { animation: ap-prog 12s infinite linear; }
 .ap-e-center { position: absolute; left: 65px; top: 105px; width: 170px; height: 90px; }
-.ap-e-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; opacity: 0; animation: ap-lbl 10s infinite; }
+.ap-e-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; font-weight: 800; line-height: 1.2; letter-spacing: -.01em; opacity: 0; animation: ap-lbl 12s infinite; }
 .ap-e-node.s1, .ap-e-lbl.s1 { animation-delay: 2s; }
 .ap-e-node.s2, .ap-e-lbl.s2 { animation-delay: 4s; }
 .ap-e-node.s3, .ap-e-lbl.s3 { animation-delay: 6s; }
 .ap-e-node.s4, .ap-e-lbl.s4 { animation-delay: 8s; }
-@keyframes ap-node { 0%, 18% { background: #eef4f8; color: #0f151c; border-color: #eef4f8 } 20%, 100% { background: #0f151c; color: #7d8d9c; border-color: #2b3644 } }
+.ap-e-node.s5, .ap-e-lbl.s5 { animation-delay: 10s; }
+@keyframes ap-node { 0%, 15% { background: #eef4f8; color: #0f151c; border-color: #eef4f8 } 16.7%, 100% { background: #0f151c; color: #7d8d9c; border-color: #2b3644 } }
 @keyframes ap-prog { 0% { stroke-dashoffset: 1 } 100% { stroke-dashoffset: 0 } }
-@keyframes ap-lbl { 0% { opacity: 0 } 2%, 17% { opacity: 1 } 20%, 100% { opacity: 0 } }
+@keyframes ap-lbl { 0% { opacity: 0 } 1.7%, 14.2% { opacity: 1 } 16.7%, 100% { opacity: 0 } }
 
 /*
  * Reduced motion: every scene stops on its telling frame. The login panel

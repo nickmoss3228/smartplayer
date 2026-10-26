@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoPause, IoPlay } from 'react-icons/io5';
-import BrandMark from '../../Brand/BrandMark';
 import { StillScene } from './StillScene';
 import { SPEED_SEQUENCES } from '../../Player/hooks/constants';
 import type { AudioOwner, LandingAudio } from '../landingAudio';
@@ -131,7 +130,6 @@ export function SpeedCard() {
       <div className="card">
         <SceneSlot ch={1} />
         <StillScene scene="passes" />
-        <p className="eyebrow">{t('landing.speed.eyebrow')}</p>
         <h2>{t('landing.speed.title')}</h2>
         <p>{t('landing.speed.text')}</p>
         <div className="ladder">
@@ -146,10 +144,6 @@ export function SpeedCard() {
           {count.map((word, i) => (
             <span key={i} className={beat === i ? 'on' : undefined}>{word}</span>
           ))}
-        </div>
-        <div className="app-note">
-          <span><BrandMark variant="drop" /></span>
-          <span>{t('landing.speed.app')}</span>
         </div>
         <div className="btn-row">
           <button

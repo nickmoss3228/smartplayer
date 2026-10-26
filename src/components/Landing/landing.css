@@ -86,33 +86,20 @@
 .landing .rv.armed:not(.in) { opacity: 0; transform: translateY(18px); }
 @media (prefers-reduced-motion: reduce) { .landing .rv.armed:not(.in) { opacity: 1; transform: none; } }
 
-/* ── device frames: the real screenshots in a phone or a browser window ── */
-.landing .phone { position: relative; width: min(300px, 78vw); aspect-ratio: 390 / 844; border-radius: 44px; padding: 10px; background: #0b1016; box-shadow: 0 0 0 1px #2b3644, 0 30px 60px -20px rgba(15, 21, 28, .45), 0 12px 24px -12px rgba(15, 21, 28, .35); flex: none; max-width: 100%; }
-/* The shots have no status bar, so the frame draws one (--sb is its colour)
-   and the shot starts below it: nothing in the app hides under the island. */
-.landing .phone::before { content: ''; position: absolute; top: 17px; left: 50%; width: 27%; height: 19px; transform: translateX(-50%); background: #0b1016; border-radius: 12px; z-index: 3; }
-.landing .phone > .screen { position: relative; width: 100%; height: 100%; border-radius: 34px; overflow: hidden; background: var(--sb, #fbfcfd); padding-top: 30px; }
-.landing .phone > .screen::before { content: '9:41'; position: absolute; left: 11%; top: 8px; font: 600 11px/14px var(--font-sans); color: var(--sbc, var(--ink)); letter-spacing: .01em; }
-.landing .phone > .screen::after { content: ''; position: absolute; right: 10%; top: 11px; width: 18px; height: 8px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--sbc, var(--ink)); background: linear-gradient(90deg, var(--sbc, var(--ink)) 70%, transparent 70%) 2px 2px / 12px 4px no-repeat; opacity: .85; }
-.landing .phone > .screen > img { width: 100%; height: 100% !important; object-fit: cover; object-position: top; }
-.landing .phone.sm { width: min(220px, 60vw); border-radius: 34px; padding: 8px; }
-.landing .phone.sm::before { top: 13px; height: 14px; }
-.landing .phone.sm > .screen { border-radius: 27px; padding-top: 24px; }
-.landing .phone.sm > .screen::before { top: 6px; font-size: 9px; }
-.landing .phone.sm > .screen::after { top: 9px; width: 14px; height: 7px; background-size: 9px 3px; }
-.landing .phone.green > .screen { --sb: #00c369; }
-.landing .phone.dark > .screen { --sb: #0a4a34; --sbc: #eef4f8; }
-.landing .browser { position: relative; width: 100%; max-width: 100%; border-radius: 10px; overflow: hidden; background: #0b1016; box-shadow: 0 0 0 1px var(--line), 0 30px 60px -24px rgba(15, 21, 28, .35); }
-.landing .browser-bar { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; background: #e9eef2; border-bottom: 1px solid var(--line); }
-.landing .browser-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); flex: none; }
-.landing .browser img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
 
-/* ── the slogan, under the navbar's name ──────────────────────────────── */
-.landing .slogan-bar { position: relative; z-index: 4; display: flex; justify-content: center; padding: 14px var(--gutter) 2px; font-size: 13px; font-weight: 500; color: var(--dim); text-align: center; }
-/* From 960px it floats over the top of the stage instead of taking a row of its own, so the hero is mid-screen. */
-@media (min-width: 960px) { .landing .slogan-bar { position: absolute; top: var(--nav-h); left: 0; right: 0; padding: 8px var(--gutter); font-size: 14px; pointer-events: none; } }
-/* Without the 3D there is no stage to float over. */
-.landing.no3d .slogan-bar { position: relative; top: 0; }
+/* ── the name and its slogan: the page's header, larger than any other type ── */
+.landing .brand-top { position: relative; z-index: 4; padding: 22px var(--gutter) 6px; }
+.landing .brand-word { font-size: clamp(72px, 24vw, 112px); font-weight: 800; letter-spacing: -.06em; line-height: .88; text-transform: lowercase; color: var(--ink); }
+.landing .brand-slogan { margin-top: 8px; font-size: 17px; font-weight: 500; color: var(--dim); }
+/* From 960px it floats over the top of the first stage, above the hero card's column, and the
+   hero is centred in the height left under it, so neither pushes the 3D off centre. */
+@media (min-width: 960px) {
+  .landing .brand-top { position: absolute; top: calc(var(--nav-h) + 20px); left: 0; right: 0; padding: 0 max(var(--gutter), calc((100vw - 1160px) / 2 + var(--gutter))); pointer-events: none; }
+  .landing .brand-word { font-size: 128px; }
+  .landing .brand-slogan { font-size: 20px; pointer-events: auto; }
+  .landing:not(.no3d) .ch.first { padding-top: 230px; box-sizing: border-box; }
+}
+.landing.no3d .brand-top { position: relative; top: 0; }
 
 /* ── pinned 3D tracks ───────────────────────────────────────────────── */
 .landing .wrap { max-width: 1160px; margin: 0 auto; padding-inline: var(--gutter); }
@@ -146,54 +133,22 @@
 .landing .app-note { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius-tile); background: var(--room); border: 1px solid var(--line); font-size: 14px; line-height: 1.45; color: var(--ink); }
 .landing .app-note svg { width: 18px; height: 18px; margin-top: 1px; flex: none; }
 
-/* listen and repeat (RepeatCard.tsx): a drawn panel in place of a 3D window, one 11 s cycle —
-   the narrator's track draws in, «your turn», yours draws in, then both replay while the face smiles */
+/* listen and repeat (RepeatCard.tsx): the drawing (Method/RepeatDrawing.tsx, its own CSS) in a
+   panel in place of a 3D window, and the three steps lit in time with it */
 .landing .rp-panel { position: relative; margin: -18px -18px 6px; aspect-ratio: 5 / 4; overflow: hidden; border-radius: 15px 15px 0 0; border-bottom: 1px solid var(--line); background: radial-gradient(60% 50% at 30% 50%, rgba(0, 201, 81, .07), transparent 70%), linear-gradient(180deg, #f8fafc, #eef2f6); }
-.landing .rp-panel svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.landing .rp-lbl { font-family: var(--font-mono); font-size: 8px; letter-spacing: .16em; text-transform: uppercase; fill: var(--dim); }
-.landing .rp-lbl.rp-you { fill: var(--ok); }
-.landing .rp-pill { font-family: var(--font-sans); font-size: 11px; font-weight: 700; fill: #ffffff; }
-.landing .rp-together { font-family: var(--font-sans); font-size: 12px; font-weight: 800; fill: var(--ink); }
-.landing .rp-dim { font-weight: 500; fill: var(--dim); }
+.landing .rp-panel .rp-draw { position: absolute; inset: 0; }
 .landing .rp-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
 .landing .rp-steps li { padding: 8px 4px; border-radius: var(--radius-tile); border: 1px solid var(--line); background: var(--white); color: var(--dim); font-size: 12px; font-weight: 700; text-align: center; line-height: 1.25; }
 @media (min-width: 960px) { .landing .rp-panel { margin: -26px -26px 8px; aspect-ratio: 16 / 9; } }
-.landing .rp-cyc { animation-duration: 11s; animation-iteration-count: infinite; animation-timing-function: linear; animation-play-state: paused; }
-.landing .rp-run .rp-cyc, .landing .rp:has(.rp-run) .rp-steps .rp-cyc { animation-play-state: running; }
-.landing .rp-w1 { animation-name: rp-w1; }
-.landing .rp-w2 { animation-name: rp-w2; }
-.landing .rp-turn { animation-name: rp-turn; }
-.landing .rp-rec { animation-name: rp-rec; }
-.landing .rp-replay { animation-name: rp-replay; }
-.landing .rp-h1 { animation-name: rp-h1; }
-.landing .rp-h2 { animation-name: rp-h2; }
-.landing .rp-smile { animation-name: rp-smile; }
-.landing .rp-plain { animation-name: rp-plain; }
-.landing .rp-open { animation-name: rp-open; }
+.landing .rp:has(.rp-run) .rp-steps .rp-cyc { animation-play-state: running; }
 .landing .rp-s1 { animation-name: rp-s1; }
 .landing .rp-s2 { animation-name: rp-s2; }
 .landing .rp-s3 { animation-name: rp-s3; }
-.landing .rp-mouth { transform-box: fill-box; transform-origin: center; animation: rp-talk .32s ease-in-out infinite; }
-.landing .rp-ring { transform-box: fill-box; transform-origin: center; animation: rp-ring 1.2s ease-out infinite; }
-@keyframes rp-w1 { 0% { clip-path: inset(0 100% 0 0); } 28%, 97% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
-@keyframes rp-w2 { 0%, 38% { clip-path: inset(0 100% 0 0); } 64%, 97% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 100% 0 0); } }
-@keyframes rp-turn { 0%, 28% { opacity: 0; } 31%, 37% { opacity: 1; } 40%, 100% { opacity: 0; } }
-@keyframes rp-rec { 0%, 37% { opacity: 0; } 40%, 63% { opacity: 1; } 66%, 100% { opacity: 0; } }
-@keyframes rp-replay { 0%, 65% { opacity: 0; } 68%, 97% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes rp-h1 { 0%, 68% { transform: translateX(0); opacity: 0; } 69% { opacity: 1; } 82% { transform: translateX(178px); opacity: 1; } 83%, 100% { opacity: 0; transform: translateX(178px); } }
-@keyframes rp-h2 { 0%, 82% { transform: translateX(0); opacity: 0; } 83% { opacity: 1; } 96% { transform: translateX(170px); opacity: 1; } 97%, 100% { opacity: 0; transform: translateX(170px); } }
-@keyframes rp-smile { 0%, 86% { opacity: 0; } 89%, 98% { opacity: 1; } 100% { opacity: 0; } }
-@keyframes rp-plain { 0%, 37% { opacity: 1; } 40%, 63% { opacity: 0; } 66%, 86% { opacity: 1; } 89%, 98% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes rp-open { 0%, 37% { opacity: 0; } 40%, 63% { opacity: 1; } 66%, 100% { opacity: 0; } }
-@keyframes rp-talk { 0%, 100% { transform: scaleY(.5); } 50% { transform: scaleY(1.2); } }
-@keyframes rp-ring { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
 @keyframes rp-s1 { 0%, 30% { background: var(--ink); color: var(--white); border-color: var(--ink); } 33%, 100% { background: var(--white); color: var(--dim); border-color: var(--line); } }
 @keyframes rp-s2 { 0%, 30% { background: var(--white); color: var(--dim); border-color: var(--line); } 33%, 64% { background: var(--ink); color: var(--white); border-color: var(--ink); } 67%, 100% { background: var(--white); color: var(--dim); border-color: var(--line); } }
 @keyframes rp-s3 { 0%, 65% { background: var(--white); color: var(--dim); border-color: var(--line); } 68%, 97% { background: var(--ink); color: var(--white); border-color: var(--ink); } 100% { background: var(--white); color: var(--dim); border-color: var(--line); } }
-/* Reduced motion: the finished picture — both tracks, the replay line, the smile. */
 @media (prefers-reduced-motion: reduce) {
-  .landing .rp-cyc, .landing .rp-mouth, .landing .rp-ring { animation: none; }
-  .landing .rp-turn, .landing .rp-rec, .landing .rp-open, .landing .rp-plain, .landing .rp-h1, .landing .rp-h2 { opacity: 0; }
+  .landing .rp-steps .rp-cyc { animation: none; }
   .landing .rp-steps .rp-s3 { background: var(--ink); color: var(--white); border-color: var(--ink); }
 }
 
@@ -242,20 +197,7 @@
 .landing .lvl-pick b { font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -.03em; }
 .landing .lvl-pick small { font-size: 11px; font-weight: 600; }
 .landing .lvl-pick button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
-.landing .tap-hint { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
-.landing .tap-hint i { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); animation: lp-blink 1.4s infinite; }
-@keyframes lp-blink { 50% { opacity: .25; } }
 
-/* «Что мы даём взамен»: the comic's reason, folded */
-.landing .taken { display: grid; gap: 8px; }
-.landing .taken details { border-top: 1px solid var(--line); padding-top: 8px; }
-.landing .taken summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
-.landing .taken summary::-webkit-details-marker { display: none; }
-.landing .taken summary .slg { padding: 3px 8px; border-radius: var(--radius-chip); background: var(--ink); color: var(--white); font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em; text-transform: uppercase; flex: none; }
-.landing .taken summary .pl { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; background: var(--room); display: flex; align-items: center; justify-content: center; flex: none; transition: transform .25s; }
-.landing .taken summary .pl svg { width: 12px; height: 12px; }
-.landing .taken details[open] .pl { transform: rotate(45deg); }
-.landing .taken details p { margin-top: 6px; font-size: 14px; }
 
 .landing .still { display: none; }
 @media (min-width: 960px) {
@@ -297,20 +239,8 @@
 .landing .sol { display: grid; gap: 24px; margin-top: 56px; align-items: start; }
 .landing .sol > * { min-width: 0; }
 .landing .sol-text { display: flex; flex-direction: column; gap: 12px; }
-.landing .sol-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 999px; background: var(--white); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-.landing .sol-tag b { width: 22px; height: 22px; border-radius: 50%; background: var(--easy); color: var(--ink); display: flex; align-items: center; justify-content: center; font-weight: 500; letter-spacing: 0; }
 .landing .sol h3 { font-size: clamp(24px, 5.6vw, 34px); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; }
 .landing .sol-text p:not(.cc-msg) { color: var(--dim); font-size: 16px; }
-.landing .sol-shots { display: flex; gap: 14px; align-items: flex-end; margin-top: 6px; }
-.landing .sol-shots .phone { width: 120px; border-radius: 22px; padding: 5px; }
-.landing .sol-shots .phone::before { top: 9px; height: 9px; }
-.landing .sol-shots .phone > .screen { border-radius: 18px; padding-top: 14px; }
-.landing .sol-shots .phone > .screen::before, .landing .sol-shots .phone > .screen::after { display: none; }
-.landing .sol-shots .browser { flex: 1; max-width: 340px; }
-.landing .sol-shots .browser-bar { height: 20px; }
-.landing .sol-shots .browser-bar i { width: 6px; height: 6px; }
-.landing .sol-shots figcaption { font-size: 12px; color: var(--dim); margin-top: 6px; }
-.landing .sol-shots figure { margin: 0; min-width: 0; }
 .landing .cc { display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; height: 48px; padding: 0 16px 0 10px; border-radius: 3px; border: 1px solid var(--line-strong); background: var(--white); font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; }
 .landing .cc .ccb { font-family: var(--font-mono); font-size: 12px; padding: 3px 6px; border: 1.5px solid currentColor; border-radius: 4px; position: relative; }
 .landing .cc.no { animation: lp-shake .4s; color: var(--signal-ink); border-color: var(--signal); }
@@ -318,7 +248,7 @@
 @keyframes lp-shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 .landing .cc-msg { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--signal-ink); min-height: 1.4em; }
 .landing .marked { position: relative; display: flex; justify-content: center; padding: 10px 0; }
-.landing .marked .phone { width: min(280px, 72vw); }
+.landing .marked .screens-solo { display: block; width: min(280px, 72vw); height: auto; border-radius: 22px; border: 1px solid var(--line); box-shadow: 0 30px 60px -24px rgba(15, 21, 28, .4); }
 .landing .mk { position: absolute; z-index: 5; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--ink); color: var(--white); font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 10px 24px -12px rgba(15, 21, 28, .6); }
 .landing .mk i { width: 8px; height: 8px; border-radius: 50%; background: var(--easy); flex: none; }
 .landing .mk.k1 { top: 20%; left: 50%; transform: translateX(-108%); }
@@ -337,28 +267,35 @@
   .landing .sol.flip > :first-child { order: 2; }
 }
 
-/* practice, path, loop, finder, the end */
+/* screenshots (Screens.tsx): the computer's screen with the phone's overlapping its corner;
+   no device frames, just the screens, rounded and lifted off the page */
+.landing .screens { margin: 0; }
+.landing .screens-set { position: relative; }
+.landing .screens img { display: block; height: auto; border: 1px solid var(--line); background: var(--white); }
+.landing .screens-d { border-radius: 10px; box-shadow: 0 30px 60px -30px rgba(15, 21, 28, .35); }
+.landing .screens-m { border-radius: 16px; box-shadow: 0 24px 48px -18px rgba(15, 21, 28, .45); }
+.landing .screens .screens-set { padding-bottom: 7%; }
+.landing .screens .screens-d { width: 84%; }
+.landing .screens .screens-m { position: absolute; right: 0; bottom: 0; width: 26%; }
+.landing .screens figcaption { margin-top: 12px; font-size: 14px; font-weight: 700; color: var(--ink); }
+/* one window of the app (AppWindow): just the dark card, large, no green player around it */
+.landing .app-window { margin: 0; }
+.landing .app-window img { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: 0 30px 60px -28px rgba(15, 21, 28, .5); }
+.landing .app-window figcaption { margin-top: 12px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.landing .windows { display: grid; gap: 36px; margin-top: 40px; }
+@media (min-width: 900px) { .landing .windows { grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; } }
+.landing .sol .app-window { max-width: 400px; }
+/* Phones: the phone's screen is the one to read, so it is the large one; the computer's sits behind it. */
+@media (max-width: 639px) {
+  .landing .screens .screens-set { padding-bottom: 34%; }
+  .landing .screens .screens-d { width: 80%; }
+  .landing .screens .screens-m { width: 42%; }
+}
+
+/* loop, finder, the end */
 .landing .grid2 { display: grid; gap: 28px; margin-top: 36px; }
 .landing .grid2 > * { min-width: 0; }
 @media (min-width: 900px) { .landing .grid2 { grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; } }
-.landing .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.landing .tile { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius-card); background: var(--ink); color: var(--panel-text); min-height: 108px; }
-.landing .tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; }
-.landing .tile svg { width: 26px; height: 26px; flex: none; }
-.landing .tile b { font-size: 16px; }
-.landing .tile small { font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--panel-dim); }
-.landing .tile .dot { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--panel-dim); }
-.landing .tile .dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
-.landing .fan { margin: 36px calc(-1 * var(--gutter)) 0; display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 26px var(--gutter) 24px; perspective: 1200px; scrollbar-width: none; list-style: none; }
-.landing .fan::-webkit-scrollbar { display: none; }
-.landing .fan li { flex: none; width: 210px; scroll-snap-align: center; display: flex; flex-direction: column; gap: 12px; }
-.landing .fan .phone { width: 100%; transition: transform .5s var(--ease-enter); transform: rotateY(-12deg) rotateX(3deg); }
-.landing .fan li:nth-child(even) .phone { transform: rotateY(12deg) rotateX(3deg); }
-.landing .fan li:hover .phone { transform: none; }
-.landing .fan .n { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
-.landing .fan h3 { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
-.landing .fan p { font-size: 14px; color: var(--dim); line-height: 1.5; }
-@media (min-width: 1100px) { .landing .fan { justify-content: center; overflow: visible; } }
 .landing .final { text-align: center; }
 .landing .final .slogan { margin-top: 8px; font-size: 17px; font-weight: 500; color: var(--dim); }
 .landing .final .btn-hero { margin-top: 26px; }

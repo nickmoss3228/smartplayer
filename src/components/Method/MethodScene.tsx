@@ -6,7 +6,7 @@
  *   subtitles — the caption drains away, the ear listens  (no subtitles, ears only)
  *   word      — a heard word becomes the thing itself     (words not in English)
  *   comic     — a heard word, found in the comic          (visual memory)
- *   loop      — the five steps of every story
+ *   loop      — the six steps of every story
  *
  * First drawn for the login panel (auth/AuthPanel.tsx), which still rotates
  * through all five. The why-clouds use the same pictures — the homepage
@@ -187,7 +187,7 @@ export const SceneDrawing = ({ scene }: { scene: SceneId }) => {
     case 'comic':
       return <Comic />;
     case 'loop':
-      return <Loop steps={[1, 2, 3, 4, 5].map((n) => t(`howToUse.loop.s${n}.title`))} />;
+      return <Loop steps={[1, 2, 3, 4, 5, 6].map((n) => t(`howToUse.loop.s${n}.title`))} />;
   }
 };
 

@@ -133,7 +133,7 @@
         "tagFast": "1.0×",
         "tagMid": "0.8×",
         "tagSlow": "0.65×",
-        "takeaway": "Slow down first. Speed up once you're sure."
+        "takeaway": "English syllables are short and most words have just one or two, which is why the speech feels fast. Don't be afraid of it: slow down first, and speed up once you're sure."
       },
       "noSubtitles": {
         "cloud": "Why no subtitles?",
@@ -158,7 +158,7 @@
         "title": "Reading it isn't hearing it",
         "viaTranslation": "via translation",
         "direct": "direct",
-        "takeaway": "Our own vocab chips show the Russian word, but tap one and the audio still says it in English — they don't even sound alike. Reading the translation trains your eyes, not your ears. Only listening trains your ears."
+        "takeaway": "Your eyes read an unknown word with the sounds of your own language, and those are the sounds you remember. So we give you the meaning in Russian and the sound in English, and never show how the word is spelled. Spelling is easy to learn later, once you know what the word means."
       },
       "visualMemory": {
         "cloud": "Why train your visual memory?",
@@ -827,18 +827,19 @@
     "nav": {
       "title": "Guide",
       "doIt": "What you'll do",
-      "then": "Then"
+      "then": "Then",
+      "repeat": "Repeat out loud"
     },
     "intro": {
       "eyebrow": "How malako works",
-      "title1": "You listen.",
-      "title2": "That's the whole method.",
-      "text": "Everything else on this page exists to explain one decision: we give you the audio and take away every way of avoiding it. Here is what you actually do, and the six questions students ask once they realise we mean it.",
-      "readTime": "Two minutes to read"
+      "title1": "Listen and repeat.",
+      "title2": "That's it.",
+      "text": "Learn to speak by listening and repeating. Below: what you do in every story, how to record yourself, and why malako has no subtitles and no English spelling.",
+      "readTime": "A three-minute read"
     },
     "loop": {
       "label": "Your loop, every story",
-      "title": "Five things you do. The player handles the rest.",
+      "title": "Six things you do. The player handles the rest.",
       "s1": {
         "title": "Pick your milk",
         "text": "1%, 2,5% or 6%. Difficulty is sold the way milk is — by fat."
@@ -852,13 +853,41 @@
         "text": "Each line comes back up to three times, each pass faster than the last. No text, no captions."
       },
       "s4": {
+        "title": "Repeat out loud",
+        "text": "Turn on “Repeat after me”: after each sentence the player waits while you say it into the microphone. Then hear yourself next to the narrator."
+      },
+      "s5": {
         "title": "Hunt the comic",
         "text": "Every story ships with its own comic. Heard a new word? Go find it in the panels."
       },
-      "s5": {
+      "s6": {
         "title": "Answer, then advance",
         "text": "A spoken quiz — every question in a normal and a slow version. Pass it and the next story unlocks."
       }
+    },
+    "repeat": {
+      "label": "Repeat out loud",
+      "title": "What you hear is what you say.",
+      "text": "Mimic the sounds you hear, even if it isn't perfect. That's how children learn a language: they listen first, then repeat, and grammar comes later.",
+      "steps": [
+        {
+          "title": "Turn on the microphone",
+          "text": "In the player, tap the microphone at the top, “Repeat after me”, and let the browser use it."
+        },
+        {
+          "title": "Repeat every sentence",
+          "text": "After each sentence the player stops and waits while you say it out loud. Once you're quiet, it plays on. Without a microphone it just pauses."
+        },
+        {
+          "title": "Hear yourself",
+          "text": "Once a part has your takes, Practice shows a “Hear yourself” tile. “Just me” plays your sentences in a row; “Narrator and me” plays the narrator’s sentence and then yours."
+        },
+        {
+          "title": "Share it",
+          "text": "“Share” makes a link to the recording: send it to family or friends. The link works for 7 days."
+        }
+      ],
+      "note": "The recording is kept only on this device while you are in the part. It reaches the server only if you tap “Share” yourself."
     },
     "groups": {
       "player": {
@@ -1900,11 +1929,10 @@
     "loading3d": "Loading 3D…",
     "fallback3d": "3D could not start on this device, so here are the pictures.",
     "scroll": "Scroll",
-    "tapPanel": "Tap a panel in 3D",
     "hero": {
-      "title1": "You listen and repeat.",
-      "title2": "That's the whole method.",
-      "lead": "English is spoken in conversations, in your headphones, in lectures. To follow it and start speaking it yourself, you need two things: to listen, and to repeat out loud. The player waits while you say each phrase into the microphone, then lets you hear yourself next to the narrator. What gets in the way of listening is speed, subtitles and spelling: below, each of them and what malako does about it.",
+      "title1": "Listen and repeat.",
+      "title2": "That's it.",
+      "lead": "Learn to speak by listening and repeating. Copy the sounds, repeat each sentence many times, and share your results with your family and friends.",
       "scenes": [
         "A conversation",
         "On headphones",
@@ -1913,14 +1941,14 @@
     },
     "repeat": {
       "eyebrow": "Listen and repeat",
-      "title": "You learn to speak only by speaking.",
-      "body": "Heard a phrase? Say it into the microphone; the player waits for you. Then open “Hear yourself”: your voice next to the narrator’s. You hear straight away where you already sound like them.",
+      "title": "What you hear is what you say.",
+      "body": "To get used to English speech, you need to mimic the sounds you hear. It may not be perfect, but what you hear is what you say, and that is the best learning tool we all have. Remember: children learn a language by listening and repeating. Nobody studies grammar before they understand what they can say or hear.",
       "steps": [
         "Listen",
         "Repeat",
         "Hear yourself"
       ],
-      "note": "“Repeat after me” is the microphone button in the player. The recording stays on your device unless you share it yourself.",
+      "note": "“Repeat after me” is the microphone button in the player. The recording stays with you, and you can share it with family and friends by link.",
       "narrator": "Narrator",
       "you": "You",
       "turn": "Your turn",
@@ -1929,15 +1957,13 @@
       "aria": "Two tracks: first the narrator’s voice, then yours into the microphone, then both one after the other, and the person smiles."
     },
     "speed": {
-      "eyebrow": "Problem 1 · speed",
-      "title": "Nobody learns a dance at full speed.",
-      "text": "You learn every move on its own, then link them, then dance in time with the music. Speech works the same way: at normal speed the words run together and the ear cannot pull them apart.",
+      "title": "English feels fast.",
+      "text": "English syllables are short, and most words have just one or two of them. Other languages don't always work that way: if words in your language have more syllables, English speech feels too fast and the words run together. There's no need to be afraid of that. It's the same with dancing: slowly first, one move at a time, then fast.",
       "steps": [
         "every move is visible",
         "the moves link up",
         "now it is a dance"
       ],
-      "app": "The player does exactly this with every line: ×3 means 0.65, 0.8, then 1.0.",
       "listen": "Hear a line the same way",
       "stop": "Stop",
       "count": [
@@ -1948,7 +1974,6 @@
       ]
     },
     "subtitles": {
-      "eyebrow": "Problem 2 · subtitles",
       "title": "Your eyes take the job from your ears.",
       "text": "While there is text on screen, the brain chooses to read: it is easier. The visual area does the work, and the hearing area rests and does not learn. You understood the line, but you did not hear it.",
       "toggle": "Subtitles",
@@ -1963,9 +1988,8 @@
       "see": "visual area"
     },
     "spelling": {
-      "eyebrow": "Problem 3 · spelling",
       "title": "Осень is spelled autumn. It sounds different.",
-      "text": "A word learned by eye gets read the Russian way, letter by letter: «аутумн». It actually sounds like «о́тэм», with no U and no N. When you hear the real word, your ear does not recognise it.",
+      "text": "When you see an unknown word in a language you don't know, you read it with what you already know: the sounds of your own language. And those are the sounds you remember, because it's the first time you see the word. So we give you a word's meaning without showing how it's written. Spelling is much easier to learn once you know what a word means, not the other way round. Put speaking and listening first, and that habit goes away.",
       "steps": [
         "How it is spelled",
         "How the eye reads it",
@@ -1984,14 +2008,13 @@
     "solve": {
       "eyebrow": "How malako solves it",
       "title": "Three answers, built into the player.",
-      "text": "One answer for each problem. Everything below really works: turn your sound on.",
+      "text": "The player has an answer to each of these.",
       "s1": {
-        "tag": "The answer to speed",
         "title": "The player: slow, then fast",
-        "text": "Every line plays up to three times: 0.65×, 0.8×, 1.0×. Phrase by phrase to learn it, straight through once you are ready."
+        "text": "Every line plays up to three times: 0.65×, 0.8×, 1.0×. Phrase by phrase to learn it, straight through once you are ready.",
+        "shot": "The player"
       },
       "s2": {
-        "tag": "The answer to subtitles",
         "title": "Not one subtitle. Anywhere.",
         "text": "The player shows no story text: only sound and the comic. There is no subtitles button either. Try pressing it.",
         "cc": "Subtitles",
@@ -2002,27 +2025,21 @@
         ]
       },
       "s3": {
-        "tag": "The answer to spelling",
         "title": "Words in Russian. Sound in English.",
         "text": "The part's words sit where they are said, and the text is dots: you see the rhythm, not the letters. Tap a word to hear it in English. You never see how it is spelled.",
         "try": "Tap «осень»:",
-        "game": "Then the Words game: a word plays, you find its tile, and it flies into the jar."
+        "game": "Then the Words game: a word plays, you find its tile, and it flies into the jar.",
+        "shot": "The part's words"
       }
     },
     "devices": {
       "phone": "Phone",
       "desktop": "Computer"
     },
-    "player": {
-      "label": "The player",
-      "story": "Leo's Adventures · part 1 of 10",
-      "title": "Leo's Life",
-      "passOf": "pass {{n}} of {{total}}",
-      "tapPlay": "Press Play — sound will come on"
-    },
     "given": {
       "eyebrow": "What you get back",
-      "title": "One crutch we do hand you: the comic."
+      "title": "One crutch we do hand you: the comic.",
+      "text": "Every story has its own comic. Heard a new word? Find it in the pictures: practice has a game for that, “Find the scene”."
     },
     "levels": {
       "lead": {
@@ -2035,40 +2052,9 @@
     "practice": {
       "label": "After a part",
       "title": "Questions are spoken too, never written.",
-      "text": "After a part comes a spoken quiz. Every question has a normal and a slow version. The answers unlock once you have heard the question.",
-      "tilesText": "Finish a part and practice opens. The quiz moves you on; words and scenes are optional."
-    },
-    "path": {
-      "label": "Where things are",
-      "title": "Five screens from your first tap to the first line.",
-      "text": "Nothing to set up. This is what you will see, in order.",
-      "steps": [
-        {
-          "tag": "Levels",
-          "title": "Pick your milk",
-          "text": "1%, 2,5% or 6%. Difficulty is sold the way milk is — by fat."
-        },
-        {
-          "tag": "Shelf",
-          "title": "Take a story",
-          "text": "Every level has its own stories plus News & Interesting Things. Leo's Adventures runs ten parts."
-        },
-        {
-          "tag": "Story",
-          "title": "Open a part",
-          "text": "Parts go in order. Characters appear as you reach them."
-        },
-        {
-          "tag": "Player",
-          "title": "Listen",
-          "text": "Each line comes back up to three times, each pass faster than the last. No text, no captions."
-        },
-        {
-          "tag": "Practice",
-          "title": "Practise",
-          "text": "A spoken quiz opens the next part. Two more games: words and Find the scene."
-        }
-      ]
+      "text": "Finish a part and practice opens. The spoken quiz moves you on to the next part, and in the Words game a word sounds and you find its tile.",
+      "quiz": "Spoken quiz",
+      "game": "The Words game"
     },
     "finder": {
       "label": "Where to start",

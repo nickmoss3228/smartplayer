@@ -112,7 +112,6 @@ export function SpellingCard() {
             <b>{`${t('landing.spelling.ear')} ${t('landing.spelling.ipa')}`}</b>
           </div>
         </div>
-        <p className="eyebrow">{t('landing.spelling.eyebrow')}</p>
         <h2>{t('landing.spelling.title')}</h2>
         <p>{t('landing.spelling.text')}</p>
         <div className="steps4">
