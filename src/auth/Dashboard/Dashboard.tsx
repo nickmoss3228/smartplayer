@@ -1,59 +1,113 @@
 // components/Dashboard/Dashboard.tsx
-import React, { lazy, Suspense, useState, useEffect, useMemo } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+//
+// Four headed sections, in the order people use them: «Учёба» (words, levels,
+// weeks), «Награды» (rank, achievements, currency), «Персонаж» and «Аккаунт».
+// Every option is a row that says what it is and what it does. Nothing here
+// is shown as a percentage: progress is counted in parts.
+import React, { useState, useEffect, useMemo } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  IoLogOutOutline,
+  IoBarChartOutline,
   IoChevronForward,
+  IoCreateOutline,
   IoKeyOutline,
-  IoSchoolOutline,
+  IoLogOutOutline,
   IoRefreshOutline,
 } from "react-icons/io5";
 import { useAuth } from "../../context/AuthContext";
+import { useCharacter } from "../../context/CharacterContext";
+import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import { restartOnboarding } from "../../services/onboardingServices";
 import { fetchAllDashboardData } from "../../services/dashboardServices";
 import {
   getOverallProgress,
   getRank,
   getProgressPercentage,
-  getDifficultyIcon,
   getDifficultyTheme,
+  getTotalCompleted,
+  getTotalLevels,
+  RANKS,
 } from "./dashboardModule";
 import { OverviewData, DetailedProgressMap } from "../../types/Dashboard";
-import ProfileEditor from "./ProfileEditor";
+import ProfileHeader from "./ProfileHeader";
 import DifficultyModal from "./DifficultyModal";
 import RankModal from "./RankModal";
 import ChangePasswordModal from "./ChangePasswordModal";
+import NicknameModal from "./NicknameModal";
+import CharacterEditorDialog from "./CharacterEditorDialog";
 import AchievementsRow from "./AchievementsRow";
 import WalletRow from "./WalletRow";
 import KopilkaCard from "./KopilkaCard";
-import AccuracyTrendChart from "./charts/AccuracyTrendChart";
 import WeeklyActivityChart from "./charts/WeeklyActivityChart";
 import { buildWeeklySeries } from "./charts/progressChartData";
+import { DashboardSection, ListRow, RowCard } from "./SectionKit";
 import { useProfile } from "../../context/ProfileContext";
+import { buttonBase, buttonTone } from "../../components/ui/buttonStyles";
 
-// The character creator has its own three.js canvas; the rest of the
-// dashboard should not wait for, or pay for, 3D.
-const CharacterCreator = lazy(() => import("../../modules/character/CharacterCreator"));
+const DIFFICULTIES = ["easy", "medium", "hard"] as const;
+
+// Section ids double as the jump buttons' targets, in page order.
+const SECTIONS = [
+  { id: "learn", key: "learn" },
+  { id: "rewards", key: "rewards" },
+  { id: "me", key: "character" },
+  { id: "account", key: "account" },
+] as const;
+
+/** Which section the reader is in: the last one whose top has passed the jump bar. */
+const useCurrentSection = (): string => {
+  const [current, setCurrent] = useState<string>(SECTIONS[0].id);
+  useEffect(() => {
+    const onScroll = () => {
+      let found: string = SECTIONS[0].id;
+      for (const { id } of SECTIONS) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 140) found = id;
+      }
+      // At the very bottom the last, short section may never reach the bar.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        found = SECTIONS[SECTIONS.length - 1].id;
+      }
+      setCurrent(found);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return current;
+};
 
 const Dashboard: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user, signOut, loading, updateUser } = useAuth();
+  const { character } = useCharacter();
+  const portrait = useCharacterPortrait(character);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
   const [detailedProgress, setDetailedProgress] =
     useState<DetailedProgressMap>({});
   const [progressLoading, setProgressLoading] = useState<boolean>(true);
 
-  // Modal state — clicking a difficulty card opens the modal for that difficulty
+  // Modal state — clicking a level row opens the window for that difficulty
   const [selectedDifficulty, setSelectedDifficulty] = useState<string | null>(
     null
   );
   const [rankModalOpen, setRankModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [nicknameModalOpen, setNicknameModalOpen] = useState(false);
+  // Links into the editor ("/dashboard#character", from the school) open it.
+  const [editorOpen, setEditorOpen] = useState(location.hash === "#character");
+  const [weeksOpen, setWeeksOpen] = useState(false);
   const [introRestarting, setIntroRestarting] = useState(false);
   const [introError, setIntroError] = useState(false);
+  const currentSection = useCurrentSection();
+
+  useEffect(() => {
+    if (location.hash === "#character") setEditorOpen(true);
+  }, [location.hash]);
 
   // "Take the intro again": the server forgets the answers and the finish, and
   // /welcome runs from the first question. Finishing it lands on the level the
@@ -111,19 +165,26 @@ const Dashboard: React.FC = () => {
 
   // Built entirely from data the dashboard already fetches: every graded part in
   // detailedProgress carries a completedAt, so the weekly series needs no new
-  // endpoint — this map was simply being discarded before.
+  // endpoint.
   const weeklySeries = useMemo(
     () => buildWeeklySeries(detailedProgress, { locale: i18n.language }),
     [detailedProgress, i18n.language]
   );
 
-  // Close modals on Escape
+  const closeEditor = () => {
+    setEditorOpen(false);
+    if (location.hash === "#character") navigate(location.pathname, { replace: true });
+  };
+
+  // Close windows on Escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedDifficulty(null);
         setRankModalOpen(false);
         setPasswordModalOpen(false);
+        setNicknameModalOpen(false);
+        setEditorOpen(false);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -143,208 +204,258 @@ const Dashboard: React.FC = () => {
   const overallProgress = getOverallProgress(overviewData);
   const rank = getRank(overallProgress);
   const RankIcon = rank.icon;
+  const nextRank = RANKS[RANKS.findIndex((r) => r.title === rank.title) + 1];
+  const made = Boolean(character?.look);
+
+  const jumpTo = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <div className="min-h-screen bg-room pt-20 pb-10 px-3 sm:px-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-room pt-20 pb-12 px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto flex flex-col gap-4">
 
-        {/* ── Header ── */}
-        <div className="bg-white rounded-card p-4 sm:p-6 mb-4 sm:mb-6 border border-line animate-fade-in">
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
+        {/* ── Who you are ── */}
+        <div className="bg-white rounded-card p-4 sm:p-6 border border-line animate-fade-in">
+          {profileLoading ? (
+            <div className="animate-pulse flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gray-200" />
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded-[3px] w-32" />
+                <div className="h-3 bg-gray-200 rounded-[3px] w-48" />
+              </div>
+            </div>
+          ) : (
+            <ProfileHeader
+              name={profile?.nickname ?? user.email ?? ""}
+              email={profile ? profile.email : null}
+              onOpenCharacter={() => setEditorOpen(true)}
+            />
+          )}
+        </div>
 
-            {/* ── Profile ── */}
-            <div className="flex-1 min-w-0">
-              {profileLoading ? (
-                <div className="animate-pulse flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-gray-200" />
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded-[3px] w-32" />
-                    <div className="h-3 bg-gray-200 rounded-[3px] w-48" />
-                  </div>
+        {/* ── Jump to a section. Phones and tablets: on desktop every
+            section is already on screen side by side. ── */}
+        <nav
+          aria-label={t("dashboard.home.sectionsLabel")}
+          className="lg:hidden sticky top-13 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-room/95"
+        >
+          <ul className="m-0 p-0 list-none flex gap-1.5 overflow-x-auto">
+            {SECTIONS.map(({ id, key }) => {
+              const on = currentSection === id;
+              return (
+                <li key={id} className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => jumpTo(id)}
+                    aria-current={on ? "location" : undefined}
+                    className={`h-9 px-3 rounded-chip border text-[13px] font-semibold transition-colors ${
+                      on ? "bg-ink border-ink text-white" : "bg-white border-line text-ink hover:border-line-strong"
+                    }`}
+                  >
+                    {t(`dashboard.home.${key}`)}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-x-6 items-start mt-2">
+
+          {/* ── Учёба ── */}
+          <DashboardSection
+            id="learn"
+            title={t("dashboard.home.learn")}
+            hint={t("dashboard.home.learnHint")}
+            className="lg:row-span-3"
+          >
+            <KopilkaCard />
+
+            <div className="bg-white rounded-card border border-line overflow-hidden">
+              <div className="px-4 pt-3.5 pb-1">
+                <h3 className="m-0 text-[15px] font-bold text-ink">{t("dashboard.home.levelsTitle")}</h3>
+                <p className="m-0 mt-0.5 text-[13px] leading-snug text-dim">{t("dashboard.home.levelsHint")}</p>
+              </div>
+              {progressLoading && !overviewData ? (
+                <div className="px-4 pb-4 pt-2 flex flex-col gap-4 animate-pulse">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i}>
+                      <div className="h-3.5 bg-gray-200 rounded-[3px] w-1/3 mb-2" />
+                      <div className="h-1.5 bg-gray-200 rounded-full" />
+                    </div>
+                  ))}
                 </div>
-              ) : profile ? (
-                <ProfileEditor profile={profile} onProfileUpdate={setProfileDirect} />
               ) : (
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-black/5 ring-1 ring-black/10 flex items-center justify-center text-xl font-bold text-black/70">
-                    {user.email?.[0]?.toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-black truncate">{user.email}</p>
-                    <p className="text-xs text-black/40">
-                      {t("dashboard.defaultSubtitle")}
-                    </p>
-                  </div>
-                </div>
+                <ul className="m-0 p-0 list-none">
+                  {overviewData &&
+                    DIFFICULTIES.map((difficulty) => {
+                      const info = overviewData[difficulty];
+                      const theme = getDifficultyTheme(difficulty);
+                      return (
+                        <li key={difficulty}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDifficulty(difficulty)}
+                            aria-haspopup="dialog"
+                            className="w-full min-h-[56px] flex items-center gap-3 px-4 py-3 text-left hover:bg-room/70 active:bg-room transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal"
+                          >
+                            <span className="flex-1 min-w-0">
+                              <span className="flex items-baseline justify-between gap-3">
+                                <span className="text-[14px] font-bold text-ink">
+                                  {t(`dashboard.difficulty.${difficulty}`)}
+                                </span>
+                                <span className="text-[13px] text-dim tabular-nums">
+                                  {info.completed === 0 && info.total > 0
+                                    ? t("dashboard.home.notStarted")
+                                    : t("dashboard.home.partsOf", { completed: info.completed, count: info.total })}
+                                </span>
+                              </span>
+                              <span className="block mt-2 h-1.5 rounded-full overflow-hidden bg-black/[0.06]">
+                                <span
+                                  className={`block h-full ${theme.bg} rounded-full transition-all duration-700 ease-out`}
+                                  style={{ width: `${getProgressPercentage(info.completed, info.total)}%` }}
+                                />
+                              </span>
+                            </span>
+                            <IoChevronForward size={16} aria-hidden="true" className="text-muted flex-shrink-0" />
+                          </button>
+                        </li>
+                      );
+                    })}
+                </ul>
               )}
             </div>
 
-            {/* ── Rank badge — opens the full rank ladder ── */}
-            <button
-              type="button"
-              onClick={() => setRankModalOpen(true)}
-              aria-haspopup="dialog"
-              title={t("dashboard.rankModal.open")}
-              className="flex items-center gap-3 sm:flex-col sm:gap-1.5 rounded-card p-3.5 sm:p-4 sm:w-40 bg-ink flex-shrink-0 text-left hover:bg-ink/90 active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2"
-            >
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-tile bg-white/10 flex items-center justify-center flex-shrink-0">
-                <RankIcon size={20} className="text-white" />
-              </div>
-              <div className="flex-1 sm:text-center min-w-0">
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/75">
-                  {t("dashboard.stats.currentRank")}
-                </p>
-                <p className="text-base sm:text-lg font-bold capitalize text-white truncate">
-                  {t(`dashboard.ranks.${rank.title}`)}
-                </p>
-              </div>
-              <p className="text-xs text-white/75 font-medium flex-shrink-0">
-                {overallProgress}%
-              </p>
-            </button>
-          </div>
+            <RowCard>
+              <ListRow
+                icon={IoBarChartOutline}
+                title={t("dashboard.home.weeksTitle")}
+                hint={t("dashboard.home.weeksHint")}
+                expanded={weeksOpen}
+                controls="weeks-chart"
+                onClick={() => setWeeksOpen((v) => !v)}
+              />
+              {weeksOpen && (
+                // The chart brings its own card; inside this one it drops the frame.
+                <div id="weeks-chart" className="[&>div]:border-0 [&>div]:rounded-none">
+                  <WeeklyActivityChart weeks={weeklySeries.weeks} hasData={weeklySeries.hasData} />
+                </div>
+              )}
+            </RowCard>
+          </DashboardSection>
 
-          <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3">
-            <WalletRow compact />
-            <div className="flex items-center gap-2 ml-auto">
-              <button
+          {/* ── Награды ── */}
+          <DashboardSection
+            id="rewards"
+            title={t("dashboard.home.rewards")}
+            hint={t("dashboard.home.rewardsHint")}
+          >
+            <RowCard>
+              <ListRow
+                icon={RankIcon}
+                iconDark
+                title={t(`dashboard.ranks.${rank.title}`)}
+                hint={
+                  nextRank
+                    ? t("dashboard.home.rankHint", { rank: t(`dashboard.ranks.${nextRank.title}`) })
+                    : t("dashboard.home.rankTop")
+                }
+                hasPopup
+                disabled={progressLoading && !overviewData}
+                onClick={() => setRankModalOpen(true)}
+              />
+              <AchievementsRow collapsible />
+              <div className="px-4 pt-3 pb-4">
+                <p className="m-0 mb-2 text-[14px] font-bold text-ink">{t("dashboard.home.walletTitle")}</p>
+                <WalletRow compact />
+              </div>
+            </RowCard>
+          </DashboardSection>
+
+          {/* ── Персонаж ── */}
+          <DashboardSection
+            id="me"
+            title={t("dashboard.home.character")}
+            hint={t("dashboard.home.characterHint")}
+          >
+            <div className="bg-white rounded-card border border-line p-4 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                {/* The portrait is drawn after load; until then, its backdrop. */}
+                {portrait ? (
+                  <img
+                    src={portrait}
+                    alt=""
+                    className="w-[76px] h-[76px] rounded-tile bg-[#d8ebf6] object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <span className="w-[76px] h-[76px] rounded-tile bg-[#d8ebf6] flex-shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <h3 className="m-0 text-[15px] font-bold text-ink">
+                    {made ? t("dashboard.home.characterMade") : t("dashboard.home.characterNew")}
+                  </h3>
+                  <p className="m-0 mt-0.5 text-[13px] leading-snug text-dim">{t("dashboard.home.characterText")}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditorOpen(true)}
+                  aria-haspopup="dialog"
+                  className={`${buttonBase} flex-1 h-11 px-4 ${buttonTone.secondary}`}
+                >
+                  {made ? t("dashboard.home.characterEdit") : t("dashboard.home.characterCreate")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/room?me=1")}
+                  className={`${buttonBase} flex-1 h-11 px-4 ${buttonTone.secondary}`}
+                >
+                  {t("dashboard.home.openSchool")}
+                </button>
+              </div>
+            </div>
+          </DashboardSection>
+
+          {/* ── Аккаунт ── */}
+          <DashboardSection id="account" title={t("dashboard.home.account")}>
+            <RowCard>
+              {profile && (
+                <ListRow
+                  icon={IoCreateOutline}
+                  title={t("dashboard.home.name")}
+                  hint={profile.nickname}
+                  hasPopup
+                  onClick={() => setNicknameModalOpen(true)}
+                />
+              )}
+              <ListRow
+                icon={IoKeyOutline}
+                title={t("dashboard.home.password")}
+                hint={t("dashboard.home.passwordHint")}
+                hasPopup
                 onClick={() => setPasswordModalOpen(true)}
-                aria-haspopup="dialog"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
-              >
-                <IoKeyOutline size={16} />
-                {t("dashboard.password.open")}
-              </button>
-              <button
+              />
+              <ListRow
+                icon={IoRefreshOutline}
+                title={t("dashboard.intro.button")}
+                hint={t("dashboard.home.introHint")}
+                disabled={introRestarting}
+                onClick={handleRestartIntro}
+              />
+              <ListRow
+                icon={IoLogOutOutline}
+                title={t("dashboard.signOut")}
+                danger
                 onClick={signOut}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-[3px] bg-black/[0.04] hover:bg-black/10 text-black/70 text-sm font-semibold transition-all active:scale-95"
-              >
-                <IoLogOutOutline size={16} />
-                {t("dashboard.signOut")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <KopilkaCard />
-
-        {/* ── Your character ── */}
-        <Suspense
-          fallback={<div className="bg-white rounded-card border border-line h-80 mb-4 sm:mb-6 animate-pulse" />}
-        >
-          <CharacterCreator />
-        </Suspense>
-
-        {/* ── Difficulty progress + Achievements ── */}
-        {progressLoading ? (
-          <div className="flex flex-col gap-3 mb-6">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-card p-4 sm:p-5 border border-line animate-pulse">
-                <div className="h-11 w-11 bg-gray-200 rounded-tile mb-3" />
-                <div className="h-4 bg-gray-200 rounded-[3px] w-1/3 mb-2" />
-                <div className="h-2 bg-gray-200 rounded-[3px]" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <>
-            {/* ── Difficulty cards ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 animate-fade-in-delay-1">
-              {overviewData &&
-                (["easy", "medium", "hard"] as const).map((difficulty, index) => {
-                  const info = overviewData[difficulty];
-                  const pct = getProgressPercentage(info.completed, info.total);
-                  const theme = getDifficultyTheme(difficulty);
-                  const Icon = getDifficultyIcon(difficulty);
-                  return (
-                    <button
-                      key={difficulty}
-                      onClick={() => setSelectedDifficulty(difficulty)}
-                      className="
-                        bg-white rounded-card p-4 sm:p-5 text-left
-                        border border-line
-                        hover:border-line-strong active:scale-[0.98]
-                        transition-all duration-200
-                        focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-2
-                        animate-scale-in
-                      "
-                      style={{ animationDelay: `${index * 80}ms`, animationFillMode: "backwards" }}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-11 h-11 rounded-tile ${theme.soft} flex items-center justify-center flex-shrink-0`}>
-                          <Icon className={theme.text} size={20} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="font-bold capitalize text-black/85 text-sm sm:text-base block">
-                            {t(`dashboard.difficulty.${difficulty}`)}
-                          </span>
-                          <span className="text-[11px] text-black/40">
-                            {t("dashboard.partsCount", { completed: info.completed, total: info.total })}
-                          </span>
-                        </div>
-                        <span className="text-xl sm:text-2xl font-extrabold text-black/85 flex-shrink-0">
-                          {pct}%
-                        </span>
-                        <IoChevronForward size={16} className="text-black/20 flex-shrink-0" />
-                      </div>
-                      <div className="w-full h-2 rounded-full overflow-hidden bg-black/[0.06]">
-                        <div
-                          className={`h-full ${theme.bg} rounded-full transition-all duration-700 ease-out`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-            </div>
-
-            {/* ── Achievements ── */}
-            <div className="animate-fade-in-delay-2">
-              <AchievementsRow />
-            </div>
-
-            {/* ── Progress charts ── */}
-            <div className="mb-6 animate-fade-in-delay-2">
-              <h2 className="font-mono text-[10px] text-black/40 mb-3 uppercase tracking-[0.16em]">
-                {t("dashboard.charts.sectionTitle")}
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                <AccuracyTrendChart
-                  weeks={weeklySeries.weeks}
-                  hasData={weeklySeries.hasData}
-                />
-                <WeeklyActivityChart
-                  weeks={weeklySeries.weeks}
-                  hasData={weeklySeries.hasData}
-                />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── The intro, again ── */}
-        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-card border border-line bg-white p-4 sm:p-5">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-tile bg-room text-ink">
-            <IoSchoolOutline size={20} />
-          </div>
-          <div className="min-w-[12rem] flex-1">
-            <p className="m-0 text-sm font-bold text-black/85 sm:text-base">{t("dashboard.intro.title")}</p>
-            <p className="m-0 mt-0.5 text-[13px] leading-snug text-black/50">{t("dashboard.intro.text")}</p>
+              />
+            </RowCard>
             {introError && (
-              <p role="alert" className="m-0 mt-1 text-[13px] text-signal-ink">
+              <p role="alert" className="m-0 px-0.5 text-[13px] text-signal-ink">
                 {t("dashboard.intro.error")}
               </p>
             )}
-          </div>
-          <button
-            type="button"
-            onClick={handleRestartIntro}
-            disabled={introRestarting}
-            className="flex items-center gap-1.5 rounded-[3px] bg-black/[0.04] px-4 py-2 text-sm font-semibold text-black/70 transition-all hover:bg-black/10 active:scale-95 disabled:opacity-50"
-          >
-            <IoRefreshOutline size={16} />
-            {t("dashboard.intro.button")}
-          </button>
+          </DashboardSection>
         </div>
       </div>
 
@@ -358,7 +469,8 @@ const Dashboard: React.FC = () => {
 
       {rankModalOpen && (
         <RankModal
-          progress={overallProgress}
+          completed={getTotalCompleted(overviewData)}
+          total={getTotalLevels(overviewData)}
           onClose={() => setRankModalOpen(false)}
         />
       )}
@@ -372,6 +484,16 @@ const Dashboard: React.FC = () => {
           onClose={() => setPasswordModalOpen(false)}
         />
       )}
+
+      {nicknameModalOpen && profile && (
+        <NicknameModal
+          profile={profile}
+          onSaved={setProfileDirect}
+          onClose={() => setNicknameModalOpen(false)}
+        />
+      )}
+
+      {editorOpen && <CharacterEditorDialog onClose={closeEditor} />}
     </div>
   );
 };

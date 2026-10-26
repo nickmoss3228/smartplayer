@@ -59,7 +59,7 @@ const KopilkaCard: React.FC = () => {
   const markCount = bookmarks.keys.length;
 
   return (
-    <div className="bg-white rounded-card border border-line p-4 sm:p-6 mb-4 sm:mb-6">
+    <div className="bg-white rounded-card border border-line p-4 sm:p-6">
       <div className="flex items-center gap-4">
         <JarDrawing fresh={3} className="h-[70px] w-[62px] flex-shrink-0" />
         <div className="min-w-0">
@@ -88,14 +88,14 @@ const KopilkaCard: React.FC = () => {
       )}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <button type="button" onClick={() => navigate("/kopilka")} className={`${buttonSecondary} flex-1`}>
+        <button type="button" onClick={() => navigate("/kopilka")} className={`${buttonSecondary} sm:flex-1`}>
           {t("kopilka.open")}
         </button>
         <button
           type="button"
           onClick={() => navigate("/kopilka#review")}
           disabled={markCount === 0}
-          className={`${buttonPrimary} flex-1`}
+          className={`${buttonPrimary} sm:flex-1`}
         >
           {t("kopilka.repeatMarks")}
         </button>

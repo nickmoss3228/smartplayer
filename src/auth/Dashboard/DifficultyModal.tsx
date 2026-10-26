@@ -15,6 +15,8 @@ import {
   getLevelStatus,
 } from "./dashboardModule";
 import Sheet from "../../components/Sheet/Sheet";
+import { useStoryGroupsWithStatus, type DifficultySlug } from "../../types/storyGroups";
+import StoryThumb from "./StoryThumb";
 
 interface DifficultyModalProps {
   difficulty: string;
@@ -35,6 +37,10 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
 
   const theme = getDifficultyTheme(difficulty);
   const DifficultyIcon = getDifficultyIcon(difficulty);
+  // The Stories page's own list (cached there), for each story's cover and
+  // reader-facing title.
+  const { stories: groups } = useStoryGroupsWithStatus(difficulty as DifficultySlug);
+  const groupFor = (storyId: string) => groups.find((g) => g.slug === storyId);
 
   const getStatusStyle = (status: LevelStatus): string => {
     switch (status) {
@@ -77,7 +83,7 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
               {t(`dashboard.difficulty.${difficulty}`)}
             </h2>
             <p className="text-xs text-black/40">
-              {t("dashboard.partsCount", { completed: overview.completed, total: overview.total })} · {overallPct}%
+              {t("dashboard.home.partsOf", { completed: overview.completed, count: overview.total })}
             </p>
           </div>
         </div>
@@ -129,20 +135,18 @@ const DifficultyModal: React.FC<DifficultyModalProps> = ({
                     setExpandedStory(isExpanded ? null : story.storyId)
                   }
                 >
-                  <span className="text-2xl flex-shrink-0 w-10 h-10 rounded-[3px] bg-white border border-line flex items-center justify-center">
-                    {story.characterIcon}
-                  </span>
+                  <StoryThumb
+                    slug={story.storyId}
+                    group={groupFor(story.storyId)}
+                    softClass={theme.soft}
+                    textClass={theme.text}
+                  />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-black/85 truncate text-sm">
-                        {story.storyName}
-                      </p>
-                      <span className="text-xs font-bold text-black/50 flex-shrink-0">
-                        {storyPct}%
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-black/35 mt-0.5">
-                      {t("dashboard.partsCount", { completed: story.completedParts.length, total: story.totalParts })}
+                    <p className="font-bold text-black/85 truncate text-sm">
+                      {groupFor(story.storyId)?.title ?? story.storyName}
+                    </p>
+                    <p className="text-[11px] text-black/50 mt-0.5">
+                      {t("dashboard.home.partsOf", { completed: story.completedParts.length, count: story.totalParts })}
                     </p>
                     {/* Mini bar */}
                     <div className="w-full h-1.5 rounded-full overflow-hidden bg-black/[0.06] mt-2">

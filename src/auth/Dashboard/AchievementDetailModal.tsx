@@ -227,9 +227,6 @@ const AchievementDetailModal: React.FC<Props> = ({ category, value, onClose }) =
                           }}
                         />
                       </div>
-                      <p className="text-[11px] text-black/40 mt-1 tabular-nums">
-                        {rung.fill}%
-                      </p>
                     </div>
                   )}
                 </div>

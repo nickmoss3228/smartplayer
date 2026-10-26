@@ -13,7 +13,7 @@ import { UserProfile } from "../types/Dashboard";
 interface ProfileContextValue {
   profile: UserProfile | null;
   profileLoading: boolean;
-  /** Call this after the user saves changes in ProfileEditor */
+  /** Call this after the user saves changes in NicknameModal */
   refreshProfile: () => Promise<void>;
   setProfileDirect: (p: UserProfile) => void;
 }
@@ -61,7 +61,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
         profile,
         profileLoading,
         refreshProfile: loadProfile,
-        // lets ProfileEditor push an update without a round-trip
+        // lets NicknameModal push an update without a round-trip
         setProfileDirect: setProfile,
       }}
     >

@@ -2,30 +2,33 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { IoClose, IoCheckmark, IoLockClosedOutline } from "react-icons/io5";
-import { RANKS, getRank } from "./dashboardModule";
+import { RANKS, getRank, getProgressPercentage, partsForRank } from "./dashboardModule";
 import Sheet from "../../components/Sheet/Sheet";
 
 interface RankModalProps {
-  progress: number;
+  /** Parts done, and parts there are, across every level */
+  completed: number;
+  total: number;
   onClose: () => void;
 }
 
 // The full rank ladder, lowest first, with the player's place on it. Same
 // shell as DifficultyModal (bottom sheet on phones, centred dialog on desktop).
-const RankModal: React.FC<RankModalProps> = ({ progress, onClose }) => {
+// Everything on it is counted in parts, never in percent: the ranks are still
+// thresholds on the share of parts done, turned into parts by partsForRank.
+const RankModal: React.FC<RankModalProps> = ({ completed, total, onClose }) => {
   const { t } = useTranslation();
-  const current = getRank(progress);
+  const current = getRank(getProgressPercentage(completed, total));
   const currentIndex = RANKS.findIndex((r) => r.title === current.title);
   const next = RANKS[currentIndex + 1];
+  const currentAt = partsForRank(current.minProgress, total);
+  const nextAt = next ? partsForRank(next.minProgress, total) : total;
 
-  // Share of the way from the current rank's threshold to the next one's.
-  const stepPct = next
-    ? Math.round(
-        ((progress - current.minProgress) /
-          (next.minProgress - current.minProgress)) *
-          100
-      )
-    : 100;
+  // How far along the bar is from this rank's first part to the next rank's.
+  const stepFill =
+    next && nextAt > currentAt
+      ? Math.round(((completed - currentAt) / (nextAt - currentAt)) * 100)
+      : 100;
 
   return (
     <Sheet onClose={onClose} labelledBy="rank-modal-title">
@@ -36,7 +39,7 @@ const RankModal: React.FC<RankModalProps> = ({ progress, onClose }) => {
             {t("dashboard.rankModal.title")}
           </h2>
           <p className="text-xs text-black/40">
-            {t("dashboard.rankModal.subtitle", { progress })}
+            {t("dashboard.home.ranksSubtitle", { completed, count: total })}
           </p>
         </div>
         <button
@@ -53,13 +56,13 @@ const RankModal: React.FC<RankModalProps> = ({ progress, onClose }) => {
         <div className="w-full h-2.5 rounded-full overflow-hidden bg-black/[0.06]">
           <div
             className="h-full bg-ink transition-all duration-700 ease-out rounded-full"
-            style={{ width: `${stepPct}%` }}
+            style={{ width: `${stepFill}%` }}
           />
         </div>
         <p className="mt-2 text-xs font-medium text-black/60">
           {next
-            ? t("dashboard.rankModal.toNext", {
-                points: next.minProgress - progress,
+            ? t("dashboard.home.toNext", {
+                count: Math.max(1, nextAt - completed),
                 rank: t(`dashboard.ranks.${next.title}`),
               })
             : t("dashboard.rankModal.maxRank")}
@@ -113,9 +116,11 @@ const RankModal: React.FC<RankModalProps> = ({ progress, onClose }) => {
                     ? t("dashboard.rankModal.current")
                     : isReached
                       ? t("dashboard.rankModal.reached")
-                      : t("dashboard.rankModal.unlockAt", {
-                          progress: rank.minProgress,
-                        })}
+                      : rank.minProgress === 0
+                        ? t("dashboard.home.fromStart")
+                        : t("dashboard.home.unlockAt", {
+                            count: partsForRank(rank.minProgress, total),
+                          })}
                 </p>
               </div>
               {isReached && (
