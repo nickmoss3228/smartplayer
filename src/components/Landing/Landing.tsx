@@ -10,6 +10,7 @@ import { DANCE_PHRASE, LandingDataContext, useLeoPart1Loader, type LandingContex
 import { landingStore, useLanding } from './landingStore';
 import type { LandingScene } from './scene/landingScene';
 import { HeroCard } from './sections/HeroCard';
+import { RepeatCard } from './sections/RepeatCard';
 import { SpeedCard } from './sections/SpeedCard';
 import { SubtitlesCard } from './sections/SubtitlesCard';
 import { SpellingCard } from './sections/SpellingCard';
@@ -25,7 +26,7 @@ import { FinalCta, LandingFooter } from './sections/FinalCta';
 /**
  * The landing (/): how malako works, as a guide.
  *
- * Two pinned 3D tracks carry the argument — first the three problems (speed,
+ * Two pinned 3D tracks carry the argument — first listen and repeat, then the three problems (speed,
  * subtitles, spelling), later the comic and the milk glasses — with cards that
  * scroll beneath them on a phone and beside them from 960px. Between and after
  * them, the answers: the player, no subtitles, the word window, practice, the
@@ -139,6 +140,7 @@ export default function Landing() {
             {is3d && booting && <span className="boot">{t('landing.loading3d')}</span>}
           </div>
           <HeroCard />
+          <RepeatCard />
           <SpeedCard />
           <SubtitlesCard />
           <SpellingCard />

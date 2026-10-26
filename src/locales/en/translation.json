@@ -1890,17 +1890,31 @@
     "scroll": "Scroll",
     "tapPanel": "Tap a panel in 3D",
     "hero": {
-      "lead": "English is spoken in conversations, in your headphones, in lectures. It is hard to follow by ear for three reasons: it is fast, it is easier to read than to hear, and words do not sound the way they are spelled. Here is how each one gets in the way, and what malako does about it.",
-      "problems": [
-        "Speed",
-        "Subtitles",
-        "Spelling"
-      ],
+      "title1": "You listen and repeat.",
+      "title2": "That's the whole method.",
+      "lead": "English is spoken in conversations, in your headphones, in lectures. To follow it and start speaking it yourself, you need two things: to listen, and to repeat out loud. The player waits while you say each phrase into the microphone, then lets you hear yourself next to the narrator. What gets in the way of listening is speed, subtitles and spelling: below, each of them and what malako does about it.",
       "scenes": [
         "A conversation",
         "On headphones",
         "In a lecture"
       ]
+    },
+    "repeat": {
+      "eyebrow": "Listen and repeat",
+      "title": "You learn to speak only by speaking.",
+      "body": "Heard a phrase? Say it into the microphone; the player waits for you. Then open “Hear yourself”: your voice next to the narrator’s. You hear straight away where you already sound like them.",
+      "steps": [
+        "Listen",
+        "Repeat",
+        "Hear yourself"
+      ],
+      "note": "“Repeat after me” is the microphone button in the player. The recording stays on your device unless you share it yourself.",
+      "narrator": "Narrator",
+      "you": "You",
+      "turn": "Your turn",
+      "together": "Narrator and me",
+      "inTurn": "one after the other",
+      "aria": "Two tracks: first the narrator’s voice, then yours into the microphone, then both one after the other, and the person smiles."
     },
     "speed": {
       "eyebrow": "Problem 1 · speed",
