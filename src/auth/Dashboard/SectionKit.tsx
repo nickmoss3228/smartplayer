@@ -19,7 +19,7 @@ export const DashboardSection: React.FC<{
   <section
     id={id}
     aria-labelledby={`${id}-title`}
-    className={`scroll-mt-32 flex flex-col gap-3 ${className}`}
+    className={`scroll-mt-32 min-w-0 flex flex-col gap-3 ${className}`}
   >
     <div className="flex items-baseline justify-between gap-3 px-0.5">
       <h2 id={`${id}-title`} className="m-0 text-xl font-extrabold tracking-tight text-ink">
