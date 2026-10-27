@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { createKit, damp, ease, clamp01, roundRect, INK, GREEN, RED, SANS, MONO } from './kit';
-import { makeFigure, applyPose, pose, STAND, SIT, SEAT_TOP, HEAD_Y, FOREARM, UNIT, FIGURE_SCALE, type Figure, type Pose, type PersonLook } from './figures';
+import { makeFigure, applyPose, pose, STAND, SIT, SEAT_TOP, HEAD_Y, FOREARM, UNIT, FIGURE_SCALE, type Figure, type Pose, type PersonLook, type Vec3 } from './figures';
 import { applyDance, prepareDancer, keyBetween, keyOnCurve, REST, COUNT_PRINTS, type DanceKey } from './shuffle';
 import { landingStore, landingActions, setSubs, setTilesStep } from '../landingStore';
 import type { DifficultySlug } from '../../../types/storyGroups';
@@ -18,6 +18,7 @@ import type { DifficultySlug } from '../../../types/storyGroups';
  *   3  spelling: AUTUMN read letter by letter, then as it sounds
  *   4  the comic page in eight panels, for «Найди сцену»
  *   5  the three milk glasses
+ *   6  listen, repeat, hear yourself (the card right after the hero)
  *
  * The cards drive it through landingStore (and the scene writes back the
  * dancer's clock and its own automatic flips); taps here call the actions the
@@ -35,6 +36,9 @@ export interface SceneCopy {
   silent: string;
   appNote: string;
   chip: string;
+  /** The playback above the listener's head: the two voices' names. */
+  narrator: string;
+  you: string;
 }
 
 export interface SceneLeo {
@@ -261,7 +265,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     sp.renderOrder = 20;
     return sp;
   };
-  const stageFloor = (group: THREE.Group, name: string) => {
+  const stageFloor = (group: THREE.Group, name = '') => {
     const floor = new THREE.Mesh(new THREE.CircleGeometry(1.3, 72), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, envMapIntensity: 0.6 }));
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.002;
@@ -270,9 +274,36 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     rim.rotation.x = -Math.PI / 2;
     group.add(rim);
     // Below the rim's front edge, so the name never sits on the line.
+    if (!name) return;
     const l = label(name, { h: 0.19, fg: '#0f151c' });
     l.position.set(0, -0.2, 1.42);
     group.add(l);
+  };
+  // The listener: on the hero's «В наушниках» stage and again in the listen-and-repeat card.
+  const LISTENER: PersonLook = { skin: '#8d5a3c', hair: 'curly', hairColor: '#17130f', top: 'hoodie', topColor: '#6f7a4e', bottom: 'trousers', bottomColor: '#3c4a63', shoeColor: '#f2f2ef', soleColor: '#d9d9d4' };
+  /** Over-ear headphones: a band over the hair, a cushioned cup on each ear. */
+  const giveHeadphones = (d: Figure) => {
+    const hp = new THREE.Group();
+    hp.position.y = HEAD_Y;
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.128, 0.011, 8, 32, Math.PI), inkMat);
+    band.position.y = 0.004;
+    hp.add(band);
+    for (const s of [-1, 1]) {
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.034, 20), inkMat);
+      c.rotation.z = Math.PI / 2;
+      c.position.set(0.112 * s, -0.004, 0);
+      hp.add(c);
+    }
+    d.P.neck.add(hp);
+    return hp;
+  };
+  /** A phone in the right hand. */
+  const givePhone = (d: Figure) => {
+    const phone = new THREE.Mesh(new RoundedBoxGeometry(0.072, 0.148, 0.01, 2, 0.004), inkMat);
+    phone.position.set(0, -FOREARM - 0.02, 0.05);
+    phone.rotation.x = -0.4;
+    d.P.elR.add(phone);
+    return phone;
   };
   const person = (group: THREE.Group, x: number, z: number, ry: number, p: Pose, who: PersonLook): Figure => {
     const d = makeFigure(who, figMat);
@@ -328,35 +359,18 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     // headphones
     const g = new THREE.Group();
     stageFloor(g, copy.scenes[1] ?? '');
-    const d = person(g, 0, 0.1, 0.3, STAND, look({ skin: '#8d5a3c', hair: 'curly', hairColor: '#17130f', top: 'hoodie', topColor: '#6f7a4e', bottom: 'trousers', bottomColor: '#3c4a63', shoeColor: '#f2f2ef', soleColor: '#d9d9d4' }));
-    // Over-ear headphones: a band over the hair, a cushioned cup on each ear.
-    const hp = new THREE.Group();
-    hp.position.y = HEAD_Y;
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.128, 0.011, 8, 32, Math.PI), inkMat);
-    band.position.y = 0.004;
-    hp.add(band);
-    for (const s of [-1, 1]) {
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.034, 20), inkMat);
-      c.rotation.z = Math.PI / 2;
-      c.position.set(0.112 * s, -0.004, 0);
-      hp.add(c);
-    }
-    d.P.neck.add(hp);
-    const phone = new THREE.Mesh(new RoundedBoxGeometry(0.072, 0.148, 0.01, 2, 0.004), inkMat);
-    phone.position.set(0, -FOREARM - 0.02, 0.05);
-    phone.rotation.x = -0.4;
-    d.P.elR.add(phone);
+    const d = person(g, 0, 0.1, 0.3, STAND, look(LISTENER));
+    const hp = giveHeadphones(d);
+    givePhone(d);
     const rings = [0, 1, 2].map(() => {
       const r = fatLine(new THREE.EllipseCurve(0, 0, 1, 1).getPoints(48), GREEN, 2, 0, true);
       g.add(r);
       return r;
     });
-    const chip = mkBubble(bubble('Podcast · English', -0.62, 2.05));
-    g.add(chip.sprite);
     const hw = new THREE.Vector3();
     VIGN.push({
       g,
-      bubbles: [chip],
+      bubbles: [],
       rings,
       update(t) {
         const beat = Math.sin(t * Math.PI * 2 * 1.9);
@@ -372,7 +386,6 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
           r.scale.setScalar(0.18 + ph * 0.45);
           r.material.opacity = Math.sin(ph * Math.PI) * 0.8;
         });
-        chip.want = 1;
       },
     });
   }
@@ -460,6 +473,131 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   const HOLD = 3.8;
   const MOVE = 1.1;
   const SLOT = HOLD + MOVE;
+
+  /* ════ 6 · listen, repeat, hear yourself ═══════════════════════════ */
+  // The listen-and-repeat card, in three beats on one clock (RP_CYCLE, the card's three steps
+  // follow it through landingStore.repeatUI): the listener from «В наушниках» listens, raises the
+  // phone and says the phrase into it, then hears both voices played back above their head —
+  // the narrator's, then their own, as in «Послушай себя» — and smiles. Nothing written: no words
+  // in the bubbles, only the shape of the sound.
+  const gRepeat = new THREE.Group();
+  scene.add(gRepeat);
+  stageFloor(gRepeat);
+  const rpFig = makeFigure(look(LISTENER), figMat);
+  rpFig.root.rotation.y = 0.25;
+  gRepeat.add(rpFig.root);
+  {
+    const sh = shadow(0.7, 0.45);
+    sh.position.y = 0.003;
+    gRepeat.add(sh);
+  }
+  const rpHp = giveHeadphones(rpFig);
+  givePhone(rpFig);
+  const RP_CYCLE = 11;
+  const GREEN_CSS = '#00c951';
+  // 1 · listening: rings from the headphones
+  const rpRings = [0, 1, 2].map(() => {
+    const r = fatLine(new THREE.EllipseCurve(0, 0, 1, 1).getPoints(48), GREEN, 2, 0, true);
+    gRepeat.add(r);
+    return r;
+  });
+  // 2 · saying it: a bubble from the mouth with the sound of their voice, green, and rings at the phone
+  const bars = (c: CanvasRenderingContext2D, x0: number, mid: number, hs: number[], step: number, width: number, color: string) => {
+    c.strokeStyle = color;
+    c.lineWidth = width;
+    c.lineCap = 'round';
+    hs.forEach((h, i) => {
+      c.beginPath();
+      c.moveTo(x0 + i * step, mid - h / 2);
+      c.lineTo(x0 + i * step, mid + h / 2);
+      c.stroke();
+    });
+  };
+  const VOICE = [10, 26, 44, 22, 58, 34, 50, 16, 38, 54, 28, 12, 44, 32, 58, 20, 36, 14];
+  const sayTex = canvasTex(560, 190, (c, w, h) => {
+    roundRect(c, 4, 4, w - 8, h - 44, 34);
+    c.fillStyle = '#ffffff';
+    c.fill();
+    c.lineWidth = 6;
+    c.strokeStyle = GREEN_CSS;
+    c.stroke();
+    c.beginPath();
+    c.moveTo(46, h - 43);
+    c.lineTo(36, h - 6);
+    c.lineTo(88, h - 43);
+    c.closePath();
+    c.fillStyle = '#ffffff';
+    c.fill();
+    c.beginPath();
+    c.moveTo(46, h - 41);
+    c.lineTo(36, h - 6);
+    c.lineTo(88, h - 41);
+    c.stroke();
+    bars(c, 60, (h - 40) / 2 + 2, VOICE, 25, 11, GREEN_CSS);
+  });
+  const rpSay = new THREE.Sprite(new THREE.SpriteMaterial({ map: sayTex, transparent: true, depthWrite: false, toneMapped: false, opacity: 0 }));
+  rpSay.scale.set(0.56 * (560 / 190) * 0.62, 0.56 * 0.62, 1);
+  rpSay.center.set(0.04, 0);
+  rpSay.position.set(0.12, 1.66, 0.25);
+  rpSay.renderOrder = 20;
+  gRepeat.add(rpSay);
+  const rpRec = [0, 1].map(() => {
+    const r = fatLine(new THREE.EllipseCurve(0, 0, 1, 1).getPoints(40), GREEN, 2, 0, true);
+    gRepeat.add(r);
+    return r;
+  });
+  // 3 · hearing yourself: the two voices above the head, the narrator's and yours, a playhead
+  // crossing them, a few lines of joy around the head, and a smile
+  const NARRATOR = [14, 30, 48, 26, 62, 38, 54, 18, 42, 58, 30, 14, 48, 36, 62, 24, 40, 16, 28, 44, 20, 12, 30, 18];
+  const YOURS = [12, 26, 44, 30, 56, 34, 48, 16, 40, 52, 28, 12, 42, 34, 56, 22, 38, 14, 24, 40, 18, 10];
+  const PW = 1.5;
+  const PH = 0.62;
+  const replayTex = canvasTex(900, 372, (c, w, h) => {
+    roundRect(c, 0, 0, w, h, 36);
+    c.fillStyle = '#0f151c';
+    c.fill();
+    c.font = `500 30px ${MONO}`;
+    c.fillStyle = '#9aa8b5';
+    c.fillText(copy.narrator.toUpperCase(), 44, 82);
+    c.fillStyle = GREEN_CSS;
+    c.fillText(copy.you.toUpperCase(), 44, 250);
+    bars(c, 250, 112, NARRATOR, 26, 11, '#eef4f8');
+    bars(c, 250, 280, YOURS, 26, 11, GREEN_CSS);
+  });
+  const rpReplay = new THREE.Group();
+  rpReplay.position.set(0, 2.42, 0);
+  gRepeat.add(rpReplay);
+  const rpPanel = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshBasicMaterial({ map: replayTex, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+  rpPanel.renderOrder = 21;
+  rpReplay.add(rpPanel);
+  const rpHead = new THREE.Mesh(new THREE.PlaneGeometry(0.012, PH * 0.78), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+  rpHead.position.z = 0.002;
+  rpHead.renderOrder = 22;
+  rpReplay.add(rpHead);
+  const rpJoy = [
+    [-0.24, 1.86, -0.31, 1.95],
+    [-0.19, 1.95, -0.22, 2.05],
+    [0.24, 1.86, 0.31, 1.95],
+    [0.19, 1.95, 0.22, 2.05],
+  ].map(([x0, y0, x1, y1]) => {
+    const l = fatLine([{ x: x0, y: y0 }, { x: x1, y: y1 }], GREEN, 3, 0.05);
+    gRepeat.add(l);
+    return l;
+  });
+  const rpSmile = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0042, 6, 18, Math.PI), new THREE.MeshBasicMaterial({ color: 0x6b3a26, transparent: true, opacity: 0, toneMapped: false }));
+  rpSmile.rotation.z = Math.PI;
+  rpSmile.position.set(0, HEAD_Y - 0.052, 0.101);
+  rpFig.P.neck.add(rpSmile);
+  own(rpSay.material, rpPanel.material, rpHead.material, rpSmile.material);
+  rpRings.forEach((r) => own(r.material));
+  rpRec.forEach((r) => own(r.material));
+  rpJoy.forEach((l) => own(l.material));
+  /** How much of each beat is showing, eased: listening, saying, hearing yourself. */
+  const rpW = [1, 0, 0];
+  let rpPinned: number | null = null;
+  let rpStepSeen = -1;
+  const rpWorld = new THREE.Vector3();
+  const mixV = (a: Vec3, b: Vec3, u: number): Vec3 => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
 
   /* ════ 2 · the head: ears vs eyes ═══════════════════════════════════ */
   const gHead = new THREE.Group();
@@ -796,7 +934,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
   });
 
   /* ── chapters: which object, and how the camera frames it ────────── */
-  const GROUPS = [gPeople, gDance, gHead, gTiles, gComic, gGlass];
+  const GROUPS = [gPeople, gDance, gHead, gTiles, gComic, gGlass, gRepeat];
   interface Frame { c: [number, number, number]; w: number; h: number; dw?: number; dh?: number; pw?: number; ph?: number; up?: number; my?: number }
   const FRAMES: Frame[] = [
     // dw/dh: a looser frame on desktop, where the scene has the right half; pw/ph: the frame in a
@@ -807,6 +945,7 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
     { c: [0, -0.15, 0], w: 4.6, h: 2.3 },
     { c: [0, 0, 0], w: 2.6, h: 3.6 },
     { c: [0, -0.05, 0], w: 3.4, h: 2.1, pw: 3.9, ph: 2.7, my: 0.08 },
+    { c: [0, 1.38, 0], w: 2.3, h: 2.6, dw: 2.6, dh: 2.75, pw: 1.7, ph: 2.55, up: 0.3, my: 1.4 },
   ];
   /** How present each chapter's scene is, 0…1; it fades and slides on this. */
   const vis: number[] = GROUPS.map((_, i) => (i === 0 ? 1 : 0));
@@ -1143,6 +1282,58 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       gDance.rotation.y = Math.sin(time * 0.3) * 0.12;
     }
 
+    // 6 · listen, repeat, hear yourself
+    if (gRepeat.visible) {
+      const tt = rpPinned ?? time % RP_CYCLE;
+      const step = tt < 3.4 ? 0 : tt < 7.2 ? 1 : 2;
+      if (step !== rpStepSeen) {
+        rpStepSeen = step;
+        landingStore.set({ repeatUI: step });
+      }
+      rpW.forEach((w, k) => (rpW[k] = rpPinned !== null ? (k === step ? 1 : 0) : damp(w, k === step ? 1 : 0, 6, dt)));
+      const beat = Math.sin(time * Math.PI * 2 * 1.9);
+      const say = rpW[1];
+      const hear = rpW[2];
+      // listening: the phone at the chest, nodding to the beat; saying: the phone up at the mouth;
+      // hearing yourself: looking up at the playback, the free hand coming up a little
+      applyPose(rpFig.P, pose({
+        nk: [0.11 * beat * rpW[0] + 0.12 * say - 0.22 * hear, 0.08 * Math.sin(time * 0.9) * rpW[0] - 0.12 * say, 0],
+        hy: -0.015 * Math.abs(beat) * rpW[0],
+        hrz: 0.025 * Math.sin(time * Math.PI * 1.9) * rpW[0],
+        shR: mixV([-0.95, 0, -0.05], [-0.7, 0, -0.62], say),
+        elR: -1.15 + (-2.05 + 1.15) * say,
+        shL: mixV([0.05, 0, -0.12 - 0.05 * beat * rpW[0]], [-0.35, 0, -0.32], hear),
+        elL: -0.15 - 0.9 * hear,
+        knL: (0.05 + 0.06 * Math.max(0, beat)) * rpW[0],
+        anL: -0.05 * Math.max(0, beat) * rpW[0],
+      }));
+      rpHp.getWorldPosition(rpWorld);
+      gRepeat.worldToLocal(rpWorld);
+      rpRings.forEach((r, k) => {
+        const ph = (time * 0.8 + k / 3) % 1;
+        r.position.set(rpWorld.x, rpWorld.y, rpWorld.z + 0.05);
+        r.scale.setScalar(0.18 + ph * 0.45);
+        r.material.opacity = Math.sin(ph * Math.PI) * 0.8 * rpW[0] * vis[6];
+      });
+      rpSay.material.opacity = say * vis[6];
+      rpSay.scale.y = 0.56 * 0.62 * (0.85 + 0.15 * say);
+      rpRec.forEach((r, k) => {
+        const ph = (time * 1.4 + k / 2) % 1;
+        r.position.set(0.02, 1.58, 0.24);
+        r.scale.setScalar(0.05 + ph * 0.12);
+        r.material.opacity = Math.sin(ph * Math.PI) * 0.7 * say * vis[6];
+      });
+      // the playback faces the camera, and its playhead crosses the two voices once per beat
+      rpReplay.quaternion.copy(camera.quaternion);
+      rpReplay.scale.setScalar(0.9 + 0.1 * hear);
+      rpPanel.material.opacity = hear * vis[6];
+      const u = step === 2 ? Math.min(1, (tt - 7.2) / 3.4) : 0;
+      rpHead.position.x = -PW / 2 + PW * 0.26 + PW * 0.68 * u;
+      rpHead.material.opacity = hear * vis[6];
+      rpJoy.forEach((l, k) => (l.material.opacity = hear * vis[6] * (0.6 + 0.4 * Math.sin(time * 6 + k))));
+      rpSmile.material.opacity = hear * vis[6];
+    }
+
     // 2 · the head
     if (gHead.visible) {
       if (!S.subs.user && now - lastSubsFlip > 4600) {
@@ -1341,6 +1532,10 @@ export function createLandingScene(opts: LandingSceneOptions): LandingScene | nu
       },
       get bubbles() {
         return VIGN.map((v) => v.bubbles.map((b) => +b.sprite.material.opacity.toFixed(2)));
+      },
+      /** Hold the listen-and-repeat scene at a moment of its cycle (seconds, 0-11); null lets it run. */
+      pinRepeat(t: number | null) {
+        rpPinned = t;
       },
       /** Freeze the dancer at a rate, half-count (0-7) and progress (0-1); null lets it dance again. */
       pinDance(p: { rate: number; j: number; u: number } | null) {

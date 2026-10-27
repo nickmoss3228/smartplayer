@@ -101,6 +101,8 @@ export default function Landing() {
           silent: t('landing.spelling.silent'),
           appNote: t('landing.spelling.appNote'),
           chip: t('landing.spelling.chip'),
+          narrator: t('landing.repeat.narrator'),
+          you: t('landing.repeat.you'),
         },
         speeds: SPEED_SEQUENCES[3],
         onReady: () => {

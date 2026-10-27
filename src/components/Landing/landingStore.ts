@@ -35,6 +35,8 @@ export interface LandingState {
   ladder: { on: boolean; pass: number; start: number; gap: boolean };
   /** What the dancer's clock shows, for the speed card's ladder and four counts. */
   ladderUI: { pass: number; beat: number };
+  /** Which beat the listen-and-repeat scene is on (0 listen, 1 repeat, 2 hear yourself), for its card's steps. */
+  repeatUI: number;
   level: DifficultySlug;
 }
 
@@ -48,6 +50,7 @@ const initial = (): LandingState => ({
   tiles: { step: 0, user: 0 },
   ladder: { on: false, pass: 0, start: 0, gap: true },
   ladderUI: { pass: -1, beat: -1 },
+  repeatUI: -1,
   level: 'easy',
 });
 

@@ -1970,13 +1970,13 @@
     "repeat": {
       "eyebrow": "Listen and repeat",
       "title": "What you hear is what you say.",
-      "body": "To get used to English speech, you need to mimic the sounds you hear. It may not be perfect, but what you hear is what you say, and that is the best learning tool we all have. Remember: children learn a language by listening and repeating. Nobody studies grammar before they understand what they can say or hear.",
+      "body": "To get used to English speech, you need to mimic the sounds you hear. It may not be perfect, but what you hear is what you say, and that is the best learning tool we all have. Remember: children learn a language by listening and repeating. malako builds this into the player: turn on the microphone, and after each sentence the player waits while you repeat it, then lets you hear yourself next to the narrator.",
       "steps": [
         "Listen",
         "Repeat",
         "Hear yourself"
       ],
-      "note": "“Repeat after me” is the microphone button in the player. The recording stays with you, and you can share it with family and friends by link.",
+      "note": "The recording stays on your device. You can share it with family and friends by link.",
       "narrator": "Narrator",
       "you": "You",
       "turn": "Your turn",
@@ -2041,6 +2041,11 @@
         "title": "The player: slow, then fast",
         "text": "Every line plays up to three times: 0.65×, 0.8×, 1.0×. Phrase by phrase to learn it, straight through once you are ready.",
         "shot": "The player"
+      },
+      "mic": {
+        "title": "“Repeat after me”: say it out loud",
+        "text": "Tap the microphone in the player, and after each sentence it stops and waits while you repeat it. Then open “Hear yourself” in Practice: each sentence from the narrator, followed by yours. You can share the recording by link.",
+        "shot": "“Repeat after me” and “Hear yourself”"
       },
       "s2": {
         "title": "Not one subtitle. Anywhere.",

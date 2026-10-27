@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { IoVolumeHigh } from 'react-icons/io5';
 import autumnEn from '../../../assets/landing/autumn-en.wav';
 import desktopPlayer from '../../../assets/landing/d3-player.webp';
+import desktopRepeat from '../../../assets/landing/d5-repeat.webp';
+import phoneReplay from '../../../assets/landing/m5-replay.webp';
 import phonePlayer from '../../../assets/landing/m3-player.webp';
 import wordsWindow from '../../../assets/landing/m4-words.webp';
 import type { AudioOwner, EndReason } from '../landingAudio';
@@ -12,10 +14,10 @@ import { AppWindow, Screens } from './Screens';
 
 /**
  * «Как малако это решает»: the player's answer to each difficulty above (docs/
- * landing-guide/c.html, the solutions section). The speed answer is the
- * player, the subtitles answer is a button that refuses, the spelling answer
- * is a picture of the app's word window and the word «осень», spoken.
- * The player is screenshots, on a computer and a phone; the word list is its window.
+ * landing-guide/c.html, the solutions section): the player itself, then
+ * «Повтори за мной» for speaking, then a subtitles button that refuses, then
+ * the word window and the word «осень», spoken. The player and the mic mode
+ * are screenshots, on a computer and a phone; the word list is its window.
  */
 
 function Mark({ at, children }: { at: 'k1' | 'k2' | 'k3'; children: ReactNode }) {
@@ -147,7 +149,18 @@ export function Solutions() {
           </Reveal>
         </article>
 
+        {/* Speaking: «Повтори за мной» in the player, and «Послушай себя» after the part. */}
         <article className="sol flip">
+          <Reveal className="sol-text">
+            <h3>{t('landing.solve.mic.title')}</h3>
+            <p>{t('landing.solve.mic.text')}</p>
+          </Reveal>
+          <Reveal delay={120}>
+            <Screens desktop={desktopRepeat} mobile={phoneReplay} label={t('landing.solve.mic.shot')} />
+          </Reveal>
+        </article>
+
+        <article className="sol">
           <Reveal className="sol-text">
             <h3>{t('landing.solve.s2.title')}</h3>
             <p>{t('landing.solve.s2.text')}</p>
@@ -161,7 +174,7 @@ export function Solutions() {
           </Reveal>
         </article>
 
-        <article className="sol">
+        <article className="sol flip">
           <Reveal className="sol-text">
             <h3>{t('landing.solve.s3.title')}</h3>
             <p>{t('landing.solve.s3.text')}</p>
