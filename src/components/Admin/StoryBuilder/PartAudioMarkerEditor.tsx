@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
+import { Trans, useTranslation } from "react-i18next";
 import {
   IoAdd,
   IoArrowUndoOutline,
@@ -79,6 +80,7 @@ type SaveState = "saved" | "dirty" | "saving" | "error";
  * here needs to be got right first time: markers drag, nudge, and undo.
  */
 const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = true, layout = "classic" }: PartAudioMarkerEditorProps) => {
+  const { t } = useTranslation("studio");
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -230,7 +232,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
     instance.load(previewUrl).catch((err: Error) => {
       if (err?.name !== "AbortError") {
         console.error("WaveSurfer load error:", err);
-        setError("That audio could not be loaded. Try re-uploading it.");
+        setError(t("audio.editor.loadFailed"));
       }
     });
 
@@ -241,7 +243,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
       wsRef.current = null;
       setWrapper(null);
     };
-  }, [previewUrl]);
+  }, [previewUrl, t]);
 
   useEffect(() => {
     const instance = wsRef.current;
@@ -271,10 +273,10 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
         setSaveState((state) => (state === "saving" ? "saved" : state));
       } catch (err) {
         setSaveState("error");
-        setError(err instanceof Error ? err.message : "Failed to save markers.");
+        setError(err instanceof Error ? err.message : t("audio.editor.saveFailed"));
       }
     },
-    [token, story._id, part.partNumber, onPartUpdated],
+    [token, story._id, part.partNumber, onPartUpdated, t],
   );
 
   // Autosave, because the old explicit Save button meant an afternoon of
@@ -401,9 +403,9 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
       setSelected(0);
     } catch (err) {
       console.warn("Sentence detection failed:", err);
-      setError("Could not read the audio well enough to find sentences. Place the markers by ear.");
+      setError(t("audio.editor.detectFailed"));
     }
-  }, [commit]);
+  }, [commit, t]);
 
   // ── the recording ─────────────────────────────────────────────────────────
 
@@ -411,7 +413,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
     async (file: File) => {
       setError("");
       if (!file.type.startsWith("audio/")) {
-        setError(`${file.name} is not an audio file.`);
+        setError(t("audio.editor.notAudio", { name: file.name }));
         return;
       }
 
@@ -438,12 +440,12 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
         setSaveState("saved");
         setJustUploaded(true);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed.");
+        setError(err instanceof Error ? err.message : t("audio.editor.uploadFailed"));
       } finally {
         setUploading(false);
       }
     },
-    [token, story._id, part.partNumber, onPartUpdated],
+    [token, story._id, part.partNumber, onPartUpdated, t],
   );
 
   useEffect(
@@ -520,10 +522,10 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
     selected >= 0 ? computeSegmentBounds(times, selected, duration) : null;
 
   const statusChip = {
-    saved: { text: "Saved", className: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-    saving: { text: "Saving…", className: "text-gray-500 bg-gray-50 border-gray-200" },
-    dirty: { text: "Unsaved", className: "text-amber-700 bg-amber-50 border-amber-200" },
-    error: { text: "Not saved", className: "text-red-700 bg-red-50 border-red-200" },
+    saved: { text: t("common.saved"), className: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+    saving: { text: t("common.saving"), className: "text-gray-500 bg-gray-50 border-gray-200" },
+    dirty: { text: t("audio.editor.unsaved"), className: "text-amber-700 bg-amber-50 border-amber-200" },
+    error: { text: t("audio.editor.notSaved"), className: "text-red-700 bg-red-50 border-red-200" },
   }[saveState];
 
   // ── the recording is missing ──────────────────────────────────────────────
@@ -551,9 +553,9 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
         >
           <IoCloudUploadOutline className="text-3xl text-gray-400" aria-hidden="true" />
           <span className="text-sm font-semibold text-black">
-            Drop the recording for part {part.partNumber} here
+            {t("audio.editor.dropTitle", { n: part.partNumber })}
           </span>
-          <span className="text-xs text-gray-500">or click to choose a file — MP3, M4A or WAV</span>
+          <span className="text-xs text-gray-500">{t("audio.editor.dropHint")}</span>
           <input
             type="file"
             accept="audio/*"
@@ -566,11 +568,10 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
             }}
           />
         </label>
-        {uploading && <p className="text-xs text-gray-500">Uploading…</p>}
+        {uploading && <p className="text-xs text-gray-500">{t("common.uploading")}</p>}
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <p className="text-xs text-gray-500 leading-relaxed">
-          The recording comes first: everything else on this part — the sentence markers students
-          replay, and the quiz that follows them — is built on top of it.
+          {t("audio.editor.recordingFirst")}
         </p>
       </div>
     );
@@ -587,30 +588,30 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
             type="button"
             onClick={() => audition(selected < 0 ? 0 : selected - 1)}
             disabled={times.length === 0}
-            title="Previous sentence (←)"
+            title={t("audio.editor.prevSentenceTitle")}
             className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-30"
           >
             <IoPlaySkipBack aria-hidden="true" />
-            <span className="sr-only">Previous sentence</span>
+            <span className="sr-only">{t("audio.editor.prevSentence")}</span>
           </button>
           <button
             type="button"
             onClick={togglePlay}
-            title="Play / pause (Space)"
+            title={t("audio.editor.playPauseTitle")}
             className="w-9 h-9 grid place-items-center rounded-[3px] bg-black text-white hover:bg-gray-800"
           >
             {playing ? <IoPause aria-hidden="true" /> : <IoPlay aria-hidden="true" />}
-            <span className="sr-only">{playing ? "Pause" : "Play"}</span>
+            <span className="sr-only">{playing ? t("audio.editor.pause") : t("audio.editor.play")}</span>
           </button>
           <button
             type="button"
             onClick={() => audition(selected < 0 ? 0 : selected + 1)}
             disabled={times.length === 0}
-            title="Next sentence (→)"
+            title={t("audio.editor.nextSentenceTitle")}
             className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-30"
           >
             <IoPlaySkipForward aria-hidden="true" />
-            <span className="sr-only">Next sentence</span>
+            <span className="sr-only">{t("audio.editor.nextSentence")}</span>
           </button>
 
           <span className="ml-1 text-sm tabular-nums text-black font-medium">
@@ -623,11 +624,11 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
               type="button"
               onClick={undo}
               disabled={history.length === 0}
-              title="Undo (Ctrl+Z)"
+              title={t("audio.editor.undoTitle")}
               className="w-8 h-8 grid place-items-center rounded-[3px] text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
               <IoArrowUndoOutline aria-hidden="true" />
-              <span className="sr-only">Undo</span>
+              <span className="sr-only">{t("audio.editor.undo")}</span>
             </button>
             <div className="flex rounded-[3px] border border-gray-200 overflow-hidden">
               {ZOOM_LEVELS.map((level, i) => (
@@ -635,12 +636,12 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                   key={level}
                   type="button"
                   onClick={() => setZoom(level)}
-                  title={level === 0 ? "Fit the whole recording" : `Zoom ${i}`}
+                  title={level === 0 ? t("audio.editor.zoomFitTitle") : t("audio.editor.zoomTitle", { n: i })}
                   className={`px-2 py-1 text-[11px] font-semibold ${
                     zoom === level ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-100"
                   }`}
                 >
-                  {level === 0 ? "Fit" : `${i}×`}
+                  {level === 0 ? t("audio.editor.zoomFit") : `${i}×`}
                 </button>
               ))}
             </div>
@@ -677,21 +678,21 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
           className="inline-flex items-center gap-1.5 bg-ink hover:bg-gray-800 text-white text-sm font-semibold rounded-[3px] px-4 py-2"
         >
           <IoAdd aria-hidden="true" />
-          Mark sentence
+          {t("audio.editor.markSentence")}
           <kbd className="ml-1 text-[10px] font-mono bg-white/25 rounded-[3px] px-1 py-0.5">M</kbd>
         </button>
         <button
           type="button"
           onClick={detect}
           disabled={duration === 0}
-          title="Find the pauses in the recording and put a marker at each sentence"
+          title={t("audio.editor.detectTitle")}
           className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-[3px] px-3 py-2 hover:bg-gray-50 disabled:opacity-40"
         >
           <IoSparklesOutline aria-hidden="true" />
-          {times.length > 0 ? "Detect sentences again" : "Detect sentences"}
+          {times.length > 0 ? t("audio.editor.detectAgain") : t("audio.editor.detect")}
         </button>
         <label
-          title="A tap lands a little late; snapping moves it back to the pause you were aiming at"
+          title={t("audio.editor.snapTitle")}
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none"
         >
           <input
@@ -700,20 +701,20 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
             onChange={(e) => setSnap(e.target.checked)}
             className="accent-ink"
           />
-          Snap to the nearest pause
+          {t("audio.editor.snap")}
           {onsets.length === 0 && duration > 0 && (
-            <span className="text-gray-400">(no pauses found in this recording)</span>
+            <span className="text-gray-400">{t("audio.editor.noPauses")}</span>
           )}
         </label>
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
-      {uploading && <p className="text-xs text-gray-500">Uploading the recording…</p>}
+      {uploading && <p className="text-xs text-gray-500">{t("audio.editor.uploadingRecording")}</p>}
 
       <details open={layout === "classic" ? true : undefined} className="rounded-tile border border-line p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-ink">Recording &amp; slow copies</summary>
+        <summary className="cursor-pointer text-sm font-semibold text-ink">{t("audio.editor.recordingAndSlow")}</summary>
         <div className="mt-3 space-y-3">
-          {layout === "desk" && <label className="block text-xs text-dim">Replace recording (MP3, M4A or WAV)
+          {layout === "desk" && <label className="block text-xs text-dim">{t("audio.editor.replaceRecording")}
             <input type="file" accept="audio/*" disabled={uploading} className="mt-2 block max-w-full text-sm text-ink" onChange={event => { const file = event.target.files?.[0]; if (file) void acceptFile(file); event.target.value = ""; }} />
           </label>}
       <PartSlowCopies
@@ -731,7 +732,13 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
           {issues.slice(0, 4).map((issue, i) => (
             <li key={i} className="flex items-start gap-2 text-xs text-amber-900">
               <IoWarningOutline className="mt-0.5 shrink-0" aria-hidden="true" />
-              <span className="flex-1">{issue.message}</span>
+              <span className="flex-1">
+                {issue.kind === "no-start"
+                  ? t("audio.editor.issueNoStart", { time: `${issue.seconds.toFixed(1)}s` })
+                  : issue.kind === "too-close"
+                    ? t("audio.editor.issueTooClose", { a: issue.index, b: issue.index + 1, time: `${issue.seconds.toFixed(1)}s` })
+                    : t("audio.editor.issueLong", { n: issue.index + 1, time: `${issue.seconds.toFixed(1)}s` })}
+              </span>
               {issue.kind === "no-start" ? (
                 <button
                   type="button"
@@ -741,7 +748,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                   }}
                   className="shrink-0 font-semibold underline hover:no-underline"
                 >
-                  Move it
+                  {t("audio.editor.moveIt")}
                 </button>
               ) : (
                 <button
@@ -749,13 +756,13 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                   onClick={() => audition(issue.index)}
                   className="shrink-0 font-semibold underline hover:no-underline"
                 >
-                  Listen
+                  {t("audio.editor.listen")}
                 </button>
               )}
             </li>
           ))}
           {issues.length > 4 && (
-            <li className="text-xs text-amber-700 pl-6">and {issues.length - 4} more</li>
+            <li className="text-xs text-amber-700 pl-6">{t("audio.editor.andMore", { count: issues.length - 4 })}</li>
           )}
         </ul>
       )}
@@ -765,12 +772,11 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
           question worth asking, which is whether you reached the end. */}
       {times.length === 0 ? (
         <div className="rounded-[3px] border border-dashed border-gray-300 px-4 py-6 text-center">
-          <p className="text-sm text-gray-600 font-medium">No sentences marked yet</p>
+          <p className="text-sm text-gray-600 font-medium">{t("audio.editor.noSentences")}</p>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            Students replay one sentence at a time, and a sentence is the gap between two markers —
-            so without these, the recording plays straight through and nothing else works.
+            {t("audio.editor.noSentencesHint")}
             <br />
-            Try <strong>Detect sentences</strong>, then listen through and fix what it got wrong.
+            <Trans t={t} i18nKey="audio.editor.noSentencesTry" components={{ b: <strong /> }} />
           </p>
         </div>
       ) : (
@@ -781,7 +787,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                 key={i}
                 type="button"
                 onClick={() => audition(i)}
-                title={`Play sentence ${i + 1}`}
+                title={t("audio.editor.playSentenceTitle", { n: i + 1 })}
                 className={`inline-flex items-baseline gap-1.5 rounded-[3px] px-2 py-1 text-[11px] tabular-nums transition-colors ${
                   i === selected
                     ? "bg-ink text-white"
@@ -800,7 +806,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
 
           {layout === "classic" && selected >= 0 && selectedBounds && (
             <div className="flex items-center gap-2 flex-wrap rounded-[3px] bg-gray-50 border border-gray-200 px-3 py-2">
-              <span className="text-xs text-black font-semibold">Sentence {selected + 1}</span>
+              <span className="text-xs text-black font-semibold">{t("audio.editor.sentenceN", { n: selected + 1 })}</span>
               <span className="text-xs text-gray-500 tabular-nums">
                 {formatTime(selectedBounds.start)} &rarr;{" "}
                 {formatTime(Math.min(selectedBounds.end, duration))}
@@ -813,7 +819,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                 <button
                   type="button"
                   onClick={() => nudge(-NUDGE_SECONDS)}
-                  title="Move this marker 50ms earlier (Shift+Left)"
+                  title={t("audio.editor.earlierTitle")}
                   className="text-xs text-gray-600 bg-white border border-gray-300 rounded-[3px] px-2 py-1 hover:bg-gray-100 tabular-nums"
                 >
                   &minus;50ms
@@ -821,7 +827,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                 <button
                   type="button"
                   onClick={() => nudge(NUDGE_SECONDS)}
-                  title="Move this marker 50ms later (Shift+Right)"
+                  title={t("audio.editor.laterTitle")}
                   className="text-xs text-gray-600 bg-white border border-gray-300 rounded-[3px] px-2 py-1 hover:bg-gray-100 tabular-nums"
                 >
                   +50ms
@@ -829,11 +835,11 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
                 <button
                   type="button"
                   onClick={() => removeMarker(selected)}
-                  title="Remove this marker (Delete) — the sentence joins the one before it"
+                  title={t("audio.editor.removeTitle")}
                   className="inline-flex items-center gap-1 text-xs text-red-600 bg-white border border-red-200 rounded-[3px] px-2 py-1 hover:bg-red-50"
                 >
                   <IoTrashOutline aria-hidden="true" />
-                  Remove
+                  {t("common.remove")}
                 </button>
               </div>
             </div>
@@ -844,49 +850,41 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = tru
       <details className="group">
         <summary className="cursor-pointer list-none text-xs text-gray-500 hover:text-black select-none inline-flex items-center gap-1">
           <span className="text-gray-400 group-open:rotate-90 transition-transform">&#9656;</span>
-          How marking works
+          {t("audio.editor.howTitle")}
         </summary>
         <div className="mt-2 text-xs text-gray-600 leading-relaxed bg-gray-50 border border-gray-200 rounded-[3px] p-3 space-y-1.5">
           <p>
-            A marker is the <strong>start of a sentence</strong>. Everything a student does with the
-            audio — replay it, slow it down, move on — happens between one marker and the next.
+            <Trans t={t} i18nKey="audio.editor.how1" components={{ b: <strong /> }} />
           </p>
           <p>
-            The first marker belongs at <strong>0:00</strong>. Audio before it belongs to no
-            sentence, so students never reach it.
+            <Trans t={t} i18nKey="audio.editor.how2" components={{ b: <strong /> }} />
           </p>
           <p>
-            Fastest way: press <kbd className="font-mono bg-white border rounded-[3px] px-1">Space</kbd>{" "}
-            and tap <kbd className="font-mono bg-white border rounded-[3px] px-1">M</kbd> as each sentence
-            begins — each tap moves back to the pause it belongs to. Then walk through with{" "}
-            <kbd className="font-mono bg-white border rounded-[3px] px-1">&larr;</kbd>{" "}
-            <kbd className="font-mono bg-white border rounded-[3px] px-1">&rarr;</kbd> and check every
-            sentence sounds whole. Drag a marker on the wave to move it,{" "}
-            <kbd className="font-mono bg-white border rounded-[3px] px-1">Ctrl+Z</kbd> undoes.
+            <Trans t={t} i18nKey="audio.editor.how3" components={{ k: <kbd className="font-mono bg-white border rounded-[3px] px-1" /> }} />
           </p>
-          <p className="text-gray-500">Your work saves itself a moment after each change.</p>
+          <p className="text-gray-500">{t("audio.editor.how4")}</p>
         </div>
       </details>
       </div>
-      {layout === "desk" && <aside aria-label="Selected sentence" className="h-fit min-w-0 rounded-tile border border-line bg-room p-4 xl:sticky xl:top-4">
-        <h4 className="mb-4 text-sm font-bold text-ink">{selected >= 0 ? `Sentence ${selected + 1}` : "Sentence inspector"}</h4>
+      {layout === "desk" && <aside aria-label={t("audio.editor.inspectorAria")} className="h-fit min-w-0 rounded-tile border border-line bg-room p-4 xl:sticky xl:top-4">
+        <h4 className="mb-4 text-sm font-bold text-ink">{selected >= 0 ? t("audio.editor.sentenceN", { n: selected + 1 }) : t("audio.editor.inspector")}</h4>
         {selected >= 0 && selectedBounds ? <div className="space-y-4">
-          <label className="block text-xs text-dim">Starts at (seconds)
+          <label className="block text-xs text-dim">{t("audio.editor.startsAt")}
             <input key={`${selected}:${times[selected]}`} type="number" min={0} max={duration || undefined} step={0.05} defaultValue={times[selected].toFixed(2)}
               className="mt-1 w-full rounded-[3px] border border-line-strong bg-white px-3 py-2 text-sm tabular-nums text-ink"
               onBlur={event => { const value = event.target.valueAsNumber; if (Number.isFinite(value) && value !== times[selected]) { moveMarker(selected, value); settleMarker(); } }}
               onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} />
           </label>
-          <p className="text-xs text-dim">Ends at <span className="block text-sm tabular-nums text-ink">{formatTime(Math.min(selectedBounds.end, duration))}</span><span className="mt-1 block">{(Math.min(selectedBounds.end, duration) - selectedBounds.start).toFixed(2)} seconds</span></p>
+          <p className="text-xs text-dim">{t("audio.editor.endsAt")} <span className="block text-sm tabular-nums text-ink">{formatTime(Math.min(selectedBounds.end, duration))}</span><span className="mt-1 block">{t("audio.editor.seconds", { value: (Math.min(selectedBounds.end, duration) - selectedBounds.start).toFixed(2) })}</span></p>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => nudge(-NUDGE_SECONDS)} title="Move marker 50ms earlier (Shift+Left)" className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">−50 ms</button>
-            <button type="button" onClick={() => nudge(NUDGE_SECONDS)} title="Move marker 50ms later (Shift+Right)" className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">+50 ms</button>
+            <button type="button" onClick={() => nudge(-NUDGE_SECONDS)} title={t("audio.editor.inspectorEarlierTitle")} className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">−50 ms</button>
+            <button type="button" onClick={() => nudge(NUDGE_SECONDS)} title={t("audio.editor.inspectorLaterTitle")} className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">+50 ms</button>
           </div>
-          <button type="button" onClick={() => audition(selected)} className="min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm font-semibold text-white">Audition sentence</button>
-          <button type="button" onClick={() => removeMarker(selected)} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-[3px] border border-line-strong bg-white px-3 text-xs text-red-700"><IoTrashOutline aria-hidden="true" />Remove marker</button>
-        </div> : <p className="text-sm text-dim">Select a sentence on the waveform or below it to adjust its start, listen, or remove its marker.</p>}
-        <p className="mt-5 border-t border-line pt-3 text-xs text-dim">Marker edits save automatically. Undo with Ctrl+Z.</p>
-        {saveState === "error" && <button type="button" onClick={() => void persist(timesRef.current)} className="mt-3 min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm text-white">Retry saving markers</button>}
+          <button type="button" onClick={() => audition(selected)} className="min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm font-semibold text-white">{t("audio.editor.audition")}</button>
+          <button type="button" onClick={() => removeMarker(selected)} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-[3px] border border-line-strong bg-white px-3 text-xs text-red-700"><IoTrashOutline aria-hidden="true" />{t("audio.editor.removeMarker")}</button>
+        </div> : <p className="text-sm text-dim">{t("audio.editor.selectHint")}</p>}
+        <p className="mt-5 border-t border-line pt-3 text-xs text-dim">{t("audio.editor.autosaveHint")}</p>
+        {saveState === "error" && <button type="button" onClick={() => void persist(timesRef.current)} className="mt-3 min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm text-white">{t("audio.editor.retrySave")}</button>}
       </aside>}
     </div>
   );

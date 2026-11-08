@@ -2125,6 +2125,7 @@
     "russian": "Russian"
   },
   "contentStudio": {
+    "backToEditor": "Back to editor",
     "closePreview": "Close student preview",
     "next": "Next part or prompt",
     "noAudio": "Reference audio has not been added yet.",

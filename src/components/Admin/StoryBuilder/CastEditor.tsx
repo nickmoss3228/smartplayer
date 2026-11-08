@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { IoArrowDown, IoArrowUp, IoTrashOutline } from "react-icons/io5";
+import type { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
+import { IoAddOutline, IoArrowDown, IoArrowUp, IoTrashOutline } from "react-icons/io5";
 import {
   AdminStory,
   CastMember,
@@ -8,6 +10,8 @@ import {
 } from "../../../services/adminStoryServices";
 import { themes } from "../../../modules/levelprogress/themes.levelprogress";
 import { CastAvatar } from "../../../modules/cast/CastAvatar";
+import { SaveBar } from "./studioUi";
+import { LOCALES, fieldHint, fieldLabel, microLabel, smallButton, textArea, textInput, inputBase } from "./studioStyles";
 
 /**
  * The story's characters — the row of faces on its level page, and the sheet
@@ -23,11 +27,6 @@ import { CastAvatar } from "../../../modules/cast/CastAvatar";
 const LIMITS = { members: 12, name: 40, role: 80, bio: 600 };
 // Same rule as CAST_KEY_PATTERN in backend/src/db/repos/stories.repo.ts.
 const KEY_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
-
-const LOCALES: { id: "en" | "ru"; label: string }[] = [
-  { id: "en", label: "English" },
-  { id: "ru", label: "Русский" },
-];
 
 const ACCEPTED = "image/jpeg,image/png,image/webp,image/avif,image/gif";
 
@@ -81,13 +80,12 @@ const fromDraft = (draft: DraftMember[]): CastMember[] =>
   }));
 
 /** What is wrong with the list as it stands, or "" — checked before saving. */
-const problemWith = (cast: CastMember[]): string => {
+const problemWith = (cast: CastMember[], t: TFunction): string => {
   const seen = new Set<string>();
   for (const [i, m] of cast.entries()) {
-    const at = `Character ${i + 1}`;
-    if (!m.name.en && !m.name.ru) return `${at} needs a name.`;
-    if (!KEY_PATTERN.test(m.key)) return `${at}: the key must be lowercase letters, digits and dashes.`;
-    if (seen.has(m.key)) return `${at}: the key "${m.key}" is already used.`;
+    if (!m.name.en && !m.name.ru) return t("settings.cast.needsName", { n: i + 1 });
+    if (!KEY_PATTERN.test(m.key)) return t("settings.cast.badKey", { n: i + 1 });
+    if (seen.has(m.key)) return t("settings.cast.dupKey", { n: i + 1, key: m.key });
     seen.add(m.key);
   }
   return "";
@@ -100,12 +98,15 @@ interface CastEditorProps {
 }
 
 const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
+  const { t } = useTranslation("studio");
   const baseline = useMemo(() => toDraft(story.cast), [story.cast]);
   const [draft, setDraft] = useState<DraftMember[]>(baseline);
   const [saving, setSaving] = useState(false);
   const [uploadingUid, setUploadingUid] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // Which note sits by the Save bar. A key, not a sentence, so it survives a language switch.
+  const [notice, setNotice] = useState<"" | "saved" | "portrait">("");
+  const [openUid, setOpenUid] = useState<number | null>(null);
 
   // A save hands back a new story, and with it a new baseline.
   useEffect(() => {
@@ -118,7 +119,7 @@ const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
 
   const cast = fromDraft(draft);
   const dirty = JSON.stringify(cast) !== JSON.stringify(fromDraft(baseline));
-  const problem = problemWith(cast);
+  const problem = problemWith(cast, t);
   const accent = themes[story.difficulty]?.accent ?? themes.easy.accent;
 
   const update = (uid: number, change: (m: DraftMember) => DraftMember) =>
@@ -142,11 +143,12 @@ const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
       return next;
     });
 
-  const add = () =>
+  const add = () => {
+    const uid = nextUid++;
     setDraft((d) => [
       ...d,
       {
-        uid: nextUid++,
+        uid,
         key: "",
         keyEdited: false,
         name: { en: "", ru: "" },
@@ -156,11 +158,13 @@ const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
         firstPart: 1,
       },
     ]);
+    setOpenUid(uid);
+  };
 
   const handlePortrait = async (member: DraftMember, file: File) => {
     const key = member.key.trim().toLowerCase();
     if (!KEY_PATTERN.test(key)) {
-      setError("Give the character a name (or a key) before uploading a portrait — the key names the file.");
+      setError(t("settings.cast.portraitNeedsKey"));
       return;
     }
     setError("");
@@ -168,9 +172,9 @@ const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
     try {
       const url = await uploadCastPortrait(token, story._id, key, file);
       update(member.uid, (m) => ({ ...m, imageUrl: url }));
-      setNotice("Portrait uploaded — save the cast to put it on the page.");
+      setNotice("portrait");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Portrait upload failed.");
+      setError(err instanceof Error ? err.message : t("settings.cast.portraitFailed"));
     } finally {
       setUploadingUid(null);
     }
@@ -186,227 +190,269 @@ const CastEditor = ({ token, story, onStoryUpdated }: CastEditorProps) => {
     setNotice("");
     try {
       onStoryUpdated(await saveStoryCast(token, story._id, cast));
-      setNotice("Cast saved.");
+      setNotice("saved");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the cast.");
+      setError(err instanceof Error ? err.message : t("settings.cast.saveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
   const parts = Array.from({ length: story.totalParts }, (_, i) => i + 1);
+  const full = draft.length >= LIMITS.members;
+  const addButton = (
+    <button type="button" onClick={add} disabled={full} className={smallButton}>
+      <IoAddOutline aria-hidden="true" />
+      {full ? t("settings.cast.addCharacterMax", { max: LIMITS.members }) : t("settings.cast.addCharacter")}
+    </button>
+  );
+  const iconButton =
+    "inline-flex min-h-11 min-w-11 items-center justify-center text-dim hover:text-ink disabled:opacity-30 disabled:hover:text-dim";
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-gray-500 max-w-2xl">
-        Shown as a row of faces under the story title on the level page. A character stays a
-        silhouette (&ldquo;part N&rdquo;) until the student reaches the part they first appear in.
-        Order here is the order on the page.
-      </p>
+    <div>
+      {!story.published && <p className="mb-3 text-xs text-dim">{t("settings.cast.draftNote")}</p>}
 
-      {!story.published && (
-        <div className="bg-white rounded-[3px] border border-gray-200 p-3 text-xs text-gray-600 max-w-2xl">
-          This story is a draft, so students do not see its cast yet.
+      {draft.length === 0 ? (
+        <div className="rounded-tile border border-dashed border-line-strong p-6 text-center">
+          <p className="mb-3 text-sm text-dim">{t("settings.cast.empty")}</p>
+          {addButton}
         </div>
+      ) : (
+        <>
+          <ul className="divide-y divide-line rounded-tile border border-line">
+            {draft.map((member, i) => {
+              const shown = fromDraft([member])[0];
+              const keyBad = shown.key !== "" && !KEY_PATTERN.test(shown.key);
+              const open = openUid === member.uid;
+              const toggle = () => setOpenUid(open ? null : member.uid);
+              const hasName = shown.name.en || shown.name.ru;
+              const uploading = uploadingUid === member.uid;
+              const avatarCard = {
+                key: shown.key || `new-${member.uid}`,
+                locked: false,
+                firstPart: shown.firstPart,
+                name: shown.name.en || shown.name.ru || "?",
+                role: "",
+                bio: "",
+                imageUrl: shown.imageUrl,
+              };
+              return (
+                <li key={member.uid}>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      aria-expanded={open}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      {/* As students will see it, once revealed. */}
+                      <CastAvatar card={avatarCard} accent={accent} size={44} />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-ink">
+                          {hasName ? (
+                            <>
+                              {shown.name.en}
+                              {shown.name.en && shown.name.ru && " "}
+                              {shown.name.ru && <span className="font-normal text-dim">{shown.name.ru}</span>}
+                            </>
+                          ) : (
+                            t("settings.cast.unnamed")
+                          )}
+                        </span>
+                        {shown.role.en && <span className="block truncate text-xs text-dim">{shown.role.en}</span>}
+                      </span>
+                    </button>
+                    <span className="shrink-0 rounded-full border border-line px-2 py-0.5 text-xs text-dim">
+                      {t("settings.cast.fromPart", { n: shown.firstPart })}
+                    </span>
+                    <div className="ml-auto flex shrink-0 items-center">
+                      <button
+                        type="button"
+                        onClick={() => move(member.uid, -1)}
+                        disabled={i === 0}
+                        aria-label={t("settings.cast.moveUp")}
+                        className={iconButton}
+                      >
+                        <IoArrowUp aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => move(member.uid, 1)}
+                        disabled={i === draft.length - 1}
+                        aria-label={t("settings.cast.moveDown")}
+                        className={iconButton}
+                      >
+                        <IoArrowDown aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraft((d) => d.filter((m) => m.uid !== member.uid));
+                          if (open) setOpenUid(null);
+                        }}
+                        aria-label={t("settings.cast.removeCharacter")}
+                        className={`${iconButton} hover:text-red-700`}
+                      >
+                        <IoTrashOutline aria-hidden="true" />
+                      </button>
+                      <button type="button" onClick={toggle} className={`${smallButton} ml-1`}>
+                        {open ? t("common.done") : t("common.edit")}
+                      </button>
+                    </div>
+                  </div>
+
+                  {open && (
+                    <div className="space-y-5 bg-room/50 p-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {LOCALES.map(({ id }) => (
+                          <div key={id} className="min-w-0 space-y-3">
+                            <h4 className={microLabel}>{t(`common.languages.${id}`)}</h4>
+                            <label className="block">
+                              <span className={fieldLabel}>{t("settings.cast.name")}</span>
+                              <input
+                                type="text"
+                                value={member.name[id]}
+                                maxLength={LIMITS.name}
+                                onChange={(e) => setText(member.uid, "name", id, e.target.value)}
+                                className={textInput}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className={fieldLabel}>{t("settings.cast.role")}</span>
+                              <input
+                                type="text"
+                                value={member.role[id]}
+                                maxLength={LIMITS.role}
+                                onChange={(e) => setText(member.uid, "role", id, e.target.value)}
+                                className={textInput}
+                              />
+                              <span className={`${fieldHint} block`}>{t("settings.cast.roleHint")}</span>
+                            </label>
+                            <label className="block">
+                              <span className={fieldLabel}>{t("settings.cast.about")}</span>
+                              <textarea
+                                value={member.bio[id]}
+                                maxLength={LIMITS.bio}
+                                onChange={(e) => setText(member.uid, "bio", id, e.target.value)}
+                                rows={3}
+                                className={textArea}
+                              />
+                              <span className={`${fieldHint} block`}>
+                                {member.bio[id].length}/{LIMITS.bio}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+                        <label className="block">
+                          <span className={fieldLabel}>{t("settings.cast.firstPart")}</span>
+                          <select
+                            value={member.firstPart}
+                            onChange={(e) => update(member.uid, (m) => ({ ...m, firstPart: Number(e.target.value) }))}
+                            className={`${inputBase} w-auto`}
+                          >
+                            {parts.map((n) => (
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div>
+                          <span className={fieldLabel}>{t("settings.cast.portrait")}</span>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <CastAvatar card={avatarCard} accent={accent} size={64} />
+                            <div className="flex flex-wrap items-center gap-2">
+                              <label
+                                className={`${smallButton} cursor-pointer has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-45`}
+                              >
+                                <input
+                                  type="file"
+                                  accept={ACCEPTED}
+                                  className="sr-only"
+                                  disabled={uploadingUid !== null}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) void handlePortrait(member, file);
+                                    e.target.value = "";
+                                  }}
+                                />
+                                {uploading ? t("common.uploading") : member.imageUrl ? t("common.replace") : t("common.upload")}
+                              </label>
+                              {story.coverUrl && member.imageUrl !== story.coverUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => update(member.uid, (m) => ({ ...m, imageUrl: story.coverUrl ?? null }))}
+                                  className={smallButton}
+                                >
+                                  {t("settings.cast.useCard")}
+                                </button>
+                              )}
+                              {member.imageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => update(member.uid, (m) => ({ ...m, imageUrl: null }))}
+                                  className={smallButton}
+                                >
+                                  {t("common.remove")}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {!member.imageUrl && (
+                            <p className={fieldHint}>{t("settings.cast.portraitHint")}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <details>
+                        <summary className="cursor-pointer text-sm font-semibold text-ink">{t("settings.cast.advanced")}</summary>
+                        <label className="mt-3 block max-w-xs">
+                          <span className={fieldLabel}>{t("settings.cast.key")}</span>
+                          <input
+                            type="text"
+                            value={member.key}
+                            maxLength={40}
+                            onChange={(e) => update(member.uid, (m) => ({ ...m, key: e.target.value, keyEdited: true }))}
+                            placeholder={t("settings.cast.keyPlaceholder")}
+                            className={`${textInput} font-mono ${keyBad ? "!border-red-400" : ""}`}
+                          />
+                          <span className={`${fieldHint} block`}>
+                            {t("settings.cast.keyHint")}
+                          </span>
+                        </label>
+                      </details>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-3">{addButton}</div>
+        </>
       )}
 
-      {draft.map((member, i) => {
-        const shown = fromDraft([member])[0];
-        const keyBad = shown.key !== "" && !KEY_PATTERN.test(shown.key);
-        return (
-          <div key={member.uid} className="bg-white rounded-[3px] border border-gray-200 p-3 space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              {/* As students will see it, once revealed. */}
-              <CastAvatar
-                card={{
-                  key: shown.key || `new-${member.uid}`,
-                  locked: false,
-                  firstPart: shown.firstPart,
-                  name: shown.name.en || shown.name.ru || "?",
-                  role: "",
-                  bio: "",
-                  imageUrl: shown.imageUrl,
-                }}
-                accent={accent}
-                size={56}
-              />
-
-              <label className="text-xs text-gray-500">
-                Key
-                <input
-                  type="text"
-                  value={member.key}
-                  maxLength={40}
-                  onChange={(e) => update(member.uid, (m) => ({ ...m, key: e.target.value, keyEdited: true }))}
-                  placeholder="e.g. leo"
-                  className={`ml-2 w-32 text-black px-2 py-1 border rounded-[3px] text-sm font-mono ${
-                    keyBad ? "border-red-400" : "border-gray-300"
-                  }`}
-                />
-              </label>
-
-              <label className="text-xs text-gray-500">
-                First appears in part
-                <select
-                  value={member.firstPart}
-                  onChange={(e) => update(member.uid, (m) => ({ ...m, firstPart: Number(e.target.value) }))}
-                  className="ml-2 text-black px-2 py-1 border border-gray-300 rounded-[3px] text-sm"
-                >
-                  {parts.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="ml-auto flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => move(member.uid, -1)}
-                  disabled={i === 0}
-                  aria-label="Move up"
-                  className="p-1.5 text-gray-500 hover:text-black disabled:opacity-30"
-                >
-                  <IoArrowUp />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => move(member.uid, 1)}
-                  disabled={i === draft.length - 1}
-                  aria-label="Move down"
-                  className="p-1.5 text-gray-500 hover:text-black disabled:opacity-30"
-                >
-                  <IoArrowDown />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDraft((d) => d.filter((m) => m.uid !== member.uid))}
-                  aria-label="Remove character"
-                  className="p-1.5 text-red-500 hover:text-red-700"
-                >
-                  <IoTrashOutline />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              {LOCALES.map(({ id, label }) => (
-                <fieldset key={id} className="rounded-[3px] border border-gray-200 p-3 space-y-2 min-w-0">
-                  <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 px-1">
-                    {label}
-                  </legend>
-                  <label className="block">
-                    <span className="block text-xs text-gray-500 mb-1">Name</span>
-                    <input
-                      type="text"
-                      value={member.name[id]}
-                      maxLength={LIMITS.name}
-                      onChange={(e) => setText(member.uid, "name", id, e.target.value)}
-                      className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="block text-xs text-gray-500 mb-1">
-                      Role <span className="text-gray-400">— one line under the name</span>
-                    </span>
-                    <input
-                      type="text"
-                      value={member.role[id]}
-                      maxLength={LIMITS.role}
-                      onChange={(e) => setText(member.uid, "role", id, e.target.value)}
-                      className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="block text-xs text-gray-500 mb-1">
-                      About <span className="text-gray-400">— {member.bio[id].length}/{LIMITS.bio}</span>
-                    </span>
-                    <textarea
-                      value={member.bio[id]}
-                      maxLength={LIMITS.bio}
-                      onChange={(e) => setText(member.uid, "bio", id, e.target.value)}
-                      rows={3}
-                      className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
-                    />
-                  </label>
-                </fieldset>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              <span className="text-gray-500">Portrait:</span>
-              <label className="cursor-pointer text-blue-600 underline">
-                <input
-                  type="file"
-                  accept={ACCEPTED}
-                  className="sr-only"
-                  disabled={uploadingUid !== null}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) void handlePortrait(member, file);
-                    e.target.value = "";
-                  }}
-                />
-                {uploadingUid === member.uid ? "Uploading…" : member.imageUrl ? "Replace" : "Upload"}
-              </label>
-              {story.coverUrl && member.imageUrl !== story.coverUrl && (
-                <button
-                  type="button"
-                  onClick={() => update(member.uid, (m) => ({ ...m, imageUrl: story.coverUrl ?? null }))}
-                  className="text-blue-600 underline"
-                >
-                  Use the story&rsquo;s card image
-                </button>
-              )}
-              {member.imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => update(member.uid, (m) => ({ ...m, imageUrl: null }))}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              )}
-              {!member.imageUrl && <span className="text-gray-400">none — shows the first letter</span>}
-            </div>
-          </div>
-        );
-      })}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={add}
-          disabled={draft.length >= LIMITS.members}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-[3px] hover:border-black disabled:opacity-40"
-        >
-          Add character{draft.length >= LIMITS.members ? ` (max ${LIMITS.members})` : ""}
-        </button>
-        <button
-          type="button"
-          onClick={save}
-          disabled={!dirty || saving}
-          className="px-4 py-1.5 text-sm bg-black text-white rounded-[3px] disabled:opacity-40"
-        >
-          {saving ? "Saving…" : "Save cast"}
-        </button>
-        {dirty && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft(baseline);
-              setError("");
-            }}
-            className="text-sm text-gray-500 hover:text-black"
-          >
-            Discard changes
-          </button>
+      <div className="mt-5 space-y-2 border-t border-line pt-4">
+        {notice === "portrait" && (
+          <p className="text-xs text-dim">{t("settings.cast.portraitUploaded")}</p>
         )}
+        <SaveBar
+          dirty={dirty}
+          saving={saving}
+          saved={notice === "saved"}
+          error={error || (dirty ? problem : "")}
+          onSave={save}
+          onDiscard={() => {
+            setDraft(baseline);
+            setError("");
+          }}
+          saveLabel={t("settings.cast.save")}
+        />
       </div>
-
-      {(error || (dirty && problem)) && <p className="text-sm text-red-600">{error || problem}</p>}
-      {notice && !error && <p className="text-sm text-green-700">{notice}</p>}
     </div>
   );
 };

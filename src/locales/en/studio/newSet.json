@@ -1,0 +1,43 @@
+{
+  "titleStory": "New story set",
+  "titlePronunciation": "New pronunciation lesson",
+  "intro": "You can change all of this later except the level and the set ID.",
+  "whatMaking": "What are you making?",
+  "typeStory": "Stories to hear",
+  "typePronunciation": "Pronunciation",
+  "level": "Level",
+  "difficulty": "Difficulty",
+  "whatStudentsRead": "What students read",
+  "title": "Title",
+  "description": "Short description",
+  "optional": "(optional)",
+  "count": { "part": "Parts", "prompt": "Prompts" },
+  "howMany": "How many to start with",
+  "fewer": { "part": "One part fewer", "prompt": "One prompt fewer" },
+  "more": { "part": "One part more", "prompt": "One prompt more" },
+  "initialCount": "Initial count",
+  "countHint": {
+    "part": "Each part is one audio track with its own quiz. You can add more later, up to {{max}}.",
+    "prompt": "Each prompt has its own audio clip. Up to {{max}}."
+  },
+  "internal": "Internal name and set ID",
+  "fromTitle": "Filled in from the English title",
+  "change": "Change",
+  "internalName": "Internal name",
+  "internalNameHint": "What this admin panel calls the set.",
+  "setId": "Set ID",
+  "setIdHint": "Used in links. Lowercase letters, digits, dashes.",
+  "icon": "Icon",
+  "iconLabel": "Character icon",
+  "iconHint": "Until a card image is set.",
+  "summary": "Creates a <b>{{level}}</b> set with {{items}}, as a draft.",
+  "creating": "Creating…",
+  "create": "Create set",
+  "errNoTitle": "Give the set a title (or an internal name) first.",
+  "errBadId": "The set ID can only use lowercase letters, digits and dashes.",
+  "errCount": {
+    "part": "Choose from 1 to {{max}} parts.",
+    "prompt": "Choose from 1 to {{max}} prompts."
+  },
+  "errCreate": "Failed to create the set."
+}

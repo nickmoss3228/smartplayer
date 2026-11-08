@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { IoChevronForward, IoAddOutline } from "react-icons/io5";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { IoChevronForward, IoAddOutline, IoArrowBack } from "react-icons/io5";
 import {
   AdminStory,
   AdminStoryListItem,
@@ -14,18 +16,28 @@ import ContentLibrary from "./ContentLibrary";
 import StudentPlayerPreview from "./StudentPlayerPreview";
 import { buttonPrimary } from "../../ui/buttonStyles";
 
-/**
- * The Story Builder: a library of story sets, the new-set form, and the
- * editor (editing desk, production board, set settings, review & publish).
- */
 const StoryBuilderTab = ({ token }: { token: string }) => {
+  const { t } = useTranslation("studio");
   const [stories, setStories] = useState<AdminStoryListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [view, setView] = useState<"library" | "create" | "editor">("library");
-  const [previewPart, setPreviewPart] = useState<number | null>(null);
   const openRequest = useRef(0);
   const [activeStory, setActiveStory] = useState<AdminStory | null>(null);
+  // Where you are lives in the URL (?set=<id>, ?new, &preview=<part>), so the
+  // browser's Back button walks back through it — out of the student preview
+  // to the set, then out of the set to the library — instead of leaving the
+  // admin panel, and a reload keeps the set open.
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const setId = params.get("set");
+  const creating = params.has("new");
+  const previewParam = Number(params.get("preview"));
+  const previewPart = setId && Number.isInteger(previewParam) && previewParam > 0 ? previewParam : null;
+  const view: "library" | "create" | "editor" = creating ? "create" : setId && activeStory ? "editor" : "library";
+  // True while the preview's history entry is ours to pop with Back.
+  const previewPushed = useRef(false);
+  const activeId = useRef<string | null>(null);
+  activeId.current = activeStory?._id ?? null;
   // Whole-catalogue visibility, behind a toggle — see the note where it renders.
   const [showShelves, setShowShelves] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
@@ -36,11 +48,11 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     try {
       setStories(await listStories(token));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load stories.");
+      setError(err instanceof Error ? err.message : t("shell.tab.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     load();
@@ -62,30 +74,66 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     };
   }, [railOpen]);
 
-  const openStory = async (id: string) => {
+  // The URL names a set we have not loaded (a click, Back/Forward, a reload).
+  useEffect(() => {
+    if (!setId || activeId.current === setId) return;
     const request = ++openRequest.current;
-    try {
-      const story = await getStory(token, id);
-      if (request !== openRequest.current) return;
-      setActiveStory(story);
-      setView("editor");
-      setRailOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load story.");
-    }
+    (async () => {
+      try {
+        const story = await getStory(token, setId);
+        if (request !== openRequest.current) return;
+        setActiveStory(story);
+        setRailOpen(false);
+      } catch (err) {
+        if (request === openRequest.current) setError(err instanceof Error ? err.message : t("shell.tab.loadOneError"));
+      }
+    })();
+  }, [setId, token, t]);
+
+  useEffect(() => {
+    if (previewPart === null) previewPushed.current = false;
+  }, [previewPart]);
+
+  const openStory = (id: string) => {
+    setError("");
+    setRailOpen(false);
+    setParams({ set: id });
   };
 
   const handleCreated = (story: AdminStory) => {
     setActiveStory(story);
-    setView("editor");
+    // Replaces the "new" entry: Back from the new set goes to the library.
+    setParams({ set: story._id }, { replace: true });
     load();
   };
 
   const handleBack = () => {
     openRequest.current += 1;
     setActiveStory(null);
-    setView("library");
+    setParams({});
     load();
+  };
+
+  const handleDeleted = () => {
+    openRequest.current += 1;
+    setActiveStory(null);
+    setParams({}, { replace: true });
+    load();
+  };
+
+  const openPreview = (part: number) => {
+    if (!activeStory) return;
+    previewPushed.current = true;
+    setParams({ set: activeStory._id, preview: String(part) });
+  };
+
+  const closePreview = () => {
+    if (previewPushed.current) {
+      previewPushed.current = false;
+      navigate(-1);
+    } else if (setId) {
+      setParams({ set: setId }, { replace: true });
+    }
   };
 
   // A story edited in the pane must not go stale in the rail beside it — the
@@ -97,38 +145,45 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
     setStories((prev) => prev.map((s) => (s._id === updated._id ? row : s)));
   };
 
+  if (setId && !activeStory) {
+    return error
+      ? <div className="space-y-3"><p role="alert" className="text-sm text-red-700">{error}</p><button type="button" onClick={handleBack} className="inline-flex min-h-9 items-center gap-2 text-sm font-semibold text-ink hover:underline"><IoArrowBack aria-hidden="true" />{t("shell.tab.backToLibrary")}</button></div>
+      : <p className="text-dim">{t("shell.tab.opening")}</p>;
+  }
+
   return (
     <div>
       {/* Outside the editor: the library's own bar. Inside it, StoryEditor
           draws one breadcrumb header instead, so the waveform starts higher. */}
       {view !== "editor" && <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-extrabold tracking-tight text-ink">Story sets</h2>
+        <h2 className="text-xl font-extrabold tracking-tight text-ink">{t("shell.tab.stories.title")}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowShelves((v) => !v)}
             className="text-sm rounded-[3px] px-3 py-2 text-gray-600 hover:bg-gray-200"
           >
-            {showShelves ? "Hide shelves" : "Shelves"}
+            {showShelves ? t("shell.tab.hideShelves") : t("shell.tab.shelves")}
           </button>
           {view !== "create" && (
             <button
-              onClick={() => setView("create")}
+              onClick={() => setParams({ new: "1" })}
               className={buttonPrimary}
             >
-              <IoAddOutline size={18} aria-hidden="true" /> New story set
+              <IoAddOutline size={18} aria-hidden="true" /> {t("shell.tab.newStory")}
             </button>
           )}
         </div>
       </div>}
 
-      {/* Back to the set you left, from the new-set form. */}
-      {view !== "editor" && activeStory && <button type="button" onClick={() => setView("editor")} className="mb-4 inline-flex min-h-9 max-w-full items-center gap-2 truncate text-sm font-semibold text-ink hover:underline">
-        Continue editing «{activeStory.storyName}»<IoChevronForward aria-hidden="true" />
+      {/* Back to the set you left, from the library or the new-set form. The
+          "New" button above already covers creating, so it is not repeated. */}
+      {view !== "editor" && activeStory && <button type="button" onClick={() => setParams({ set: activeStory._id })} className="mb-4 inline-flex min-h-9 max-w-full items-center gap-2 truncate text-sm font-semibold text-ink hover:underline">
+        {t("shell.tab.continueEditing", { name: activeStory.storyName })}<IoChevronForward aria-hidden="true" />
       </button>}
 
       {view === "create" && (
         <div className="mb-4">
-          <NewStoryForm token={token} onCreated={handleCreated} onCancel={() => setView(activeStory ? "editor" : "library")} />
+          <NewStoryForm token={token} onCreated={handleCreated} onCancel={() => setParams(activeStory ? { set: activeStory._id } : {}, { replace: true })} />
         </div>
       )}
 
@@ -143,9 +198,9 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
       )}
 
       {error && <p className="text-red-600 mb-3">{error}</p>}
-      {loading && <p className="text-gray-500">Loading…</p>}
+      {loading && <p className="text-gray-500">{t("common.loading")}</p>}
 
-      {view === "library" && !loading && <ContentLibrary stories={stories} onOpen={openStory} onCreate={() => setView("create")} />}
+      {view === "library" && !loading && <ContentLibrary stories={stories} onOpen={openStory} onCreate={() => setParams({ new: "1" })} />}
 
       {view === "editor" && activeStory && (
         <div className="min-w-0">
@@ -154,18 +209,18 @@ const StoryBuilderTab = ({ token }: { token: string }) => {
             token={token}
             story={activeStory}
             onStoryUpdated={handleStoryUpdated}
-            onDeleted={handleBack}
+            onDeleted={handleDeleted}
             onBack={handleBack}
             switcherOpen={railOpen}
             onToggleSwitcher={() => setRailOpen(open => !open)}
             switcher={<StoryRail stories={stories} activeId={activeStory._id} onOpen={openStory} />}
-            onPreview={setPreviewPart}
+            onPreview={openPreview}
             previewOpen={previewPart !== null}
           />
         </div>
       )}
-      {activeStory && previewPart !== null && (
-        <StudentPlayerPreview story={activeStory} initialPart={previewPart} onClose={() => setPreviewPart(null)} />
+      {view === "editor" && activeStory && previewPart !== null && (
+        <StudentPlayerPreview key={`${activeStory._id}:${previewPart}`} story={activeStory} initialPart={previewPart} onClose={closePreview} />
       )}
     </div>
   );

@@ -20,6 +20,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 
 interface MarkerTrackProps {
   /** WaveSurfer's wrapper, from ws.getWrapper(). Null until the wave exists. */
@@ -51,6 +52,7 @@ const MarkerTrack = ({
   onDragEnd,
   flagged,
 }: MarkerTrackProps) => {
+  const { t } = useTranslation("studio");
   // A drag has to survive the re-renders caused by its own onDrag calls, so
   // the in-flight gesture lives in a ref rather than in state.
   const drag = useRef<{ index: number; startX: number; startTime: number; moved: boolean } | null>(
@@ -163,8 +165,8 @@ const MarkerTrack = ({
                 transform: isSelected ? "scale(1.3)" : undefined,
                 boxShadow: isSelected ? "0 0 0 2px rgba(245,158,11,0.35)" : undefined,
               }}
-              title={`Sentence ${index + 1} starts here — drag to move`}
-              aria-label={`Sentence ${index + 1} start, ${time.toFixed(2)} seconds`}
+              title={t("audio.track.handleTitle", { n: index + 1 })}
+              aria-label={t("audio.track.handleAria", { n: index + 1, time: time.toFixed(2) })}
               onPointerDown={(event) => {
                 // Without this, WaveSurfer's own wrapper click seeks the
                 // playhead out from under the grab.

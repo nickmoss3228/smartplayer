@@ -1,0 +1,21 @@
+{
+  "title": "Admin Panel",
+  "actingAs": "Acting as <b>{{name}}</b> — actions are recorded in the audit log",
+  "logOut": "Log out",
+  "tabs": {
+    "feedback": "Feedback",
+    "players": "Players",
+    "storyBuilder": "Story Builder",
+    "audit": "Audit Log"
+  },
+  "login": {
+    "title": "Admin Access",
+    "placeholder": "Enter code word",
+    "enter": "Enter",
+    "checking": "Checking…",
+    "invalid": "Invalid code word.",
+    "tooMany": "Too many attempts. Try again in 15 minutes.",
+    "failed": "Something went wrong.",
+    "expired": "Session expired. Enter the code word again."
+  }
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   fetchAdminPlayers,
   setPlayerBanned,
@@ -19,9 +20,9 @@ const DEBOUNCE_MS = 350;
 // Dream School currencies that gate furniture and actions untestable without
 // curl.
 const GRANT_FIELDS = [
-  { key: "bitAward" as const, label: "Award", accent: "text-amber-600", ring: "focus:border-amber-400" },
-  { key: "bitWord" as const, label: "Word", accent: "text-sky-600", ring: "focus:border-sky-400" },
-  { key: "bitPhrase" as const, label: "Phrase", accent: "text-emerald-600", ring: "focus:border-emerald-400" },
+  { key: "bitAward" as const, labelKey: "players.grant.award", accent: "text-amber-600", ring: "focus:border-amber-400" },
+  { key: "bitWord" as const, labelKey: "players.grant.word", accent: "text-sky-600", ring: "focus:border-sky-400" },
+  { key: "bitPhrase" as const, labelKey: "players.grant.phrase", accent: "text-emerald-600", ring: "focus:border-emerald-400" },
 ];
 
 type GrantAmounts = { bitAward: number; bitWord: number; bitPhrase: number };
@@ -32,8 +33,8 @@ type GrantAmounts = { bitAward: number; bitWord: number; bitPhrase: number };
 // config/sessions.js). Bands say only what the score can honestly support:
 // ignore this, glance at this, look at this.
 const SHARING_BANDS = [
-  { min: 60, label: "Likely shared", className: "bg-red-100 text-red-700" },
-  { min: 30, label: "Possibly shared", className: "bg-amber-100 text-amber-700" },
+  { min: 60, labelKey: "players.sharing.likely", className: "bg-red-100 text-red-700" },
+  { min: 30, labelKey: "players.sharing.possibly", className: "bg-amber-100 text-amber-700" },
 ];
 
 /**
@@ -42,6 +43,7 @@ const SHARING_BANDS = [
  * stores /24 and /48 prefixes, and does not send even those.
  */
 function SharingBadge({ sharing }: { sharing?: AdminPlayerSharing }) {
+  const { t } = useTranslation("studio");
   // Absent on accounts that predate the session layer, and on any response
   // from a backend that hasn't deployed it yet.
   if (!sharing) return null;
@@ -51,10 +53,15 @@ function SharingBadge({ sharing }: { sharing?: AdminPlayerSharing }) {
 
   const detail = [
     sharing.concurrentNetworks > 1
-      ? `${sharing.activeNow} sessions active on ${sharing.concurrentNetworks} networks`
+      ? t("players.sharing.activeSessions", {
+          active: sharing.activeNow,
+          networks: sharing.concurrentNetworks,
+        })
       : null,
-    sharing.blockedLogins > 0 ? `${sharing.blockedLogins} logins hit the device cap` : null,
-    `${sharing.distinctNetworks} networks seen recently`,
+    sharing.blockedLogins > 0
+      ? t("players.sharing.blockedLogins", { count: sharing.blockedLogins })
+      : null,
+    t("players.sharing.networksSeen", { count: sharing.distinctNetworks }),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -63,10 +70,10 @@ function SharingBadge({ sharing }: { sharing?: AdminPlayerSharing }) {
     <span
       // A hover title rather than a modal: this is a hint an admin glances at
       // on the way to a decision, not a report they sit down to read.
-      title={`${detail}\n\nA signal, not proof — students in one computer lab share a network legitimately.`}
+      title={`${detail}\n\n${t("players.sharing.disclaimer")}`}
       className={`text-xs rounded-[2px] px-2 py-0.5 cursor-help ${band.className}`}
     >
-      {band.label}
+      {t(band.labelKey)}
     </span>
   );
 }
@@ -76,6 +83,7 @@ function GrantCurrencyForm({
 }: {
   onGrant: (amounts: GrantAmounts) => Promise<void>;
 }) {
+  const { t } = useTranslation("studio");
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({
     bitAward: "0",
@@ -92,7 +100,7 @@ function GrantCurrencyForm({
         onClick={() => setOpen(true)}
         className="text-xs text-amber-600 hover:text-amber-800 whitespace-nowrap"
       >
-        Grant currency
+        {t("players.grant.open")}
       </button>
     );
   }
@@ -123,7 +131,7 @@ function GrantCurrencyForm({
     >
       {GRANT_FIELDS.map((f, i) => (
         <label key={f.key} className="flex items-center gap-1">
-          <span className={`text-[10px] font-semibold ${f.accent}`}>{f.label}</span>
+          <span className={`text-[10px] font-semibold ${f.accent}`}>{t(f.labelKey)}</span>
           <input
             type="number"
             value={values[f.key]}
@@ -138,7 +146,7 @@ function GrantCurrencyForm({
         disabled={submitting || nothingToGrant}
         className="text-xs text-white bg-amber-500 hover:bg-amber-600 rounded-[3px] px-2 py-0.5 disabled:opacity-50"
       >
-        {submitting ? "..." : "Send"}
+        {submitting ? "…" : t("players.grant.send")}
       </button>
       <button
         type="button"
@@ -148,13 +156,14 @@ function GrantCurrencyForm({
         }}
         className="text-xs text-gray-400 hover:text-gray-600"
       >
-        Cancel
+        {t("common.cancel")}
       </button>
     </form>
   );
 }
 
 const PlayersTab = ({ token }: { token: string }) => {
+  const { t } = useTranslation("studio");
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [page, setPage] = useState(1);
@@ -180,12 +189,12 @@ const PlayersTab = ({ token }: { token: string }) => {
         setHasMore(data.hasMore);
       } catch (err) {
         console.error(err);
-        setError("Could not load players.");
+        setError(t("players.errors.load"));
       } finally {
         setLoading(false);
       }
     },
-    [token]
+    [token, t]
   );
 
   useEffect(() => {
@@ -201,7 +210,7 @@ const PlayersTab = ({ token }: { token: string }) => {
       );
     } catch (err) {
       console.error(err);
-      setError("Could not update ban status.");
+      setError(t("players.errors.ban"));
     }
   };
 
@@ -209,7 +218,7 @@ const PlayersTab = ({ token }: { token: string }) => {
     // Confirmed because it is invisible and irreversible from here: every one
     // of this player's devices is signed out, and there is no undo beyond
     // asking them to log back in.
-    if (!window.confirm(`Sign out all devices for ${player.nickname}?`)) return;
+    if (!window.confirm(t("players.confirm.signOut", { name: player.nickname }))) return;
     try {
       await logoutAllPlayerSessions(token, player.id);
       // Sessions are gone, so nothing can be active and no login can currently
@@ -224,7 +233,7 @@ const PlayersTab = ({ token }: { token: string }) => {
       );
     } catch (err) {
       console.error(err);
-      setError("Could not sign out that player's devices.");
+      setError(t("players.errors.signOut"));
     }
   };
 
@@ -238,12 +247,7 @@ const PlayersTab = ({ token }: { token: string }) => {
   // the wrong person.
   const handleResetSchool = async (player: AdminPlayer) => {
     if (
-      !window.confirm(
-        `Reset ${player.nickname}'s school to the starting room?\n\n` +
-          `Every room they bought is removed and their wallpaper, floor, layout ` +
-          `and per-room presets go back to the defaults. Currency is not ` +
-          `refunded, and this cannot be undone.`
-      )
+      !window.confirm(t("players.confirm.resetSchool", { name: player.nickname }))
     ) {
       return;
     }
@@ -254,7 +258,7 @@ const PlayersTab = ({ token }: { token: string }) => {
       setResetDoneId(player.id);
     } catch (err) {
       console.error(err);
-      setError(`Could not reset ${player.nickname}'s school.`);
+      setError(t("players.errors.resetSchool", { name: player.nickname }));
     } finally {
       setResettingId(null);
     }
@@ -266,14 +270,7 @@ const PlayersTab = ({ token }: { token: string }) => {
   // and wallet stay as they are.
   const handleResetOnboarding = async (player: AdminPlayer) => {
     if (
-      !window.confirm(
-        `Show the intro to ${player.nickname} again?
-
-` +
-          `Their two answers are cleared, and on their next visit they go through ` +
-          `the questions and the method slides before anything else. Progress and ` +
-          `wallet are not touched.`
-      )
+      !window.confirm(t("players.confirm.resetIntro", { name: player.nickname }))
     ) {
       return;
     }
@@ -289,7 +286,7 @@ const PlayersTab = ({ token }: { token: string }) => {
       );
     } catch (err) {
       console.error(err);
-      setError(`Could not reset ${player.nickname}'s intro.`);
+      setError(t("players.errors.resetIntro", { name: player.nickname }));
     }
   };
 
@@ -302,26 +299,26 @@ const PlayersTab = ({ token }: { token: string }) => {
       setPlayers((prev) => prev.map((p) => (p.id === playerId ? { ...p, wallet } : p)));
     } catch (err) {
       console.error(err);
-      setError("Could not grant currency.");
+      setError(t("players.errors.grant"));
     }
   };
 
   return (
     <div>
-      <h2 className="text-lg font-bold text-black mb-4">Players</h2>
+      <h2 className="text-lg font-bold text-black mb-4">{t("players.list.title")}</h2>
 
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search by username, nickname, or email..."
+        placeholder={t("players.list.search")}
         className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-4 focus:outline-none focus:ring-2 focus:ring-black"
       />
 
       {error && <p className="text-red-600 mb-2">{error}</p>}
-      {loading && players.length === 0 && <p className="text-gray-500">Loading...</p>}
+      {loading && players.length === 0 && <p className="text-gray-500">{t("players.list.loading")}</p>}
       {!loading && players.length === 0 && !error && (
-        <p className="text-gray-500">No players found.</p>
+        <p className="text-gray-500">{t("players.list.empty")}</p>
       )}
 
       <div className="space-y-2">
@@ -335,7 +332,7 @@ const PlayersTab = ({ token }: { token: string }) => {
                 {player.nickname}
                 {player.banned && (
                   <span className="text-xs bg-red-100 text-red-600 rounded-[2px] px-2 py-0.5">
-                    Banned
+                    {t("players.list.banned")}
                   </span>
                 )}
                 <SharingBadge sharing={player.sharing} />
@@ -343,11 +340,11 @@ const PlayersTab = ({ token }: { token: string }) => {
               <div className="text-xs text-gray-500">{player.email}</div>
               {player.onboarding && (
                 <div className="text-xs text-gray-500 mt-0.5">
-                  Intro:{" "}
+                  {t("players.list.intro")}{" "}
                   {player.onboarding.onboardedAt ? (
-                    <span className="text-emerald-700">done</span>
+                    <span className="text-emerald-700">{t("players.list.introDone")}</span>
                   ) : (
-                    <span className="text-amber-700">not yet</span>
+                    <span className="text-amber-700">{t("players.list.introPending")}</span>
                   )}
                   {(player.onboarding.englishLevel || player.onboarding.listeningExperience) && (
                     <span className="text-gray-400">
@@ -374,35 +371,35 @@ const PlayersTab = ({ token }: { token: string }) => {
               onClick={() => setProgressUserId(player.id)}
               className="text-xs text-gray-600 hover:text-black"
             >
-              View progress
+              {t("players.list.viewProgress")}
             </button>
 
             <button
               onClick={() => handleResetSchool(player)}
               disabled={resettingId === player.id}
-              title="Remove every room bought in the Dream School and restore the defaults"
+              title={t("players.list.resetSchoolHint")}
               className="text-xs text-gray-600 hover:text-black whitespace-nowrap disabled:opacity-50"
             >
               {resettingId === player.id
-                ? "Resetting..."
+                ? t("players.list.resetting")
                 : resetDoneId === player.id
-                  ? "School reset \u2713"
-                  : "Reset school"}
+                  ? `${t("players.list.schoolReset")} \u2713`
+                  : t("players.list.resetSchool")}
             </button>
 
             <button
               onClick={() => handleResetOnboarding(player)}
-              title="Clear their two answers; they go through /welcome again on their next visit"
+              title={t("players.list.showIntroAgainHint")}
               className="text-xs text-gray-600 hover:text-black whitespace-nowrap"
             >
-              Show intro again
+              {t("players.list.showIntroAgain")}
             </button>
 
             <button
               onClick={() => handleLogoutAll(player)}
               className="text-xs text-gray-600 hover:text-black whitespace-nowrap"
             >
-              Sign out devices
+              {t("players.list.signOutDevices")}
             </button>
 
             <button
@@ -413,7 +410,7 @@ const PlayersTab = ({ token }: { token: string }) => {
                   : "bg-red-50 text-red-600 hover:bg-red-100"
               }`}
             >
-              {player.banned ? "Unban" : "Ban"}
+              {player.banned ? t("players.ban.unban") : t("players.ban.ban")}
             </button>
           </div>
         ))}
@@ -426,7 +423,7 @@ const PlayersTab = ({ token }: { token: string }) => {
             disabled={loading}
             className="text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-[3px] px-4 py-2 disabled:opacity-50"
           >
-            {loading ? "Loading..." : "Load more"}
+            {loading ? t("players.list.loading") : t("players.list.loadMore")}
           </button>
         </div>
       )}

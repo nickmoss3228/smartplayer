@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   fetchPlayerProgress,
   AdminPlayerProgress,
@@ -11,6 +12,7 @@ interface PlayerProgressModalProps {
 }
 
 const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProps) => {
+  const { t } = useTranslation("studio");
   const [data, setData] = useState<AdminPlayerProgress | null>(null);
   const [error, setError] = useState("");
 
@@ -19,9 +21,11 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
       .then(setData)
       .catch((err) => {
         console.error(err);
-        setError("Could not load progress.");
+        setError(t("players.modal.error"));
       });
-  }, [token, userId]);
+  }, [token, userId, t]);
+
+  const diffLabel = (d: string) => t(`common.difficulty.${d}`, { defaultValue: d });
 
   return (
     <div
@@ -34,10 +38,11 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-black text-lg">
-            {data ? `${data.nickname} — Progress` : "Progress"}
+            {data ? t("players.modal.titleNamed", { name: data.nickname }) : t("players.modal.title")}
           </h3>
           <button
             onClick={onClose}
+            aria-label={t("players.modal.close")}
             className="text-gray-400 hover:text-black text-xl leading-none"
           >
             &times;
@@ -45,7 +50,7 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
         </div>
 
         {error && <p className="text-red-600 text-sm">{error}</p>}
-        {!data && !error && <p className="text-gray-500 text-sm">Loading...</p>}
+        {!data && !error && <p className="text-gray-500 text-sm">{t("common.loading")}</p>}
 
         {data && (
           <div className="space-y-4 text-sm">
@@ -69,49 +74,58 @@ const PlayerProgressModal = ({ token, userId, onClose }: PlayerProgressModalProp
             </div>
 
             <div>
-              <div className="font-semibold text-black mb-1">Streak</div>
+              <div className="font-semibold text-black mb-1">{t("players.modal.streak")}</div>
               <div className="text-gray-700">
-                Current {data.streak.current} / Longest {data.streak.longest}
+                {t("players.modal.streakValue", { current: data.streak.current, longest: data.streak.longest })}
               </div>
             </div>
 
             <div>
               <div className="font-semibold text-black mb-1">
-                Listening & Vocab
+                {t("players.modal.listening")}
               </div>
               <div className="text-gray-700">
-                {Math.round(data.totalListeningSeconds / 60)} min listened ·{" "}
-                {data.learnedWordsCount} words learned
+                {t("players.modal.listeningValue", {
+                  minutes: Math.round(data.totalListeningSeconds / 60),
+                  words: data.learnedWordsCount,
+                })}
               </div>
             </div>
 
             <div>
-              <div className="font-semibold text-black mb-1">Room</div>
-              <div className="text-gray-700">Apartment: {data.apartmentTier}</div>
+              <div className="font-semibold text-black mb-1">{t("players.modal.room")}</div>
+              <div className="text-gray-700">{t("players.modal.apartment", { tier: data.apartmentTier })}</div>
             </div>
 
             <div>
-              <div className="font-semibold text-black mb-1">Level Progress</div>
+              <div className="font-semibold text-black mb-1">{t("players.modal.levelProgress")}</div>
               {data.levelProgress.length === 0 && (
-                <p className="text-gray-400">No level progress yet.</p>
+                <p className="text-gray-400">{t("players.modal.noLevelProgress")}</p>
               )}
               {data.levelProgress.map((p) => (
                 <div key={p.difficulty} className="text-gray-700">
-                  {p.difficulty}: {p.completedLevels.length} completed, on level{" "}
-                  {p.currentLevel}
+                  {t("players.modal.levelRow", {
+                    difficulty: diffLabel(p.difficulty),
+                    completed: p.completedLevels.length,
+                    current: p.currentLevel,
+                  })}
                 </div>
               ))}
             </div>
 
             <div>
-              <div className="font-semibold text-black mb-1">Story Progress</div>
+              <div className="font-semibold text-black mb-1">{t("players.modal.storyProgress")}</div>
               {data.storyProgress.length === 0 && (
-                <p className="text-gray-400">No story progress yet.</p>
+                <p className="text-gray-400">{t("players.modal.noStoryProgress")}</p>
               )}
               {data.storyProgress.map((p) => (
                 <div key={`${p.difficulty}-${p.storyId}`} className="text-gray-700">
-                  {p.storyId} ({p.difficulty}): {p.completedParts.length} parts done,
-                  on part {p.currentPart}
+                  {t("players.modal.storyRow", {
+                    story: p.storyId,
+                    difficulty: diffLabel(p.difficulty),
+                    done: p.completedParts.length,
+                    current: p.currentPart,
+                  })}
                 </div>
               ))}
             </div>

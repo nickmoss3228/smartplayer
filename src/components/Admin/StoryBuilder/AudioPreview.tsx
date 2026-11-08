@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TFunction } from "i18next";
+import { useTranslation } from "react-i18next";
 
 /**
  * Inline "does this clip actually work?" control for the Story Builder.
@@ -56,7 +58,12 @@ const MEDIA_ERR = { ABORTED: 1, NETWORK: 2, DECODE: 3, SRC_NOT_SUPPORTED: 4 } as
  * answer that distinguishes a damaged file from a bad connection, and this runs
  * only after a failure, so the extra download is not on the happy path.
  */
-async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> {
+async function diagnose(
+  url: string,
+  t: TFunction,
+  mediaErrorCode?: number,
+): Promise<Failure> {
+  const reasonOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
   let res: Response;
   try {
     // no-store: a diagnosis has to be about the object that exists right now.
@@ -70,11 +77,8 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     res = await fetch(url, { cache: "no-store" });
   } catch (err) {
     return {
-      short: "network",
-      detail:
-        "The file could not be downloaded at all, so nothing can be said about the file " +
-        "itself — this is the connection to the bucket, which drops intermittently. " +
-        `Click to retry. (${err instanceof Error ? err.message : String(err)})`,
+      short: t("audio.preview.failNetwork"),
+      detail: t("audio.preview.detailNetwork", { reason: reasonOf(err) }),
     };
   }
 
@@ -82,11 +86,12 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     const code = /<Code>([^<]+)<\/Code>/.exec(await res.text().catch(() => ""))?.[1] ?? "";
     const hint =
       res.status === 404
-        ? " Nothing is stored at this key. Check the audioKey's spelling and case against the object in the bucket — the path is built from it verbatim."
+        ? t("audio.preview.detailNotFound")
         : res.status === 403
-        ? " The object is there but not readable. Check that it was uploaded public-read."
+        ? t("audio.preview.detailForbidden")
         : "";
-    return { short: String(res.status), detail: `HTTP ${res.status}${code ? ` — ${code}` : ""}.${hint}` };
+    return { short: String(res.status), detail: t("audio.preview.detailHttp", { status: res.status, code: code ? ` — ${code}` : "", hint }),
+    };
   }
 
   let bytes: ArrayBuffer;
@@ -94,15 +99,13 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     bytes = await res.arrayBuffer();
   } catch (err) {
     return {
-      short: "network",
-      detail:
-        "The download started but did not finish, so the file itself is probably fine. " +
-        `Click to retry. (${err instanceof Error ? err.message : String(err)})`,
+      short: t("audio.preview.failNetwork"),
+      detail: t("audio.preview.detailPartial", { reason: reasonOf(err) }),
     };
   }
 
   if (bytes.byteLength === 0) {
-    return { short: "empty", detail: "The object exists but is zero bytes. Re-upload it." };
+    return { short: t("audio.preview.failEmpty"), detail: t("audio.preview.detailZero") };
   }
 
   // Compare what arrived against what the server said it was sending, BEFORE
@@ -114,11 +117,8 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > 0 && bytes.byteLength < declared) {
     return {
-      short: "truncated",
-      detail:
-        `Only ${bytes.byteLength} of ${declared} bytes arrived, so the transfer was cut ` +
-        `short. That says nothing about the file itself — the stored object is the full ` +
-        `${declared} bytes. Click to retry.`,
+      short: t("audio.preview.failTruncated"),
+      detail: t("audio.preview.detailTruncated", { got: bytes.byteLength, declared }),
     };
   }
 
@@ -129,8 +129,8 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtx) {
     return {
-      short: "failed",
-      detail: `Downloaded ${bytes.byteLength} bytes, but this browser cannot be asked to decode them.`,
+      short: t("audio.preview.failFailed"),
+      detail: t("audio.preview.detailNoDecoder", { bytes: bytes.byteLength }),
     };
   }
 
@@ -138,22 +138,22 @@ async function diagnose(url: string, mediaErrorCode?: number): Promise<Failure> 
   try {
     const decoded = await ctx.decodeAudioData(bytes.slice(0));
     return {
-      short: "flaky",
-      detail:
-        `The file is fine — ${bytes.byteLength} bytes decoded to ${decoded.duration.toFixed(1)}s ` +
-        `at ${decoded.sampleRate} Hz. The player failed to load it anyway, which means the ` +
-        `connection dropped mid-request rather than anything being wrong with the audio. ` +
-        `Click to retry.`,
+      short: t("audio.preview.failFlaky"),
+      detail: t("audio.preview.detailFlaky", {
+        bytes: bytes.byteLength,
+        seconds: decoded.duration.toFixed(1),
+        rate: decoded.sampleRate,
+      }),
     };
   } catch {
     return {
-      short: "corrupt",
-      detail:
-        `All ${bytes.byteLength} bytes arrived` +
-        (Number.isFinite(declared) && declared > 0 ? ` (the full ${declared} the server declared)` : "") +
-        `, and they still could not be decoded as audio. This one really is damaged or is not ` +
-        `an mp3 — re-upload it.` +
-        (mediaErrorCode === MEDIA_ERR.DECODE ? " The player reported a decode error too." : ""),
+      short: t("audio.preview.failCorrupt"),
+      detail: t("audio.preview.detailCorrupt", {
+        bytes: bytes.byteLength,
+        declared:
+          Number.isFinite(declared) && declared > 0 ? t("audio.preview.declaredNote", { declared }) : "",
+        decodeNote: mediaErrorCode === MEDIA_ERR.DECODE ? t("audio.preview.decodeNote") : "",
+      }),
     };
   } finally {
     void ctx.close();
@@ -239,6 +239,13 @@ interface AudioPreviewProps {
 }
 
 const AudioPreview = ({ url, label }: AudioPreviewProps) => {
+  const { t } = useTranslation("studio");
+  // diagnose() runs long after the effect started; a ref keeps the effect from
+  // re-probing every clip just because the language was switched.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [status, setStatus] = useState<Status>("empty");
   const [duration, setDuration] = useState<number | null>(null);
@@ -290,7 +297,7 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
       // Also logged, not just shown in the tooltip: with a long word list the
       // console is the only place you can see every failure at once, and its
       // URLs are clickable straight into the Network tab.
-      diagnose(url, mediaErrorCode).then((f) => {
+      diagnose(url, tRef.current, mediaErrorCode).then((f) => {
         if (cancelled) return;
         setFailure(f);
         console.error(`[AudioPreview] "${label ?? url}" did not load — ${f.detail}\n  ${url}`);
@@ -344,11 +351,11 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
   }, [playing, status]);
 
   if (status === "empty") {
-    return <span className="text-xs text-gray-400 whitespace-nowrap">no audio</span>;
+    return <span className="text-xs text-gray-400 whitespace-nowrap">{t("audio.preview.noAudio")}</span>;
   }
 
   if (status === "loading") {
-    return <span className="text-xs text-gray-400 whitespace-nowrap">checking…</span>;
+    return <span className="text-xs text-gray-400 whitespace-nowrap">{t("audio.preview.checking")}</span>;
   }
 
   if (status === "error") {
@@ -360,9 +367,9 @@ const AudioPreview = ({ url, label }: AudioPreviewProps) => {
           label ? `"${label}"` : null,
           url,
           "",
-          failure?.detail ?? "Working out why…",
+          failure?.detail ?? t("audio.preview.workingOut"),
           "",
-          "Click to retry. The same message is in the browser console.",
+          t("audio.preview.retryHint"),
         ]
           .filter((line) => line !== null)
           .join("\n")}

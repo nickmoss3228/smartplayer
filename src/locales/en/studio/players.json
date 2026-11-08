@@ -1,0 +1,71 @@
+{
+  "list": {
+    "title": "Players",
+    "search": "Search by username, nickname, or email…",
+    "loading": "Loading…",
+    "empty": "No players found.",
+    "loadMore": "Load more",
+    "banned": "Banned",
+    "viewProgress": "View progress",
+    "signOutDevices": "Sign out devices",
+    "showIntroAgain": "Show intro again",
+    "showIntroAgainHint": "Clear their two answers; they go through /welcome again on their next visit",
+    "resetSchool": "Reset school",
+    "resetSchoolHint": "Remove every room bought in the Dream School and restore the defaults",
+    "resetting": "Resetting…",
+    "schoolReset": "School reset",
+    "intro": "Intro:",
+    "introDone": "done",
+    "introPending": "not yet"
+  },
+  "ban": {
+    "ban": "Ban",
+    "unban": "Unban"
+  },
+  "grant": {
+    "open": "Grant currency",
+    "award": "Award",
+    "word": "Word",
+    "phrase": "Phrase",
+    "send": "Send"
+  },
+  "sharing": {
+    "likely": "Likely shared",
+    "possibly": "Possibly shared",
+    "activeSessions": "{{active}} sessions active on {{networks}} networks",
+    "blockedLogins": "{{count}} logins hit the device cap",
+    "networksSeen": "{{count}} networks seen recently",
+    "disclaimer": "A signal, not proof — students in one computer lab share a network legitimately."
+  },
+  "confirm": {
+    "signOut": "Sign out all devices for {{name}}?",
+    "resetSchool": "Reset {{name}}'s school to the starting room?\n\nEvery room they bought is removed and their wallpaper, floor, layout and per-room presets go back to the defaults. Currency is not refunded, and this cannot be undone.",
+    "resetIntro": "Show the intro to {{name}} again?\n\nTheir two answers are cleared, and on their next visit they go through the questions and the method slides before anything else. Progress and wallet are not touched."
+  },
+  "errors": {
+    "load": "Could not load players.",
+    "ban": "Could not update ban status.",
+    "signOut": "Could not sign out that player's devices.",
+    "resetSchool": "Could not reset {{name}}'s school.",
+    "resetIntro": "Could not reset {{name}}'s intro.",
+    "grant": "Could not grant currency."
+  },
+  "modal": {
+    "title": "Progress",
+    "titleNamed": "{{name}} — Progress",
+    "close": "Close",
+    "error": "Could not load progress.",
+    "streak": "Streak",
+    "streakValue": "Current {{current}} / Longest {{longest}}",
+    "listening": "Listening & Vocab",
+    "listeningValue": "{{minutes}} min listened · {{words}} words learned",
+    "room": "Room",
+    "apartment": "Apartment: {{tier}}",
+    "levelProgress": "Level Progress",
+    "noLevelProgress": "No level progress yet.",
+    "levelRow": "{{difficulty}}: {{completed}} completed, on level {{current}}",
+    "storyProgress": "Story Progress",
+    "noStoryProgress": "No story progress yet.",
+    "storyRow": "{{story}} ({{difficulty}}): {{done}} parts done, on part {{current}}"
+  }
+}

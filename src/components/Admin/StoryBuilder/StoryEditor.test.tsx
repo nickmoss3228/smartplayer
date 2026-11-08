@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 import StoryEditor from "./StoryEditor";
+import i18n from "../../../i18n";
 
 const audio = vi.hoisted(() => ({ callbacks: [] as Array<(part: StoryPart) => void> }));
 vi.mock("./PartAudioMarkerEditor", () => ({ default: ({ active, part, onPartUpdated }: { active: boolean; part: StoryPart; onPartUpdated: (part: StoryPart) => void }) => {
@@ -28,32 +29,32 @@ vi.mock("./StoryPricingPanel", () => ({ default: () => <div>Access editor</div> 
 let root: Root, container: HTMLDivElement;
 const part = (n: number): StoryPart => ({partNumber:n,title:"",audioUrl:"/recording.mp3",timeMarkers:[{time:0,label:"1",color:"red"}],vocabulary:[],phrasalVerbs:[],quiz:[]});
 const sample = (): AdminStory => ({_id:"desk-test",storyId:"test",storyName:"Test set",difficulty:"easy",description:"",characterIcon:"",totalParts:2,published:false,createdAt:"2026-11-02",parts:[part(1),part(2)]});
-beforeEach(() => {container=document.createElement("div");document.body.append(container);root=createRoot(container);audio.callbacks=[];});
+beforeEach(async () => {await i18n.changeLanguage("en");container=document.createElement("div");document.body.append(container);root=createRoot(container);audio.callbacks=[];});
 afterEach(async () => {await act(async () => root.unmount());container.remove();});
 const click = async (label: string) => {
   const button=Array.from(container.querySelectorAll("button")).find(b=>b.textContent===label);
   expect(button, label).toBeTruthy();
   await act(async()=>button!.click());
 };
-const show = async (story=sample(), onStoryUpdated=vi.fn()) => act(async()=>root.render(<StoryEditor token="test" story={story} onStoryUpdated={onStoryUpdated} onBack={vi.fn()} onDeleted={vi.fn()} onPreview={vi.fn()} switcher={null} switcherOpen={false} onToggleSwitcher={vi.fn()} />));
+const show = async (story=sample(), onStoryUpdated=vi.fn()) => act(async()=>root.render(<StoryEditor token="test" story={story} onStoryUpdated={onStoryUpdated} onBack={vi.fn()} onDeleted={vi.fn()} onPreview={vi.fn()} />));
 
 describe("editing desk navigation", () => {
   it("preserves an unsaved form when visiting the overview and settings", async () => {
     await show();await click("Private script");await click("Write a script");
     const draft=container.querySelector("[data-draft]");
-    await click("Production board");
+    await click("Overview");
     expect(container.querySelector<HTMLElement>('[data-testid="editing-desk"]')!.hidden).toBe(true);
-    await click("Set settings");await click("Editing desk");
+    await click("Set settings");await click("Edit parts");
     expect(container.querySelector("[data-draft]")).toBe(draft);
     expect(draft?.textContent).toBe("Unsaved author script");
   });
   it("suspends audio while hidden and restores it on return", async () => {
     await show();expect(container.querySelector("[data-audio-active]")?.getAttribute("data-audio-active")).toBe("true");
-    await click("Production board");expect(container.querySelector("[data-audio-active]")?.getAttribute("data-audio-active")).toBe("false");
-    await click("Editing desk");expect(container.querySelector("[data-audio-active]")?.getAttribute("data-audio-active")).toBe("true");
+    await click("Overview");expect(container.querySelector("[data-audio-active]")?.getAttribute("data-audio-active")).toBe("false");
+    await click("Edit parts");expect(container.querySelector("[data-audio-active]")?.getAttribute("data-audio-active")).toBe("true");
   });
   it("opens the exact part and editor selected from the production board", async () => {
-    await show();await click("Production board");
+    await show();await click("Overview");
     await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Part 2 — Quiz: empty"]')!.click());
     expect(container.querySelector("[data-quiz-part]")?.getAttribute("data-quiz-part")).toBe("2");
     expect(container.querySelector<HTMLElement>('[data-testid="production-board"]')!.hidden).toBe(true);

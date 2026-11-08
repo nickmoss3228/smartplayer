@@ -11,6 +11,7 @@
 // Adding a seventh element later is one entry in ELEMENTS. Nothing else in the
 // builder needs to know it happened.
 
+import type { TFunction } from "i18next";
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 
 export type ElementId = "audio" | "markers" | "comic" | "intro" | "transcript" | "vocab" | "phrasal" | "quiz" | "panels";
@@ -23,6 +24,7 @@ export interface ElementSpec {
   id: ElementId;
   /** Two letters for the grid header. */
   short: string;
+  /** English name for the data; rendered text uses `common.elements.<id>`. */
   label: string;
   /**
    * Whether a part is unsellable without it.
@@ -147,11 +149,12 @@ export interface PartStatus {
 }
 
 export function partStatusOf(part: StoryPart, story: AdminStory): PartStatus {
+  const elements = ELEMENTS;
   const cells = {} as Record<ElementId, CellState>;
   const counts: Partial<Record<ElementId, number>> = {};
   const missing: ElementSpec[] = [];
 
-  for (const el of ELEMENTS) {
+  for (const el of elements) {
     const state = el.state(part, story);
     cells[el.id] = state;
     if (el.count) counts[el.id] = el.count(part);
@@ -163,24 +166,25 @@ export function partStatusOf(part: StoryPart, story: AdminStory): PartStatus {
     cells,
     counts,
     sellable: missing.length === 0,
-    empty: missing.length === ELEMENTS.filter((e) => e.required).length,
+    empty: missing.length === elements.filter((e) => e.required).length,
     missing,
   };
 }
 
 /** One short line saying what this part still owes. Written for the person
  *  producing the story, so it names the gap rather than counting boxes. */
-export function partVerdict(status: PartStatus): string {
-  if (status.sellable) return "ready";
-  if (status.empty) return "empty";
+export function partVerdict(status: PartStatus, t: TFunction<"studio">): string {
+  if (status.sellable) return t("shell.verdict.ready");
+  if (status.empty) return t("shell.verdict.empty");
   if (status.missing.length === 1) {
     const only = status.missing[0];
+    const element = t(`common.elements.${only.id}`).toLowerCase();
     // "not saved" rather than "none": the difference between artwork that does
     // not exist and artwork that exists but would be lost on publish.
-    if (status.cells[only.id] === "partial") return `${only.label.toLowerCase()} not saved`;
-    return `no ${only.label.toLowerCase()}`;
+    if (status.cells[only.id] === "partial") return t("shell.verdict.notSaved", { element });
+    return t("shell.verdict.no", { element });
   }
-  return `${status.missing.length} elements missing`;
+  return t("shell.verdict.missing", { count: status.missing.length });
 }
 
 export interface StoryReadiness {

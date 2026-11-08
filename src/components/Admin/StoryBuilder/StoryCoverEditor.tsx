@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { IoCloudUploadOutline, IoImageOutline, IoTrashOutline } from "react-icons/io5";
 import {
   AdminStory,
   uploadStoryCover,
   clearStoryCover,
 } from "../../../services/adminStoryServices";
+import { smallButton } from "./studioStyles";
 
 /**
  * The 4:5 card art shown in the story list.
  *
  * Story-level rather than per-part — a story has one card, whatever its part
- * count — so it lives beside the name and shelf rather than in the part tabs.
+ * count — so it lives in Set settings rather than in the part tabs.
  *
  * Without a cover the card falls back to the built-in artwork for that slug if
  * there is one, and otherwise to the halftone + emoji placeholder. That
@@ -35,29 +38,32 @@ interface StoryCoverEditorProps {
 }
 
 const StoryCoverEditor = ({ token, story, onStoryUpdated }: StoryCoverEditorProps) => {
+  const { t } = useTranslation("studio");
   const [busy, setBusy] = useState<"upload" | "clear" | null>(null);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // Size in bytes of an oversized upload; the sentence is built at render so it follows the language.
+  const [heavySize, setHeavySize] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setError("");
-    setNotice("");
+    setHeavySize(null);
   }, [story._id]);
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
+    if (!ACCEPTED.split(",").includes(file.type)) {
+      setError(t("settings.cover.badType"));
+      return;
+    }
     setError("");
-    setNotice(
-      file.size > HEAVY_FILE_BYTES
-        ? `That file is ${formatSize(file.size)}. It will work, but the covers that ship with the app are around 50 KB — consider shrinking it.`
-        : "",
-    );
+    setHeavySize(file.size > HEAVY_FILE_BYTES ? file.size : null);
     setBusy("upload");
     try {
       onStoryUpdated(await uploadStoryCover(token, story._id, file));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cover upload failed.");
+      setError(err instanceof Error ? err.message : t("settings.cover.uploadFailed"));
     } finally {
       setBusy(null);
       // Let the same file be picked again after a failure — without this the
@@ -67,62 +73,73 @@ const StoryCoverEditor = ({ token, story, onStoryUpdated }: StoryCoverEditorProp
   };
 
   const handleClear = async () => {
+    if (!confirm(t("settings.cover.confirmRemove"))) return;
     setBusy("clear");
     setError("");
-    setNotice("");
+    setHeavySize(null);
     try {
       onStoryUpdated(await clearStoryCover(token, story._id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove the cover.");
+      setError(err instanceof Error ? err.message : t("settings.cover.removeFailed"));
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <div className="flex items-start gap-3">
-      <div className="w-20 shrink-0 aspect-[4/5] rounded-[3px] overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center">
-        {story.coverUrl ? (
-          <img src={story.coverUrl} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="text-[10px] text-gray-400 text-center px-1">No cover</span>
-        )}
-      </div>
+    <div className="grid gap-5 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-start">
+      {/* The card at roughly the size it has in the students' list. */}
+      <figure className="w-40">
+        <div className="relative grid aspect-[4/5] place-items-center overflow-hidden rounded-card border border-line bg-room">
+          {story.coverUrl ? (
+            <img src={story.coverUrl} alt={t("settings.cover.alt", { name: story.storyName })} className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex flex-col items-center gap-2 px-3 text-center text-xs text-dim">
+              <IoImageOutline size={28} aria-hidden="true" />
+              {t("settings.cover.noImage")}
+            </span>
+          )}
+          {busy === "upload" && <span className="absolute inset-0 grid place-items-center bg-white/80 text-sm font-semibold text-ink">{t("common.uploading")}</span>}
+        </div>
+        <figcaption className="mt-2 text-xs text-dim">{t("settings.cover.caption")}</figcaption>
+      </figure>
 
-      <div className="min-w-0">
-        <div className="text-sm font-semibold text-black">Card image</div>
-        <p className="text-xs text-gray-500 mb-2">
-          Shown on the story list. 4:5 works best. Without one the card uses the built-in
-          artwork for this story, or an emoji placeholder.
-        </p>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="cursor-pointer text-xs text-blue-600 underline">
+      <div className="min-w-0 space-y-3">
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); void handleFile(e.dataTransfer.files?.[0] ?? null); }}
+          className={`flex flex-col items-center justify-center gap-2 rounded-tile border-2 border-dashed px-4 py-6 text-center transition-colors ${dragging ? "border-ink bg-room" : "border-line-strong"}`}
+        >
+          <IoCloudUploadOutline size={26} className="text-dim" aria-hidden="true" />
+          <p className="text-sm text-ink">{t("settings.cover.drop")}</p>
+          <label className={`${smallButton} cursor-pointer ${busy ? "pointer-events-none opacity-45" : ""}`}>
             <input
               ref={inputRef}
               type="file"
               accept={ACCEPTED}
-              className="hidden"
+              className="sr-only"
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
               disabled={busy !== null}
             />
-            {busy === "upload" ? "Uploading…" : story.coverUrl ? "Replace" : "Choose image"}
+            {story.coverUrl ? t("settings.cover.chooseNew") : t("settings.cover.choose")}
           </label>
-
-          {story.coverUrl && (
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={busy !== null}
-              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-            >
-              {busy === "clear" ? "Removing…" : "Remove"}
-            </button>
-          )}
+          <p className="text-xs text-dim">{t("settings.cover.spec")}</p>
         </div>
 
-        {notice && <p className="text-amber-600 text-xs mt-1">{notice}</p>}
-        {error && <p className="text-red-600 text-xs mt-1">{error}</p>}
+        {!story.coverUrl && (
+          <p className="text-xs text-dim">{t("settings.cover.fallback")}</p>
+        )}
+
+        {story.coverUrl && (
+          <button type="button" onClick={handleClear} disabled={busy !== null} className={`${smallButton} text-red-700`}>
+            <IoTrashOutline aria-hidden="true" />
+            {busy === "clear" ? t("common.removing") : t("settings.cover.remove")}
+          </button>
+        )}
+
+        {heavySize !== null && <p className="text-xs text-amber-800">{t("settings.cover.heavy", { size: formatSize(heavySize) })}</p>}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       </div>
     </div>
   );

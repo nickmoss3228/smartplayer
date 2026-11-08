@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { IoRefreshOutline, IoTrashOutline, IoTimeOutline } from "react-icons/io5";
 import {
   SLOW_SPEEDS,
@@ -26,6 +27,7 @@ type Busy = "make" | "remove" | null;
  * whenever the recording is.
  */
 const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: PartSlowCopiesProps) => {
+  const { t } = useTranslation("studio");
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState("");
   const [switchedOff, setSwitchedOff] = useState(false);
@@ -45,7 +47,7 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
             : await removeSlowAudio(token, storyId, part.partNumber);
         onPartUpdated(updated);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Something went wrong.";
+        const message = err instanceof Error ? err.message : t("audio.slow.somethingWrong");
         // The server answers 503 when it has no audio worker: say so once, quietly.
         if (/switched off/i.test(message)) setSwitchedOff(true);
         else setError(message);
@@ -53,7 +55,7 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
         setBusy(null);
       }
     },
-    [token, storyId, part.partNumber, onPartUpdated],
+    [token, storyId, part.partNumber, onPartUpdated, t],
   );
 
   useEffect(() => {
@@ -66,19 +68,19 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
   if (!part.audioUrl) return null;
 
   const status = busy === "make"
-    ? { text: "Making…", className: "text-gray-600 bg-gray-50 border-gray-200" }
+    ? { text: t("audio.slow.making"), className: "text-gray-600 bg-gray-50 border-gray-200" }
     : fresh
-      ? { text: "Ready", className: "text-green-700 bg-green-50 border-green-200" }
+      ? { text: t("audio.slow.ready"), className: "text-green-700 bg-green-50 border-green-200" }
       : slow
-        ? { text: "Out of date", className: "text-amber-700 bg-amber-50 border-amber-200" }
-        : { text: "None yet", className: "text-gray-600 bg-gray-50 border-gray-200" };
+        ? { text: t("audio.slow.outOfDate"), className: "text-amber-700 bg-amber-50 border-amber-200" }
+        : { text: t("audio.slow.none"), className: "text-gray-600 bg-gray-50 border-gray-200" };
 
   return (
     <section className="rounded-[3px] border border-gray-200 bg-white px-3 py-3 space-y-2" aria-labelledby={`slow-${part.partNumber}`}>
       <div className="flex items-center gap-2 flex-wrap">
         <IoTimeOutline className="text-gray-400" aria-hidden="true" />
         <h4 id={`slow-${part.partNumber}`} className="text-sm font-semibold text-black">
-          Slow copies
+          {t("audio.slow.title")}
         </h4>
         <span className={`text-[11px] font-semibold rounded-[2px] border px-2 py-0.5 ${status.className}`}>
           {status.text}
@@ -91,27 +93,26 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
             className="inline-flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-[3px] px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40"
           >
             <IoRefreshOutline aria-hidden="true" />
-            {fresh ? "Make again" : "Make slow copies"}
+            {fresh ? t("audio.slow.makeAgain") : t("audio.slow.make")}
           </button>
           {slow && (
             <button
               type="button"
               onClick={() => void run("remove")}
               disabled={busy !== null}
-              title="The player stretches the recording itself again"
+              title={t("audio.slow.removeTitle")}
               className="inline-flex items-center gap-1.5 text-sm text-gray-500 rounded-[3px] px-2 py-1.5 hover:bg-gray-100 disabled:opacity-40"
             >
               <IoTrashOutline aria-hidden="true" />
-              Remove
+              {t("common.remove")}
             </button>
           )}
         </div>
       </div>
 
       <p className="text-xs text-gray-500 leading-relaxed">
-        At 0.65× and 0.8× the player plays these instead of stretching the recording, which sounds
-        echoey. They take a few seconds per speed and are made again whenever the recording changes.
-        {!fresh && slow && " These were made from an earlier recording, so the player is not using them."}
+        {t("audio.slow.hint")}
+        {!fresh && slow && t("audio.slow.stale")}
       </p>
 
       {fresh && slow && (
@@ -119,7 +120,7 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
           {SLOW_SPEEDS.filter((speed) => slow.copies[speed]).map((speed) => (
             <li key={speed} className="flex items-center gap-2 text-xs text-gray-600">
               <span className="font-semibold tabular-nums text-black">{speed}×</span>
-              <AudioPreview url={slow.copies[speed]} label={`${speed}× copy`} />
+              <AudioPreview url={slow.copies[speed]} label={t("audio.slow.copyLabel", { speed })} />
             </li>
           ))}
         </ul>
@@ -127,8 +128,7 @@ const PartSlowCopies = ({ token, storyId, part, onPartUpdated, autoStart }: Part
 
       {switchedOff && (
         <p className="text-xs text-gray-500">
-          This server has no audio worker (AUDIO_WORKER_URL is not set), so the player stretches the
-          recording itself.
+          {t("audio.slow.noWorker")}
         </p>
       )}
       {error && <p className="text-red-600 text-sm">{error}</p>}

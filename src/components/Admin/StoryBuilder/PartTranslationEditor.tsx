@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AdminStory, StoryPart, saveTranslation } from "../../../services/adminStoryServices";
 
 /**
@@ -26,6 +27,7 @@ const countParagraphs = (raw: string | null | undefined): number =>
     .filter((paragraph) => paragraph.trim()).length;
 
 const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTranslationEditorProps) => {
+  const { t } = useTranslation("studio");
   const savedText = part.translation ?? "";
 
   const [text, setText] = useState(savedText);
@@ -50,9 +52,9 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
     try {
       const latest = await saveTranslation(token, story._id, part.partNumber, value?.trim() ? value : null);
       onPartUpdated(latest);
-      setNotice(value?.trim() ? "Saved." : "Cleared.");
+      setNotice(value?.trim() ? t("content.translation.saved") : t("content.translation.cleared"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the translation.");
+      setError(err instanceof Error ? err.message : t("content.translation.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -61,10 +63,9 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
   return (
     <div className="space-y-3 mt-8 pt-6 border-t border-gray-200">
       <label className="block max-w-3xl">
-        <span className="block text-sm font-semibold text-black mb-1">Russian translation</span>
+        <span className="block text-sm font-semibold text-black mb-1">{t("content.translation.title")}</span>
         <span className="block text-xs text-gray-500 mb-1">
-          The transcript in Russian, for the PDF handout. A blank line starts a new paragraph; keep
-          the paragraphs in step with the transcript above, because the PDF prints them side by side.
+          {t("content.translation.help")}
         </span>
         <textarea
           value={text}
@@ -76,10 +77,10 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
         <span className="flex justify-between gap-2 text-xs">
           <span className={mismatch ? "text-signal-ink" : "text-gray-500"}>
             {translationCount === 0
-              ? "No translation yet."
+              ? t("content.translation.none")
               : mismatch
-                ? `${translationCount} paragraphs here, ${transcriptCount} in the transcript. They will not line up in the PDF.`
-                : `${translationCount} paragraphs, matching the transcript.`}
+                ? t("content.translation.mismatch", { count: translationCount, transcript: transcriptCount })
+                : t("content.translation.match", { count: translationCount })}
           </span>
           <span className="text-gray-400">
             {text.length} / {MAX_LENGTH}
@@ -97,7 +98,7 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
           disabled={saving || !dirty}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-1.5 disabled:opacity-40"
         >
-          {saving ? "Saving…" : dirty ? "Save" : "Saved"}
+          {saving ? t("common.saving") : dirty ? t("common.saveChanges") : t("common.saved")}
         </button>
         {dirty && (
           <button
@@ -106,7 +107,7 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
             disabled={saving}
             className="text-sm text-gray-500 hover:text-black"
           >
-            Discard changes
+            {t("common.discard")}
           </button>
         )}
         {savedText && (
@@ -119,7 +120,7 @@ const PartTranslationEditor = ({ token, story, part, onPartUpdated }: PartTransl
             disabled={saving}
             className="text-sm text-gray-500 hover:text-black"
           >
-            Clear
+            {t("content.translation.clear")}
           </button>
         )}
       </div>

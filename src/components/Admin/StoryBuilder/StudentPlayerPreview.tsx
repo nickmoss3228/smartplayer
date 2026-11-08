@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { configureStore } from "@reduxjs/toolkit";
 import { Provider } from "react-redux";
 import { useTranslation } from "react-i18next";
-import { IoArrowBack, IoChevronBack, IoChevronForward, IoClose, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { IoArrowBack, IoChevronBack, IoChevronForward, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
 import type WaveSurfer from "wavesurfer.js";
 import type { AdminStory } from "../../../services/adminStoryServices";
 import { useAppDispatch, useAppSelector } from "../../../hooks/hooks";
@@ -144,14 +144,23 @@ function PreviewPlayer({ story, initialPart, onClose }: PreviewProps) {
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}
-      className={`fixed inset-0 z-50 h-dvh overflow-hidden bg-gradient-to-br ${playerThemes[story.difficulty].background} pt-1`} data-testid="student-player-preview">
-      <div className="flex h-full items-center justify-center">
-        <div className="relative mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden rounded-[3px] bg-white/15 text-center md:h-[calc(100dvh-4rem)] md:w-[calc(100%-3rem)] md:gap-4 md:rounded-card md:px-8 md:pb-7 md:pt-5 lg:h-[min(760px,calc(100dvh-4rem))]">
+      className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-gradient-to-br ${playerThemes[story.difficulty].background}`} data-testid="student-player-preview">
+      {/* The admin's own bar, outside the student's screen, so the way back to
+          the editor is never confused with the player's controls. */}
+      <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 bg-ink px-3 text-white sm:px-5">
+        <button ref={closeRef} type="button" onClick={onClose}
+          className="inline-flex min-h-10 items-center gap-2 rounded-[3px] px-2 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal">
+          <IoArrowBack size={18} aria-hidden="true" />{t("contentStudio.backToEditor")}
+        </button>
+        <p id={descriptionId} className="min-w-0 truncate text-xs text-white/70">{t("contentStudio.preview")} · {storyTitle}</p>
+        <span className="hidden shrink-0 font-mono text-[11px] text-white/50 sm:inline">Esc</span>
+      </div>
+      <div className="flex min-h-0 flex-1 items-center justify-center pt-1">
+        <div className="relative mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden rounded-[3px] bg-white/15 text-center md:h-[calc(100%-2rem)] md:w-[calc(100%-3rem)] md:gap-4 md:rounded-card md:px-8 md:pb-7 md:pt-5 lg:h-[min(760px,calc(100%-2rem))]">
           <header className="relative flex min-h-[52px] shrink-0 items-center justify-center gap-2 px-2 md:justify-start md:px-0">
             {stage !== "player" && <button type="button" onClick={closePractice} aria-label={t("player.back")}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-black/60 hover:bg-black/5"><IoArrowBack size={20} /></button>}
             <div className="min-w-0 flex-1 text-left">
-              <p id={descriptionId} className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-black/55">{t("contentStudio.preview")} · {storyTitle}</p>
               <h1 id={titleId} className="truncate text-lg font-bold text-black md:text-[22px] md:font-extrabold md:leading-tight md:tracking-tight">{promptTitle}</h1>
             </div>
             <div className="flex shrink-0 items-center">
@@ -165,8 +174,6 @@ function PreviewPlayer({ story, initialPart, onClose }: PreviewProps) {
                 className="grid h-10 w-8 place-items-center rounded-full text-black/60 hover:bg-black/5 disabled:opacity-30"><IoChevronBack size={18} /></button>
               <button type="button" onClick={() => selectPart(partIndex + 1)} disabled={partIndex >= parts.length - 1} aria-label={t("contentStudio.next")}
                 className="grid h-10 w-8 place-items-center rounded-full text-black/60 hover:bg-black/5 disabled:opacity-30"><IoChevronForward size={18} /></button>
-              <button ref={closeRef} type="button" onClick={onClose} aria-label={t("contentStudio.closePreview")}
-                className="grid h-10 w-10 place-items-center rounded-full text-black/60 hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"><IoClose size={22} /></button>
             </div>
           </header>
 

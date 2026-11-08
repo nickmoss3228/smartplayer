@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
 import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
@@ -10,22 +11,27 @@ const TOKEN_KEY = "admin_token";
 
 type Tab = "feedback" | "players" | "story-builder" | "audit";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "feedback", label: "Feedback" },
-  { id: "players", label: "Players" },
-  { id: "story-builder", label: "Story Builder" },
-  { id: "audit", label: "Audit Log" },
+const TABS: { id: Tab; labelKey: string }[] = [
+  { id: "feedback", labelKey: "admin.tabs.feedback" },
+  { id: "players", labelKey: "admin.tabs.players" },
+  { id: "story-builder", labelKey: "admin.tabs.storyBuilder" },
+  { id: "audit", labelKey: "admin.tabs.audit" },
 ];
 
 /** `initialTab` lets /admin/studio (the old Content Studio link) open the Story Builder directly. */
 const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
+  const { t } = useTranslation("studio");
   const [token, setToken] = useState<string | null>(() =>
     sessionStorage.getItem(TOKEN_KEY)
   );
   const [code, setCode] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    // A Story Builder link (?set=… or ?new) opens on the Story Builder tab.
+    const search = new URLSearchParams(window.location.search);
+    return search.has("set") || search.has("new") ? "story-builder" : initialTab;
+  });
   // Set by adminLogin's response so the header can show which code word is in
   // use — the same name the audit log attributes actions to.
   const [adminName, setAdminName] = useState<string | null>(null);
@@ -39,11 +45,11 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       setToken(null);
       setCode("");
       setAdminName(null);
-      setLoginError("Session expired. Enter the code word again.");
+      setLoginError(t("admin.login.expired"));
     };
     window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
     return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
-  }, []);
+  }, [t]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +65,11 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       if (res.status === 429) {
         // The login endpoint is throttled to 5 failed attempts per 15 minutes
         // (backend middleware/rateLimit.js) — say so rather than looking broken.
-        setLoginError(data.error ?? "Too many attempts. Try again in 15 minutes.");
+        setLoginError(data.error ?? t("admin.login.tooMany"));
         return;
       }
       if (!res.ok) {
-        setLoginError(data.error ?? "Invalid code word.");
+        setLoginError(data.error ?? t("admin.login.invalid"));
         return;
       }
       sessionStorage.setItem(TOKEN_KEY, data.token);
@@ -71,7 +77,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       setAdminName(data.admin ?? null);
     } catch (err) {
       console.error(err);
-      setLoginError("Something went wrong.");
+      setLoginError(t("admin.login.failed"));
     } finally {
       setLoading(false);
     }
@@ -94,13 +100,13 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
           className="bg-white rounded-[3px] shadow-lg p-8 w-full max-w-sm"
         >
           <h1 className="text-xl font-bold text-black mb-4 text-center">
-            Admin Access
+            {t("admin.login.title")}
           </h1>
           <input
             type="password"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter code word"
+            placeholder={t("admin.login.placeholder")}
             required
             className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black"
           />
@@ -112,7 +118,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
             disabled={loading}
             className="w-full bg-black text-white py-2 rounded-[3px] hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            {loading ? "Checking..." : "Enter"}
+            {loading ? t("admin.login.checking") : t("admin.login.enter")}
           </button>
         </form>
       </div>
@@ -134,11 +140,10 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       <div className="max-w-[1500px] mx-auto">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
+            <h1 className="text-2xl font-bold text-black">{t("admin.title")}</h1>
             {adminName && (
               <p className="text-xs text-gray-500 mt-0.5">
-                Acting as <span className="font-semibold">{adminName}</span> — actions
-                are recorded in the audit log
+                <Trans t={t} i18nKey="admin.actingAs" values={{ name: adminName }} components={{ b: <span className="font-semibold" /> }} />
               </p>
             )}
           </div>
@@ -146,7 +151,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
             onClick={handleLogout}
             className="px-4 py-2 text-sm rounded-[3px] text-gray-600 hover:bg-gray-200 transition-colors"
           >
-            Log out
+            {t("admin.logOut")}
           </button>
         </div>
 
@@ -161,7 +166,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
                   : "text-gray-500 hover:text-black"
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>

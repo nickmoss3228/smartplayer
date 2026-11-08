@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchAuditLog, AdminAuditEntry } from "../../services/adminServices";
 
 // Read-only view of the admin audit log. Every mutating admin action is
@@ -11,8 +12,8 @@ const OUTCOME_STYLES: Record<AdminAuditEntry["outcome"], string> = {
   server_error: "bg-red-100 text-red-700",
 };
 
-const formatTime = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, {
+const formatTime = (iso: string, locale: string) =>
+  new Date(iso).toLocaleString(locale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -21,6 +22,7 @@ const formatTime = (iso: string) =>
   });
 
 function AuditRow({ entry }: { entry: AdminAuditEntry }) {
+  const { t, i18n } = useTranslation("studio");
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -30,7 +32,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
         className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
       >
         <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-          {formatTime(entry.createdAt)}
+          {formatTime(entry.createdAt, i18n.language)}
         </td>
         <td className="px-3 py-2 font-semibold text-black">{entry.actor.name}</td>
         <td className="px-3 py-2 text-black">{entry.action}</td>
@@ -54,7 +56,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
           </span>
         </td>
         <td className="px-3 py-2 text-gray-400 whitespace-nowrap">
-          {entry.durationMs != null ? `${entry.durationMs}ms` : "—"}
+          {entry.durationMs != null ? t("audit.ms", { n: entry.durationMs }) : "—"}
         </td>
       </tr>
       {expanded && (
@@ -62,18 +64,18 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
           <td colSpan={6} className="px-3 py-3">
             <div className="grid gap-1 text-xs text-gray-600 mb-2">
               <div>
-                <span className="text-gray-400">Request:</span> {entry.method} {entry.path}
+                <span className="text-gray-400">{t("audit.detail.request")}</span> {entry.method} {entry.path}
               </div>
               <div>
-                <span className="text-gray-400">IP:</span> {entry.ip ?? "—"}
+                <span className="text-gray-400">{t("audit.detail.ip")}</span> {entry.ip ?? "—"}
               </div>
               <div>
-                <span className="text-gray-400">Session:</span>{" "}
+                <span className="text-gray-400">{t("audit.detail.session")}</span>{" "}
                 {entry.actor.sessionId ?? "—"}
               </div>
               {entry.userAgent && (
                 <div className="truncate">
-                  <span className="text-gray-400">Agent:</span> {entry.userAgent}
+                  <span className="text-gray-400">{t("audit.detail.agent")}</span> {entry.userAgent}
                 </div>
               )}
             </div>
@@ -91,6 +93,7 @@ function AuditRow({ entry }: { entry: AdminAuditEntry }) {
 }
 
 const AuditTab = ({ token }: { token: string }) => {
+  const { t } = useTranslation("studio");
   const [entries, setEntries] = useState<AdminAuditEntry[]>([]);
   const [actions, setActions] = useState<string[]>([]);
   const [action, setAction] = useState("");
@@ -110,11 +113,11 @@ const AuditTab = ({ token }: { token: string }) => {
       // page, so keep it even while a filter is narrowing the rows.
       if (data.actions?.length) setActions(data.actions);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load audit log.");
+      setError(err instanceof Error ? err.message : t("audit.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [token, page, action]);
+  }, [token, page, action, t]);
 
   useEffect(() => {
     load();
@@ -124,10 +127,9 @@ const AuditTab = ({ token }: { token: string }) => {
     <div className="bg-white rounded-[3px] border border-gray-200 p-4">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-sm font-bold text-black">Admin audit log</h2>
+          <h2 className="text-sm font-bold text-black">{t("audit.title")}</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Every mutating admin action. Attribution comes from which code word was
-            used, not a verified identity.
+            {t("audit.hint")}
           </p>
         </div>
         <select
@@ -138,7 +140,7 @@ const AuditTab = ({ token }: { token: string }) => {
           }}
           className="text-xs text-black border border-gray-300 rounded-[3px] px-2 py-1.5"
         >
-          <option value="">All actions</option>
+          <option value="">{t("audit.allActions")}</option>
           {actions.map((name) => (
             <option key={name} value={name}>
               {name}
@@ -150,22 +152,22 @@ const AuditTab = ({ token }: { token: string }) => {
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-gray-400 py-6 text-center">Loading…</p>
+        <p className="text-sm text-gray-400 py-6 text-center">{t("audit.loading")}</p>
       ) : entries.length === 0 ? (
         <p className="text-sm text-gray-400 py-6 text-center">
-          No entries yet — the log fills as admin actions are performed.
+          {t("audit.empty")}
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-200">
-                <th className="px-3 py-2 font-medium">Time</th>
-                <th className="px-3 py-2 font-medium">Actor</th>
-                <th className="px-3 py-2 font-medium">Action</th>
-                <th className="px-3 py-2 font-medium">Target</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 font-medium">Took</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.time")}</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.actor")}</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.action")}</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.target")}</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.status")}</th>
+                <th className="px-3 py-2 font-medium">{t("audit.cols.took")}</th>
               </tr>
             </thead>
             <tbody>
@@ -183,15 +185,15 @@ const AuditTab = ({ token }: { token: string }) => {
           disabled={page === 1 || loading}
           className="px-3 py-1.5 text-xs rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-40"
         >
-          Previous
+          {t("audit.previous")}
         </button>
-        <span className="text-xs text-gray-400">Page {page}</span>
+        <span className="text-xs text-gray-400">{t("audit.page", { page })}</span>
         <button
           onClick={() => setPage((p) => p + 1)}
           disabled={!hasMore || loading}
           className="px-3 py-1.5 text-xs rounded-[3px] text-gray-600 hover:bg-gray-100 disabled:opacity-40"
         >
-          Next
+          {t("audit.next")}
         </button>
       </div>
     </div>

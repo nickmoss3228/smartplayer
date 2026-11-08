@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -29,6 +30,7 @@ const ENGLISH_KEY_PATTERN = /^[a-zA-Z0-9 _-]+$/;
 // trackPhrasalVerbs), so this is instantiated twice with a different `kind`
 // rather than one merged list.
 const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartVocabWordsEditorProps) => {
+  const { t } = useTranslation("studio");
   const listKey = kind === "vocab" ? "vocabulary" : "phrasalVerbs";
   const [words, setWords] = useState<VocabEntry[]>(part[listKey]);
   const [audioKeyInput, setAudioKeyInput] = useState("");
@@ -45,14 +47,14 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
 
   const handleAdd = async () => {
     setError("");
-    if (!pendingFile) return setError("Choose an audio file first.");
+    if (!pendingFile) return setError(t("practice.words.errors.chooseAudio"));
     if (!ENGLISH_KEY_PATTERN.test(audioKeyInput.trim())) {
-      return setError("The filename/key must be in English letters, numbers, spaces, - or _.");
+      return setError(t("practice.words.errors.keyFormat"));
     }
-    if (!wordInput.trim()) return setError("Enter the Russian text to display.");
+    if (!wordInput.trim()) return setError(t("practice.words.errors.needText"));
     const audioKey = audioKeyInput.trim().toLowerCase();
     if (words.some((w) => w.audioKey.toLowerCase() === audioKey)) {
-      return setError("That key is already used in this part.");
+      return setError(t("practice.words.errors.keyUsed"));
     }
 
     setUploading(true);
@@ -66,7 +68,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
       setDefinitionInput("");
       setPendingFile(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("practice.words.errors.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -93,7 +95,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
       );
       setPicture(index, { url, box: null, aspect: null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("practice.words.errors.uploadFailed"));
     } finally {
       setPictureBusy(null);
     }
@@ -113,7 +115,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
           : await savePhrasalVerbs(token, story._id, part.partNumber, words);
       onPartUpdated(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
+      setError(err instanceof Error ? err.message : t("practice.words.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -122,7 +124,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
   return (
     <div className="space-y-4">
       <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2">
-        <div className="text-sm font-semibold text-black">Add a word</div>
+        <div className="text-sm font-semibold text-black">{t("practice.words.add", { context: kind })}</div>
         <input
           type="file"
           accept="audio/*"
@@ -134,14 +136,14 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
             type="text"
             value={audioKeyInput}
             onChange={(e) => setAudioKeyInput(e.target.value)}
-            placeholder="English key/filename (e.g. flat)"
+            placeholder={t("practice.words.keyPlaceholder", { context: kind })}
             className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
           <input
             type="text"
             value={wordInput}
             onChange={(e) => setWordInput(e.target.value)}
-            placeholder="Russian text (e.g. квартира)"
+            placeholder={t("practice.words.textPlaceholder", { context: kind })}
             className="flex-1 text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
         </div>
@@ -149,7 +151,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
           type="text"
           value={definitionInput}
           onChange={(e) => setDefinitionInput(e.target.value)}
-          placeholder="Definition (optional)"
+          placeholder={t("practice.words.definitionPlaceholder")}
           className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
         />
         <button
@@ -158,7 +160,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
           disabled={uploading}
           className="text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
-          {uploading ? "Uploading..." : "Add word"}
+          {uploading ? t("common.uploading") : t("practice.words.addButton", { context: kind })}
         </button>
       </div>
 
@@ -175,7 +177,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
                   <VocabPicture image={w.image} className="absolute inset-0 w-full h-full" />
                 ) : (
                   <span className="absolute inset-0 flex items-center justify-center text-[9px] text-gray-300">
-                    no pic
+                    {t("practice.words.noPic")}
                   </span>
                 )}
               </span>
@@ -190,7 +192,11 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
               <span className="text-gray-500">{w.audioKey}</span>
               {w.definition && <span className="text-gray-400 truncate">{w.definition}</span>}
               <label className="ml-auto text-xs text-gray-500 hover:text-black cursor-pointer whitespace-nowrap">
-                {pictureBusy === w.audioKey ? "Uploading…" : w.image ? "Replace picture" : "Add picture"}
+                {pictureBusy === w.audioKey
+                  ? t("common.uploading")
+                  : w.image
+                    ? t("practice.words.replacePicture")
+                    : t("practice.words.addPicture")}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
@@ -209,7 +215,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
                   onClick={() => setPicture(i, null)}
                   className="text-xs text-gray-400 hover:text-red-600 whitespace-nowrap"
                 >
-                  No picture
+                  {t("practice.words.noPicture")}
                 </button>
               )}
               <button
@@ -217,7 +223,7 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
                 onClick={() => handleRemove(i)}
                 className="text-red-500 text-xs hover:text-red-700"
               >
-                Remove
+                {t("common.remove")}
               </button>
             </div>
           ))}
@@ -242,9 +248,9 @@ const PartVocabWordsEditor = ({ token, story, part, kind, onPartUpdated }: PartV
           disabled={saving}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
-          {saving ? "Saving..." : `Save ${kind === "vocab" ? "vocabulary" : "phrasal verbs"}`}
+          {saving ? t("common.saving") : t("practice.words.save", { context: kind })}
         </button>
-        {dirty && <span className="text-xs text-amber-700">Unsaved changes</span>}
+        {dirty && <span className="text-xs text-amber-700">{t("common.unsaved")}</span>}
       </div>
     </div>
   );

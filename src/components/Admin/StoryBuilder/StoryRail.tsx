@@ -14,6 +14,7 @@
 // data, so adding a third shelf later is one entry here and nothing else.
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AdminStoryListItem } from "../../../services/adminStoryServices";
 import type { DifficultySlug, StoryCategory } from "../../../types/storyGroups";
 
@@ -22,13 +23,6 @@ const DIFFICULTIES: DifficultySlug[] = ["easy", "medium", "hard"];
 /** Same order the students' list uses (see pages/List.tsx), so the admin reads
  *  top-to-bottom the way the shelf does. */
 const CATEGORY_ORDER: StoryCategory[] = ["general", "news"];
-
-const CATEGORY_LABEL: Record<string, string> = {
-  general: "Stories",
-  news: "News & Interesting Things",
-};
-
-const categoryLabel = (c: string) => CATEGORY_LABEL[c] ?? c;
 
 interface StoryRailProps {
   stories: AdminStoryListItem[];
@@ -39,7 +33,9 @@ interface StoryRailProps {
 }
 
 const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
+  const { t } = useTranslation("studio");
   const [query, setQuery] = useState("");
+  const categoryLabel = (c: string) => t(`shell.rail.categories.${c}`, { defaultValue: c });
 
   const matching = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -79,7 +75,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stories"
+          placeholder={t("shell.rail.search")}
           className="w-full text-sm text-black px-3 py-1.5 border border-gray-300 rounded-[3px] bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
         />
       </div>
@@ -87,7 +83,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
       <div className="flex-1 overflow-y-auto px-2 py-2">
         {matching.length === 0 && (
           <p className="text-sm text-gray-400 px-2 py-3">
-            {stories.length === 0 ? "No stories yet." : "Nothing matches that."}
+            {stories.length === 0 ? t("shell.rail.none") : t("shell.rail.noMatch")}
           </p>
         )}
 
@@ -95,7 +91,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
           total === 0 ? null : (
             <section key={difficulty} className="mb-4">
               <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-400 px-2 mb-1 flex items-baseline gap-1.5">
-                {difficulty}
+                {t(`common.difficulty.${difficulty}`)}
                 <span className="font-normal text-gray-300 tabular-nums">{total}</span>
               </h3>
 
@@ -118,7 +114,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
                           }`}
                         >
                           <span
-                            title={story.published ? "Published" : "Draft"}
+                            title={story.published ? t("common.published") : t("common.draft")}
                             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                               story.published ? "bg-emerald-500" : "bg-gray-400"
                             }`}
@@ -135,7 +131,7 @@ const StoryRail = ({ stories, activeId, onOpen, footer }: StoryRailProps) => {
                                 story._id === activeId ? "text-white/60" : "text-gray-400"
                               }`}
                             >
-                              {story.totalParts} parts
+                              {t("common.parts", { count: story.totalParts })}
                             </span>
                           </span>
                         </button>

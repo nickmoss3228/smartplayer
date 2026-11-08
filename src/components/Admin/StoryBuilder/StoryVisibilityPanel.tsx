@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   AdminStoryListItem,
   fetchHiddenStories,
@@ -29,6 +30,7 @@ interface StoryVisibilityPanelProps {
 }
 
 const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => {
+  const { t } = useTranslation("studio");
   const [hidden, setHidden] = useState<Record<string, Set<string>>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -41,11 +43,11 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
       );
       setHidden(Object.fromEntries(entries));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load visibility.");
+      setError(err instanceof Error ? err.message : t("shell.visibility.loadError"));
     } finally {
       setLoaded(true);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     load();
@@ -78,7 +80,7 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
     try {
       await setStoryHidden(token, difficulty, slug, nextHidden);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update visibility.");
+      setError(err instanceof Error ? err.message : t("shell.visibility.updateError"));
       await load();
     } finally {
       setBusy(null);
@@ -87,22 +89,17 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
 
   return (
     <div className="mb-6 bg-gray-50 rounded-[3px] border border-gray-200 p-3">
-      <h3 className="text-sm font-semibold text-black mb-1">Shown in the app</h3>
+      <h3 className="text-sm font-semibold text-black mb-1">{t("shell.visibility.title")}</h3>
       <p className="text-xs text-gray-500 mb-3">
-        Unlisting takes a story off the students' list immediately. It does{" "}
-        <strong>not</strong> revoke anything — anyone who bought it keeps access and playback
-        keeps working — but it disappears from their list too, so it is a way to retire a
-        story rather than a way to take one down for repairs. Deleting a story here does not
-        remove it either: the built-in stories ship with the app and come back when their
-        draft is gone, so this is the switch that controls the shelves.
+        <Trans t={t} i18nKey="shell.visibility.intro" components={{ b: <strong /> }} />
       </p>
       {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-      {!loaded && <p className="text-xs text-gray-400">Loading…</p>}
+      {!loaded && <p className="text-xs text-gray-400">{t("common.loading")}</p>}
 
       {loaded &&
         rows.map(({ difficulty, items }) => (
           <div key={difficulty} className="mb-3 last:mb-0">
-            <div className="text-xs font-semibold text-gray-500 capitalize mb-1">{difficulty}</div>
+            <div className="text-xs font-semibold text-gray-500 capitalize mb-1">{t(`common.difficulty.${difficulty}`)}</div>
             <div className="space-y-1">
               {items.map((item) => {
                 const isHidden = hidden[difficulty]?.has(item.slug) ?? false;
@@ -121,18 +118,14 @@ const StoryVisibilityPanel = ({ token, stories }: StoryVisibilityPanelProps) => 
                       type="button"
                       onClick={() => toggle(difficulty, item.slug, !isHidden)}
                       disabled={busy === key}
-                      title={
-                        isHidden
-                          ? "Put this back on the shelf"
-                          : "Take this off the shelf. Anyone who already owns it keeps access, but it disappears from their list too."
-                      }
+                      title={isHidden ? t("shell.visibility.putBack") : t("shell.visibility.takeOff")}
                       className={`ml-auto text-xs rounded-[3px] px-3 py-1 disabled:opacity-50 ${
                         isHidden
                           ? "bg-black text-white hover:bg-gray-800"
                           : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      {busy === key ? "…" : isHidden ? "List" : "Unlist"}
+                      {busy === key ? "…" : isHidden ? t("shell.visibility.list") : t("shell.visibility.unlist")}
                     </button>
                   </div>
                 );
