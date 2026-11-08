@@ -1,11 +1,10 @@
-import Landing from '../components/Landing/Landing';
+import IcebergLanding from '../components/IcebergLanding/IcebergLanding';
 
 /**
- * `/`: the landing, a guide to how malako works (components/Landing, built
- * from option C of docs/landing-guide). It replaced the one-screen hero of the
- * name, the slogan and the "why" clouds; the name now sits in the navbar and
- * the slogan in the bar under it.
+ * `/`: the landing, built as one argument from the iceberg question to "Try it
+ * yourself" (components/IcebergLanding, 2026-11-08). The short guide before it
+ * (components/Landing) is kept and opens in dev at /landing-old.
  */
-const Homepage = () => <Landing />;
+const Homepage = () => <IcebergLanding />;
 
 export default Homepage;
