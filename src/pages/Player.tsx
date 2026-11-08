@@ -121,7 +121,7 @@ const Player = React.memo(() => {
   // Bumped when progress kept in this browser changes (a guest's quiz, the
   // comic game), so the ticks in the practice window are read again.
   const [localProgressTick, setLocalProgressTick] = useState(0);
-  const [_quizResults, setQuizResults] = useState<QuizResults | null>(null);
+  const [, setQuizResults] = useState<QuizResults | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
   const [quizLoadError, setQuizLoadError] = useState(false);

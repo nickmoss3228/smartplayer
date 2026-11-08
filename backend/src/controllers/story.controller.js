@@ -9,7 +9,7 @@
 // find/mutate/save() these handlers were written around, with the lock added so
 // two Builder tabs saving different parts cannot overwrite each other.
 import crypto from "node:crypto";
-import { stories as storiesRepo } from "../db/index.js";
+import { stories as storiesRepo, progress as progressRepo } from "../db/index.js";
 import { restoreMarkersIntoParts } from "../helpers/markerRestore.js";
 import { uploadBuffer } from "../helpers/uploadToStorage.js";
 import { storyRegistry } from "../config/storyRegistry.js";
@@ -1350,6 +1350,18 @@ export async function getPartHandout(req, res) {
     });
     if (!isPartVisible(access, partNumber) || isPreviewPart(access, partNumber)) {
       return res.status(403).json({ message: "This part is locked." });
+    }
+
+    // Ear first: the text, translation and words are a reward for a part the
+    // student has heard, i.e. whose quiz they passed. Only the server's record
+    // of that counts, so a guest (whose progress lives in the browser) gets
+    // no handout; the app asks them to sign in instead.
+    if (!req.user) {
+      return res.status(401).json({ code: "HANDOUT_SIGN_IN", message: "Sign in to get the handout." });
+    }
+    const progress = await progressRepo.storyProgressFor(req.user._id, difficulty, storyId);
+    if (!progress?.completedParts?.includes(partNumber)) {
+      return res.status(403).json({ code: "HANDOUT_QUIZ_FIRST", message: "Pass this part's quiz first." });
     }
 
     const words = [

@@ -51,7 +51,7 @@ export async function fetchPartHandout(
     return res.data;
   } catch (error) {
     const status = (error as { response?: { status?: number } })?.response?.status;
-    if (status === 403) throw new HandoutLockedError("This part is locked.");
+    if (status === 401 || status === 403) throw new HandoutLockedError("This part is locked.");
     throw error;
   }
 }

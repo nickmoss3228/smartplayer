@@ -39,6 +39,7 @@ import {
 import type { PracticeKind } from "./Practice/PracticeModal";
 import { submitPhraseRepeat } from "../../services/walletServices";
 import { useWallet } from "../../context/WalletContext";
+import { usePlayerPreview } from "../../context/PlayerPreviewContext";
 
 const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
   ({
@@ -70,6 +71,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const userPlaybackRateRef = useRef<number>(1.0);
     const { t } = useTranslation();
     const { setWalletDirect } = useWallet();
+    const isPreview = usePlayerPreview() !== null;
 
     const {
       currentMarkerIndex,
@@ -120,10 +122,11 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     // The endpoint returns the updated wallet directly, so push it into the
     // shared cache instead of letting the display go stale until next fetch.
     const handleSegmentRepeatComplete = useCallback((repeatCount: number) => {
+      if (isPreview) return;
       const token = localStorage.getItem("token");
       if (!token) return;
       submitPhraseRepeat(token, repeatCount).then(setWalletDirect).catch(() => {});
-    }, [setWalletDirect]);
+    }, [setWalletDirect, isPreview]);
 
     console.log("[Player] level:", level, "difficulty:", difficulty);
 
@@ -201,9 +204,9 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
 
     const { startTimer, stopTimer } = useListeningTimer();
     useEffect(() => {
-      if (isPlaying) startTimer();
+      if (isPlaying && !isPreview) startTimer();
       else stopTimer();
-    }, [isPlaying, startTimer, stopTimer]);
+    }, [isPlaying, isPreview, startTimer, stopTimer]);
 
     // Words arrive already resolved, from modules/story/resolveStory.ts. This
     // component used to look them up itself via useTrackVocabulary, which read

@@ -6,7 +6,7 @@
 let sharedCtx: AudioContext | null = null;
 
 function getContext(): AudioContext | null {
-  const Ctor = window.AudioContext ?? (window as any).webkitAudioContext;
+  const Ctor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctor) return null;
   if (!sharedCtx) sharedCtx = new Ctor();
   return sharedCtx;

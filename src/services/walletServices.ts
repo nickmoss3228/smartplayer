@@ -13,6 +13,7 @@ import { Wallet } from "../types/Wallet";
 //      noUnusedParameters makes the underscore prefix mandatory. Dropping the
 //      parameter entirely is a separate, mechanical cleanup pass.
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for old callers, see above
 export const fetchWallet = async (_token?: string): Promise<Wallet> => {
   const res = await api.get("/api/progress/wallet");
   return res.data.wallet;

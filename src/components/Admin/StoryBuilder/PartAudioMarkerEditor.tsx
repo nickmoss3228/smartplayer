@@ -35,6 +35,8 @@ interface PartAudioMarkerEditorProps {
   story: AdminStory;
   part: StoryPart;
   onPartUpdated: (part: StoryPart) => void;
+  active?: boolean;
+  layout?: "classic" | "desk";
 }
 
 /** How long after the last edit the markers save themselves. */
@@ -76,7 +78,7 @@ type SaveState = "saved" | "dirty" | "saving" | "error";
  * a person tapping along lands a quarter of a second late every time. Nothing
  * here needs to be got right first time: markers drag, nudge, and undo.
  */
-const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioMarkerEditorProps) => {
+const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated, active = true, layout = "classic" }: PartAudioMarkerEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -246,6 +248,15 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
     if (!instance || duration <= 0) return;
     instance.zoom(zoom);
   }, [zoom, duration]);
+
+  // The desk stays mounted behind its overview/settings so drafts and undo survive.
+  // Hidden audio must never keep playing or consume another screen's shortcuts.
+  useEffect(() => {
+    if (!active) {
+      wsRef.current?.pause();
+      stopAtRef.current = null;
+    }
+  }, [active]);
 
   // ── saving ────────────────────────────────────────────────────────────────
 
@@ -448,8 +459,13 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   // the only way to place forty markers without it being an afternoon's work.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      // The student preview has its own transport shortcuts. A modal must
+      // never let those keys play or edit the waveform behind it.
+      if (!active || document.querySelector('[aria-modal="true"]')) return;
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      // Enter/Space on a focused navigation button must activate that button.
+      if (target?.closest("button") && (event.key === "Enter" || event.key === " ")) return;
       if (!wsRef.current) return;
 
       const meta = event.metaKey || event.ctrlKey;
@@ -493,7 +509,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mark, togglePlay, audition, nudge, removeMarker, undo, selected]);
+  }, [active, mark, togglePlay, audition, nudge, removeMarker, undo, selected]);
 
   // ── derived ───────────────────────────────────────────────────────────────
 
@@ -563,7 +579,8 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
   // ── the working view ──────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-3">
+    <div className={layout === "desk" ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_220px]" : "space-y-3"}>
+      <div className="min-w-0 space-y-3">
       <div className="rounded-[3px] border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 flex-wrap">
           <button
@@ -657,7 +674,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         <button
           type="button"
           onClick={mark}
-          className="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-[3px] px-4 py-2"
+          className="inline-flex items-center gap-1.5 bg-ink hover:bg-gray-800 text-white text-sm font-semibold rounded-[3px] px-4 py-2"
         >
           <IoAdd aria-hidden="true" />
           Mark sentence
@@ -681,7 +698,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             type="checkbox"
             checked={snap}
             onChange={(e) => setSnap(e.target.checked)}
-            className="accent-amber-500"
+            className="accent-ink"
           />
           Snap to the nearest pause
           {onsets.length === 0 && duration > 0 && (
@@ -693,6 +710,12 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
       {error && <p className="text-red-600 text-sm">{error}</p>}
       {uploading && <p className="text-xs text-gray-500">Uploading the recording…</p>}
 
+      <details open={layout === "classic" ? true : undefined} className="rounded-tile border border-line p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-ink">Recording &amp; slow copies</summary>
+        <div className="mt-3 space-y-3">
+          {layout === "desk" && <label className="block text-xs text-dim">Replace recording (MP3, M4A or WAV)
+            <input type="file" accept="audio/*" disabled={uploading} className="mt-2 block max-w-full text-sm text-ink" onChange={event => { const file = event.target.files?.[0]; if (file) void acceptFile(file); event.target.value = ""; }} />
+          </label>}
       <PartSlowCopies
         token={token}
         storyId={story._id}
@@ -700,6 +723,8 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
         onPartUpdated={onPartUpdated}
         autoStart={justUploaded}
       />
+        </div>
+      </details>
 
       {issues.length > 0 && (
         <ul className="rounded-[3px] border border-amber-200 bg-amber-50 px-3 py-2 space-y-1">
@@ -759,7 +784,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
                 title={`Play sentence ${i + 1}`}
                 className={`inline-flex items-baseline gap-1.5 rounded-[3px] px-2 py-1 text-[11px] tabular-nums transition-colors ${
                   i === selected
-                    ? "bg-amber-500 text-white"
+                    ? "bg-ink text-white"
                     : flagged.has(i)
                       ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -773,7 +798,7 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
             ))}
           </div>
 
-          {selected >= 0 && selectedBounds && (
+          {layout === "classic" && selected >= 0 && selectedBounds && (
             <div className="flex items-center gap-2 flex-wrap rounded-[3px] bg-gray-50 border border-gray-200 px-3 py-2">
               <span className="text-xs text-black font-semibold">Sentence {selected + 1}</span>
               <span className="text-xs text-gray-500 tabular-nums">
@@ -842,6 +867,27 @@ const PartAudioMarkerEditor = ({ token, story, part, onPartUpdated }: PartAudioM
           <p className="text-gray-500">Your work saves itself a moment after each change.</p>
         </div>
       </details>
+      </div>
+      {layout === "desk" && <aside aria-label="Selected sentence" className="h-fit min-w-0 rounded-tile border border-line bg-room p-4 xl:sticky xl:top-4">
+        <h4 className="mb-4 text-sm font-bold text-ink">{selected >= 0 ? `Sentence ${selected + 1}` : "Sentence inspector"}</h4>
+        {selected >= 0 && selectedBounds ? <div className="space-y-4">
+          <label className="block text-xs text-dim">Starts at (seconds)
+            <input key={`${selected}:${times[selected]}`} type="number" min={0} max={duration || undefined} step={0.05} defaultValue={times[selected].toFixed(2)}
+              className="mt-1 w-full rounded-[3px] border border-line-strong bg-white px-3 py-2 text-sm tabular-nums text-ink"
+              onBlur={event => { const value = event.target.valueAsNumber; if (Number.isFinite(value) && value !== times[selected]) { moveMarker(selected, value); settleMarker(); } }}
+              onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} />
+          </label>
+          <p className="text-xs text-dim">Ends at <span className="block text-sm tabular-nums text-ink">{formatTime(Math.min(selectedBounds.end, duration))}</span><span className="mt-1 block">{(Math.min(selectedBounds.end, duration) - selectedBounds.start).toFixed(2)} seconds</span></p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => nudge(-NUDGE_SECONDS)} title="Move marker 50ms earlier (Shift+Left)" className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">−50 ms</button>
+            <button type="button" onClick={() => nudge(NUDGE_SECONDS)} title="Move marker 50ms later (Shift+Right)" className="min-h-10 flex-1 rounded-[3px] border border-line-strong bg-white px-2 text-xs text-ink">+50 ms</button>
+          </div>
+          <button type="button" onClick={() => audition(selected)} className="min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm font-semibold text-white">Audition sentence</button>
+          <button type="button" onClick={() => removeMarker(selected)} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-[3px] border border-line-strong bg-white px-3 text-xs text-red-700"><IoTrashOutline aria-hidden="true" />Remove marker</button>
+        </div> : <p className="text-sm text-dim">Select a sentence on the waveform or below it to adjust its start, listen, or remove its marker.</p>}
+        <p className="mt-5 border-t border-line pt-3 text-xs text-dim">Marker edits save automatically. Undo with Ctrl+Z.</p>
+        {saveState === "error" && <button type="button" onClick={() => void persist(timesRef.current)} className="mt-3 min-h-10 w-full rounded-[3px] bg-ink px-3 text-sm text-white">Retry saving markers</button>}
+      </aside>}
     </div>
   );
 };

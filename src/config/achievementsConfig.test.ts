@@ -157,7 +157,7 @@ describe('achievement config integrity', () => {
         ['en', en],
         ['ru', ru],
       ] as const) {
-        const units = (locale as Record<string, any>).dashboard.achievements.units;
+        const units = (locale as unknown as { dashboard: { achievements: { units: Record<string, unknown> } } }).dashboard.achievements.units;
         expect(
           Object.keys(units).some((k) => k.startsWith(`${category.unitKey}_`)),
           `${name} has no "${category.unitKey}" unit for ${category.key}`,

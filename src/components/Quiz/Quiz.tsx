@@ -59,6 +59,7 @@ const Quiz: React.FC<QuizProps> = ({
   onNextPart,
   isSubmitting = false,
   autoPlay = true,
+  checkAnswer,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -162,7 +163,9 @@ const Quiz: React.FC<QuizProps> = ({
     setChecking(true);
     let result: Answer = { picked: option, correct: false };
     try {
-      const check = await checkQuizAnswer(difficulty, storyId, partNumber, index, option);
+      const check = checkAnswer
+        ? await checkAnswer(index, option)
+        : await checkQuizAnswer(difficulty, storyId, partNumber, index, option);
       result = { picked: option, correct: check.correct, correctOption: check.correctOption };
     } catch (error) {
       console.error("Failed to check quiz answer:", error);

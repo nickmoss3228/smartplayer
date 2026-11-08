@@ -17,14 +17,15 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "audit", label: "Audit Log" },
 ];
 
-const AdminPanel = () => {
+/** `initialTab` lets /admin/studio (the old Content Studio link) open the Story Builder directly. */
+const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
   const [token, setToken] = useState<string | null>(() =>
     sessionStorage.getItem(TOKEN_KEY)
   );
   const [code, setCode] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>("feedback");
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   // Set by adminLogin's response so the header can show which code word is in
   // use — the same name the audit log attributes actions to.
   const [adminName, setAdminName] = useState<string | null>(null);
@@ -131,7 +132,7 @@ const AdminPanel = () => {
           a tool: the Story Builder is a two-pane workspace with a waveform in
           it, and 896px squeezed that into a third of a desktop screen. */}
       <div className="max-w-[1500px] mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
             {adminName && (
@@ -149,7 +150,7 @@ const AdminPanel = () => {
           </button>
         </div>
 
-        <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -175,4 +176,3 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-  

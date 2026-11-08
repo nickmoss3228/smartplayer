@@ -21,7 +21,7 @@ import type { HandoutLabels } from '../../modules/handout/handoutModel';
 const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const catalog = useCatalog();
   const {
-    difficulty, storyTitle, theme,
+    difficulty, storyTitle, theme, user,
     audioTracks, comics, completedLevels, totalLevels,
     lastListenedLevel, progressPercentage, navigationState,
     isLoading, getLevelData, isPartLocked,
@@ -44,7 +44,14 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   // The PDF carries the part's text, so it is offered only where the server
   // will hand it out: an owned story or a free part, never the timed preview.
-  const canDownloadPdf = previewLevel !== null && (storyOwned || previewLevel <= freeParts);
+  const pdfAvailable = previewLevel !== null && (storyOwned || previewLevel <= freeParts);
+  // Ear first: the text comes after the part has been heard, which means its
+  // quiz was passed. The server checks that against its own progress record
+  // (getPartHandout), so a guest, whose progress lives in this browser, is
+  // asked to sign in; a learner sees "after the quiz" until they pass it.
+  const partCompleted = previewLevel !== null && completedLevels.includes(previewLevel);
+  const canDownloadPdf = pdfAvailable && Boolean(user) && partCompleted;
+  const pdfNote = !pdfAvailable || canDownloadPdf ? undefined : user ? 'quiz' as const : 'signIn' as const;
   const handleDownloadPdf = async () => {
     if (previewLevel === null) return;
     const label = (key: string) => t(`handout.${key}`);
@@ -129,6 +136,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
         preview={previewData}
         theme={theme}
         onDownloadPdf={canDownloadPdf ? handleDownloadPdf : undefined}
+        pdfNote={pdfNote}
       />
 
       {/* One gate for everyone. A guest sees the same offer and is asked to

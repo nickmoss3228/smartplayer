@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import type { TimeMarker } from "../../../types";
 import WaveSurfer from "wavesurfer.js";
 import { useAppDispatch } from "../../../hooks/hooks";
 import {
@@ -19,7 +20,7 @@ interface UsePlayerControlsOptions {
   playbackRateRef: React.MutableRefObject<number>;
   currentMarkerIndexRef: React.MutableRefObject<number>;
   repeatCountRef: React.MutableRefObject<number>;
-  timeMarkersRef: React.MutableRefObject<any[]>;
+  timeMarkersRef: React.MutableRefObject<TimeMarker[]>;
   currentRepeatRef: React.MutableRefObject<number>;
   isSegmentTransitioningRef: React.MutableRefObject<boolean>;
   getSegmentBounds: (index: number) => { start: number; end: number };

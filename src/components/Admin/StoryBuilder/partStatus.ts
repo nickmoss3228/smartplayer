@@ -171,7 +171,7 @@ export function partStatusOf(part: StoryPart, story: AdminStory): PartStatus {
 /** One short line saying what this part still owes. Written for the person
  *  producing the story, so it names the gap rather than counting boxes. */
 export function partVerdict(status: PartStatus): string {
-  if (status.sellable) return "sellable";
+  if (status.sellable) return "ready";
   if (status.empty) return "empty";
   if (status.missing.length === 1) {
     const only = status.missing[0];
