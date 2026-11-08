@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { IoPlayOutline, IoAddOutline, IoExpandOutline, IoContractOutline, IoArrowBack, IoBookOutline, IoChevronDown, IoChevronForward } from "react-icons/io5";
+import type { ReactNode } from "react";
 import {
   AdminStory,
   StoryPart,
@@ -8,7 +10,8 @@ import {
   updateStoryMeta,
 } from "../../../services/adminStoryServices";
 import PartMatrix from "./PartMatrix";
-import { ELEMENTS, ElementId, storyReadiness } from "./partStatus";
+import { ELEMENTS, ElementId, storyReadiness, partVerdict } from "./partStatus";
+import { MAX_PARTS } from "../../../types/content";
 import PartAudioMarkerEditor from "./PartAudioMarkerEditor";
 import PartComicEditor from "./PartComicEditor";
 import StoryCoverEditor from "./StoryCoverEditor";
@@ -28,9 +31,19 @@ interface StoryEditorProps {
   onStoryUpdated: (story: AdminStory) => void;
   onDeleted: () => void;
   onBack: () => void;
+  /** The list of other sets, opened from beside the title. */
+  switcher: ReactNode;
+  switcherOpen: boolean;
+  onToggleSwitcher: () => void;
+  onPreview: (partNumber: number) => void;
+  previewOpen?: boolean;
 }
 
-const MAX_PARTS = 20;
+/** The set's views and a part's tools, as underline tabs on one line. */
+const viewTab = (active: boolean) =>
+  `-mb-px inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-semibold transition-colors ${
+    active ? "border-ink text-ink" : "border-transparent text-dim hover:text-ink"
+  }`;
 
 // Part 1 of a paid story is what a non-owner always hears before deciding to
 // buy — always in full; the first three parts are free on any story
@@ -71,9 +84,27 @@ const localizedDraft = (story: AdminStory) => ({
 
 // Per-part tabs within one "editing story X" view — the admin can jump
 // between parts/steps freely rather than following a forced linear wizard.
-const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryEditorProps) => {
-  const [partNumber, setPartNumber] = useState(1);
-  // Which CELL is open, not which tab — the grid is the navigation now.
+const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack, switcher, switcherOpen, onToggleSwitcher, onPreview, previewOpen = false }: StoryEditorProps) => {
+  const itemLabel = "Part";
+  const elements = ELEMENTS;
+  const [partNumber, setPartNumber] = useState(story.parts[0]?.partNumber ?? 1);
+  const [workspace, setWorkspace] = useState<"desk" | "overview" | "settings" | "review">("desk");
+  const [focused, setFocused] = useState(false);
+  const deskRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (workspace !== "desk" || previewOpen) {
+      deskRef.current?.querySelectorAll<HTMLMediaElement>("audio, video").forEach(media => media.pause());
+    }
+  }, [workspace, previewOpen]);
+  const latestStory = useRef(story);
+  latestStory.current = story;
+  const pick = (number: number, tool: ElementId = element) => {
+    setPartNumber(number);
+    setElement(tool);
+    setWorkspace("desk");
+  };
+  const control = "inline-flex min-h-10 items-center justify-center gap-2 rounded-[3px] border border-line-strong bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-room disabled:opacity-50";
+  // The desk and the overview share the same active part and tool.
   const [element, setElement] = useState<ElementId>("audio");
   const step = PANEL_FOR[element];
   const [publishing, setPublishing] = useState(false);
@@ -91,16 +122,19 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
   const part = story.parts.find((p) => p.partNumber === partNumber) as StoryPart;
 
   const handlePartUpdated = (updatedPart: StoryPart) => {
-    onStoryUpdated({
-      ...story,
-      parts: story.parts.map((p) => (p.partNumber === updatedPart.partNumber ? updatedPart : p)),
-    });
+    const updated = {
+      ...latestStory.current,
+      parts: latestStory.current.parts.map((p) => (p.partNumber === updatedPart.partNumber ? updatedPart : p)),
+    };
+    latestStory.current = updated;
+    onStoryUpdated(updated);
   };
 
   // One rule for "done", shared with the grid and the publish gate — see
   // partStatus.ts. A story is something people buy, so a part is finished when
   // it has every required element, not when it has audio.
   const readiness = storyReadiness(story);
+  const partStatusNow = readiness.parts.find((status) => status.partNumber === partNumber);
 
   const handleTogglePublish = async () => {
     // Publishing an incomplete story puts a half-made product on the shelf, and
@@ -141,7 +175,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
       const updated = await addPart(token, story._id);
       onStoryUpdated(updated);
       // Jump straight to the new part so it's obvious it was added.
-      setPartNumber(updated.parts[updated.parts.length - 1].partNumber);
+      pick(updated.parts[updated.parts.length - 1].partNumber, "audio");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add a part.");
     } finally {
@@ -194,55 +228,54 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={onBack} className="text-sm text-gray-500 hover:text-black">
-          &larr; Back to stories
-        </button>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-          >
-            Delete
-          </button>
-          <button
-            onClick={handleTogglePublish}
-            disabled={publishing}
-            title={
-              story.published
-                ? "Take this story off the shelves"
-                : readiness.complete
-                  ? "Put this story on the shelves"
-                  : `${readiness.total - readiness.sellableCount} parts are not ready to sell`
-            }
-            className={`text-sm rounded-[3px] px-4 py-2 disabled:opacity-50 ${
-              story.published
-                ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                : readiness.complete
-                  ? "bg-amber-500 text-white hover:bg-amber-600"
-                  : "bg-white text-amber-700 border border-amber-400 hover:bg-amber-50"
-            }`}
-          >
-            {publishing
-              ? "…"
-              : story.published
-                ? "Unpublish"
-                : readiness.complete
-                  ? "Publish"
-                  : `Publish ${readiness.sellableCount}/${readiness.total}`}
-          </button>
+    <section className="min-w-0" aria-label="Set editor">
+      {/* One header for the whole set: where you are (breadcrumb), what it is
+          (title, level, readiness, published) and what you can do (preview,
+          publish). It replaces three stacked bars: "Content types", "Library"
+          and a second copy of the set's name. */}
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <nav aria-label="Breadcrumb" className="mb-1 flex flex-wrap items-center gap-1 text-xs text-dim">
+            <button type="button" onClick={onBack} className="min-h-8 hover:text-ink hover:underline">Story sets</button>
+            <IoChevronForward aria-hidden="true" />
+          </nav>
+          <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
+            <IoBookOutline className="shrink-0" size={22} aria-hidden="true" />
+            <h2 className="min-w-0 break-words text-2xl font-extrabold tracking-tight text-ink">{story.storyName}</h2>
+            <button type="button" onClick={onToggleSwitcher} aria-expanded={switcherOpen} aria-controls="studio-set-switcher" title="Open another set"
+              className="inline-flex min-h-8 items-center gap-1 rounded-[3px] px-2 text-xs font-semibold text-dim hover:bg-white hover:text-ink">
+              Switch set<IoChevronDown aria-hidden="true" className={switcherOpen ? "rotate-180" : ""} />
+            </button>
+            {switcherOpen && <div id="studio-set-switcher" className="absolute left-0 top-full z-30 mt-2 max-h-96 w-[min(28rem,90vw)] overflow-y-auto rounded-card border border-line bg-white shadow-lg">
+              {switcher}
+            </div>}
+          </div>
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full bg-room px-2 py-0.5 font-semibold uppercase tracking-wide text-dim">{story.difficulty}</span>
+            <span className={`rounded-full px-2 py-0.5 font-semibold ${readiness.complete ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+              {readiness.sellableCount}/{readiness.total} parts ready
+            </span>
+            <span className={`rounded-full px-2 py-0.5 font-semibold ${story.published ? "bg-emerald-50 text-emerald-800" : "bg-room text-dim"}`}>{story.published ? "Published" : "Draft"}</span>
+          </p>
         </div>
-      </div>
-
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => onPreview(partNumber)} disabled={!part?.audioUrl} className={control}><IoPlayOutline aria-hidden="true" />Student preview</button>
+          <button type="button" onClick={() => setWorkspace("review")} aria-pressed={workspace === "review"} className="min-h-10 rounded-[3px] bg-ink px-4 py-2 text-sm font-semibold text-white">Review &amp; publish</button>
+        </div>
+      </header>
+      <nav aria-label="Set workspace" className="mb-5 flex flex-wrap gap-1 border-b border-line">
+        {([["desk", "Editing desk"], ["overview", "Production board"], ["settings", "Set settings"]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={workspace === value} onClick={() => setWorkspace(value)} className={viewTab(workspace === value)}>{label}</button>)}
+      </nav>
+      {error && <p role="alert" className="mb-4 text-sm text-red-700">{error}</p>}
+      <div hidden={workspace !== "settings"} className="rounded-card border border-line bg-white p-4 sm:p-6" data-testid="set-settings">
+        <h3 className="mb-4 text-lg font-bold text-ink">Set settings</h3>
       <div className="mb-4">
         {editingMeta ? (
           <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-3 max-w-3xl">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 type="text"
-                value={editIcon}
+                aria-label="Character icon" value={editIcon}
                 onChange={(e) => setEditIcon(e.target.value)}
                 className="w-16 text-black text-center px-2 py-1.5 border border-gray-300 rounded-[3px]"
               />
@@ -252,14 +285,14 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Internal name"
                 title="What this panel calls the story. Students see the titles below."
-                className="flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-[3px]"
+                aria-label="Internal name" className="min-w-40 flex-1 text-black px-3 py-1.5 border border-gray-300 rounded-[3px]"
               />
               {/* Which shelf the story sits on in the students' list. A
                   published story REPLACES its built-in entry outright, so
                   without setting this a news story silently moves under
                   "Stories" the moment it goes live. */}
               <select
-                value={editCategory}
+                aria-label="Category" value={editCategory}
                 onChange={(e) => setEditCategory(e.target.value as StoryCategory)}
                 className="text-black text-sm px-2 py-1.5 border border-gray-300 rounded-[3px] bg-white"
                 title="Which section of the story list this appears under"
@@ -283,7 +316,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                     onChange={(e) =>
                       setEditLocalized((l) => ({ ...l, title: { ...l.title, [id]: e.target.value } }))
                     }
-                    placeholder={`Title — empty shows "${editName.trim() || story.storyName}"`}
+                    aria-label={`${label} title`} placeholder={`Title — empty shows "${editName.trim() || story.storyName}"`}
                     className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
                   />
                   <textarea
@@ -294,14 +327,14 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                         description: { ...l.description, [id]: e.target.value },
                       }))
                     }
-                    placeholder="Description — on the story card, and on each part's preview card that has none of its own"
+                    aria-label={`${label} description`} placeholder="Description — on the story card, and on each part's preview card that has none of its own"
                     rows={3}
                     className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
                   />
                 </fieldset>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleSaveMeta}
                 disabled={savingMeta}
@@ -366,7 +399,7 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
                 : "text-amber-700 font-medium"
             }
           >
-            {readiness.sellableCount}/{readiness.total} parts sellable
+            {readiness.sellableCount}/{readiness.total} parts ready
           </span>
           <span aria-hidden="true">·</span>
           <span>{story.published ? "Published" : "Draft"}</span>
@@ -423,40 +456,66 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
         </details>
       </div>
 
-      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
 
-      {/* Parts down, elements across. Replaces both the part row and the step
-          row: one click lands on a cell, and the same grid is the report on
-          what the story still owes. */}
-      <div className="mb-4 bg-white rounded-[3px] border border-gray-200 p-3">
-        <PartMatrix
-          readiness={readiness}
-          activePart={partNumber}
-          activeElement={element}
-          previewPart={PREVIEW_PART}
-          onPick={(nextPart, nextElement) => {
-            setPartNumber(nextPart);
-            setElement(nextElement);
-          }}
-          onAddPart={handleAddPart}
-          addingPart={addingPart}
-          canAddPart={story.parts.length < MAX_PARTS}
-          maxParts={MAX_PARTS}
-        />
+        <details className="mt-6 border-t border-line pt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-red-700">Delete set</summary>
+          <p className="my-3 text-sm text-dim">Permanently delete this set and its parts.</p>
+          <button type="button" onClick={handleDelete} disabled={deleting} className={control + " text-red-700"}>{deleting ? "Deleting…" : "Delete set"}</button>
+        </details>
       </div>
-
-      {/* Which cell is open, said in words — the grid shows where you are, this
-          says what you are looking at. */}
-      <div className="flex items-baseline gap-2 mb-3 pb-2 border-b border-gray-200">
-        <h3 className="text-sm font-bold text-black">Part {partNumber}</h3>
-        <span className="text-xs text-gray-500">
-          {ELEMENTS.find((e) => e.id === element)?.label}
-        </span>
-        {element === "markers" && (
-          <span className="text-xs text-gray-400">— set on the waveform below</span>
-        )}
+      <div hidden={workspace !== "overview"} className="min-w-0 rounded-card border border-line bg-white p-4 sm:p-6" data-testid="production-board">
+        <h3 className="text-lg font-bold text-ink">Production board</h3>
+        <p className="mb-5 mt-1 text-sm text-dim">Open any cell to edit that {itemLabel.toLowerCase()}. Required and optional tools keep their existing readiness rules.</p>
+        <PartMatrix readiness={readiness} activePart={partNumber} activeElement={element} previewPart={PREVIEW_PART} onPick={pick} onAddPart={handleAddPart} addingPart={addingPart} atLimit={story.parts.length >= MAX_PARTS} elements={elements} itemLabel={itemLabel} />
       </div>
-
+      <div hidden={workspace !== "review"} className="rounded-card border border-line bg-white p-4 sm:p-6" data-testid="publish-review">
+        <h3 className="text-lg font-bold text-ink">Review &amp; publish</h3>
+        <p className="mb-5 mt-1 text-sm text-dim">{readiness.sellableCount} of {readiness.total} parts ready. {story.published ? "This set is published." : "This set is a draft."}</p>
+        {readiness.gaps.length > 0 ? <div className="mb-6 space-y-4">{readiness.gaps.map(({element: missing, parts}) => <div key={missing.id}>
+          <h4 className="mb-2 text-sm font-semibold text-ink">{missing.label}</h4>
+          <div className="flex flex-wrap gap-2">{parts.map(number => <button key={number} type="button" onClick={() => pick(number, missing.id)} className={control}>{itemLabel} {number}<IoArrowBack className="rotate-180" aria-hidden="true" /></button>)}</div>
+        </div>)}</div> : <p className="mb-6 text-sm text-green-700">All required elements are ready.</p>}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => onPreview(partNumber)} disabled={!part?.audioUrl} className={control}><IoPlayOutline aria-hidden="true" />Student preview</button>
+          <button type="button" onClick={handleTogglePublish} disabled={publishing} className="min-h-10 rounded-[3px] bg-ink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{publishing ? "Updating…" : story.published ? "Unpublish" : "Publish"}</button>
+        </div>
+      </div>
+      <div ref={deskRef} hidden={workspace !== "desk"} data-testid="editing-desk">
+        <div className={focused ? "min-w-0" : "grid min-w-0 gap-5 lg:grid-cols-[180px_minmax(0,1fr)]"}>
+          <aside hidden={focused} className="min-w-0" aria-label="Story parts">
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-ink">Parts</h3><span className="text-xs tabular-nums text-dim">{readiness.total}</span></div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1 lg:max-h-[65vh] lg:overflow-y-auto">
+              {readiness.parts.map(status => <button key={status.partNumber} type="button" onClick={() => pick(status.partNumber)} aria-pressed={partNumber === status.partNumber} className={`flex min-h-14 items-start gap-2.5 rounded-tile border px-3 py-2.5 text-left text-ink ${partNumber === status.partNumber ? "border-ink bg-room" : "border-line bg-white hover:border-line-strong"}`}>
+                <span aria-hidden="true" className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${status.sellable ? "bg-emerald-500" : status.empty ? "bg-line-strong" : "bg-amber-500"}`} />
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold">{itemLabel} {status.partNumber}</span>
+                  <span className={`block text-xs ${status.sellable ? "text-emerald-800" : "text-dim"}`}>{partVerdict(status)}</span>
+                  {status.partNumber === PREVIEW_PART && <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-wide text-dim">Free preview</span>}
+                </span>
+              </button>)}
+            </div>
+            <button type="button" onClick={handleAddPart} disabled={addingPart || story.parts.length >= MAX_PARTS} title={story.parts.length >= MAX_PARTS ? `A set has at most ${MAX_PARTS} ${itemLabel.toLowerCase()}s` : undefined} className={control + " mt-3 w-full"}><IoAddOutline aria-hidden="true" />{addingPart ? "Adding…" : story.parts.length >= MAX_PARTS ? `${MAX_PARTS} is the most` : `Add ${itemLabel.toLowerCase()}`}</button>
+          </aside>
+          <div className="min-w-0">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-ink"><span className="text-dim">{itemLabel} {partNumber} · </span>{step === "audio" ? "Audio & markers" : element === "transcript" ? "Private script & translation" : elements.find(entry => entry.id === element)?.label}</h3>
+              <button type="button" onClick={() => setFocused(value => !value)} aria-pressed={focused} className={control}>{focused ? <IoContractOutline aria-hidden="true" /> : <IoExpandOutline aria-hidden="true" />}{focused ? "Exit focus" : "Focus mode"}</button>
+            </div>
+            <nav hidden={focused} aria-label="Part editing tools" className="mb-3 flex flex-wrap gap-x-1 border-b border-line">
+              {elements.filter(entry => entry.id !== "markers").map(entry => {
+                // A dot marks a tool this part has nothing in yet. Audio's tab
+                // also owns the markers, so either one missing marks it.
+                const cell = partStatusNow?.cells[entry.id];
+                const owed = entry.id === "audio"
+                  ? Boolean(partStatusNow?.missing.some(m => m.id === "audio" || m.id === "markers"))
+                  : cell === "empty" || cell === "partial";
+                return <button key={entry.id} type="button" aria-pressed={PANEL_FOR[entry.id] === step} onClick={() => setElement(entry.id)} className={viewTab(PANEL_FOR[entry.id] === step) + " gap-1.5"}>
+                  {entry.id === "audio" ? "Audio & markers" : entry.id === "transcript" ? "Private script" : entry.label}
+                  {owed && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" title="Nothing here yet for this part" />}
+                </button>;
+              })}
+            </nav>
+            <div className="min-w-0 rounded-card border border-line bg-white p-3 sm:p-5" data-testid="active-part-tool">
       {part && step === "audio" && (
         // Keyed per part so switching parts remounts it. The marker editor
         // holds real local state — an undo stack, a debounced save, a decoded
@@ -468,6 +527,8 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           story={story}
           part={part}
           onPartUpdated={handlePartUpdated}
+          active={workspace === "desk" && !previewOpen}
+          layout="desk"
         />
       )}
       {part && step === "comics" && (
@@ -540,7 +601,16 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack }: StoryE
           onPartUpdated={handlePartUpdated}
         />
       )}
-    </div>
+
+            </div>
+            <div className="mt-4 flex flex-wrap justify-between gap-2">
+              <button type="button" disabled={story.parts.findIndex(entry => entry.partNumber === partNumber) <= 0} onClick={() => pick(story.parts[story.parts.findIndex(entry => entry.partNumber === partNumber) - 1].partNumber)} className={control}>Previous {itemLabel.toLowerCase()}</button>
+              <button type="button" disabled={story.parts.findIndex(entry => entry.partNumber === partNumber) >= story.parts.length - 1} onClick={() => pick(story.parts[story.parts.findIndex(entry => entry.partNumber === partNumber) + 1].partNumber)} className={control}>Next {itemLabel.toLowerCase()}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 

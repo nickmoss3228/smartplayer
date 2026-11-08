@@ -5,7 +5,7 @@ export interface QuizResults {
   correctAnswers: number;
   totalQuestions: number;
   answers: number[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface WaveSurferInstance {

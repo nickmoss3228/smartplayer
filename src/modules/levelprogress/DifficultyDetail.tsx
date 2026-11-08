@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useProgress } from '../../context/ProgressContext';
@@ -28,7 +29,7 @@ const DifficultyDetail = () => {
   const { user } = useAuth();
 
   // ← use new context shape
-  const { getStoryData, refreshStoryProgress, isInitialLoad } = useProgress();
+  const { getStoryData, refreshStoryProgress, isInitialLoad, storyProgress } = useProgress();
 
   // Falls back to 'easy' when the URL difficulty is invalid — the hook below
   // must run unconditionally on every render (rules of hooks), so the actual
@@ -38,6 +39,16 @@ const DifficultyDetail = () => {
   ) as DifficultySlug;
   const resolvedSlug = storySlug || DEFAULT_SLUGS[diff];
   const { storyGroup, loading: storyGroupLoading } = useStoryGroup(diff, resolvedSlug);
+
+  // The context preloads progress only for the built-in story slugs; any
+  // other story (the news shelf, a Builder story) is fetched here once, as
+  // Player does — otherwise its passed parts read as 0 after a reload, and
+  // the PDF, which waits for a passed quiz, never shows.
+  const progressKey = `${diff}:${resolvedSlug}`;
+  useEffect(() => {
+    if (!user || isInitialLoad || storyProgress[progressKey]) return;
+    refreshStoryProgress(diff, resolvedSlug);
+  }, [user, isInitialLoad, storyProgress, progressKey, diff, resolvedSlug, refreshStoryProgress]);
 
   // Validate difficulty
   if (!difficulty || !VALID_DIFFICULTIES.includes(difficulty as DifficultySlug)) {

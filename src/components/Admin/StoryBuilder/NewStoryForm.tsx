@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { AdminStory, Difficulty, createStory } from "../../../services/adminStoryServices";
+import { MAX_PARTS, validPartCount } from "../../../types/content";
+import { buttonPrimary, buttonSecondary } from "../../ui/buttonStyles";
 
 interface NewStoryFormProps {
   token: string;
   onCreated: (story: AdminStory) => void;
   onCancel: () => void;
 }
-
-const MAX_PARTS = 20;
 
 const LOCALES: { id: "en" | "ru"; label: string }[] = [
   { id: "en", label: "English" },
@@ -23,7 +23,7 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
   const [title, setTitle] = useState({ en: "", ru: "" });
   const [description, setDescription] = useState({ en: "", ru: "" });
   const [characterIcon, setCharacterIcon] = useState("📖");
-  const [totalParts, setTotalParts] = useState("10");
+  const [totalParts, setTotalParts] = useState("1");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,8 +32,8 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
     setError("");
 
     const parts = Number(totalParts);
-    if (!Number.isInteger(parts) || parts < 1 || parts > MAX_PARTS) {
-      return setError(`Number of parts must be between 1 and ${MAX_PARTS}.`);
+    if (!validPartCount(parts)) {
+      return setError(`Enter a whole number of parts from 1 to ${MAX_PARTS}.`);
     }
 
     setSubmitting(true);
@@ -60,13 +60,17 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-3 max-w-2xl">
-      <h2 className="font-semibold text-black">New story</h2>
+    <form onSubmit={handleSubmit} className="bg-white rounded-card p-4 sm:p-6 border border-line space-y-5">
+      <h2 className="text-xl font-bold text-ink">New story set</h2>
 
+
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <section aria-label="Set structure" className="space-y-5 rounded-tile border border-line bg-room p-4 sm:p-5">
+          <h3 className="text-base font-bold text-ink">Set structure</h3>
       <div>
         <label className="block text-xs text-gray-500 mb-1">Difficulty</label>
         <select
-          value={difficulty}
+          aria-label="Difficulty" value={difficulty}
           onChange={(e) => setDifficulty(e.target.value as Difficulty)}
           className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         >
@@ -77,10 +81,10 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Story id (slug, e.g. "mia")</label>
+        <label className="block text-xs text-gray-500 mb-1">Set id (slug, e.g. "mia")</label>
         <input
           type="text"
-          value={storyId}
+          aria-label="Set ID" value={storyId}
           onChange={(e) => setStoryId(e.target.value)}
           required
           className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
@@ -93,28 +97,57 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         </label>
         <input
           type="text"
-          value={storyName}
+          aria-label="Internal name" value={storyName}
           onChange={(e) => setStoryName(e.target.value)}
           required
           className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
         />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="flex gap-3">
+        <div className="w-24">
+          <label className="block text-xs text-gray-500 mb-1">Icon</label>
+          <input
+            type="text"
+            aria-label="Character icon" value={characterIcon}
+            onChange={(e) => setCharacterIcon(e.target.value)}
+            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-center"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-xs text-gray-500 mb-1">Number of parts to start with</label>
+          <input
+            type="number"
+            min={1}
+            max={MAX_PARTS}
+            step={1}
+            aria-label="Initial count" value={totalParts}
+            onChange={(e) => setTotalParts(e.target.value)}
+            required
+            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
+          />
+          <p className="mt-1.5 text-xs text-dim">From 1 to {MAX_PARTS}. You can add more parts in the editor, up to {MAX_PARTS}.</p>
+        </div>
+      </div>
+
+        </section>
+        <section aria-label="Library card" className="space-y-5 rounded-tile border border-line p-4 sm:p-5">
+          <h3 className="text-base font-bold text-ink">Library card</h3>
+      <div className="grid gap-4">
         {LOCALES.map(({ id, label }) => (
-          <fieldset key={id} className="border border-gray-200 rounded-[3px] p-2 space-y-2 min-w-0">
+          <fieldset key={id} className="border border-gray-200 rounded-[3px] p-3 space-y-3 min-w-0">
             <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 px-1">
               {label}
             </legend>
             <input
               type="text"
-              value={title[id]}
+              aria-label={`${label} title`} value={title[id]}
               onChange={(e) => setTitle((t) => ({ ...t, [id]: e.target.value }))}
               placeholder="Title students see"
               className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-sm"
             />
             <textarea
-              value={description[id]}
+              aria-label={`${label} description`} value={description[id]}
               onChange={(e) => setDescription((d) => ({ ...d, [id]: e.target.value }))}
               placeholder="Description"
               rows={2}
@@ -124,44 +157,22 @@ const NewStoryForm = ({ token, onCreated, onCancel }: NewStoryFormProps) => {
         ))}
       </div>
 
-      <div className="flex gap-3">
-        <div className="w-24">
-          <label className="block text-xs text-gray-500 mb-1">Icon</label>
-          <input
-            type="text"
-            value={characterIcon}
-            onChange={(e) => setCharacterIcon(e.target.value)}
-            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-center"
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">Number of parts (max {MAX_PARTS})</label>
-          <input
-            type="number"
-            min={1}
-            max={MAX_PARTS}
-            value={totalParts}
-            onChange={(e) => setTotalParts(e.target.value)}
-            required
-            className="w-full text-black px-3 py-2 border border-gray-300 rounded-[3px]"
-          />
-        </div>
+        </section>
       </div>
-
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={submitting}
-          className="bg-amber-500 hover:bg-amber-600 text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
+          className={buttonPrimary}
         >
-          {submitting ? "Creating..." : "Create story"}
+          {submitting ? "Creating..." : "Create set"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-gray-500 hover:text-black px-4 py-2"
+          className={buttonSecondary}
         >
           Cancel
         </button>

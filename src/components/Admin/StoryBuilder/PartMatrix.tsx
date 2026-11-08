@@ -9,7 +9,7 @@
 // put back, and it doubles as the progress report: a row reads as "what this
 // part owes", a column as "the pass I still owe the whole story".
 
-import { ELEMENTS, ElementId, CellState, StoryReadiness, partVerdict } from "./partStatus";
+import { ElementSpec, ElementId, CellState, StoryReadiness, partVerdict } from "./partStatus";
 
 interface PartMatrixProps {
   readiness: StoryReadiness;
@@ -20,12 +20,14 @@ interface PartMatrixProps {
   onPick: (partNumber: number, element: ElementId) => void;
   onAddPart: () => void;
   addingPart: boolean;
-  canAddPart: boolean;
-  maxParts: number;
+  /** The set already has MAX_PARTS parts; the add button is off. */
+  atLimit?: boolean;
+  elements: ElementSpec[];
+  itemLabel?: "Part" | "Prompt";
 }
 
 const CELL_STYLE: Record<CellState, string> = {
-  done: "bg-emerald-100 text-emerald-700",
+  done: "bg-green-100 text-green-700",
   partial: "bg-amber-100 text-amber-700",
   empty: "bg-gray-100 text-gray-400",
   na: "bg-transparent text-gray-300",
@@ -46,28 +48,27 @@ const PartMatrix = ({
   onPick,
   onAddPart,
   addingPart,
-  canAddPart,
-  maxParts,
+  atLimit = false,
+  elements,
+  itemLabel = "Part",
 }: PartMatrixProps) => (
-  <div className="overflow-x-auto">
-    <table className="w-full text-sm border-collapse min-w-[520px]">
+  <div className="relative max-w-full overflow-x-auto">
+    <table className="w-full text-sm border-collapse min-w-[880px]">
       <thead>
         <tr>
-          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-gray-400 pb-2 pr-3">
-            Part
+          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-dim pb-2 pr-3">
+            {itemLabel}
           </th>
-          {ELEMENTS.map((el) => (
+          {elements.map((el) => (
             <th
               key={el.id}
               title={el.required ? el.label : `${el.label} — optional`}
-              className={`font-mono text-center text-[11px] uppercase tracking-[0.18em] pb-2 px-1 ${
-                el.required ? "text-gray-400" : "text-gray-300"
-              }`}
+              className="font-mono text-center text-[11px] uppercase tracking-[0.18em] pb-2 px-1 text-dim"
             >
-              {el.short}
+              {el.label}
             </th>
           ))}
-          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-gray-400 pb-2 pl-3">
+          <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-dim pb-2 pl-3">
             Status
           </th>
         </tr>
@@ -78,7 +79,7 @@ const PartMatrix = ({
           return (
             <tr
               key={status.partNumber}
-              className={isActiveRow ? "bg-amber-50" : "hover:bg-gray-50"}
+              className={isActiveRow ? "bg-room" : "hover:bg-gray-50"}
             >
               <td className="py-1 pr-3 tabular-nums whitespace-nowrap">
                 <span className={isActiveRow ? "font-bold text-black" : "text-gray-600"}>
@@ -94,7 +95,7 @@ const PartMatrix = ({
                 )}
               </td>
 
-              {ELEMENTS.map((el) => {
+              {elements.map((el) => {
                 const state = status.cells[el.id];
                 const here = isActiveRow && el.id === activeElement;
                 // A number beats a tick where the number is the useful thing —
@@ -106,10 +107,10 @@ const PartMatrix = ({
                     <button
                       type="button"
                       onClick={() => onPick(status.partNumber, el.id)}
-                      title={`Part ${status.partNumber} — ${el.label}`}
-                      className={`w-7 h-7 rounded-[3px] text-[11px] font-bold leading-none tabular-nums transition-colors ${
+                      aria-label={`${itemLabel} ${status.partNumber} — ${el.label}: ${state}`} title={`${itemLabel} ${status.partNumber} — ${el.label}`}
+                      className={`relative min-w-11 min-h-11 px-2 rounded-[3px] text-[11px] font-bold leading-none tabular-nums transition-colors ${
                         CELL_STYLE[state]
-                      } ${here ? "ring-2 ring-amber-500 ring-offset-1" : "hover:brightness-95"}`}
+                      } ${here ? "ring-2 ring-ink ring-offset-1" : "hover:brightness-95"}`}
                     >
                       <span aria-hidden="true">{glyph}</span>
                       <span className="sr-only">
@@ -124,7 +125,7 @@ const PartMatrix = ({
               <td
                 className={`pl-3 text-xs whitespace-nowrap ${
                   status.sellable
-                    ? "text-emerald-700"
+                    ? "text-green-700"
                     : status.empty
                       ? "text-gray-400"
                       : "text-amber-700"
@@ -142,11 +143,11 @@ const PartMatrix = ({
       <button
         type="button"
         onClick={onAddPart}
-        disabled={addingPart || !canAddPart}
-        title={canAddPart ? "Add another part" : `A story can have at most ${maxParts} parts.`}
+        disabled={addingPart || atLimit}
+        title={`Add another ${itemLabel.toLowerCase()}`}
         className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-[3px] px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
       >
-        {addingPart ? "Adding…" : "+ Add part"}
+        {addingPart ? "Adding…" : `+ Add ${itemLabel.toLowerCase()}`}
       </button>
       <span className="text-[11px] text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
         <span>✓ complete</span>
@@ -154,7 +155,7 @@ const PartMatrix = ({
         <span>· empty</span>
         <span>– not used</span>
         <span className="text-gray-300">
-          {ELEMENTS.map((e) => `${e.short} ${e.label.toLowerCase()}`).join(" · ")}
+          {elements.map((e) => `${e.short} ${e.label.toLowerCase()}`).join(" · ")}
         </span>
       </span>
     </div>

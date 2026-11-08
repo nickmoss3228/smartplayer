@@ -126,6 +126,7 @@ function App() {
                   element={SHOP_ENABLED ? <FakeCheckout /> : <Navigate to="/levels" replace />}
                 />
                 <Route path="/admin" element={<AdminPanel />} />
+                <Route path="/admin/studio" element={<AdminPanel initialTab="story-builder" />} />
                 <Route path="/login"           element={<Login />} />
                 <Route path="/signup"          element={<SignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

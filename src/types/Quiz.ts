@@ -34,4 +34,6 @@ export interface QuizProps {
    * waits for its button instead of starting while someone scrolls past.
    */
   autoPlay?: boolean;
+  /** Private admin draft preview; regular student quizzes are checked by the server. */
+  checkAnswer?: (questionIndex: number, selectedOption: number) => Promise<{ correct: boolean; correctOption?: number }>;
 }

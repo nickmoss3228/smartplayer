@@ -7,6 +7,7 @@ import { after, before, describe, it } from "node:test";
 
 // The harness MUST be the first project import — see its header.
 import { adminToken, api, registerUser, startServer, stopServer } from "./harness.js";
+import { progress } from "../../src/db/index.js";
 
 after(stopServer);
 
@@ -79,6 +80,16 @@ before(async () => {
   draft = await buildStory(admin, { publish: false, access: { paid: true, freeParts: 2, previewSeconds: null } });
 });
 
+// A signed-in learner whose quiz for each of `parts` is passed: the handout
+// opens only for those.
+async function learnerWhoPassed(s, parts) {
+  const u = await registerUser({ prefix: "ph" });
+  for (const partNumber of parts) {
+    await progress.completeStoryPart({ userId: u.id, difficulty: "easy", storyId: s.id, partNumber, totalParts: 3 });
+  }
+  return u;
+}
+
 const translationUrl = (s, n = 1) => `/api/admin/stories/${s.dbId}/parts/${n}/translation`;
 const transcriptUrl = (s, n = 1) => `/api/admin/stories/${s.dbId}/parts/${n}/transcript`;
 const handoutUrl = (s, n = 1) => `/api/stories/easy/${s.id}/parts/${n}/handout`;
@@ -142,7 +153,8 @@ describe("GET /api/stories/:difficulty/:storyId/parts/:partNumber/handout", () =
       body: { translation: "Мы говорим сегодня.\n\nСледующий абзац простой." },
     });
 
-    const res = await api("GET", handoutUrl(story));
+    const learner = await learnerWhoPassed(story, [1]);
+    const res = await api("GET", handoutUrl(story), { token: learner.token });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     const { body } = res;
     assert.equal(body.partNumber, 1);
@@ -160,7 +172,8 @@ describe("GET /api/stories/:difficulty/:storyId/parts/:partNumber/handout", () =
   });
 
   it("leaves stage directions out of the text", async () => {
-    const res = await api("GET", handoutUrl(story));
+    const learner = await learnerWhoPassed(story, [1]);
+    const res = await api("GET", handoutUrl(story), { token: learner.token });
     assert.equal(res.status, 200);
     const json = JSON.stringify(res.body.text);
     assert.ok(!json.includes(SECRET_DIRECTION));
@@ -169,14 +182,27 @@ describe("GET /api/stories/:difficulty/:storyId/parts/:partNumber/handout", () =
     assert.ok(!spoken.includes("[") && !spoken.includes("]"));
   });
 
-  it("also answers a signed-in learner, and has a null translation and empty text when none is saved", async () => {
-    const u = await registerUser({ prefix: "ph" });
-    const signedIn = await api("GET", handoutUrl(story), { token: u.token });
-    assert.equal(signedIn.status, 200, JSON.stringify(signedIn.body));
-    assert.equal(signedIn.body.text.length, 2);
+  it("is 401 for a guest and 403 for a learner who has not passed that part's quiz", async () => {
+    const guest = await api("GET", handoutUrl(story));
+    assert.equal(guest.status, 401, JSON.stringify(guest.body));
+    assert.equal(guest.body.code, "HANDOUT_SIGN_IN");
 
+    const fresh = await registerUser({ prefix: "ph" });
+    const notYet = await api("GET", handoutUrl(story), { token: fresh.token });
+    assert.equal(notYet.status, 403, JSON.stringify(notYet.body));
+    assert.equal(notYet.body.code, "HANDOUT_QUIZ_FIRST");
+
+    // Passing part 1 opens part 1 only.
+    const passedOne = await learnerWhoPassed(story, [1]);
+    const other = await api("GET", handoutUrl(story, 2), { token: passedOne.token });
+    assert.equal(other.status, 403, JSON.stringify(other.body));
+    assert.ok(!JSON.stringify([guest.body, notYet.body, other.body]).includes("We say"));
+  });
+
+  it("has a null translation and empty text when none is saved", async () => {
     // Part 2 is free too, but has neither a transcript nor a translation.
-    const bare = await api("GET", handoutUrl(story, 2));
+    const learner = await learnerWhoPassed(story, [2]);
+    const bare = await api("GET", handoutUrl(story, 2), { token: learner.token });
     assert.equal(bare.status, 200, JSON.stringify(bare.body));
     assert.deepEqual(bare.body.text, []);
     assert.equal(bare.body.translation, null);
@@ -185,7 +211,8 @@ describe("GET /api/stories/:difficulty/:storyId/parts/:partNumber/handout", () =
 
   it("opens every part of a story that is not paid", async () => {
     await saveTranscript(freeStory, 3, "The last part.");
-    const res = await api("GET", handoutUrl(freeStory, 3));
+    const learner = await learnerWhoPassed(freeStory, [3]);
+    const res = await api("GET", handoutUrl(freeStory, 3), { token: learner.token });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.equal(res.body.text[0][0].text, "The last part.");
   });

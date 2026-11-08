@@ -1,5 +1,5 @@
 // StoryPreviewModal.tsx
-import { IoBulbOutline, IoChevronDown, IoClose, IoDownloadOutline, IoHeadsetOutline } from 'react-icons/io5';
+import { IoBulbOutline, IoChevronDown, IoClose, IoDownloadOutline, IoHeadsetOutline, IoLockClosedOutline } from 'react-icons/io5';
 import React, { useEffect, useState } from "react";
 import { HandoutLockedError } from "../handout/handoutApi";
 import { Theme } from "../../types/LevelProgress.ts";
@@ -11,6 +11,7 @@ interface StoryPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStart: () => void;
+  startLabel?: string;
   preview: StoryPreview | null;
   theme: Theme;
   /**
@@ -19,12 +20,18 @@ interface StoryPreviewModalProps {
    * button is not drawn.
    */
   onDownloadPdf?: () => Promise<void>;
+  /**
+   * The part has a PDF but it is not open yet, so a quiet note stands where
+   * the button would be: "quiz" until its quiz is passed, "signIn" for a
+   * guest (the server only hands it to a signed-in learner who passed).
+   */
+  pdfNote?: "quiz" | "signIn";
 }
 
 type PdfState = "idle" | "working" | "locked" | "failed";
 
 export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
-  preview, theme, isOpen, onClose, onStart, onDownloadPdf,
+  preview, theme, isOpen, onClose, onStart, startLabel, onDownloadPdf, pdfNote,
 }) => {
   const { t } = useTranslation();  // ← use hook, not standalone t import
   const [showDetails, setShowDetails] = useState(false);
@@ -192,30 +199,65 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
           </div>
           )}
 
-          {/* Toggle */}
-          {hasDetails && (
-          <button
-            onClick={() => setShowDetails((prev) => !prev)}
-            className="w-full py-2 text-xs font-medium text-white/35 hover:text-white/60
-                       transition-colors flex items-center justify-center gap-1.5"
-          >
-            <IoChevronDown
-              size={14}
-              aria-hidden
-              className={`transition-transform duration-300 ${showDetails ? "rotate-180" : "rotate-0"}`}
-            />
-            {showDetails ? t("storyModal.hideDetails") : t("storyModal.grammarAndTips")}
-          </button>
+          {/* Toggle, with the PDF beside it: on a phone a third button in the
+              footer squeezed "Back" and "Start listening", and this line
+              has room without adding height. */}
+          {(hasDetails || onDownloadPdf || pdfNote) && (
+          <div className="flex items-center justify-between gap-3">
+            {hasDetails ? (
+              <button
+                onClick={() => setShowDetails((prev) => !prev)}
+                className="py-2 text-xs font-medium text-white/35 hover:text-white/60
+                           transition-colors flex items-center gap-1.5"
+              >
+                <IoChevronDown
+                  size={14}
+                  aria-hidden
+                  className={`transition-transform duration-300 ${showDetails ? "rotate-180" : "rotate-0"}`}
+                />
+                {showDetails ? t("storyModal.hideDetails") : t("storyModal.grammarAndTips")}
+              </button>
+            ) : <span />}
+            {onDownloadPdf && (
+              <button
+                onClick={handleDownloadPdf}
+                disabled={pdfState === "working"}
+                aria-label={t("storyModal.downloadPdfLabel")}
+                title={t("storyModal.downloadPdfLabel")}
+                aria-busy={pdfState === "working"}
+                className="shrink-0 px-3 py-1.5 rounded-full border border-white/20 text-white/75
+                           hover:text-white hover:border-white/40 transition-all text-xs font-medium
+                           flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
+              >
+                {pdfState === "working" ? (
+                  <span className="w-3.5 h-3.5 rounded-full border-2 border-white/25 border-t-white animate-spin" aria-hidden />
+                ) : (
+                  <IoDownloadOutline size={14} aria-hidden />
+                )}
+                {pdfState === "working" ? t("storyModal.preparingPdf") : t("storyModal.downloadPdf")}
+              </button>
+            )}
+            {!onDownloadPdf && pdfNote && (
+              <span
+                title={t(pdfNote === "signIn" ? "storyModal.pdfSignInHint" : "storyModal.pdfAfterQuizHint")}
+                className="shrink-0 px-3 py-1.5 rounded-full border border-dashed border-white/15
+                           text-white/45 text-xs font-medium flex items-center gap-1.5"
+              >
+                <IoLockClosedOutline size={13} aria-hidden />
+                {t(pdfNote === "signIn" ? "storyModal.pdfSignIn" : "storyModal.pdfAfterQuiz")}
+              </span>
+            )}
+          </div>
+          )}
+          {(pdfState === "locked" || pdfState === "failed") && (
+            <p role="status" className="text-xs text-white/60 text-right -mt-2">
+              {t(pdfState === "locked" ? "storyModal.pdfLocked" : "storyModal.pdfFailed")}
+            </p>
           )}
         </div>
 
         {/* ── Action buttons — flex-shrink-0 keeps them ALWAYS visible ── */}
         <div className="flex-shrink-0 px-6 pb-6 pt-3 border-t border-white/5">
-          {(pdfState === "locked" || pdfState === "failed") && (
-            <p role="status" className="text-xs text-white/60 text-center mb-2">
-              {t(pdfState === "locked" ? "storyModal.pdfLocked" : "storyModal.pdfFailed")}
-            </p>
-          )}
           <div className="flex gap-3">
             <button
               onClick={onClose}
@@ -224,35 +266,13 @@ export const StoryPreviewModal: React.FC<StoryPreviewModalProps> = ({
             >
               {t("storyModal.back")}
             </button>
-            {onDownloadPdf && (
-              <button
-                onClick={handleDownloadPdf}
-                disabled={pdfState === "working"}
-                aria-label={t("storyModal.downloadPdfLabel")}
-                title={t("storyModal.downloadPdfLabel")}
-                aria-busy={pdfState === "working"}
-                // Icon only on phones: three labels in one row wrap "Start listening".
-                className="shrink-0 px-3.5 sm:px-4 py-3 rounded-[3px] border border-white/15 text-white/70
-                           hover:text-white hover:border-white/30 transition-all text-sm font-medium
-                           flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
-              >
-                {pdfState === "working" ? (
-                  <span className="w-4 h-4 rounded-full border-2 border-white/25 border-t-white animate-spin" aria-hidden />
-                ) : (
-                  <IoDownloadOutline size={16} aria-hidden />
-                )}
-                <span className="hidden sm:inline">
-                  {pdfState === "working" ? t("storyModal.preparingPdf") : t("storyModal.downloadPdf")}
-                </span>
-              </button>
-            )}
             <button
               onClick={onStart}
               className={`flex-1 py-3 rounded-[3px] bg-gradient-to-r ${theme.progressGradient}
                           text-white font-semibold text-sm
                           hover:opacity-90 active:scale-[0.98] transition-all`}
             >
-              {t("storyModal.startListening")}
+              {startLabel ?? t("storyModal.startListening")}
             </button>
           </div>
         </div>

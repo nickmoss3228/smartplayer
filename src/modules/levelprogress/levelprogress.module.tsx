@@ -27,7 +27,12 @@ export const getLevelIcon = (level: number, status: LevelStatus): JSX.Element =>
   }
 };
 
-export const getLevelStyles = (status: LevelStatus, theme: any): string => {
+type LevelStyleTheme = Partial<Record<
+  "completedGradient" | "completedColor" | "currentGradient" | "currentColor" | "incompleteGradient" | "incompleteColor",
+  string
+>>;
+
+export const getLevelStyles = (status: LevelStatus, theme: LevelStyleTheme): string => {
   switch (status) {
     case "completed":
       return [

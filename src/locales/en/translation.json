@@ -1048,7 +1048,11 @@
     "downloadPdfLabel": "Download this part as a PDF: text, translation, words, grammar and the comic",
     "preparingPdf": "Making the PDF…",
     "pdfLocked": "The PDF opens with the full part.",
-    "pdfFailed": "Could not make the PDF. Try again."
+    "pdfFailed": "Could not make the PDF. Try again.",
+    "pdfAfterQuiz": "PDF after the quiz",
+    "pdfAfterQuizHint": "Listen to the part by ear first. The text, translation and words open once you pass its quiz.",
+    "pdfSignIn": "PDF after signing in",
+    "pdfSignInHint": "The PDF with the text, translation and words is for signed-in learners: sign in and pass this part's quiz."
   },
   "player": {
     "vocabulary": "Vocabulary",
@@ -2119,5 +2123,12 @@
     "phrasal": "Phrasal verbs",
     "english": "English",
     "russian": "Russian"
+  },
+  "contentStudio": {
+    "closePreview": "Close student preview",
+    "next": "Next part or prompt",
+    "noAudio": "Reference audio has not been added yet.",
+    "preview": "Student preview",
+    "previous": "Previous part or prompt"
   }
 }

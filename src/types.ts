@@ -101,7 +101,7 @@ export interface PhrasalData {
   verbs: VerbData[];
 }
 
-export interface PhrasalVerbData extends Array<PhrasalData> {}
+export type PhrasalVerbData = PhrasalData[];
 
 export interface PhrasalsModelProps {
   isOpen: boolean;
@@ -120,9 +120,7 @@ export interface SelectedExamples {
   translations: string[];
 }
 
-export interface PlayerProps {
-  // Add any props if needed
-}
+export type PlayerProps = Record<string, never>;
 
 export type AudioRef = React.RefObject<HTMLAudioElement>;
 
