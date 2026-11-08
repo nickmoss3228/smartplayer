@@ -2102,5 +2102,154 @@
     "noAudio": "Reference audio has not been added yet.",
     "preview": "Student preview",
     "previous": "Previous part or prompt"
+  },
+  "iceberg": {
+    "hero": {
+      "question": "I know the grammar and the vocabulary, but I can’t hear and understand English. Why?",
+      "lead": "Because grammar and vocabulary are only the tip of the iceberg. What keeps you from understanding is under the water.",
+      "down": "Dive deeper"
+    },
+    "berg": {
+      "above": "What you know",
+      "below": "What gets in the way",
+      "grammar": "Grammar",
+      "vocab": "Vocabulary",
+      "listening": "Listening",
+      "listeningSub": "understanding by ear",
+      "linking": "Word linking",
+      "linkingEx": "want to → wanna",
+      "sound": "How words sound",
+      "soundEx": "vowels don’t sound the way they’re spelled",
+      "caption": "In real speech words run into each other, and vowels don’t sound the way they’re written. A textbook can’t show you that, so words you know go unrecognised when you hear them."
+    },
+    "letter": {
+      "micro": "At the very bottom: how words sound",
+      "title": "One letter “o”. How many sounds does it have?",
+      "tap": "Tap a word to hear it",
+      "noVoice": "This browser can’t say words out loud.",
+      "ru": {
+        "label": "In Russian",
+        "count": "and one rule",
+        "rule": "Stressed, it’s “o”; unstressed, it’s “a”. We write «молоко» and say “malako”. That’s where our name comes from.",
+        "written": "written",
+        "heard": "heard"
+      },
+      "en": {
+        "label": "In English",
+        "count": "and the spelling won’t tell you which",
+        "rule": "The same “o” sounds different in every word. You can’t learn that with your eyes; you have to hear it."
+      },
+      "pair": {
+        "title": "bot and bought",
+        "text": "In American English they sound exactly the same: [bɑt]. One sound, spelled with one letter in bot and with four in bought.",
+        "also": "And the same sound hides behind “augh” too:"
+      },
+      "outro": "Learn a word with your eyes and you remember its spelling, then miss it when you hear it. So: sound first, letters later.",
+      "letters_one": "{{count}} letter",
+      "letters_other": "{{count}} letters",
+      "sounds_one": "{{count}} sound",
+      "sounds_other": "{{count}} sounds"
+    },
+    "steps": {
+      "micro": "How to fight it",
+      "title": "5 steps to start understanding by ear",
+      "app": "In malako",
+      "items": [
+        {
+          "title": "Load an audio vocabulary into your head",
+          "text": "Remember how a word sounds, not how it’s written. The spelling can wait.",
+          "app": "Every part’s words, with audio"
+        },
+        {
+          "title": "Split speech into atoms",
+          "text": "A solid stream breaks into sentences and phrases you can take one at a time.",
+          "app": "The player cuts the story into phrases"
+        },
+        {
+          "title": "Slow the speech down",
+          "text": "At a slow speed you hear every sound and every link between words.",
+          "app": "Three speeds: 0.65×, 0.8× and 1×"
+        },
+        {
+          "title": "Listen to each sentence 3 times",
+          "text": "Each time, the jumble of sounds falls into words a little more clearly.",
+          "app": "Practice mode: ×3, speeding up"
+        },
+        {
+          "title": "Repeat the sentence out loud",
+          "text": "Say it after the narrator: that’s how sound moves from your ears into your speech.",
+          "app": "“Repeat after me” mode"
+        }
+      ],
+      "claimA": "malako is an instrument that covers all 5 points",
+      "claimB": "and automates them for you."
+    },
+    "rivals": {
+      "micro": "What about…",
+      "podcast": {
+        "q": "Why can’t podcasts do this?",
+        "text": "Podcasts would make a great trainer if they could do three things:",
+        "lacks": [
+          "split speech into sentences automatically",
+          "slow a sentence down automatically",
+          "repeat it automatically"
+        ],
+        "verdict": "As it is, it goes in one ear and out the other."
+      },
+      "tutor": {
+        "q": "What about an AI tutor?",
+        "text": "It plays the role of a good teacher, and the result is like working with a real one. But neither an AI nor a real teacher solves the problems the player does. A teacher’s mission is different: a teacher gives you knowledge.",
+        "you": "Say this phrase 30 more times, only slower",
+        "bot": "Let’s look at why it’s Present Perfect here instead.",
+        "verdict": "A teacher is not a parrot."
+      }
+    },
+    "features": {
+      "micro": "What else malako has",
+      "title": "What neither podcasts nor AI tutors have",
+      "cols": [
+        "malako",
+        "Podcasts",
+        "AI tutor"
+      ],
+      "yes": "yes",
+      "no": "no",
+      "auto": [
+        "Splitting speech into phrases",
+        "Slowing a sentence down",
+        "Repeating a sentence ×3"
+      ],
+      "items": [
+        {
+          "title": "A quiz on the story",
+          "text": "Comprehension questions after every part. You see right away what you heard and what you missed."
+        },
+        {
+          "title": "Audio vocabulary",
+          "text": "Every new word in a part comes with its sound: you hear it first, read it later."
+        },
+        {
+          "title": "A progress dashboard",
+          "text": "Finished parts, learned words and your time with English on one screen."
+        },
+        {
+          "title": "Voice recording",
+          "text": "Repeat after the narrator and hear yourself next to the original. Your pronunciation improves and the fear of speaking goes."
+        },
+        {
+          "title": "PDFs with text and translation",
+          "text": "The whole text of a part with a translation into your language, to review what you’ve done."
+        },
+        {
+          "title": "Comics",
+          "text": "A picture for every part shows who, where and what’s going on, so it’s easier to follow."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Hear the difference yourself",
+      "button": "Try it yourself",
+      "text": "The first three parts need no sign-up."
+    }
   }
 }

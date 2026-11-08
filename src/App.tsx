@@ -31,6 +31,8 @@ import { Layout } from "./Layout"
 const Player = lazy(() => import("./pages/Player"));
 const Levels = lazy(() => import("./pages/Levels"));
 const HowToUse = lazy(() => import("./pages/HowToUse"));
+// The previous landing (the short guide), kept for comparison in dev only.
+const OldLanding = lazy(() => import("./components/Landing/Landing"));
 const Login = lazy(() => import("./auth/Login/Login"));
 const SignUp = lazy(() => import("./auth/SignUp/SignUp"));
 const Dashboard = lazy(() => import("./auth/Dashboard/Dashboard"));
@@ -90,6 +92,7 @@ function App() {
                 {/* ── Fully public ── */}
                 <Route path="/"                element={<Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
+                {import.meta.env.DEV && <Route path="/landing-old" element={<OldLanding />} />}
                 <Route path="/legal/:docId" element={<Legal />} />
                 <Route path="/listen/:shareId" element={<ListenShared />} />
                 {/* The storefront, switched off while the idea is being tested
