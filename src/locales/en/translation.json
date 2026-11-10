@@ -2168,16 +2168,36 @@
         "count": "and the spelling won’t tell you which",
         "rule": "The same “o” sounds different in every word. You can’t learn that with your eyes; you have to hear it."
       },
-      "pair": {
-        "title": "bot and bought",
-        "text": "In American English they sound exactly the same: [bɑt]. One sound, spelled with one letter in bot and with four in bought.",
-        "also": "And the same sound hides behind “augh” too:"
-      },
       "outro": "Learn a word with your eyes and you remember its spelling, then miss it when you hear it. So: sound first, letters later.",
-      "letters_one": "{{count}} letter",
-      "letters_other": "{{count}} letters",
       "sounds_one": "{{count}} sound",
       "sounds_other": "{{count}} sounds"
+    },
+    "link": {
+      "micro": "At the very bottom: word linking",
+      "title": "Six words written, three heard",
+      "text": "In real speech words don’t come one at a time. They hook onto each other, shrink and lose sounds. So a phrase made of words you know sounds like one word you don’t.",
+      "written": "written",
+      "heard": "heard",
+      "count": "Tap to hear the phrase at natural speed",
+      "types": [
+        {
+          "title": "Words stick together",
+          "text": "A consonant at the end of a word hooks onto the vowel of the next. You can no longer hear where one word ends and the next begins."
+        },
+        {
+          "title": "Sounds drop out",
+          "text": "Where two words meet, a sound simply disappears: the tongue has no time to say it."
+        },
+        {
+          "title": "Sounds merge",
+          "text": "Two neighbouring sounds turn into a third one that is in neither word."
+        },
+        {
+          "title": "Short words shrink",
+          "text": "Little function words shrink to one weak sound, and two words sound like one."
+        }
+      ],
+      "outro": "In a textbook there are spaces between words. In speech there are none. So listen to whole phrases, not one word at a time."
     },
     "steps": {
       "micro": "How to fight it",

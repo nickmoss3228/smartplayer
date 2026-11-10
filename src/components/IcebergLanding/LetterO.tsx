@@ -7,11 +7,9 @@ import { useInView } from './useInView';
 /**
  * The letter "o" in Russian and in English. Russian: two sounds and one rule
  * (unstressed "о" is said "а": «молоко» → «малако», hence the name). English:
- * eight sounds around one letter, and bot / bought / daughter laid out letter
- * group by sound, so the same sound is seen behind different letters. Every
- * word is a button that says it (speech.ts, an en-US voice), so the sounds are
- * General American: bot, bought and daughter all have [ɑ] (in British English
- * bought and daughter would have [ɔː]).
+ * eight sounds around one letter (General American, as the en-US voice says
+ * them). Every word is a button that says it (speech.ts). The outro closes the
+ * "how words sound" part; word linking follows in Linking.tsx.
  */
 
 interface RuWord {
@@ -45,17 +43,6 @@ const EN: EnWord[] = [
 ];
 /** Grid cells for the eight words (row, column), clockwise from the top left; the letter sits in 2/2. */
 const CELL: [number, number][] = [[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 2], [3, 1], [2, 1]];
-
-interface Group {
-  letters: string;
-  sound: string;
-  vowel?: 'a' | 'o';
-}
-const PAIR: { word: string; groups: Group[] }[] = [
-  { word: 'bot', groups: [{ letters: 'b', sound: 'b' }, { letters: 'o', sound: 'ɑ', vowel: 'a' }, { letters: 't', sound: 't' }] },
-  { word: 'bought', groups: [{ letters: 'b', sound: 'b' }, { letters: 'ough', sound: 'ɑ', vowel: 'a' }, { letters: 't', sound: 't' }] },
-  { word: 'daughter', groups: [{ letters: 'd', sound: 'd' }, { letters: 'augh', sound: 'ɑ', vowel: 'a' }, { letters: 't', sound: 't' }, { letters: 'er', sound: 'ər' }] },
-];
 
 function ruWritten(w: RuWord): ReactNode[] {
   return [...w.written].map((ch, i) =>
@@ -194,41 +181,6 @@ export default function LetterO() {
             </div>
             <p className="ib-card-text">{t('iceberg.letter.en.rule')}</p>
           </article>
-        </div>
-
-        {/* bot / bought / daughter */}
-        <div className="ib-pair">
-          <div className="ib-pair-text">
-            <h3 className="ib-h3" lang="en">{t('iceberg.letter.pair.title')}</h3>
-            <p>{t('iceberg.letter.pair.text')}</p>
-          </div>
-          <div className="ib-pair-words">
-            {PAIR.map((p, i) => {
-              const letters = p.groups.reduce((n, g) => n + g.letters.length, 0);
-              return (
-                <div key={p.word} className="ib-pair-item">
-                  {i === 2 && <p className="ib-pair-also">{t('iceberg.letter.pair.also')}</p>}
-                  {word(`pair-${p.word}`, p.word, 'en-US', 'ib-pair-word', (
-                    <>
-                    <span className="ib-groups" lang="en">
-                      {p.groups.map((g, k) => (
-                        <span key={k} className={`ib-group${g.vowel ? ` ib-v-${g.vowel}` : ''}`}>
-                          <span className="ib-g-letters">{g.letters}</span>
-                          <span className="ib-g-link" aria-hidden="true" />
-                          <span className="ib-g-sound">{g.sound}</span>
-                        </span>
-                      ))}
-                    </span>
-                    <span className="ib-pair-meta">
-                      <SpeakerWaveIcon className="ib-say-ico" aria-hidden="true" />
-                      {t('iceberg.letter.letters', { count: letters })} → {t('iceberg.letter.sounds', { count: p.groups.length })}
-                    </span>
-                    </>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         <p className="ib-outro">{t('iceberg.letter.outro')}</p>

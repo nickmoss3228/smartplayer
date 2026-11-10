@@ -40,7 +40,8 @@ function pick(lang: Lang): SpeechSynthesisVoice | undefined {
 if (canSpeak) window.speechSynthesis.getVoices();
 
 /** Says `text`; `onEnd` runs when it is done, fails, or is cut off by the next word. */
-export function say(text: string, lang: Lang, onEnd: () => void): void {
+/** `rate` 1 is natural speed: word linking needs it, single words sound clearer at 0.8. */
+export function say(text: string, lang: Lang, onEnd: () => void, rate = 0.8): void {
   if (!canSpeak) {
     onEnd();
     return;
@@ -51,7 +52,7 @@ export function say(text: string, lang: Lang, onEnd: () => void): void {
   u.lang = lang;
   const voice = pick(lang);
   if (voice) u.voice = voice;
-  u.rate = 0.8;
+  u.rate = rate;
   let done = false;
   const end = () => {
     if (done) return;

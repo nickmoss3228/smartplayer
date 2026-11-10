@@ -4,6 +4,7 @@ import { ArrowDownIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import Slogan from '../Brand/Slogan';
 import Iceberg from './Iceberg';
 import LetterO from './LetterO';
+import Linking from './Linking';
 import Steps from './Steps';
 import Rivals from './Rivals';
 import Features from './Features';
@@ -13,7 +14,8 @@ import './icebergLanding.css';
  * The landing (/), built as one argument:
  * 1. the question learners ask ("I know the grammar and the words, but can't
  *    understand English by ear. Why?") and the iceberg that answers it;
- * 2. the deepest part, shown on the letter "o" in Russian and in English;
+ * 2. the two deepest parts: how words sound (the letter "o" in Russian and in
+ *    English), then word linking (one phrase, and four things words do in speech);
  * 3. five steps that fight it, and malako doing all five for you;
  * 4. why podcasts and AI tutors don't;
  * 5. what the player has that they lack, with screenshots;
@@ -50,6 +52,7 @@ export default function IcebergLanding() {
       </header>
 
       <LetterO />
+      <Linking />
       <Steps />
       <Rivals />
       <Features />
