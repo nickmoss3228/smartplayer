@@ -44,7 +44,7 @@ export default function Features() {
   return (
     <section className="ib-sec ib-features" aria-labelledby="ib-features-title">
       <div className="ib-wrap">
-        <p className="ib-micro ib-green">{t('iceberg.features.micro')}</p>
+        <p className="ib-kicker">{t('iceberg.features.micro')}</p>
         <h2 id="ib-features-title" className="ib-h2">{t('iceberg.features.title')}</h2>
 
         <table className="ib-table">

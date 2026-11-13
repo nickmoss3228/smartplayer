@@ -1,34 +1,25 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRightIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { canSpeak, hush, say, type Lang } from './speech';
 import { useInView } from './useInView';
 
 /**
  * The letter "o" in Russian and in English. Russian: two sounds and one rule
- * (unstressed "о" is said "а": «молоко» → «малако», hence the name). English:
+ * (unstressed "о" is said "а": «молоко» → «малако», hence the name), one word each. English:
  * eight sounds around one letter (General American, as the en-US voice says
  * them). Every word is a button that says it (speech.ts). The outro closes the
  * "how words sound" part; word linking follows in Linking.tsx.
  */
 
-interface RuWord {
-  written: string;
-  /** Index of the stressed «о»: every other «о» is said «а». */
-  stress: number;
-}
-const RU: RuWord[] = [
-  { written: 'молоко', stress: 5 },
-  { written: 'вода', stress: -1 },
-  { written: 'дом', stress: 1 },
-];
-
 interface EnWord {
   word: string;
-  /** Where the "o" is, and how many letters make the vowel. */
-  at: number;
+  /** Where the "o" is (or each "o" that makes the sound), and how many letters make the vowel. */
+  at: number | number[];
   len?: number;
   ipa: string;
+  /** One transcription per marked "o", written under each letter instead of one [ipa] below the word. */
+  ipas?: string[];
 }
 /** Clockwise around the letter, starting top left. */
 const EN: EnWord[] = [
@@ -41,39 +32,41 @@ const EN: EnWord[] = [
   { word: 'lemon', at: 3, ipa: 'ə' },
   { word: 'women', at: 1, ipa: 'ɪ' },
 ];
+/**
+ * The two Russian sounds of «о», one word each, drawn like the English words:
+ * stressed «о» is [o]; unstressed it is said [a] («молоко» → «малако»).
+ * «молоко» marks all three «о», each with its own sound under it.
+ */
+const RU_SOUNDS: EnWord[] = [
+  { word: 'кот', at: 1, ipa: 'o' },
+  { word: 'молоко', at: [1, 3, 5], ipa: 'a', ipas: ['a', 'a', 'o'] },
+];
 /** Grid cells for the eight words (row, column), clockwise from the top left; the letter sits in 2/2. */
 const CELL: [number, number][] = [[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 2], [3, 1], [2, 1]];
 
-function ruWritten(w: RuWord): ReactNode[] {
-  return [...w.written].map((ch, i) =>
-    ch === 'о' ? (
-      <span key={i} className={i === w.stress ? 'ib-o-stress' : 'ib-o-weak'}>{ch}</span>
-    ) : (
-      ch
-    ),
-  );
-}
-
-function ruHeard(w: RuWord): ReactNode[] {
-  return [...w.written].map((ch, i) => {
-    if (ch !== 'о') return ch;
-    return i === w.stress ? (
-      <span key={i} className="ib-o-stress">о</span>
-    ) : (
-      <span key={i} className="ib-a">а</span>
-    );
-  });
-}
-
+/** A word with its «o» marked in red (Russian or English). */
 function enWord(w: EnWord): ReactNode {
   const len = w.len ?? 1;
-  return (
-    <>
-      {w.word.slice(0, w.at)}
-      <span className="ib-o-weak">{w.word.slice(w.at, w.at + len)}</span>
-      {w.word.slice(w.at + len)}
-    </>
-  );
+  const marks = Array.isArray(w.at) ? w.at : [w.at];
+  const out: ReactNode[] = [];
+  let i = 0;
+  marks.forEach((at, m) => {
+    if (at > i) out.push(w.word.slice(i, at));
+    const letter = w.word.slice(at, at + len);
+    out.push(
+      w.ipas ? (
+        <span key={at} className="ib-o-col">
+          <span className="ib-o-weak">{letter}</span>
+          <span className="ib-ipa">[{w.ipas[m]}]</span>
+        </span>
+      ) : (
+        <span key={at} className="ib-o-weak">{letter}</span>
+      ),
+    );
+    i = at + len;
+  });
+  if (i < w.word.length) out.push(w.word.slice(i));
+  return out;
 }
 
 export default function LetterO() {
@@ -105,10 +98,20 @@ export default function LetterO() {
       <span className={className}>{children}</span>
     );
 
+  const ruSound = (i: number) => {
+    const w = RU_SOUNDS[i];
+    return word(`ru-s-${i}`, w.word, 'ru-RU', 'ib-en-word', (
+      <>
+        <span className={`ib-en-w${w.ipas ? ' ib-en-w-cols' : ''}`} lang="ru">{enWord(w)}</span>
+        {!w.ipas && <span className="ib-ipa">[{w.ipa}]</span>}
+      </>
+    ));
+  };
+
   return (
-    <section className="ib-sec ib-letter" aria-labelledby="ib-letter-title">
+    <section className="ib-sec ib-layer ib-letter" aria-labelledby="ib-letter-title">
       <div className="ib-wrap">
-        <p className="ib-micro ib-green">{t('iceberg.letter.micro')}</p>
+        <p className="ib-kicker">{t('iceberg.berg.spelling.title')}</p>
         <h2 id="ib-letter-title" className="ib-h2">{t('iceberg.letter.title')}</h2>
         <p className={`ib-tap${canSpeak ? '' : ' ib-tap-off'}`}>
           <SpeakerWaveIcon className="ib-tap-ico" aria-hidden="true" />
@@ -124,32 +127,14 @@ export default function LetterO() {
                 {t('iceberg.letter.sounds', { count: 2 })} <span>{t('iceberg.letter.ru.count')}</span>
               </p>
             </header>
-            <div className="ib-ru-letter" aria-hidden="true">
-              <span className="ib-big-o">О</span>
-              <span className="ib-fork">
-                <span><b>о</b></span>
-                <span><b className="ib-a">а</b></span>
-              </span>
+            {/* The same tile as the English "O", with a word for each of its two sounds. */}
+            <div className="ib-ru-web">
+              <span className="ib-ru-sound">{ruSound(0)}</span>
+              <span className="ib-ru-link" aria-hidden="true" />
+              <span className="ib-big-o ib-o-disc" aria-hidden="true">О</span>
+              <span className="ib-ru-link ib-ru-link-r" aria-hidden="true" />
+              <span className="ib-ru-sound">{ruSound(1)}</span>
             </div>
-            <div className="ib-ru-head" aria-hidden="true">
-              <span>{t('iceberg.letter.ru.written')}</span>
-              <span />
-              <span>{t('iceberg.letter.ru.heard')}</span>
-            </div>
-            <ul className="ib-ru-rows">
-              {RU.map((w, i) => (
-                <li key={w.written} style={{ transitionDelay: `${0.15 + i * 0.12}s` }}>
-                  {word(`ru-${i}`, w.written, 'ru-RU', 'ib-ru-row', (
-                    <>
-                      <span className="ib-ru-w">{ruWritten(w)}</span>
-                      <ArrowRightIcon className="ib-ru-arrow" aria-hidden="true" />
-                      <span className="ib-ru-w ib-ru-heard">{ruHeard(w)}</span>
-                      <SpeakerWaveIcon className="ib-say-ico" aria-hidden="true" />
-                    </>
-                  ))}
-                </li>
-              ))}
-            </ul>
             <p className="ib-card-text">{t('iceberg.letter.ru.rule')}</p>
           </article>
 
@@ -167,7 +152,7 @@ export default function LetterO() {
                   <line key={i} x1={150} y1={150} x2={(c - 0.5) * 100} y2={(r - 0.5) * 100} pathLength={1} style={{ transitionDelay: `${0.1 + i * 0.07}s` }} />
                 ))}
               </svg>
-              <span className="ib-big-o ib-en-o" style={{ gridRow: 2, gridColumn: 2 }} aria-hidden="true">O</span>
+              <span className="ib-big-o ib-o-disc ib-en-o" style={{ gridRow: 2, gridColumn: 2 }} aria-hidden="true">O</span>
               {EN.map((w, i) => (
                 <span key={w.word} className="ib-en-cell" style={{ gridRow: CELL[i][0], gridColumn: CELL[i][1], transitionDelay: `${0.35 + i * 0.07}s` }}>
                   {word(`en-${w.word}`, w.word, 'en-US', 'ib-en-word', (
@@ -179,7 +164,7 @@ export default function LetterO() {
                 </span>
               ))}
             </div>
-            <p className="ib-card-text">{t('iceberg.letter.en.rule')}</p>
+            {t('iceberg.letter.en.rule').trim() && <p className="ib-card-text">{t('iceberg.letter.en.rule')}</p>}
           </article>
         </div>
 

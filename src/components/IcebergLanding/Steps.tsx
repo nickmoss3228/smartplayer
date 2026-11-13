@@ -87,7 +87,7 @@ export default function Steps() {
   return (
     <section className="ib-sec ib-steps" aria-labelledby="ib-steps-title">
       <div className="ib-wrap">
-        <p className="ib-micro ib-green">{t('iceberg.steps.micro')}</p>
+        <p className="ib-kicker">{t('iceberg.steps.micro')}</p>
         <h2 id="ib-steps-title" className="ib-h2">{t('iceberg.steps.title')}</h2>
 
         <ol ref={ref} className={`ib-pipe${seen ? ' in' : ''}`}>
