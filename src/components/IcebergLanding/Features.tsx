@@ -1,16 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import m4Quiz from '../../assets/landing/m4-quiz.webp';
-import m4Words from '../../assets/landing/m4-words.webp';
-import m5Replay from '../../assets/landing/m5-replay.webp';
 import m6Dashboard from '../../assets/landing/m6-dashboard.webp';
 import m6Pdf from '../../assets/landing/m6-pdf.webp';
 import m6Comic from '../../assets/landing/m6-comic.webp';
 
 /**
- * What the player has that podcasts and AI tutors don't: a comparison table
- * (the three automations plus six features), then each feature with a
- * screenshot of the app.
+ * What else malako has: the comparison with podcasts and AI tutors, then the
+ * features the five steps do not already show (the audio dictionary and the
+ * voice recording are in steps 1 and 5, with their screenshots), as a short
+ * row of ice floes.
  */
 
 interface Item {
@@ -18,8 +17,8 @@ interface Item {
   text: string;
 }
 
-/** Screenshots, in the order of `iceberg.features.items`. */
-const SHOTS: string[] = [m4Quiz, m4Words, m6Dashboard, m5Replay, m6Pdf, m6Comic];
+/** Positions in `iceberg.features.items` of the features left for this row, with their screenshots. */
+const LEFT: [number, string][] = [[0, m4Quiz], [2, m6Dashboard], [4, m6Pdf], [5, m6Comic]];
 
 export default function Features() {
   const { t } = useTranslation();
@@ -70,14 +69,14 @@ export default function Features() {
           </tbody>
         </table>
 
-        <ul className="ib-feat-grid">
-          {items.map((it, i) => (
-            <li key={it.title} className="ib-feat">
+        <ul className="ib-feat-grid dv-feat-row">
+          {LEFT.map(([i, src]) => (
+            <li key={items[i].title} className="ib-feat">
               <div className="ib-shot">
-                <img src={SHOTS[i]} alt={it.title} loading="lazy" />
+                <img src={src} alt={items[i].title} loading="lazy" />
               </div>
-              <h3 className="ib-h3">{it.title}</h3>
-              <p>{it.text}</p>
+              <h3 className="ib-h3">{items[i].title}</h3>
+              <p>{items[i].text}</p>
             </li>
           ))}
         </ul>

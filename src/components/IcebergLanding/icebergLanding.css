@@ -266,25 +266,13 @@ button.ib-lk-ex:active { transform: translateY(1px); }
 .ib-lk-merge { padding: 0 2px; border-radius: 5px; background: #d9f6e4; color: var(--green-ink); white-space: pre; }
 .ib-outro { margin-top: 28px; max-width: 36em; font-size: clamp(17px, 2.4vw, 21px); font-weight: 700; letter-spacing: -.01em; line-height: 1.4; }
 
-/* ── 3. five steps ────────────────────────────────────────────────────── */
-.ib-pipe { list-style: none; margin: 32px 0 0; padding: 0; display: grid; }
-.ib-step { position: relative; display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: 18px; padding-bottom: 30px; opacity: 0; transform: translateY(14px); transition: opacity .55s ease-out, transform .55s ease-out; }
-.ib-pipe.in .ib-step { opacity: 1; transform: none; }
-.ib-step::before { content: ''; position: absolute; left: 43px; top: 96px; bottom: 8px; width: 2px; background: var(--line-strong); }
-.ib-step:last-child::before { display: none; }
-.ib-step:last-child { padding-bottom: 0; }
+/* ── 3. five steps: the drawings and the step text (the layout is the dive's rope, below) ────────────────────────────────────────────────────── */
 .ib-step-body p { margin-top: 6px; color: var(--dim); }
 .ib-step-body .ib-step-app { margin-top: 10px; display: flex; gap: 8px; align-items: flex-start; color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.4; }
 .ib-step-app-k { color: var(--green-ink); }
-@media (min-width: 1024px) {
-  .ib-pipe { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 24px; }
-  .ib-step { grid-template-columns: minmax(0, 1fr); row-gap: 18px; align-content: start; padding-bottom: 0; }
-  .ib-step::before { left: 100px; right: -16px; top: 44px; bottom: auto; width: auto; height: 2px; }
-}
 .ib-glyph { position: relative; width: 88px; height: 88px; display: grid; place-items: center; border-radius: 24px; background: #fff; border: 1px solid var(--line); }
 .ib-glyph svg { width: 74px; height: 74px; overflow: visible; }
 .ib-glyph svg :is(path, line, circle, rect) { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.ib-step-n { position: absolute; top: -8px; left: -8px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
 
 .ib-glyph .g-card-back { fill: var(--room); stroke: var(--line-strong); stroke-width: 2.5; }
 .ib-glyph .g-card { fill: #fff; stroke: var(--ink); }
@@ -403,9 +391,193 @@ button.ib-lk-ex:active { transform: translateY(1px); }
 /* ── reduced motion: everything still, everything shown ───────────────── */
 @media (prefers-reduced-motion: reduce) {
   .ib *, .ib *::before, .ib *::after { animation: none !important; transition: none !important; }
-  .ib-chip, .ib-ru-sound, .ib-ru-link, .ib-en-cell, .ib-step, .ib-lk-card, .ib-lk-chunk, .ib-sp-pair, .ib-sp-dots i, .ib-pc-pair { opacity: 1; transform: none; }
+  .ib-chip, .ib-ru-sound, .ib-ru-link, .ib-en-cell, .ib-lk-card, .ib-lk-chunk, .ib-sp-pair, .ib-sp-dots i, .ib-pc-pair { opacity: 1; transform: none; }
   .ib-lk-brace, .ib-joint { transform: none; }
   .ib-glyph .g-fast { opacity: 0; }
   .ib-line, .ib-branch, .ib-en-lines line { stroke-dashoffset: 0; }
   .ib-bubble { display: none; }
+}
+
+/*
+ * ══ The dive ═══════════════════════════════════════════════════════════════
+ * Scoped under .ib-dive (the landing's root) and kept after the base rules,
+ * which it builds on. Four bands of water,
+ * each darker; on the dark ones the section's own text turns white while the
+ * cards stay light, like ice. The reduced-motion rule in icebergLanding.css
+ * (.ib *) already stills every animation here.
+ */
+
+/* ── bands ────────────────────────────────────────────────────────────── */
+.dv-zone { position: relative; isolation: isolate; }
+.ib-dive .dv-zone .ib-sec { border-top: 0; padding: 36px 0 64px; }
+@media (min-width: 960px) { .ib-dive .dv-zone .ib-sec { padding: 44px 0 88px; } }
+.ib-dive .dv-wave + .ib-sec { border-top: 0; }
+
+/* the first band is light water: the grey text goes a shade darker to keep its contrast */
+.dv-z1 .ib-link-lead { color: #3f5366; }
+
+/* the dark bands: the section's own text turns white, the cards keep theirs */
+.dv-dark :is(.ib-h2, .ib-outro, .ib-pc-rtitle) { color: #fff; }
+.dv-dark :is(.ib-link-lead, .ib-pc-rtext) { color: rgba(255, 255, 255, .84); }
+.dv-dark .ib-pc-share { color: #9fd4ff; }
+.dv-dark .ib-pc-rnum { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .4); }
+.dv-dark .ib-layer .ib-kicker { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .35); box-shadow: none; }
+.dv-dark :is(.ib-card, .ib-lk-phrase) { color: var(--ink); border-color: transparent; box-shadow: 0 28px 56px -30px rgba(0, 0, 0, .75); }
+.dv-z1 :is(.ib-card, .ib-sp-row) { border-color: transparent; box-shadow: 0 18px 40px -26px rgba(13, 58, 92, .55); }
+.dv-z1 .ib-sp-row { background: #fff; }
+.dv-dark .ib-lk-phrase { background: #e8eef3; }
+
+.dv-3d { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+
+/* ── bubbles in the deep bands ────────────────────────────────────────── */
+.dv-bubbles { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.dv-bubble { position: absolute; bottom: -12px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .5); opacity: 0; animation: dv-rise 8s ease-in infinite; }
+.dv-bubble-s { width: 6px; height: 6px; }
+@keyframes dv-rise { 0% { bottom: -12px; opacity: 0; } 10% { opacity: .8; } 80% { opacity: .45; } 100% { bottom: 92%; opacity: 0; transform: translateX(14px); } }
+
+/* ── waterlines ───────────────────────────────────────────────────────── */
+.dv-wave { position: relative; overflow: hidden; margin: -1px 0; pointer-events: none; }
+.dv-wave svg { position: absolute; left: 0; bottom: 0; width: 200%; height: 100%; display: block; }
+.dv-wave-back { animation: dv-slide 19s linear infinite; }
+.dv-wave-front { animation: dv-slide 12s linear infinite; }
+.dv-wave-flip svg { animation-direction: reverse; }
+@keyframes dv-slide { to { transform: translateX(-50%); } }
+
+/* ── the depth gauge ──────────────────────────────────────────────────── */
+.dv-gauge {
+  position: fixed; z-index: 30; left: 50%; bottom: 14px;
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px;
+  border-radius: 999px; background: rgba(255, 255, 255, .9);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px -12px rgba(2, 10, 18, .5);
+  opacity: 0; pointer-events: none; transform: translate(-50%, 12px);
+  transition: opacity .35s ease-out, transform .35s ease-out;
+}
+.dv-gauge.on { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+.dv-gauge-list { position: relative; list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; }
+/* the rope: grey all the way, green down to the current layer */
+.dv-gauge-list::before, .dv-gauge-list::after { content: ''; position: absolute; top: 50%; left: 22px; right: 22px; height: 2px; margin-top: -1px; background: var(--line-strong); }
+.dv-gauge-list::after { background: var(--green); transform-origin: left; transform: scaleX(var(--p)); transition: transform .5s cubic-bezier(.5, 0, .2, 1); }
+.dv-gauge-item { position: relative; z-index: 1; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+.dv-gauge-n { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid var(--line-strong); color: var(--dim); font-size: 13px; font-weight: 800; transition: background-color .3s, border-color .3s, color .3s, transform .3s; }
+.dv-gauge-item.past .dv-gauge-n { background: var(--sea); border-color: var(--sea); color: #fff; }
+.dv-gauge-item.on .dv-gauge-n { background: var(--green); border-color: var(--green); color: #fff; transform: scale(1.15); box-shadow: 0 0 0 5px rgba(0, 201, 81, .2); }
+.dv-gauge-item:hover .dv-gauge-n { border-color: var(--ink); }
+.dv-gauge-label { display: none; }
+.dv-gauge-now { min-width: 6.5em; font-size: 14px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); white-space: nowrap; }
+
+/* wide screens, once the gutter beside the 1180px column fits it: a rail down the left; a layer's name shows on hover or focus */
+@media (min-width: 1240px) {
+  .dv-gauge { left: 14px; bottom: auto; top: 50%; flex-direction: column; padding: 6px; transform: translate(-10px, -50%); }
+  .dv-gauge.on { transform: translate(0, -50%); }
+  .dv-gauge-list { flex-direction: column; }
+  .dv-gauge-list::before, .dv-gauge-list::after { top: 22px; bottom: 22px; left: 50%; right: auto; width: 2px; height: auto; margin: 0 0 0 -1px; }
+  .dv-gauge-list::after { transform-origin: top; transform: scaleY(var(--p)); }
+  .dv-gauge-now { display: none; }
+  .dv-gauge-label {
+    position: absolute; left: calc(100% + 12px); top: 50%; display: block;
+    padding: 5px 12px; border-radius: 10px; background: var(--ink); color: #fff;
+    font-size: 13px; font-weight: 700; white-space: nowrap;
+    opacity: 0; transform: translate(-6px, -50%); pointer-events: none;
+    transition: opacity .2s, transform .2s;
+  }
+  .dv-gauge-item:is(:hover, :focus-visible) .dv-gauge-label { opacity: 1; transform: translate(0, -50%); }
+}
+
+
+.dv-gauge-end { flex: none; width: 22px; height: 22px; fill: none; stroke: var(--blue); stroke-width: 2.2; stroke-linecap: round; }
+.dv-gauge-now { max-width: 15em; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── the way up: the five steps on a rope ─────────────────────────────── */
+/* the water lightens from the deepest layer's navy to the pale blue under the surface */
+.ib-dive .dv-ascent { position: relative; isolation: isolate; overflow: hidden; border-top: 0; padding: 44px 0 96px; background: linear-gradient(180deg, #0d2c47 0%, #1b4b72 26%, #2a6390 50%, #5fa8cf 76%, #cfe6f3 100%); }
+.dv-ascent > .ib-wrap > .ib-kicker, .dv-ascent > .ib-wrap > .ib-h2 { color: #fff; }
+.dv-rays { position: absolute; left: 0; bottom: 0; z-index: -1; width: 100%; height: 55%; fill: #fff; opacity: .08; transform-origin: 50% 100%; animation: dv-sway 10s ease-in-out infinite alternate; }
+@keyframes dv-sway { from { transform: skewX(-5deg); } to { transform: skewX(5deg); } }
+
+.dv-climb { position: relative; margin-top: 40px; }
+/* the rope: down the left on phones, down the middle on wide screens */
+.dv-rope { position: absolute; top: 22px; bottom: 22px; left: 21px; width: 3px; border-radius: 2px; background: rgba(255, 255, 255, .28); }
+.dv-rope i { position: absolute; inset: 0; border-radius: 2px; background: var(--green); transform-origin: top; transition: transform .15s linear; }
+.dv-rope b { position: absolute; left: 50%; width: 19px; height: 19px; margin: -9px 0 0 -9.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px rgba(255, 255, 255, .25), 0 0 26px 6px rgba(0, 201, 81, .45); transition: top .15s linear; }
+.dv-climb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
+.dv-climb-step { position: relative; padding-left: 64px; }
+.dv-knot { position: absolute; left: 0; top: 0; z-index: 1; display: grid; place-items: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: #164066; color: #fff; font-size: 16px; font-weight: 800; transition: background-color .35s, border-color .35s, box-shadow .35s; }
+.dv-climb-step.lit .dv-knot { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 7px rgba(0, 201, 81, .22); }
+.dv-climb-card { flex-direction: row; align-items: flex-start; gap: 18px; border-color: transparent; box-shadow: 0 28px 56px -30px rgba(0, 0, 0, .7); opacity: .62; transform: translateY(14px); transition: opacity .5s ease-out, transform .5s ease-out; }
+.dv-climb-step.lit .dv-climb-card { opacity: 1; transform: none; }
+.dv-climb-card .ib-glyph { flex: none; }
+@media (max-width: 520px) { .dv-climb-card { flex-direction: column; } }
+@media (min-width: 900px) {
+  .dv-rope { left: 50%; margin-left: -1.5px; }
+  .dv-climb-list { gap: 0; }
+  .dv-climb-step { padding: 0 0 36px; width: calc(50% - 50px); }
+  .dv-climb-step.dv-right { margin-left: auto; }
+  .dv-knot { left: auto; right: -72px; top: 24px; }
+  .dv-climb-step.dv-right .dv-knot { right: auto; left: -72px; }
+}
+
+/* each step's place in the app: a crop of the real screen under the step's text */
+.dv-climb-card { flex-wrap: wrap; }
+.dv-climb-card .ib-step-body { flex: 1 1 200px; min-width: 0; }
+/* Always the card's full width: the shot has no content of its own to size it (its image is absolutely
+   placed), so in the stacked phone card it would shrink to nothing; only a caption used to hold it open. */
+.dv-step-media { flex: 1 1 100%; align-self: stretch; width: 100%; margin: 4px 0 0; display: grid; gap: 10px; }
+.dv-shot { position: relative; overflow: hidden; border-radius: 14px; background: #0f151c; box-shadow: inset 0 0 0 1px rgba(15, 21, 28, .08); }
+/* the desktop capture on wide screens, the phone capture below 768px (an img under display:none isn't fetched while lazy) */
+.dv-shot-m { display: none; }
+@media (max-width: 767px) { .dv-shot-d { display: none; } .dv-shot-m { display: block; } }
+.dv-shot img { position: absolute; max-width: none; height: auto; display: block; }
+/* the lit control: everything else dimmed by its own huge shadow, a green ring that pulses once the step is reached */
+.dv-spot { position: absolute; border-radius: 12px; box-shadow: 0 0 0 2px var(--green), 0 0 0 9999px rgba(15, 21, 28, .5); transition: box-shadow .5s; }
+.dv-climb-step.lit .dv-spot { animation: dv-spot 2.2s ease-out infinite; }
+@keyframes dv-spot { 0% { box-shadow: 0 0 0 2px var(--green), 0 0 0 2px rgba(0, 201, 81, .6), 0 0 0 9999px rgba(15, 21, 28, .5); } 70%, 100% { box-shadow: 0 0 0 2px var(--green), 0 0 0 12px rgba(0, 201, 81, 0), 0 0 0 9999px rgba(15, 21, 28, .5); } }
+.dv-step-media figcaption { font-size: 14px; line-height: 1.45; color: var(--dim); }
+.dv-step-media figcaption b { color: var(--ink); }
+
+/* what else: four floes in one row on wide screens */
+@media (min-width: 1024px) { .ib-dive .dv-feat-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* the way in, on the first screen */
+.dv-hero-cta { margin: 32px auto 0; }
+
+/* ── the surface: the claim in the open air ───────────────────────────── */
+.dv-air { position: relative; isolation: isolate; overflow: hidden; padding: 24px 0 72px; background: linear-gradient(180deg, #eef6fb 0%, var(--room) 100%); }
+.dv-air .ib-claim { margin-top: 0; box-shadow: 0 40px 80px -40px rgba(13, 58, 92, .6); }
+.dv-sun { position: absolute; z-index: -1; top: 8px; right: 12%; width: 110px; height: 110px; border-radius: 50%; background: #fff3c4; box-shadow: 0 0 0 24px rgba(255, 243, 196, .45), 0 0 0 56px rgba(255, 243, 196, .2); animation: dv-sun 6s ease-in-out infinite; }
+@keyframes dv-sun { 50% { transform: scale(1.08); opacity: .85; } }
+.ib-dive .dv-air + .ib-sec { border-top: 0; }
+
+/* ── podcasts: the words drift in on the swell and sink past the ear ──── */
+.ib-dive .ib-ear { background: linear-gradient(180deg, var(--room) 0 61%, #cfe6f3 61% 100%); }
+.ib-dive .ib-fly { animation-name: dv-sink; }
+@keyframes dv-sink { 0% { transform: translate(-60px, 0); opacity: 0; } 8% { opacity: 1; } 58% { transform: translate(210px, 0) rotate(0); } 76% { opacity: 1; } 100% { transform: translate(300px, 64px) rotate(24deg); opacity: 0; } }
+
+/* ── features: ice floes on a band of sea ─────────────────────────────── */
+.ib-dive .ib-features { position: relative; isolation: isolate; padding-bottom: 88px; }
+.ib-dive .ib-feat-grid { position: relative; }
+.ib-dive .ib-feat-grid::before { content: ''; position: absolute; z-index: -1; top: 150px; bottom: -88px; left: calc(50% - 50vw); right: calc(50% - 50vw); background: linear-gradient(180deg, #cfe6f3 0%, #a9d0e6 100%); }
+.ib-dive .ib-feat-grid::after { content: ''; position: absolute; z-index: -1; top: 132px; height: 24px; left: calc(50% - 50vw); right: calc(50% - 50vw); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='24' viewBox='0 0 200 24'%3E%3Cpath d='M0 14 q50 -14 100 0 t100 0 V24 H0Z' fill='%23cfe6f3'/%3E%3C/svg%3E") repeat-x 0 0 / 200px 24px; animation: dv-swell 6s linear infinite; }
+@keyframes dv-swell { to { background-position: 200px 0; } }
+.ib-dive .ib-feat { border-color: transparent; box-shadow: 0 30px 50px -30px rgba(13, 58, 92, .55); animation: dv-floe 6s ease-in-out infinite; }
+.ib-dive .ib-feat:nth-child(2) { animation-delay: -1.3s; animation-duration: 7s; }
+.ib-dive .ib-feat:nth-child(3) { animation-delay: -2.6s; }
+.ib-dive .ib-feat:nth-child(4) { animation-delay: -3.4s; animation-duration: 6.6s; }
+.ib-dive .ib-feat:nth-child(5) { animation-delay: -.7s; animation-duration: 7.4s; }
+.ib-dive .ib-feat:nth-child(6) { animation-delay: -4.2s; }
+@keyframes dv-floe { 50% { transform: translateY(8px) rotate(.4deg); } }
+
+/* ── try it: the whole iceberg, tip in the air and body under the water ── */
+.ib-dive .dv-final { position: relative; border-top: 0; padding-bottom: 0; margin-bottom: 0; background: linear-gradient(180deg, var(--room) 0%, #e2f0f8 100%); overflow: hidden; }
+/* the stage: sky above its middle line, sea below; the 3D berg (or its drawing) spans both */
+.dv-final-stage { position: relative; align-self: stretch; margin: 16px calc(-1 * var(--gutter)) 0; height: clamp(400px, 50vw, 560px); background: linear-gradient(180deg, transparent 50%, #a9d0e6 50%); }
+.dv-final-stage::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - 12px); height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='24' viewBox='0 0 200 24'%3E%3Cpath d='M0 12 q50 -12 100 0 t100 0' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 0 / 200px 24px; animation: dv-swell 4s linear infinite; pointer-events: none; }
+.dv-final-3d { position: absolute; inset: 0; -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent); mask-image: linear-gradient(180deg, #000 80%, transparent); }
+.dv-final-notes { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 28px; z-index: 1; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.dv-final-notes .ib-micro { color: var(--sea); }
+.dv-final-svg { display: block; width: 100%; height: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dv-bubbles, .dv-sun { display: none; }
+  .dv-climb-card { opacity: 1; transform: none; }
 }

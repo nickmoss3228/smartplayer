@@ -2226,26 +2226,31 @@
       "items": [
         {
           "title": "Load an audio vocabulary into your head",
+          "short": "Vocabulary",
           "text": "Remember how a word sounds, not how it’s written. The spelling can wait.",
           "app": "Every part’s words, with audio"
         },
         {
           "title": "Split speech into atoms",
+          "short": "Atoms",
           "text": "A solid stream breaks into sentences and phrases you can take one at a time.",
           "app": "The player cuts the story into phrases"
         },
         {
           "title": "Slow the speech down",
+          "short": "Slowdown",
           "text": "At a slow speed you hear every sound and every link between words.",
           "app": "Three speeds: 0.65×, 0.8× and 1×"
         },
         {
           "title": "Listen to each sentence 3 times",
+          "short": "Thrice",
           "text": "Each time, the jumble of sounds falls into words a little more clearly.",
           "app": "Practice mode: ×3, speeding up"
         },
         {
           "title": "Repeat the sentence out loud",
+          "short": "Aloud",
           "text": "Say it after the narrator: that’s how sound moves from your ears into your speech.",
           "app": "“Repeat after me” mode"
         }
