@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDownIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import Slogan from '../Brand/Slogan';
 import Iceberg from './Iceberg';
+import Speed from './Speed';
+import Perception from './Perception';
 import LetterO from './LetterO';
 import Linking from './Linking';
 import Steps from './Steps';
@@ -12,10 +14,10 @@ import './icebergLanding.css';
 
 /**
  * The landing (/), built as one argument:
- * 1. the question learners ask ("I know the grammar and the words, but can't
- *    understand English by ear. Why?") and the iceberg that answers it;
- * 2. the two deepest parts: how words sound (the letter "o" in Russian and in
- *    English), then word linking (one phrase, and four things words do in speech);
+ * 1. what learners say ("I know the grammar, I have the vocabulary. By ear?
+ *    I don't understand...") and the iceberg that answers it;
+ * 2. the four layers under the water, in the iceberg's order: speed (syllables),
+ *    perception (sounds Russian lacks), spelling (the letter "o"), linking;
  * 3. five steps that fight it, and malako doing all five for you;
  * 4. why podcasts and AI tutors don't;
  * 5. what the player has that they lack, with screenshots;
@@ -26,9 +28,8 @@ import './icebergLanding.css';
  * The short guide before that (components/Landing) opens in dev at /landing-old.
  */
 export default function IcebergLanding() {
-  const { t, i18n } = useTranslation();
-  const ru = i18n.language.startsWith('ru');
-  const question = t('iceberg.hero.question');
+  const { t } = useTranslation();
+  const lines = t('iceberg.hero.lines', { returnObjects: true }) as string[];
 
   return (
     <div className="ib">
@@ -36,21 +37,23 @@ export default function IcebergLanding() {
         <div className="ib-wrap">
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
-          <h1 className="ib-question">{ru ? `«${question}»` : `“${question}”`}</h1>
-          <p className="ib-lead">{t('iceberg.hero.lead')}</p>
+          <h1 className="ib-question">
+            {lines.map((line) => <span key={line} className="ib-q-line">{line}</span>)}
+          </h1>
         </div>
         <div className="ib-berg-wrap">
           <Iceberg />
         </div>
         <div className="ib-wrap ib-hero-foot">
-          <p className="ib-body">{t('iceberg.berg.caption')}</p>
-          <a href="#ib-letter-title" className="ib-down">
+          <a href="#ib-speed-title" className="ib-down">
             {t('iceberg.hero.down')}
             <ArrowDownIcon aria-hidden="true" />
           </a>
         </div>
       </header>
 
+      <Speed />
+      <Perception />
       <LetterO />
       <Linking />
       <Steps />

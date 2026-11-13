@@ -28,7 +28,7 @@ export default function Rivals() {
   return (
     <section className="ib-sec ib-rivals" aria-labelledby="ib-rivals-title">
       <div className="ib-wrap">
-        <p className="ib-micro">{t('iceberg.rivals.micro')}</p>
+        <p className="ib-kicker ib-kicker-dim">{t('iceberg.rivals.micro')}</p>
         <div ref={ref} className={`ib-rivals-grid${seen ? ' in' : ''}`}>
           <article className="ib-card ib-rival">
             <div className="ib-ear" aria-hidden="true">

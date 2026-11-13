@@ -26,12 +26,11 @@ const J = { j: true } as const;
 /** In the same order as iceberg.link.types. */
 const TYPES: Example[][] = [
   [{ seg: ['pick', J, 'it', J, 'up'], heard: 'pi-ki-tup' }, { seg: ['turn', J, 'it', J, 'off'], heard: 'tur-ni-toff' }],
-  [{ seg: ['nex', { x: 't' }, ' day'], heard: 'nex day' }, { seg: ['las', { x: 't' }, ' night'], heard: 'las night' }],
-  [{ seg: ['di', { m: 'd y' }, 'ou'], heard: 'di-ju' }, { seg: ['don', { m: "'t y" }, 'ou'], heard: 'don-chu' }],
-  [{ seg: ['going to'], heard: 'gonna', speak: ['going to', 'gonna'] }, { seg: ['kind of'], heard: 'kinda', speak: ['kind of', 'kinda'] }],
+  // Sounds drop out, and sounds merge: one example of each.
+  [{ seg: ['nex', { x: 't' }, ' day'], heard: 'nex day' }, { seg: ['di', { m: 'd y' }, 'ou'], heard: 'di-ju' }],
 ];
 
-/** The phrase in the dark panel: written words grouped by the chunk they become. */
+/** The phrase in the grey panel: written words grouped by the chunk they become. */
 const PHRASE = { text: 'What do you want to do?', groups: [{ w: ['What', 'do', 'you'], heard: 'whaddaya' }, { w: ['want', 'to'], heard: 'wanna' }, { w: ['do?'], heard: 'do?' }] };
 
 const plain = (seg: Seg[]) => seg.map((s) => (typeof s === 'string' ? s : 'j' in s ? ' ' : 'x' in s ? s.x : s.m)).join('');
@@ -80,9 +79,9 @@ export default function Linking() {
     );
 
   return (
-    <section className="ib-sec ib-link" aria-labelledby="ib-link-title">
+    <section className="ib-sec ib-layer ib-link" aria-labelledby="ib-link-title">
       <div className="ib-wrap">
-        <p className="ib-micro ib-green">{t('iceberg.link.micro')}</p>
+        <p className="ib-kicker">{t('iceberg.berg.linking.title')}</p>
         <h2 id="ib-link-title" className="ib-h2">{t('iceberg.link.title')}</h2>
         <p className="ib-link-lead">{t('iceberg.link.text')}</p>
 

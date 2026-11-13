@@ -2105,46 +2105,103 @@
   },
   "iceberg": {
     "hero": {
-      "question": "I know the grammar and the vocabulary, but I can’t hear and understand English. Why?",
-      "lead": "Because grammar and vocabulary are only the tip of the iceberg. What keeps you from understanding is under the water.",
+      "lines": [
+        "I Know the Grammar",
+        "I Have the Vocabulary",
+        "By ear?",
+        "I don’t understand..."
+      ],
       "down": "Dive deeper"
     },
     "berg": {
-      "above": "What you know",
-      "below": "What gets in the way",
       "grammar": "Grammar",
       "vocab": "Vocabulary",
-      "listening": "Listening",
-      "listeningSub": "understanding by ear",
-      "linking": "Word linking",
-      "linkingEx": "want to → wanna",
-      "sound": "How words sound",
-      "soundEx": "vowels don’t sound the way they’re spelled",
-      "caption": "In real speech words run into each other, and vowels don’t sound the way they’re written. A textbook can’t show you that, so words you know go unrecognised when you hear them."
+      "listening": "Listening comprehension",
+      "speed": {
+        "title": "Speed",
+        "lines": [
+          "English speech is",
+          "1.68× faster",
+          "than Russian"
+        ]
+      },
+      "perception": {
+        "title": "Perception",
+        "lines": [
+          "2/3 of the sounds in English and",
+          "Russian don’t match",
+          "Your brain doesn’t recognise them",
+          "Your tongue distorts them"
+        ]
+      },
+      "spelling": {
+        "title": "Spelling",
+        "lines": [
+          "Unlike Russian,",
+          "the way English words are written",
+          "doesn’t show how they sound"
+        ]
+      },
+      "linking": {
+        "title": "Linking",
+        "lines": [
+          "As in any language, in English words,",
+          "especially short ones, merge",
+          "into one sound, and we can’t",
+          "split the phrase into words"
+        ]
+      }
+    },
+    "speed": {
+      "title": "English fits the same thought into fewer syllables than Russian does.",
+      "text": "Look at these examples:",
+      "syllables_one": "{{count}} syllable",
+      "syllables_other": "{{count}} syllables",
+      "total": "Across the three sentences: {{ru}} in Russian and {{en}} in English, <hi>{{ratio}}</hi> times as many. The same meaning, heard sooner in English."
+    },
+    "perception": {
+      "title": "<hi>2/3</hi> of English sounds don’t exist in Russian at all.",
+      "text": "The brain swaps them for the nearest Russian ones, and the meaning of the words changes completely.",
+      "heard": "A Russian ear hears:",
+      "reasons": [
+        {
+          "title": "Russian has no such sounds",
+          "text": "Some English sounds have nothing like them in Russian. The brain takes the nearest Russian sound, and one word turns into another.",
+          "notes": [
+            "[θ]: the tongue between the teeth. Russian has no such sound, so think turns into sink.",
+            "[w]: rounded lips, no teeth. Russian only has “v”, so west becomes vest."
+          ]
+        },
+        {
+          "title": "Length changes the meaning",
+          "text": "In English the length of a sound changes the meaning of a word. A Russian-speaking brain doesn’t pick up such details, so the meaning of the word changes completely.",
+          "notes": [
+            "Short and long “i”: ship is a boat, sheep is an animal.",
+            "Short and long “u”: full means filled, fool is a silly person."
+          ]
+        }
+      ],
+      "outro": "Until the brain learns to tell these sounds apart clearly, your perception of speech stays fragile and slow. And your speech organs say the words with distortions, which reinforces the wrong neural connections in your brain."
     },
     "letter": {
-      "micro": "At the very bottom: how words sound",
-      "title": "One letter “o”. How many sounds does it have?",
+      "title": "Let’s compare the letter and the sound “O” in English and Russian",
       "tap": "Tap a word to hear it",
       "noVoice": "This browser can’t say words out loud.",
       "ru": {
         "label": "In Russian",
         "count": "and one rule",
-        "rule": "Stressed, it’s “o”; unstressed, it’s “a”. We write «молоко» and say “malako”. That’s where our name comes from.",
-        "written": "written",
-        "heard": "heard"
+        "rule": "In Russian it’s all very simple. Stressed, it’s “o”; unstressed, it’s “a”. So we write «МОЛОКО» but say “MALAKO”."
       },
       "en": {
         "label": "In English",
         "count": "and the spelling won’t tell you which",
-        "rule": "The same “o” sounds different in every word. You can’t learn that with your eyes; you have to hear it."
+        "rule": " "
       },
-      "outro": "Learn a word with your eyes and you remember its spelling, then miss it when you hear it. So: sound first, letters later.",
+      "outro": "Learn a word with your eyes and your memory keeps its spelling, but by ear the word stays unfamiliar. The neural connections it needs haven’t formed, so you don’t recognise it when you hear it.",
       "sounds_one": "{{count}} sound",
       "sounds_other": "{{count}} sounds"
     },
     "link": {
-      "micro": "At the very bottom: word linking",
       "title": "Six words written, three heard",
       "text": "In real speech words don’t come one at a time. They hook onto each other, shrink and lose sounds. So a phrase made of words you know sounds like one word you don’t.",
       "written": "written",
@@ -2156,19 +2213,11 @@
           "text": "A consonant at the end of a word hooks onto the vowel of the next. You can no longer hear where one word ends and the next begins."
         },
         {
-          "title": "Sounds drop out",
-          "text": "Where two words meet, a sound simply disappears: the tongue has no time to say it."
-        },
-        {
-          "title": "Sounds merge",
-          "text": "Two neighbouring sounds turn into a third one that is in neither word."
-        },
-        {
-          "title": "Short words shrink",
-          "text": "Little function words shrink to one weak sound, and two words sound like one."
+          "title": "Sounds drop out or change",
+          "text": "Where words meet, sounds disappear because a “lazy tongue” has no time to say them. Sometimes two neighbouring sounds turn into a third."
         }
       ],
-      "outro": "In a textbook there are spaces between words. In speech there are none. So listen to whole phrases, not one word at a time."
+      "outro": "In a textbook there are always spaces between words, so you can’t go wrong. In speech there are none..."
     },
     "steps": {
       "micro": "How to fight it",
