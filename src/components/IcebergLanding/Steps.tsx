@@ -1,129 +1,183 @@
-import type { ReactNode } from 'react';
+import { lazy, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckIcon } from '@heroicons/react/24/outline';
-import { useInView } from './useInView';
+import { GLYPHS } from './stepGlyphs';
+import Bubbles from './Bubbles';
+import DepthGauge from './DepthGauge';
+import Wave from './Wave';
+import Lazy3D from './Lazy3D';
+import StepShot, { type Crop } from './StepShot';
+import step1d from '../../assets/landing/steps/step1-d.webp';
+import step1m from '../../assets/landing/steps/step1-m.webp';
+import step2d from '../../assets/landing/steps/step2-d.webp';
+import step2m from '../../assets/landing/steps/step2-m.webp';
+import step34d from '../../assets/landing/steps/step34-d.webp';
+import step34m from '../../assets/landing/steps/step34-m.webp';
+import step5d from '../../assets/landing/steps/step5-d.webp';
+import step5m from '../../assets/landing/steps/step5-m.webp';
+
+const MarineSnow = lazy(() => import('./three/MarineSnow'));
 
 /**
- * How to fight it: five steps as one pipeline, each with a small animated
- * drawing and the malako feature that does it. Then the claim: malako covers
- * all five and does them for you.
+ * How to fight it, drawn as the way up: five steps and the claim. Scrolling down is rising: the water starts as
+ * deep as the last layer and lightens at every step, light reaches down from
+ * the surface, and the steps hang off one rope that fills as you scroll,
+ * lighting each step when it reaches the middle of the screen. Past the last
+ * step the page breaks the surface and the claim stands in the open air.
  */
 
 interface Item {
   title: string;
+  short?: string;
   text: string;
   app: string;
 }
 
-const BARS = [18, 34, 26, 46, 30, 14, 38, 52, 28, 20, 42, 24];
+/** A whole capture, in CSS pixels (the files are 2x), with an optional spotlight. */
+const whole = (src: string, w: number, h: number, spot?: Crop['spot']): Crop => ({ src, size: [w, h], box: [0, 0, w, h], spot });
 
-/** The five drawings, 120×120 each. */
-const GLYPHS: ReactNode[] = [
-  // 1. a word card that plays its sound; the spelling waits, faded, underneath
-  <svg viewBox="0 0 120 120" key="vocab">
-    <rect x="26" y="14" width="80" height="92" rx="12" className="g-card-back" />
-    <rect x="14" y="22" width="80" height="92" rx="12" className="g-card" />
-    <path d="M30 52 h8 l10 -9 v30 l-10 -9 h-8 z" className="g-spk" />
-    <g className="g-arcs">
-      <path d="M56 50 a10 10 0 0 1 0 16" />
-      <path d="M62 44 a18 18 0 0 1 0 28" />
-      <path d="M68 38 a26 26 0 0 1 0 40" />
-    </g>
-    <text x="54" y="100" className="g-word" textAnchor="middle">beach</text>
-  </svg>,
-  // 2. one stream cut into pieces
-  <svg viewBox="0 0 120 120" key="atoms">
-    {BARS.map((h, i) => (
-      <rect
-        key={i}
-        x={10 + i * 8.6}
-        y={60 - h / 2}
-        width="5"
-        height={h}
-        rx="2.5"
-        className={`g-bar g-part${i < 4 ? 0 : i < 8 ? 1 : 2}`}
-      />
-    ))}
-    <line x1="42.6" y1="22" x2="42.6" y2="98" className="g-cut g-cut1" />
-    <line x1="77" y1="22" x2="77" y2="98" className="g-cut g-cut2" />
-  </svg>,
-  // 3. the same wave, stretched out: 1× short, 0.65× long
-  <svg viewBox="0 0 120 120" key="slow">
-    <g className="g-stretch">
-      <path d="M10 60 q7 -26 14 0 t14 0 t14 0 t14 0 t14 0 t14 0 t14 0" className="g-wave" />
-    </g>
-    <text x="60" y="104" className="g-speed g-fast" textAnchor="middle">1×</text>
-    <text x="60" y="104" className="g-speed g-slow" textAnchor="middle">0.65×</text>
-  </svg>,
-  // 4. a looping arrow: one turn per listen, a dot lights for each of the three
-  <svg viewBox="0 0 120 120" key="three">
-    <g className="g-spin">
-      <path d="M77 30.6 A34 34 0 1 1 43 30.6" className="g-ring" />
-      <path d="M43.5 39.5 L49.1 27.1 L35.5 25.6 Z" className="g-head" />
-    </g>
-    <text x="60" y="69" className="g-three" textAnchor="middle">×3</text>
-    <circle cx="46" cy="110" r="4.5" className="g-tick g-t1" />
-    <circle cx="60" cy="110" r="4.5" className="g-tick g-t2" />
-    <circle cx="74" cy="110" r="4.5" className="g-tick g-t3" />
-  </svg>,
-  // 5. say it back
-  <svg viewBox="0 0 120 120" key="say">
-    <rect x="50" y="26" width="20" height="40" rx="10" className="g-mic" />
-    <path d="M40 56 a20 20 0 0 0 40 0 M60 76 v14 M48 92 h24" className="g-mic-stand" />
-    <g className="g-out">
-      <path d="M30 40 a24 24 0 0 0 0 30" />
-      <path d="M90 40 a24 24 0 0 1 0 30" />
-      <path d="M20 32 a36 36 0 0 0 0 46" />
-      <path d="M100 32 a36 36 0 0 1 0 46" />
-    </g>
-  </svg>,
+/**
+ * Each step's place in the app, in step order: a capture of the desktop player
+ * (1440px) and of the phone player (390px), shown by screen width. `feature`
+ * is the feature from `iceberg.features.items` the step's screenshot shows;
+ * its title and text move here from the features section, which now lists only
+ * the rest. Recapture with the player at /levels/easy/leo/1, phrase 4, 0.65x, x3.
+ */
+const SHOTS: { d: Crop; m: Crop; feature?: number }[] = [
+  // 1. the words of the part, each one heard before it is read
+  { d: whole(step1d, 360, 410), m: whole(step1m, 390, 472), feature: 1 },
+  // 2. one stream, cut into phrases: phrase 4 lit on the waveform / the dots
+  { d: whole(step2d, 656, 96, [66, 6, 38, 68]), m: whole(step2m, 390, 160, [8, 10, 374, 30]) },
+  // 3. the three speeds, 0.65 picked
+  { d: whole(step34d, 656, 190, [256, 128, 144, 46]), m: whole(step34m, 390, 175, [20, 110, 168, 56]) },
+  // 4. the repeats, x3 picked
+  { d: whole(step34d, 656, 190, [505, 128, 136, 46]), m: whole(step34m, 390, 175, [204, 110, 164, 56]) },
+  // 5. "your turn: repeat": the player waits for you to say the phrase
+  { d: whole(step5d, 472, 72, [20, 18, 36, 36]), m: whole(step5m, 390, 68, [20, 20, 36, 36]), feature: 3 },
 ];
 
 export default function Steps() {
   const { t } = useTranslation();
   const items = t('iceberg.steps.items', { returnObjects: true }) as Item[];
-  const [ref, seen] = useInView<HTMLOListElement>(0.15);
+  const features = t('iceberg.features.items', { returnObjects: true }) as { title: string; text: string }[];
+  const ropeRef = useRef<HTMLDivElement>(null);
+  const stepRefs = [useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null)];
+  const [fill, setFill] = useState(0);
+  const [lit, setLit] = useState(-1);
+
+  // The rope fills to the middle of the screen; a step lights once its knot is above it.
+  useEffect(() => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const rope = ropeRef.current;
+      if (!rope) return;
+      const mid = window.innerHeight * 0.55;
+      const r = rope.getBoundingClientRect();
+      setFill(Math.round(Math.min(1, Math.max(0, (mid - r.top) / r.height)) * 1000) / 1000);
+      let n = -1;
+      stepRefs.forEach((ref, i) => {
+        const el = ref.current;
+        if (el && el.getBoundingClientRect().top + 30 <= mid) n = i;
+      });
+      setLit(n);
+    };
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+    // The refs are stable for the life of the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <section className="ib-sec ib-steps" aria-labelledby="ib-steps-title">
-      <div className="ib-wrap">
-        <p className="ib-kicker">{t('iceberg.steps.micro')}</p>
-        <h2 id="ib-steps-title" className="ib-h2">{t('iceberg.steps.title')}</h2>
+    <>
+      <section className="ib-sec ib-steps dv-ascent" aria-labelledby="ib-steps-title">
+        <Bubbles count={8} />
+        <Lazy3D className="dv-3d"><MarineSnow density={1.2} /></Lazy3D>
+        {/* light from the surface, reaching down into the lighter half */}
+        <svg className="dv-rays" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M300 700 L360 700 L240 0 L200 0Z" />
+          <path d="M560 700 L600 700 L620 0 L590 0Z" />
+          <path d="M780 700 L840 700 L930 0 L890 0Z" />
+        </svg>
 
-        <ol ref={ref} className={`ib-pipe${seen ? ' in' : ''}`}>
-          {items.map((it, i) => (
-            <li key={i} className="ib-step" style={{ transitionDelay: `${i * 0.12}s` }}>
-              <div className="ib-glyph" aria-hidden="true">
-                {GLYPHS[i]}
-                <span className="ib-step-n">{i + 1}</span>
-              </div>
-              <div className="ib-step-body">
-                <h3 className="ib-h3">{it.title}</h3>
-                <p>{it.text}</p>
-                <p className="ib-step-app">
-                  <CheckIcon className="ib-check" aria-hidden="true" />
-                  <span>
-                    <span className="ib-step-app-k">{t('iceberg.steps.app')}:</span> {it.app}
-                  </span>
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <div className="ib-wrap">
+          <p className="ib-kicker">{t('iceberg.steps.micro')}</p>
+          <h2 id="ib-steps-title" className="ib-h2">{t('iceberg.steps.title')}</h2>
 
-        <div className="ib-claim">
-          <ol className="ib-claim-dots" aria-hidden="true">
-            {items.map((_, i) => (
-              <li key={i} style={{ animationDelay: `${i * 0.18}s` }}>
-                <CheckIcon />
-              </li>
-            ))}
-          </ol>
-          <p className="ib-claim-text">
-            {t('iceberg.steps.claimA')} <em>{t('iceberg.steps.claimB')}</em>
-          </p>
+          <div className="dv-climb">
+            <div ref={ropeRef} className="dv-rope" aria-hidden="true">
+              <i style={{ transform: `scaleY(${fill})` }} />
+              <b style={{ top: `${fill * 100}%` }} />
+            </div>
+            <ol className="dv-climb-list">
+              {items.map((it, i) => (
+                <li
+                  key={i}
+                  ref={stepRefs[i]}
+                  className={`dv-climb-step${i % 2 ? ' dv-right' : ''}${i <= lit ? ' lit' : ''}`}
+                >
+                  <span className="dv-knot" aria-hidden="true">{i + 1}</span>
+                  <article className="ib-card dv-climb-card">
+                    <div className="ib-glyph" aria-hidden="true">{GLYPHS[i]}</div>
+                    <div className="ib-step-body">
+                      <h3 className="ib-h3">{it.title}</h3>
+                      <p>{it.text}</p>
+                      <p className="ib-step-app">
+                        <CheckIcon className="ib-check" aria-hidden="true" />
+                        <span>
+                          <span className="ib-step-app-k">{t('iceberg.steps.app')}:</span> {it.app}
+                        </span>
+                      </p>
+                    </div>
+                    <figure className="dv-step-media">
+                      <StepShot className="dv-shot-d" crop={SHOTS[i].d} alt={SHOTS[i].feature !== undefined ? features[SHOTS[i].feature!].title : it.app} />
+                      <StepShot className="dv-shot-m" crop={SHOTS[i].m} alt={SHOTS[i].feature !== undefined ? features[SHOTS[i].feature!].title : it.app} />
+                      {SHOTS[i].feature !== undefined && (
+                        <figcaption>
+                          <b>{features[SHOTS[i].feature!].title}</b> {features[SHOTS[i].feature!].text}
+                        </figcaption>
+                      )}
+                    </figure>
+                  </article>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
-      </div>
-    </section>
+
+        <DepthGauge
+          label={t('iceberg.steps.micro')}
+          stops={items.map((it, i) => ({ ref: stepRefs[i], label: it.short ?? it.title }))}
+          end="surface"
+        />
+      </section>
+
+      {/* breaking the surface: the claim in the open air */}
+      <Wave from="#cfe6f3" to="#eef6fb" tall />
+      <section className="dv-air">
+        <span className="dv-sun" aria-hidden="true" />
+        <div className="ib-wrap">
+          <div className="ib-claim">
+            <ol className="ib-claim-dots" aria-hidden="true">
+              {items.map((_, i) => (
+                <li key={i} style={{ animationDelay: `${i * 0.18}s` }}>
+                  <CheckIcon />
+                </li>
+              ))}
+            </ol>
+            <p className="ib-claim-text">
+              {t('iceberg.steps.claimA')} <em>{t('iceberg.steps.claimB')}</em>
+            </p>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
