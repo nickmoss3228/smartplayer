@@ -60,8 +60,13 @@
 .ib-hero { padding: 22px 0 56px; text-align: center; }
 .ib-brand { font-size: clamp(72px, 22vw, 128px); font-weight: 800; letter-spacing: -.06em; line-height: .88; text-transform: lowercase; }
 .ib-slogan { margin-top: 8px; font-size: 17px; font-weight: 500; color: var(--dim); }
-.ib-question { margin: 44px auto 0; max-width: 17em; display: grid; justify-items: center; font-size: clamp(30px, 6.6vw, 58px); font-weight: 800; letter-spacing: -.04em; line-height: 1.06; }
-.ib-q-line { display: block; }
+.ib-question { margin: 44px auto 0; max-width: 980px; display: grid; justify-items: center; gap: 4px; font-weight: 800; letter-spacing: -.04em; line-height: 1.06; }
+.ib-q-check { display: inline-flex; align-items: center; gap: .4em; font-size: clamp(24px, 5vw, 40px); color: var(--dim); opacity: .7; }
+.ib-q-check svg { width: 1em; height: 1em; padding: .2em; border-radius: 50%; background: rgba(0, 201, 81, .16); color: var(--green-ink); stroke-width: 3; flex: none; }
+.ib-q-pain { display: block; margin-top: 12px; font-size: clamp(34px, 7.4vw, 64px); letter-spacing: -.05em; animation: ib-pain .6s .5s both; }
+.ib-q-hurt { display: inline-block; background: linear-gradient(transparent 62%, rgba(217, 58, 43, .28) 62%); }
+@keyframes ib-pain { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .ib-q-pain { animation: none; } }
 .ib-berg-wrap { max-width: 780px; margin: 36px auto 0; padding: 0 var(--gutter); }
 .ib-hero-foot { margin-top: 28px; }
 .ib-hero-foot .ib-body { margin: 0 auto; max-width: 38em; font-size: 16px; }

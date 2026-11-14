@@ -2134,12 +2134,11 @@
   },
   "iceberg": {
     "hero": {
-      "lines": [
-        "I Know the Grammar",
-        "I Have the Vocabulary",
-        "By ear?",
-        "I don’t understand..."
+      "checks": [
+        "I know the grammar",
+        "I know the words"
       ],
+      "pain": "But by ear\u00a0— <u>I don’t understand.</u>",
       "down": "Dive deeper"
     },
     "berg": {
