@@ -1,7 +1,7 @@
 import { lazy, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ArrowDownIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { Trans, useTranslation } from 'react-i18next';
+import { ArrowDownIcon, ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline';
 import Slogan from '../Brand/Slogan';
 import Iceberg from './Iceberg';
 import Speed from './Speed';
@@ -60,7 +60,7 @@ function BergDrawing() {
 
 export default function IcebergLanding() {
   const { t } = useTranslation();
-  const lines = t('iceberg.hero.lines', { returnObjects: true }) as string[];
+  const checks = t('iceberg.hero.checks', { returnObjects: true }) as string[];
   const zones = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
   const layers = LAYER_KEYS.map((k, i) => ({ ref: zones[i], label: t(`iceberg.berg.${k}.title`) }));
   const sections = [<Speed key="speed" />, <Perception key="perception" />, <LetterO key="letter" />, <Linking key="linking" />];
@@ -71,8 +71,17 @@ export default function IcebergLanding() {
         <div className="ib-wrap">
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
+          {/* what learners say: two things ticked off and greyed, so the eye lands on the one that hurts */}
           <h1 className="ib-question">
-            {lines.map((line) => <span key={line} className="ib-q-line">{line}</span>)}
+            {checks.map((line) => (
+              <span key={line} className="ib-q-check">
+                <CheckIcon aria-hidden="true" />
+                {line}
+              </span>
+            ))}
+            <span className="ib-q-pain">
+              <Trans t={t} i18nKey="iceberg.hero.pain" components={{ u: <span className="ib-q-hurt" /> }} />
+            </span>
           </h1>
           {/* the way in, on the first screen too, not only at the bottom */}
           <Link to="/levels" className="ib-cta dv-hero-cta">
