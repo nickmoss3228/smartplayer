@@ -5,8 +5,8 @@ import { EarIcon } from './EarIcon';
 /**
  * The iceberg: grammar and vocabulary on the small tip above the water, and
  * deep under it understanding by ear, which rests on four things, one under
- * the other, each deeper and darker: the speed of English speech, how its
- * sounds are perceived, spelling that doesn't show the sound, and words
+ * the other, each deeper and darker: spelling that doesn't show the sound,
+ * the speed of English speech, how its sounds are perceived, and words
  * linking into one stream.
  *
  * Two stacked zones so nothing can overlap at any width: the sky with the tip
@@ -45,7 +45,7 @@ interface Deep {
   title: string;
   lines: string[];
 }
-const DEEP_KEYS = ['speed', 'perception', 'spelling', 'linking'] as const;
+const DEEP_KEYS = ['spelling', 'speed', 'perception', 'linking'] as const;
 
 export default function Iceberg() {
   const { t } = useTranslation();

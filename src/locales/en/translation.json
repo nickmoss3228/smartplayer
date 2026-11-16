@@ -2109,8 +2109,8 @@
         "I know the grammar",
         "I know the words"
       ],
-      "pain": "But by ear\u00a0— <u>I don’t understand.</u>",
-      "down": "Dive deeper"
+      "pain": "But by ear — <u>I don’t understand.</u>",
+      "down": "Here’s why you can’t hear it"
     },
     "berg": {
       "grammar": "Grammar",
@@ -2153,34 +2153,25 @@
     },
     "speed": {
       "title": "English fits the same thought into fewer syllables than Russian does.",
-      "text": "Look at these examples:",
       "syllables_one": "{{count}} syllable",
       "syllables_other": "{{count}} syllables",
       "total": "Across the three sentences: {{ru}} in Russian and {{en}} in English, <hi>{{ratio}}</hi> times as many. The same meaning, heard sooner in English."
     },
     "perception": {
-      "title": "<hi>2/3</hi> of English sounds don’t exist in Russian at all.",
+      "title": "<hi>2/3</hi> of English sounds have no counterpart in Russian.",
       "text": "The brain swaps them for the nearest Russian ones, and the meaning of the words changes completely.",
       "heard": "A Russian ear hears:",
       "reasons": [
         {
           "title": "Russian has no such sounds",
-          "text": "Some English sounds have nothing like them in Russian. The brain takes the nearest Russian sound, and one word turns into another.",
-          "notes": [
-            "[θ]: the tongue between the teeth. Russian has no such sound, so think turns into sink.",
-            "[w]: rounded lips, no teeth. Russian only has “v”, so west becomes vest."
-          ]
+          "text": "The brain is lazy and resists taking in new sounds: it swaps them for familiar ones."
         },
         {
           "title": "Length changes the meaning",
-          "text": "In English the length of a sound changes the meaning of a word. A Russian-speaking brain doesn’t pick up such details, so the meaning of the word changes completely.",
-          "notes": [
-            "Short and long “i”: ship is a boat, sheep is an animal.",
-            "Short and long “u”: full means filled, fool is a silly person."
-          ]
+          "text": "Besides, in English the length of a sound changes the meaning of a word. A Russian-speaking brain doesn’t pick up such details, so the meaning of the word changes completely."
         }
       ],
-      "outro": "Until the brain learns to tell these sounds apart clearly, your perception of speech stays fragile and slow. And your speech organs say the words with distortions, which reinforces the wrong neural connections in your brain."
+      "outro": "To recognise and take in such details clearly, you need strong, new neural connections."
     },
     "letter": {
       "title": "Let’s compare the letter and the sound “O” in English and Russian",
@@ -2189,20 +2180,21 @@
       "ru": {
         "label": "In Russian",
         "count": "and one rule",
-        "rule": "In Russian it’s all very simple. Stressed, it’s “o”; unstressed, it’s “a”. So we write «МОЛОКО» but say “MALAKO”."
+        "rule": "Stressed, it’s “o”; unstressed, it’s “a”. We write «МОЛОКО» but say “MALAKO”."
       },
       "en": {
         "label": "In English",
         "count": "and the spelling won’t tell you which",
         "rule": " "
       },
-      "outro": "Learn a word with your eyes and your memory keeps its spelling, but by ear the word stays unfamiliar. The neural connections it needs haven’t formed, so you don’t recognise it when you hear it.",
+      "outro": "Learning words through their spelling is the most thankless path. The brain will always swap the letter “O” for a familiar Russian sound and build distorted neural connections.",
       "sounds_one": "{{count}} sound",
-      "sounds_other": "{{count}} sounds"
+      "sounds_other": "{{count}} sounds",
+      "oneLetter": "One letter —"
     },
     "link": {
       "title": "Six words written, three heard",
-      "text": "In real speech words don’t come one at a time. They hook onto each other, shrink and lose sounds. So a phrase made of words you know sounds like one word you don’t.",
+      "text": "In real speech words don’t come one at a time. They hook onto each other, stick together and lose some sounds.<br/>The brain can’t split this “glued” stream into separate, clear words.",
       "written": "written",
       "heard": "heard",
       "count": "Tap to hear the phrase at natural speed",
@@ -2216,46 +2208,67 @@
           "text": "Where words meet, sounds disappear because a “lazy tongue” has no time to say them. Sometimes two neighbouring sounds turn into a third."
         }
       ],
-      "outro": "In a textbook there are always spaces between words, so you can’t go wrong. In speech there are none..."
+      "outro": "In texts and subtitles there are always spaces between words, so you can’t go wrong. In speech there are none...",
+      "result": "As a result:"
     },
     "steps": {
-      "micro": "How to fight it",
-      "title": "5 steps to start understanding by ear",
+      "micro": "What to do about it?",
       "app": "In malako",
       "items": [
         {
-          "title": "Load an audio vocabulary into your head",
-          "short": "Vocabulary",
-          "text": "Remember how a word sounds, not how it’s written. The spelling can wait.",
-          "app": "Every part’s words, with audio"
+          "title": "Let’s reload your brain with an audio vocabulary instead of a written one",
+          "short": "Audio vocabulary",
+          "text": "In the malako player you won’t see how English words are written, only how they sound."
         },
         {
-          "title": "Split speech into atoms",
-          "short": "Atoms",
-          "text": "A solid stream breaks into sentences and phrases you can take one at a time.",
-          "app": "The player cuts the story into phrases"
+          "title": "Break it into fragments, slow it down, hear it three times",
+          "short": "Slow, fragments, repeat",
+          "text": "Speed, perception and linking are tied to each other, so they’re solved together: each sentence on its own, slowly, several times.",
+          "parts": [
+            {
+              "title": "Slow down",
+              "text": "At a slow speed you hear every sound and every link between words."
+            },
+            {
+              "title": "Split into fragments",
+              "text": "A solid stream breaks into sentences and phrases you can take one at a time."
+            },
+            {
+              "title": "Repeat",
+              "text": "Each time, the jumble of sounds falls into words a little more clearly."
+            }
+          ]
         },
         {
-          "title": "Slow the speech down",
-          "short": "Slowdown",
-          "text": "At a slow speed you hear every sound and every link between words.",
-          "app": "Three speeds: 0.65×, 0.8× and 1×"
-        },
-        {
-          "title": "Listen to each sentence 3 times",
-          "short": "Thrice",
-          "text": "Each time, the jumble of sounds falls into words a little more clearly.",
-          "app": "Practice mode: ×3, speeding up"
-        },
-        {
-          "title": "Repeat the sentence out loud",
-          "short": "Aloud",
-          "text": "Say it after the narrator: that’s how sound moves from your ears into your speech.",
-          "app": "“Repeat after me” mode"
+          "title": "Reinforce the new neural connections",
+          "short": "Making it stick",
+          "text": "For new neural connections to grow strong and stay, they have to be used again and again."
         }
       ],
-      "claimA": "malako is an instrument that covers all 5 points",
-      "claimB": "and automates them for you."
+      "claimA": "malako is an instrument that covers all 4 problems",
+      "claimB": "and automates them for you.",
+      "problem": "Problem",
+      "more": {
+        "label": "What else malako has",
+        "prev": "Previous",
+        "next": "Next",
+        "school": {
+          "title": "Your own school",
+          "text": "Passed quizzes, new words and repeated phrases earn you points, and you spend them building your own school, one room at a time, 20 in all."
+        },
+        "wordQuiz": {
+          "title": "Vocabulary quiz",
+          "text": "A word plays in English and you pick the tile with its meaning. That way new words are remembered by ear, not by spelling."
+        },
+        "pdf": {
+          "title": "PDF with the text and a translation",
+          "text": "Once a part is passed, its PDF opens: the whole text and a Russian translation, to go over what you’ve covered."
+        },
+        "comic": {
+          "title": "Let’s widen the neural connections with visual images",
+          "text": "A comic for every part: you can see who is where and what is happening, so it’s easier to follow."
+        }
+      }
     },
     "rivals": {
       "micro": "What about…",
