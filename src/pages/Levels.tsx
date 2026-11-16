@@ -19,7 +19,23 @@ import { buttonPrimary } from '../components/ui/buttonStyles';
  * жирность, printed larger than the brand on the carton, and the tints follow
  * the real thing: skim milk is genuinely blue-tinged, cream genuinely yellow.
  * So the colour ramp doubles as the difficulty ramp.
+ *
+ * Two steps on purpose: a tap pours the glass and only selects it, and the
+ * Continue button under the shelf moves on. The last level picked is
+ * remembered on this device and comes back already poured, so a returning
+ * learner only has to press Continue.
  */
+
+const LAST_LEVEL_KEY = 'malako:lastLevel';
+
+const readLastLevel = (): string => {
+  try {
+    const saved = localStorage.getItem(LAST_LEVEL_KEY);
+    return saved && Object.prototype.hasOwnProperty.call(themes, saved) ? saved : '';
+  } catch {
+    return '';
+  }
+};
 
 type Level = {
   id: keyof typeof themes;
@@ -30,9 +46,18 @@ type Level = {
 };
 
 const Levels = () => {
-  const [selectedLevel, setSelectedLevel] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState(readLastLevel);
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
+
+  const choose = (id: string) => {
+    setSelectedLevel(id);
+    try {
+      localStorage.setItem(LAST_LEVEL_KEY, id);
+    } catch {
+      // private mode: the choice simply isn't remembered
+    }
+  };
 
   const levels: Level[] = [
     { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28 },
@@ -76,7 +101,7 @@ const Levels = () => {
               <motion.button
                 key={level.id}
                 type="button"
-                onClick={() => setSelectedLevel(level.id)}
+                onClick={() => choose(level.id)}
                 aria-pressed={isSelected}
                 className="group flex flex-col items-center cursor-pointer rounded-card
                   px-1 pt-2 pb-3 sm:px-3
@@ -106,11 +131,13 @@ const Levels = () => {
                   />
 
                   {/* Жирность, printed the way a carton prints it — the
-                      biggest thing on the pack. */}
+                      biggest thing on the pack. Unselected it stays readable
+                      (dim ink, 5:1 on the page; gray-400 was 2.3:1): the lift
+                      and the pour mark the choice, not a faded label. */}
                   <span
                     className={`mt-2 sm:mt-3 font-extrabold tabular-nums leading-none
                       text-xl sm:text-3xl transition-colors duration-200
-                      ${isSelected ? 'text-black' : 'text-gray-400'}`}
+                      ${isSelected ? 'text-black' : 'text-dim'}`}
                   >
                     {level.fat}
                   </span>
@@ -121,7 +148,7 @@ const Levels = () => {
                   <span
                     className={`mt-1 text-[11px] sm:text-sm font-bold leading-tight
                       transition-colors duration-200
-                      ${isSelected ? 'text-black' : 'text-gray-500'}`}
+                      ${isSelected ? 'text-black' : 'text-dim'}`}
                   >
                     {level.title}
                   </span>
