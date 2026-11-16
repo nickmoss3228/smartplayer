@@ -1,82 +1,66 @@
 import { lazy, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckIcon } from '@heroicons/react/24/outline';
-import { GLYPHS } from './stepGlyphs';
 import Bubbles from './Bubbles';
-import DepthGauge from './DepthGauge';
+import Fish from './Fish';
 import Wave from './Wave';
 import Lazy3D from './Lazy3D';
-import StepShot, { type Crop } from './StepShot';
-import step1d from '../../assets/landing/steps/step1-d.webp';
-import step1m from '../../assets/landing/steps/step1-m.webp';
-import step2d from '../../assets/landing/steps/step2-d.webp';
-import step2m from '../../assets/landing/steps/step2-m.webp';
-import step34d from '../../assets/landing/steps/step34-d.webp';
-import step34m from '../../assets/landing/steps/step34-m.webp';
-import step5d from '../../assets/landing/steps/step5-d.webp';
-import step5m from '../../assets/landing/steps/step5-m.webp';
+import AudioWords from './AudioWords';
+import { ComicShowcase } from './FeatureCarousel';
+import PhotoDeck from './PhotoDeck';
 
 const MarineSnow = lazy(() => import('./three/MarineSnow'));
 
+/** The water of each point on the way up, deep to light, as in the section's gradient (for the top bar). */
+
 /**
- * How to fight it, drawn as the way up: five steps and the claim. Scrolling down is rising: the water starts as
- * deep as the last layer and lightens at every step, light reaches down from
- * the surface, and the steps hang off one rope that fills as you scroll,
- * lighting each step when it reaches the middle of the screen. Past the last
- * step the page breaks the surface and the claim stands in the open air.
+ * What to do about it, drawn as the way up: three points, then the claim.
+ * 1. load an audio vocabulary instead of a written one: the one answer that
+ *    belongs to one problem, spelling;
+ * 2. slowing down, atoms and repetition, together: speed, perception and
+ *    linking are tangled up with each other, so they are met as one;
+ * 3. making it stick: the quiz, the comics, and saying it aloud and hearing
+ *    yourself.
+ * Point 1 shows five hard words turning into waveforms (AudioWords); points 2
+ * and 3 list their parts inside the card. No icons, no screenshots,
+ * no rope (the screens may come back later; StepShot and the step captures are
+ * kept for that). Scrolling down is rising: the water lightens card by card, a
+ * card lights when it reaches the middle of the screen, and past the last one
+ * the page breaks the surface and the claim stands in the open air.
  */
 
+interface Part {
+  title: string;
+  text: string;
+}
 interface Item {
   title: string;
   short?: string;
   text: string;
-  app: string;
+  parts?: Part[];
 }
-
-/** A whole capture, in CSS pixels (the files are 2x), with an optional spotlight. */
-const whole = (src: string, w: number, h: number, spot?: Crop['spot']): Crop => ({ src, size: [w, h], box: [0, 0, w, h], spot });
-
-/**
- * Each step's place in the app, in step order: a capture of the desktop player
- * (1440px) and of the phone player (390px), shown by screen width. `feature`
- * is the feature from `iceberg.features.items` the step's screenshot shows;
- * its title and text move here from the features section, which now lists only
- * the rest. Recapture with the player at /levels/easy/leo/1, phrase 4, 0.65x, x3.
- */
-const SHOTS: { d: Crop; m: Crop; feature?: number }[] = [
-  // 1. the words of the part, each one heard before it is read
-  { d: whole(step1d, 360, 410), m: whole(step1m, 390, 472), feature: 1 },
-  // 2. one stream, cut into phrases: phrase 4 lit on the waveform / the dots
-  { d: whole(step2d, 656, 96, [66, 6, 38, 68]), m: whole(step2m, 390, 160, [8, 10, 374, 30]) },
-  // 3. the three speeds, 0.65 picked
-  { d: whole(step34d, 656, 190, [256, 128, 144, 46]), m: whole(step34m, 390, 175, [20, 110, 168, 56]) },
-  // 4. the repeats, x3 picked
-  { d: whole(step34d, 656, 190, [505, 128, 136, 46]), m: whole(step34m, 390, 175, [204, 110, 164, 56]) },
-  // 5. "your turn: repeat": the player waits for you to say the phrase
-  { d: whole(step5d, 472, 72, [20, 18, 36, 36]), m: whole(step5m, 390, 68, [20, 20, 36, 36]), feature: 3 },
-];
 
 export default function Steps() {
   const { t } = useTranslation();
   const items = t('iceberg.steps.items', { returnObjects: true }) as Item[];
-  const features = t('iceberg.features.items', { returnObjects: true }) as { title: string; text: string }[];
-  const ropeRef = useRef<HTMLDivElement>(null);
-  const stepRefs = [useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null)];
-  const [fill, setFill] = useState(0);
+  /** Which problems each point answers, named as in the problems block: spelling, then the other three together. */
+  const FOR: string[][] = [['spelling'], ['speed', 'perception', 'linking']];
+  const forLabel = (i: number) => FOR[i]?.map((k, n) => {
+    const name = t(`iceberg.berg.${k}.title`);
+    return n ? name.toLowerCase() : name;
+  }).join(', ');
+  const stepRefs = [useRef<HTMLLIElement>(null), useRef<HTMLLIElement>(null)];
+  const afterRef = useRef<HTMLDivElement>(null);
   const [lit, setLit] = useState(-1);
 
-  // The rope fills to the middle of the screen; a step lights once its knot is above it.
+  // A card lights once its top passes the middle of the screen.
   useEffect(() => {
     let frame = 0;
     const measure = () => {
       frame = 0;
-      const rope = ropeRef.current;
-      if (!rope) return;
       const mid = window.innerHeight * 0.55;
-      const r = rope.getBoundingClientRect();
-      setFill(Math.round(Math.min(1, Math.max(0, (mid - r.top) / r.height)) * 1000) / 1000);
       let n = -1;
-      stepRefs.forEach((ref, i) => {
+      [...stepRefs, afterRef].forEach((ref, i) => {
         const el = ref.current;
         if (el && el.getBoundingClientRect().top + 30 <= mid) n = i;
       });
@@ -98,6 +82,7 @@ export default function Steps() {
   return (
     <>
       <section className="ib-sec ib-steps dv-ascent" aria-labelledby="ib-steps-title">
+        <Fish count={5} seed={3} />
         <Bubbles count={8} />
         <Lazy3D className="dv-3d"><MarineSnow density={1.2} /></Lazy3D>
         {/* light from the surface, reaching down into the lighter half */}
@@ -108,55 +93,56 @@ export default function Steps() {
         </svg>
 
         <div className="ib-wrap">
-          <p className="ib-kicker">{t('iceberg.steps.micro')}</p>
-          <h2 id="ib-steps-title" className="ib-h2">{t('iceberg.steps.title')}</h2>
+          <h2 id="ib-steps-title" className="ib-kicker">{t('iceberg.steps.micro')}</h2>
 
-          <div className="dv-climb">
-            <div ref={ropeRef} className="dv-rope" aria-hidden="true">
-              <i style={{ transform: `scaleY(${fill})` }} />
-              <b style={{ top: `${fill * 100}%` }} />
-            </div>
-            <ol className="dv-climb-list">
-              {items.map((it, i) => (
-                <li
-                  key={i}
-                  ref={stepRefs[i]}
-                  className={`dv-climb-step${i % 2 ? ' dv-right' : ''}${i <= lit ? ' lit' : ''}`}
-                >
-                  <span className="dv-knot" aria-hidden="true">{i + 1}</span>
-                  <article className="ib-card dv-climb-card">
-                    <div className="ib-glyph" aria-hidden="true">{GLYPHS[i]}</div>
-                    <div className="ib-step-body">
-                      <h3 className="ib-h3">{it.title}</h3>
-                      <p>{it.text}</p>
-                      <p className="ib-step-app">
-                        <CheckIcon className="ib-check" aria-hidden="true" />
-                        <span>
-                          <span className="ib-step-app-k">{t('iceberg.steps.app')}:</span> {it.app}
-                        </span>
-                      </p>
-                    </div>
-                    <figure className="dv-step-media">
-                      <StepShot className="dv-shot-d" crop={SHOTS[i].d} alt={SHOTS[i].feature !== undefined ? features[SHOTS[i].feature!].title : it.app} />
-                      <StepShot className="dv-shot-m" crop={SHOTS[i].m} alt={SHOTS[i].feature !== undefined ? features[SHOTS[i].feature!].title : it.app} />
-                      {SHOTS[i].feature !== undefined && (
-                        <figcaption>
-                          <b>{features[SHOTS[i].feature!].title}</b> {features[SHOTS[i].feature!].text}
-                        </figcaption>
-                      )}
-                    </figure>
-                  </article>
-                </li>
-              ))}
-            </ol>
+          {/* the two problem groups, numbered "Problem 1" and "Problem 2" */}
+          <ol className="dv-fix-list">
+            {items.slice(0, 2).map((it, i) => (
+              <li key={i} ref={stepRefs[i]} className={`dv-fix${i <= lit ? ' lit' : ''}`}>
+                <article className="ib-card dv-fix-card">
+                  <p className="dv-fix-num">{t('iceberg.steps.problem')} #{i + 1}</p>
+                  <div className="dv-fix-body">
+                    {forLabel(i) && <p className="dv-fix-for">{forLabel(i)}</p>}
+                    <h3 className="dv-fix-title">{it.title}</h3>
+                    <p className="dv-fix-text">{it.text}</p>
+                    {/* the first point's picture: hard words turning into what the ear gets */}
+                    {i === 0 && <AudioWords />}
+                    {it.parts && (
+                      <ul className="dv-fix-parts">
+                        {it.parts.map((p, k) => (
+                          <li key={k} className="dv-fix-part">
+                            <h4 className="ib-h3">{p.title}</h4>
+                            <p>{p.text}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ol>
+
+          {/* the comics, right after problem 2: a picture to every part makes the sound easier to follow */}
+          <div className="dv-show">
+            <article className="ib-card dv-show-card">
+              <ComicShowcase />
+            </article>
           </div>
-        </div>
 
-        <DepthGauge
-          label={t('iceberg.steps.micro')}
-          stops={items.map((it, i) => ({ ref: stepRefs[i], label: it.short ?? it.title }))}
-          end="surface"
-        />
+          {/* the last point is not a problem but what holds it all together, so it is a block of its own: everything else malako has, as a carousel */}
+          {items[2] && (
+            <div ref={afterRef} className={`dv-fix dv-fix-after${lit >= 2 ? ' lit' : ''}`}>
+              <article className="ib-card dv-fix-card">
+                <div className="dv-fix-body">
+                  <h3 className="dv-fix-title">{items[2].title}</h3>
+                  <p className="dv-fix-text">{items[2].text}</p>
+                  <PhotoDeck />
+                </div>
+              </article>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* breaking the surface: the claim in the open air */}

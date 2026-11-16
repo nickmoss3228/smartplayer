@@ -1,14 +1,15 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { canSpeak, hush, say, type Lang } from './speech';
 import { useInView } from './useInView';
+import Outro from './Outro';
 
 /**
  * The letter "o" in Russian and in English. Russian: two sounds and one rule
  * (unstressed "о" is said "а": «молоко» → «малако», hence the name), one word each. English:
  * eight sounds around one letter (General American, as the en-US voice says
- * them). Every word is a button that says it (speech.ts). The outro closes the
+ * them). Every word is a button that says it (speech.ts); no prompt says so,
+ * and the cards carry no language label: the words show which is which. The outro closes the
  * "how words sound" part; word linking follows in Linking.tsx.
  */
 
@@ -44,6 +45,60 @@ const RU_SOUNDS: EnWord[] = [
 /** Grid cells for the eight words (row, column), clockwise from the top left; the letter sits in 2/2. */
 const CELL: [number, number][] = [[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 2], [3, 1], [2, 1]];
 
+/** Clear space left between a line and the letter or word it points at, in px. */
+const GAP = 6;
+interface Seg { x1: number; y1: number; x2: number; y2: number }
+
+/**
+ * The lines from the letter to its eight words, in the grid's own pixels: each
+ * starts just outside the disc and stops just short of its word's box, so no
+ * line crosses the letter or a word (the cards are see-through glass, nothing
+ * would hide them). Measured with offset* so the cells' entry scale is ignored.
+ */
+function useSpokes(grid: RefObject<HTMLDivElement | null>, disc: RefObject<HTMLSpanElement | null>, cells: RefObject<(HTMLSpanElement | null)[]>) {
+  const [out, setOut] = useState<{ w: number; h: number; segs: Seg[] } | null>(null);
+  useLayoutEffect(() => {
+    const g = grid.current;
+    if (!g) return;
+    let alive = true;
+    const measure = () => {
+      const o = disc.current;
+      if (!alive || !o) return;
+      const cx = o.offsetLeft + o.offsetWidth / 2;
+      const cy = o.offsetTop + o.offsetHeight / 2;
+      const r = o.offsetWidth / 2 + GAP;
+      const segs: Seg[] = [];
+      for (const cell of cells.current) {
+        const b = cell?.firstElementChild as HTMLElement | null;
+        if (!cell || !b) continue;
+        const x0 = cell.offsetLeft + b.offsetLeft - GAP;
+        const y0 = cell.offsetTop + b.offsetTop - GAP;
+        const x1 = x0 + b.offsetWidth + 2 * GAP;
+        const y1 = y0 + b.offsetHeight + 2 * GAP;
+        const dx = (x0 + x1) / 2 - cx;
+        const dy = (y0 + y1) / 2 - cy;
+        const len = Math.hypot(dx, dy) || 1;
+        // where the ray from the letter enters the word's padded box
+        const tx = dx ? Math.min((x0 - cx) / dx, (x1 - cx) / dx) : -Infinity;
+        const ty = dy ? Math.min((y0 - cy) / dy, (y1 - cy) / dy) : -Infinity;
+        const t = Math.max(tx, ty);
+        if (t * len <= r) continue;
+        segs.push({ x1: cx + (dx / len) * r, y1: cy + (dy / len) * r, x2: cx + dx * t, y2: cy + dy * t });
+      }
+      setOut({ w: g.clientWidth, h: g.clientHeight, segs });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(g);
+    document.fonts?.ready.then(measure);
+    return () => {
+      alive = false;
+      ro.disconnect();
+    };
+  }, [grid, disc, cells]);
+  return out;
+}
+
 /** A word with its «o» marked in red (Russian or English). */
 function enWord(w: EnWord): ReactNode {
   const len = w.len ?? 1;
@@ -73,6 +128,10 @@ export default function LetterO() {
   const { t } = useTranslation();
   const [playing, setPlaying] = useState<string | null>(null);
   const [ref, seen] = useInView<HTMLDivElement>(0.2);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const discRef = useRef<HTMLSpanElement>(null);
+  const cellRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const spokes = useSpokes(gridRef, discRef, cellRefs);
 
   useEffect(() => () => hush(), []);
 
@@ -111,20 +170,14 @@ export default function LetterO() {
   return (
     <section className="ib-sec ib-layer ib-letter" aria-labelledby="ib-letter-title">
       <div className="ib-wrap">
-        <p className="ib-kicker">{t('iceberg.berg.spelling.title')}</p>
         <h2 id="ib-letter-title" className="ib-h2">{t('iceberg.letter.title')}</h2>
-        <p className={`ib-tap${canSpeak ? '' : ' ib-tap-off'}`}>
-          <SpeakerWaveIcon className="ib-tap-ico" aria-hidden="true" />
-          {canSpeak ? t('iceberg.letter.tap') : t('iceberg.letter.noVoice')}
-        </p>
 
         <div ref={ref} className={`ib-letter-grid${seen ? ' in' : ''}`}>
           {/* Russian */}
           <article className="ib-card ib-ru">
             <header className="ib-card-head">
-              <p className="ib-micro">{t('iceberg.letter.ru.label')}</p>
               <p className="ib-count">
-                {t('iceberg.letter.sounds', { count: 2 })} <span>{t('iceberg.letter.ru.count')}</span>
+                {t('iceberg.letter.oneLetter')} {t('iceberg.letter.sounds', { count: 2 })}
               </p>
             </header>
             {/* The same tile as the English "O", with a word for each of its two sounds. */}
@@ -141,20 +194,21 @@ export default function LetterO() {
           {/* English */}
           <article className="ib-card ib-en">
             <header className="ib-card-head">
-              <p className="ib-micro">{t('iceberg.letter.en.label')}</p>
               <p className="ib-count">
-                {t('iceberg.letter.sounds', { count: EN.length })} <span>{t('iceberg.letter.en.count')}</span>
+                {t('iceberg.letter.oneLetter')} {t('iceberg.letter.sounds', { count: EN.length })}
               </p>
             </header>
-            <div className="ib-en-grid">
-              <svg className="ib-en-lines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true">
-                {CELL.map(([r, c], i) => (
-                  <line key={i} x1={150} y1={150} x2={(c - 0.5) * 100} y2={(r - 0.5) * 100} pathLength={1} style={{ transitionDelay: `${0.1 + i * 0.07}s` }} />
-                ))}
-              </svg>
-              <span className="ib-big-o ib-o-disc ib-en-o" style={{ gridRow: 2, gridColumn: 2 }} aria-hidden="true">O</span>
+            <div ref={gridRef} className="ib-en-grid">
+              {spokes && (
+                <svg className="ib-en-lines" viewBox={`0 0 ${spokes.w} ${spokes.h}`} aria-hidden="true">
+                  {spokes.segs.map((s, i) => (
+                    <line key={i} {...s} pathLength={1} style={{ transitionDelay: `${0.1 + i * 0.07}s` }} />
+                  ))}
+                </svg>
+              )}
+              <span ref={discRef} className="ib-big-o ib-o-disc ib-en-o" style={{ gridRow: 2, gridColumn: 2 }} aria-hidden="true">O</span>
               {EN.map((w, i) => (
-                <span key={w.word} className="ib-en-cell" style={{ gridRow: CELL[i][0], gridColumn: CELL[i][1], transitionDelay: `${0.35 + i * 0.07}s` }}>
+                <span key={w.word} ref={(el) => { cellRefs.current[i] = el; }} className="ib-en-cell" style={{ gridRow: CELL[i][0], gridColumn: CELL[i][1], transitionDelay: `${0.35 + i * 0.07}s` }}>
                   {word(`en-${w.word}`, w.word, 'en-US', 'ib-en-word', (
                     <>
                       <span className="ib-en-w" lang="en">{enWord(w)}</span>
@@ -168,7 +222,7 @@ export default function LetterO() {
           </article>
         </div>
 
-        <p className="ib-outro">{t('iceberg.letter.outro')}</p>
+        <Outro>{t('iceberg.letter.outro')}</Outro>
       </div>
     </section>
   );

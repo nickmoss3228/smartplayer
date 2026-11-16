@@ -1,12 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { ArrowRightIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { canSpeak, hush, say } from './speech';
 import { useInView } from './useInView';
+import Outro from './Outro';
 
 /**
- * The other deepest layer of the iceberg: word linking. One phrase shown as it
- * is written (six words) and as it is heard (three chunks), then the four
+ * The deepest layer of the iceberg: word linking. One phrase shown as it
+ * is written (six words) and as it is heard (three chunks), shown after the
  * things that happen to words in speech, each with real examples. Every
  * example says itself at natural speed, where the linking actually happens.
  * The English examples are language data, so they stay out of the locales.
@@ -81,35 +82,9 @@ export default function Linking() {
   return (
     <section className="ib-sec ib-layer ib-link" aria-labelledby="ib-link-title">
       <div className="ib-wrap">
-        <p className="ib-kicker">{t('iceberg.berg.linking.title')}</p>
         <h2 id="ib-link-title" className="ib-h2">{t('iceberg.link.title')}</h2>
-        <p className="ib-link-lead">{t('iceberg.link.text')}</p>
-
-        <div ref={heroRef} className={`ib-lk-hero${heroSeen ? ' in' : ''}`}>
-          {speakable('phrase', [PHRASE.text], 'ib-lk-phrase', (
-            <>
-              <span className="ib-lk-groups" lang="en">
-                {/* one grid: row 1 written words, row 2 braces, row 3 what you hear; the labels are column 1 */}
-                <span className="ib-lk-rowlabel" lang="ru">{t('iceberg.link.written')}</span>
-                <span aria-hidden="true" />
-                <span className="ib-lk-rowlabel ib-lk-rowlabel-heard" lang="ru">{t('iceberg.link.heard')}</span>
-                {PHRASE.groups.map((g, gi) => (
-                  <span key={gi} className="ib-lk-group" style={{ ['--g' as string]: gi }}>
-                    <span className="ib-lk-words">
-                      {g.w.map((w) => <span key={w} className="ib-lk-word">{w}</span>)}
-                    </span>
-                    <span className="ib-lk-brace" aria-hidden="true" />
-                    <span className="ib-lk-chunk">{g.heard}</span>
-                  </span>
-                ))}
-              </span>
-              <span className="ib-lk-count">
-                <SpeakerWaveIcon className="ib-say-ico" aria-hidden="true" />
-                {t('iceberg.link.count')}
-              </span>
-            </>
-          ))}
-        </div>
+        {/* <Trans> so a <br/> in the locale string starts a new line */}
+        <p className="ib-link-lead"><Trans t={t} i18nKey="iceberg.link.text" /></p>
 
         <div ref={cardsRef} className={`ib-lk-cards${cardsSeen ? ' in' : ''}`}>
           {types.map((ty, ti) => (
@@ -137,7 +112,34 @@ export default function Linking() {
           ))}
         </div>
 
-        <p className="ib-outro">{t('iceberg.link.outro')}</p>
+        {/* the whole phrase last: what the two kinds of change do to a phrase you know */}
+        <div ref={heroRef} className={`ib-lk-hero${heroSeen ? ' in' : ''}`}>
+          {speakable('phrase', [PHRASE.text], 'ib-lk-phrase', (
+            <>
+              {/* titled inside the panel, like the cards above */}
+              <span className="ib-h3 ib-lk-result">{t('iceberg.link.result')}</span>
+              <span className="ib-lk-groups" lang="en">
+                {/* one grid: row 1 written words, row 2 braces, row 3 what you hear; the labels are column 1 */}
+                <span className="ib-lk-rowlabel" lang="ru">{t('iceberg.link.written')}</span>
+                <span aria-hidden="true" />
+                <span className="ib-lk-rowlabel ib-lk-rowlabel-heard" lang="ru">{t('iceberg.link.heard')}</span>
+                {PHRASE.groups.map((g, gi) => (
+                  <span key={gi} className="ib-lk-group" style={{ ['--g' as string]: gi }}>
+                    <span className="ib-lk-words">
+                      {g.w.map((w) => <span key={w} className="ib-lk-word">{w}</span>)}
+                    </span>
+                    <span className="ib-lk-brace" aria-hidden="true" />
+                    <span className="ib-lk-chunk">{g.heard}</span>
+                  </span>
+                ))}
+              </span>
+              {/* no "tap to hear" line: the speaker in the corner says it */}
+              <SpeakerWaveIcon className="ib-say-ico ib-lk-say" aria-hidden="true" />
+            </>
+          ))}
+        </div>
+
+        <Outro><Trans t={t} i18nKey="iceberg.link.outro" /></Outro>
       </div>
     </section>
   );
