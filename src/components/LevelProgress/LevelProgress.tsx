@@ -34,6 +34,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     freeParts,
     previewSeconds,
     castCards,
+    castReached,
     castFocus,
     handleOpenCast,
     handleCloseCast,
@@ -127,6 +128,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       {castFocus !== undefined && (
         <CastSheet
           cards={castCards}
+          reachedPart={castReached}
           focusKey={castFocus}
           accent={theme.accent}
           onClose={handleCloseCast}

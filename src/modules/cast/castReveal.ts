@@ -86,3 +86,46 @@ export const castCards = (
     .map((member) => ({ key: member.key, locked: true, firstPart: member.firstPart }));
   return [...revealed, ...locked];
 };
+
+/** One stop on the cast timeline: a part, and who first appears in it. */
+export interface CastTimelineColumn {
+  part: number;
+  /** The student has got this far. */
+  reached: boolean;
+  /** The part they are on now. */
+  isNow: boolean;
+  cards: CastCard[];
+}
+
+/**
+ * The cast laid out along the story: one column for every part somebody first
+ * appears in, plus the part the student is on — so "you are here" always has a
+ * place, even when nobody new arrives in it. Parts in order; within a part the
+ * cards keep the order `castCards` gave them.
+ */
+export const castTimeline = (cards: readonly CastCard[], reached: number): CastTimelineColumn[] => {
+  if (cards.length === 0) return [];
+  const parts = new Set(cards.map((card) => card.firstPart));
+  parts.add(reached);
+  return [...parts]
+    .sort((a, b) => a - b)
+    .map((part) => ({
+      part,
+      reached: part <= reached,
+      isNow: part === reached,
+      cards: cards.filter((card) => card.firstPart === part),
+    }));
+};
+
+/**
+ * Who the sheet shows first when it is opened from the stack rather than from
+ * a face: the newest character met — the one the student is most likely to be
+ * wondering about — or, before anyone is met, the first still to come.
+ */
+export const defaultCastFocus = (cards: readonly CastCard[]): string | null => {
+  let newest: CastCard | undefined;
+  for (const card of cards) {
+    if (!card.locked && (!newest || card.firstPart > newest.firstPart)) newest = card;
+  }
+  return (newest ?? cards[0])?.key ?? null;
+};

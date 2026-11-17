@@ -237,7 +237,9 @@
     "meetInPart": "You'll meet them in part {{part}}",
     "lockedHint": "Reach that part to find out who this is.",
     "lockedAria": "Hidden character, arrives in part {{part}}",
-    "openAria": "More about {{name}}"
+    "openAria": "More about {{name}}",
+    "now": "now",
+    "timelineAria": "Characters by the part they arrive in"
   },
   "legal": {
     "backHome": "Back to the homepage",

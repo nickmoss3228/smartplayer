@@ -222,14 +222,13 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   // The characters, revealed up to the part this student has reached in THIS
   // story. Recomputed from progress, so finishing a part reveals whoever
   // arrives in the next one without a reload.
+  const castReached = useMemo(
+    () => reachedPart({ completedParts: completedLevels, currentPart: currentLevel, totalParts: totalLevels }),
+    [completedLevels, currentLevel, totalLevels],
+  );
   const castCards = useMemo(
-    () =>
-      buildCastCards(
-        dbStory?.cast ?? [],
-        reachedPart({ completedParts: completedLevels, currentPart: currentLevel, totalParts: totalLevels }),
-        locale,
-      ),
-    [dbStory, completedLevels, currentLevel, totalLevels, locale],
+    () => buildCastCards(dbStory?.cast ?? [], castReached, locale),
+    [dbStory, castReached, locale],
   );
   // Open sheet: undefined = closed, null = opened from "All", a key = that character.
   const [castFocus, setCastFocus] = useState<string | null | undefined>(undefined);
@@ -293,6 +292,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     showPaywall,
     setShowPaywall,
     castCards,
+    castReached,
     castFocus,
     // modal state
     showCongrats,
