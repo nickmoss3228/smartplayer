@@ -1,4 +1,4 @@
-import { lazy, useEffect, useRef } from 'react';
+import { lazy, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { ArrowDownIcon, ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline';
@@ -93,6 +93,49 @@ function BergDrawing() {
   );
 }
 
+/**
+ * The hero settles in on the first open of the page: it stays hidden until
+ * Manrope is in (so the wordmark never jumps from the fallback font), then its
+ * pieces rise in one after another (.ib-intro / .ib-go in the CSS). Once per
+ * page load: coming back to / from inside the app shows it at rest. Skipped
+ * for reduced motion.
+ */
+let introPlayed = false;
+const FONT_WAIT = 600;
+const BERG_AFTER = 650;
+
+function useHeroIntro() {
+  const [intro] = useState(() => !introPlayed && !prefersStill());
+  const [go, setGo] = useState(false);
+  const [bergReady, setBergReady] = useState(!intro);
+  useEffect(() => {
+    if (!intro) return;
+    introPlayed = true;
+    let started = false;
+    let raf = 0;
+    const timers: number[] = [];
+    const start = () => {
+      if (started) return;
+      started = true;
+      raf = requestAnimationFrame(() => setGo(true));
+      // the iceberg's own reveal (labels, lines) waits until the berg itself has risen
+      timers.push(window.setTimeout(() => setBergReady(true), BERG_AFTER));
+    };
+    const fonts = document.fonts;
+    if (fonts) {
+      const text = 'малакоAa';
+      Promise.all([fonts.load('800 16px Manrope', text), fonts.load('500 16px Manrope', text), fonts.ready]).then(start, start);
+    }
+    timers.push(window.setTimeout(start, fonts ? FONT_WAIT : 0));
+    return () => {
+      started = true;
+      cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout);
+    };
+  }, [intro]);
+  return { heroClass: `ib-hero${intro ? ' ib-intro' : ''}${go ? ' ib-go' : ''}`, bergReady };
+}
+
 export default function IcebergLanding() {
   const { t } = useTranslation();
   const checks = t('iceberg.hero.checks', { returnObjects: true }) as string[];
@@ -100,6 +143,7 @@ export default function IcebergLanding() {
   const layers = LAYER_KEYS.map((k, i) => ({ ref: zones[i], label: t(`iceberg.berg.${k}.title`) }));
   const sections = [<LetterO key="letter" />, <Speed key="speed" />, <Perception key="perception" />, <Linking key="linking" />];
   const rootRef = useRef<HTMLDivElement>(null);
+  const { heroClass, bergReady } = useHeroIntro();
 
   // Pause every band that is off screen (.dv-idle in the CSS), so the page never animates more than what is in view.
   useEffect(() => {
@@ -120,7 +164,7 @@ export default function IcebergLanding() {
   return (
     // data-skin="deep": the underwater cards as smoked glass (end of icebergLanding.css); drop it to get the white cards back
     <div ref={rootRef} className="ib ib-dive" data-skin="deep">
-      <header className="ib-hero">
+      <header className={heroClass}>
         <div className="ib-wrap">
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
@@ -144,7 +188,7 @@ export default function IcebergLanding() {
           <p className="ib-micro dv-hero-note">{t('iceberg.cta.text')}</p>
         </div>
         <div className="ib-berg-wrap">
-          <Iceberg />
+          <Iceberg ready={bergReady} />
         </div>
         <div className="ib-wrap ib-hero-foot">
           <a href="#ib-letter-title" className="ib-down">
