@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { MIN_PASSWORD_LENGTH } from '../passwordRules'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -29,11 +30,30 @@ const Badge = ({ stroke, children }: { stroke: string; children: React.ReactNode
   </div>
 )
 
+/**
+ * The reset token from the emailed link.
+ *
+ * Links now carry it in the fragment (`#token=…`), which the browser never sends
+ * to a server, so it stays out of the Caddy and nginx access logs. Links mailed
+ * before that change used `?token=…`; they are valid for an hour, so both are
+ * read.
+ */
+function readResetToken(): string | null {
+  const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('token')
+  return fromHash || new URLSearchParams(window.location.search).get('token')
+}
+
 const ForgotPassword = () => {
   const { t } = useTranslation()
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
+  // Read once and kept in state, because the effect below removes it from the
+  // address bar: a live credential should not sit in the URL where analytics
+  // (Webvisor), screenshots and the browser history can pick it up.
+  const [token] = useState<string | null>(readResetToken)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (token) navigate('/forgot-password', { replace: true })
+  }, [token, navigate])
   const { requestPasswordReset, confirmPasswordReset } = useAuth()
 
   // Step 1: Request reset email
@@ -87,7 +107,7 @@ const ForgotPassword = () => {
       return
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       setError(t('forgotPassword.errors.passwordTooShort'))
       return
     }

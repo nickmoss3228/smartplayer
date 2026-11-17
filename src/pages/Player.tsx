@@ -5,10 +5,9 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { useNavigate, useSearchParams, useParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
-import axios from "axios";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
@@ -43,7 +42,7 @@ import {
   passed as panelQuizPassed,
 } from "../modules/comicPractice/panelQuizProgress";
 import {
-  fetchPublishedStory,
+  fetchPublishedStoryStrict,
   PublishedStory,
 } from "../services/storyServices";
 import { AudioTrack } from "../types";
@@ -60,7 +59,7 @@ import { QuizQuestion } from "../types/Quiz";
 // back would make them re-listen just to see the button again.
 const getListenedKey = (difficulty: string, storySlug: string, level: number) =>
   `listenedFully_${difficulty}_${storySlug}_${level}`;
-import { API_BASE as API_BASE_URL } from "../services/apiClient";
+import { api } from "../services/apiClient";
 
 const hasListenedFullyStored = (difficulty: string, storySlug: string, level: number): boolean =>
   localStorage.getItem(getListenedKey(difficulty, storySlug, level)) === "true";
@@ -109,9 +108,13 @@ const Player = React.memo(() => {
   const { refreshStoryProgress, getStoryData, storyProgress, isInitialLoad } = useProgress();
 
   const navigate = useNavigate();
+  const routerLocation = useLocation();
 
   const wavesurferRef = useRef<WaveSurferInstance | null>(null);
-  const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
+  // Derived, not synced in an effect, so the waveform never mounts with the
+  // previous part's audio.
+  const selectedTrackId = level.toString();
+  const [saveError, setSaveError] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showPanelQuiz, setShowPanelQuiz] = useState(false);
   // The practice window: opens by itself when a part ends, and from «Практика».
@@ -152,7 +155,7 @@ const Player = React.memo(() => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+  }, [routerLocation.pathname]);
 
   const themes: Record<Difficulty, { background: string }> = {
     easy: { background: "from-green-500 via-emerald-500 to-teal-500" },
@@ -165,8 +168,8 @@ const Player = React.memo(() => {
   // Reset per-track UI state whenever the level changes, but restore the
   // listened-gate from storage instead of always relocking it.
   useEffect(() => {
-    setSelectedTrackId(level.toString());
     setShowQuiz(false);
+    setSaveError(false);
     setShowPanelQuiz(false);
     setShowPractice(false);
     setShowReplay(false);
@@ -245,23 +248,30 @@ const Player = React.memo(() => {
   // modules/story/resolveStory.ts). Nothing plays until the server answers.
   const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
   const [dbChecked, setDbChecked] = useState(false);
+  // A network/server failure (not a 404): shown with a Retry, which bumps loadAttempt.
+  const [dbLoadError, setDbLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setDbChecked(false);
-    fetchPublishedStory(difficulty, storySlug)
-      .then((story) => {
+    setDbLoadError(false);
+    const load = async () => {
+      try {
+        const story = await fetchPublishedStoryStrict(difficulty, storySlug);
         if (cancelled) return;
         setDbStory(story);
-        setDbChecked(true);
-      })
-      .catch(() => {
-        if (!cancelled) setDbChecked(true);
-      });
+      } catch {
+        if (cancelled) return;
+        setDbLoadError(true);
+      }
+      setDbChecked(true);
+    };
+    load();
     return () => {
       cancelled = true;
     };
-  }, [difficulty, storySlug]);
+  }, [difficulty, storySlug, loadAttempt]);
 
   const resolvedStory = useMemo(() => {
     const resolved = resolveStory(difficulty, storySlug, dbStory);
@@ -337,6 +347,17 @@ const Player = React.memo(() => {
     [selectedTrackId, audioTracks],
   );
 
+  // A part number the story does not have (NaN, 0, 99) would play the first
+  // track under the wrong number; once the story is here, send the learner back.
+  const levelOutOfRange =
+    dbChecked &&
+    !dbLoadError &&
+    audioTracks.length > 0 &&
+    !(Number.isInteger(level) && level >= 1 && level <= audioTracks.length);
+  useEffect(() => {
+    if (levelOutOfRange) navigate(backPath, { replace: true });
+  }, [levelOutOfRange, navigate, backPath]);
+
   const handleWavesurferMount = useCallback(
     (wavesurfer: WaveSurferInstance) => {
       wavesurferRef.current = wavesurfer;
@@ -389,19 +410,15 @@ const Player = React.memo(() => {
 
       setIsSubmitting(true);
       setQuizResults(results);
+      setSaveError(false);
 
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.post(
-          `${API_BASE_URL}/api/progress/complete`,
-          {
-            difficulty,
-            storyId: resolvedStorySlug,
-            partNumber: level,
-            answers: results.answers,
-          },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        const response = await api.post("/api/progress/complete", {
+          difficulty,
+          storyId: resolvedStorySlug,
+          partNumber: level,
+          answers: results.answers,
+        });
         console.log("Progress saved:", response.data);
 
         // The endpoint only awards BitAward (and returns a wallet) on an
@@ -412,10 +429,7 @@ const Player = React.memo(() => {
         await refreshStoryProgress(difficulty, resolvedStorySlug);
       } catch (error) {
         console.error("Failed to save progress:", error);
-        if (axios.isAxiosError(error)) {
-          console.error("Error response:", error.response?.data);
-        }
-        alert("Failed to save your progress. Please try again.");
+        setSaveError(true);
       } finally {
         setIsSubmitting(false);
       }
@@ -488,6 +502,14 @@ const Player = React.memo(() => {
   const quizCount = dbStory?.parts.find((p) => p.partNumber === level)?.quiz?.length ?? 0;
   const comicQuestions = useMemo(() => (panelQuiz ? questionsFromClips(panelQuiz.clips).length : 0), [panelQuiz]);
   const completedParts = user ? getStoryData(difficulty, resolvedStorySlug).completedParts : null;
+
+  // The server pays BitAward for a part's FIRST pass only. Decided when the
+  // quiz opens, not live: passing adds the part to completedParts, which would
+  // otherwise hide the reward chip on the very pass that earned it.
+  const [quizRewardAvailable, setQuizRewardAvailable] = useState(true);
+  const partAlreadyPassed = Boolean(completedParts?.includes(level));
+  const partAlreadyPassedRef = useRef(partAlreadyPassed);
+  partAlreadyPassedRef.current = partAlreadyPassed;
 
   // ── «Повтори за мной» ─────────────────────────────────────────────────
   // After each sentence the player waits for the student to say it back —
@@ -567,8 +589,10 @@ const Player = React.memo(() => {
   const closePractice = useCallback(() => setShowPractice(false), []);
   const handlePickPractice = useCallback((kind: PracticeKind) => {
     setShowPractice(false);
-    if (kind === "quiz") setShowQuiz(true);
-    else if (kind === "words") setShowVocabQuiz(true);
+    if (kind === "quiz") {
+      setQuizRewardAvailable(!partAlreadyPassedRef.current);
+      setShowQuiz(true);
+    } else if (kind === "words") setShowVocabQuiz(true);
     else if (kind === "voice") setShowReplay(true);
     else setShowPanelQuiz(true);
   }, []);
@@ -589,6 +613,26 @@ const Player = React.memo(() => {
   return dbStoryLoading ? (
     <div className="flex justify-center items-center h-dvh">
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white/70" />
+    </div>
+  ) : dbLoadError ? (
+    <div
+      className={`flex h-dvh flex-col items-center justify-center gap-4 bg-gradient-to-br ${theme.background} px-6 text-center`}
+    >
+      <p role="alert" className="text-sm text-black/70">{t("player.loadError")}</p>
+      <div className="flex gap-3">
+        <button
+          onClick={() => setLoadAttempt((n) => n + 1)}
+          className="cursor-pointer rounded-[3px] bg-gray-900 px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          {t("player.retry")}
+        </button>
+        <button
+          onClick={() => navigate(backPath)}
+          className="cursor-pointer text-sm text-black/60 transition-colors hover:text-black"
+        >
+          {t("player.back")}
+        </button>
+      </div>
     </div>
   ) : (
     <div
@@ -745,6 +789,11 @@ const Player = React.memo(() => {
             // The quiz fills what is left of the panel, in the Practice
             // window's ink, and scrolls inside itself.
             <div className="flex-1 min-h-0 flex flex-col px-3 pb-3 md:px-0 md:pb-0">
+              {saveError && (
+                <p role="alert" className="px-4 pb-2 text-center text-xs text-red-700">
+                  {t("player.saveProgressError")}
+                </p>
+              )}
               {quizLoading || !quizQuestions ? (
                 <p className="m-auto text-center text-black/50 text-sm py-10">
                   {quizLoadError ? t("player.quiz-load-error") : t("player.quiz-loading")}
@@ -762,6 +811,7 @@ const Player = React.memo(() => {
                     navigate(`/levels/${difficulty}/${resolvedStorySlug}/${level + 1}`)
                   }
                   isSubmitting={isSubmitting}
+                  rewardAvailable={quizRewardAvailable}
                 />
               )}
             </div>
@@ -799,7 +849,7 @@ const Player = React.memo(() => {
           ) : (
             <div className="flex-1 min-h-0 flex flex-col relative">
               <WaveformPlayer
-                key={`${difficulty}-${level}`}
+                key={`${difficulty}-${storySlug}-${level}`}
                 audioUrl={audioTrack.audio}
                 slowCopies={audioTrack.slowCopies}
                 trackId={audioTrack.id}

@@ -59,6 +59,7 @@ const Quiz: React.FC<QuizProps> = ({
   onClose,
   onNextPart,
   isSubmitting = false,
+  rewardAvailable = true,
   autoPlay = true,
   checkAnswer,
 }) => {
@@ -72,6 +73,8 @@ const Quiz: React.FC<QuizProps> = ({
   const [current, setCurrent] = useState<Answer | null>(null);
   const [checking, setChecking] = useState(false);
   const [finished, setFinished] = useState(false);
+  /** The last answer could not be checked (network); the question stays open. */
+  const [checkFailed, setCheckFailed] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   /** The result row opened to read its question and answers. */
   const [openRow, setOpenRow] = useState<number | null>(null);
@@ -130,6 +133,7 @@ const Quiz: React.FC<QuizProps> = ({
     const all = [...answers, current];
     setAnswers(all);
     setCurrent(null);
+    setCheckFailed(false);
     if (index + 1 < total) {
       setIndex(index + 1);
       return;
@@ -164,14 +168,19 @@ const Quiz: React.FC<QuizProps> = ({
     if (locked || current || checking || isSubmitting) return;
     audio.stop();
     setChecking(true);
-    let result: Answer = { picked: option, correct: false };
+    setCheckFailed(false);
+    let result: Answer;
     try {
       const check = checkAnswer
         ? await checkAnswer(index, option)
         : await checkQuizAnswer(difficulty, storyId, partNumber, index, option);
       result = { picked: option, correct: check.correct, correctOption: check.correctOption };
     } catch (error) {
+      // Not an answer: leave the question open so the student can try again.
       console.error("Failed to check quiz answer:", error);
+      setChecking(false);
+      setCheckFailed(true);
+      return;
     }
     setChecking(false);
     setCurrent(result);
@@ -181,6 +190,7 @@ const Quiz: React.FC<QuizProps> = ({
   const restart = () => {
     setAnswers([]);
     setCurrent(null);
+    setCheckFailed(false);
     setIndex(0);
     setFinished(false);
     setCelebrate(false);
@@ -239,7 +249,7 @@ const Quiz: React.FC<QuizProps> = ({
         <h2 className="mt-3 text-balance text-center text-[23px] font-extrabold leading-tight tracking-[-0.02em]">{head}</h2>
         <p className="mt-1 text-balance text-center text-sm text-panel-dim">{sub}</p>
 
-        {passed && user && (
+        {passed && user && rewardAvailable && (
           <span className="mt-3 inline-flex h-8 items-center gap-1.5 self-center rounded-chip bg-amber-400/15 px-2.5 text-[13px] font-bold text-amber-300">
             <BitAwardIcon size={15} />
             {t("quiz.end.reward", { amount: QUIZ_PASS_BITAWARD })}
@@ -474,6 +484,11 @@ const Quiz: React.FC<QuizProps> = ({
         </div>
       </div>
 
+      {checkFailed && !current && (
+        <p role="alert" className="mb-2 text-center text-[13px] font-semibold text-red-300">
+          {t("quiz.checkFailed", "Could not check your answer. Check your connection and pick again.")}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         {question.options.map((option, i) => {
           let tone = "border-panel-line bg-white/[0.04]";

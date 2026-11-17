@@ -16,6 +16,7 @@ import { sharingScore } from "../config/sessions.js";
 import { getCatalog } from "../helpers/catalogStore.js";
 import { ownedStoryKeys } from "../config/entitlements.js";
 import { resetSchool, serializeSchool } from "./school.controller.js";
+import { liveStreak } from "../helpers/moscowDay.js";
 
 const PLAYERS_PAGE_LIMIT = 25;
 const AUDIT_PAGE_LIMIT = 50;
@@ -290,7 +291,11 @@ export const getPlayerProgress = async (req, res) => {
     email: user.email,
     nickname: user.nickname ?? user.username,
     wallet: user.wallet,
-    streak: user.streak,
+    // `current` is the live streak (0 once a day was missed); the stored count
+    // only changes on a pass, so it would show a streak long since broken.
+    streak: user.streak
+      ? { ...user.streak, current: liveStreak(user.streak.current, user.streak.lastSubmittedDate) }
+      : user.streak,
     achievements: user.achievements,
     totalListeningSeconds: user.totalListeningSeconds,
     learnedWordsCount: user.learnedWords.length,

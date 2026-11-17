@@ -26,11 +26,13 @@ import { castCards as buildCastCards, reachedPart } from '../../modules/cast/cas
 const PRELOAD_AFTER_OPEN_MS = 400;
 
 // ── Congrats localStorage helpers ─────────────────────────────────────────
-const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
-const hasShownCongrats = (diff: string) =>
-  localStorage.getItem(getCongratsKey(diff)) === 'true';
-const markCongratsShown = (diff: string) =>
-  localStorage.setItem(getCongratsKey(diff), 'true');
+// Per story and per user: finishing one story must not hush the others.
+const getCongratsKey = (diff: string, slug: string, userId?: string | null) =>
+  `congrats_shown_${userId ?? 'guest'}_${diff}_${slug}`;
+const hasShownCongrats = (diff: string, slug: string, userId?: string | null) =>
+  localStorage.getItem(getCongratsKey(diff, slug, userId)) === 'true';
+const markCongratsShown = (diff: string, slug: string, userId?: string | null) =>
+  localStorage.setItem(getCongratsKey(diff, slug, userId), 'true');
 
 export function useLevelProgressPage(props: LevelProgressProps) {
   const location = useLocation();
@@ -149,14 +151,14 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   }, [comics]);
 
   useEffect(() => {
-    if (isAllCompleted && !hasShownCongrats(difficulty)) {
+    if (isAllCompleted && !hasShownCongrats(difficulty, storySlug, user?.id)) {
       const timer = setTimeout(() => {
         setShowCongrats(true);
-        markCongratsShown(difficulty);
+        markCongratsShown(difficulty, storySlug, user?.id);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isAllCompleted, difficulty]);
+  }, [isAllCompleted, difficulty, storySlug, user?.id]);
 
   // ── Access ────────────────────────────────────────────────────────────
   /**

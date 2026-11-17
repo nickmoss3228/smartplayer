@@ -1,9 +1,11 @@
 // config/currency.js
 
 // Flat BitAward payout when the main Quiz is passed (existing 70% threshold
-// in applyLevelCompletion.js). Awarded on every passing submission, not just
-// the first — matches how streak/achievements already recompute on every
-// completion event rather than gating on "first time ever."
+// in applyLevelCompletion.js). Paid for the FIRST pass of each part only.
+// It used to be paid on every passing submission, and since check-answer
+// reveals the right option, a script could replay a learned quiz in a loop and
+// mint coins without limit. Streak and achievements still recompute on every
+// pass; only the coins are once per part.
 export const QUIZ_PASS_BITAWARD = 5;
 
 // BitPhrase coins minted when a marker-to-marker segment finishes its full

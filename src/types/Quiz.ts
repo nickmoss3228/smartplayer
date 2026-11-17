@@ -29,6 +29,12 @@ export interface QuizProps {
   onAnswerResult?: (isCorrect: boolean, questionIndex: number) => void;
   isSubmitting?: boolean;
   /**
+   * Whether passing would pay the BitAward. The server pays only a part's first
+   * pass, so the end screen shows the reward chip only when this is true.
+   * Defaults to true (a caller that does not know shows it, as before).
+   */
+  rewardAvailable?: boolean;
+  /**
    * Play each question by itself as it appears (the default: the quiz is opened
    * by a tap). Off where the quiz just sits on a page, so the first question
    * waits for its button instead of starting while someone scrolls past.

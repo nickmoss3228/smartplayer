@@ -7,6 +7,8 @@ import {
   vocabCompleteLimiter,
   vocabLookupLimiter,
   vocabBookmarkLimiter,
+  quizCompleteLimiter,
+  migrateGuestLimiter,
 } from "../middleware/rateLimit.js";
 import {
   getProgress,
@@ -70,8 +72,8 @@ router.post("/progress/vocab-lookup",              optionalAuth, vocabLookupLimi
 // Limiters sit AFTER authenticateToken so they can key by user id — see the
 // byUser note in middleware/rateLimit.js.
 router.post("/progress/vocab-complete",            authenticateToken, vocabCompleteLimiter, completeVocabQuiz);
-router.post("/progress/complete",                  authenticateToken, completeLevel);
-router.post("/progress/migrate-guest",             authenticateToken, migrateGuestProgress);
+router.post("/progress/complete",                  authenticateToken, quizCompleteLimiter, completeLevel);
+router.post("/progress/migrate-guest",             authenticateToken, migrateGuestLimiter, migrateGuestProgress);
 router.patch("/progress/listening-time",           authenticateToken, syncListeningTime);
 router.get("/progress/wallet",                     authenticateToken, getWallet);
 router.post("/progress/phrase-repeat",             authenticateToken, phraseRepeatLimiter, recordPhraseRepeat);

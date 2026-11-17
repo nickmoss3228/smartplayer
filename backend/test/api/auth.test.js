@@ -197,9 +197,9 @@ describe("POST /api/signup", () => {
     });
   }
 
-  it("refuses a password shorter than 6 characters", async () => {
+  it("refuses a password shorter than 8 characters", async () => {
     const res = await api("POST", "/api/signup", {
-      body: signupBody(freshIdentity(), { password: "12345" }),
+      body: signupBody(freshIdentity(), { password: "1234567" }),
     });
     assert.equal(res.status, 400);
   });

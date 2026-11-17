@@ -620,10 +620,14 @@ async function hydrateMany(rows: User[], tx: Tx): Promise<UserDoc[]> {
 }
 
 /**
- * The public player search (GET /user/search). An email must match EXACTLY, so
- * a partial guess cannot enumerate other people's addresses; username and
- * nickname match partially and case-insensitively, since those are shown to
- * other players once found anyway.
+ * The public player search (GET /user/search): username and nickname only,
+ * partial and case-insensitive, since those are shown to other players once
+ * found anyway.
+ *
+ * Email is NOT searchable. It used to match exactly, which stopped partial
+ * guessing but still let any signed-in student check whether a given address
+ * has an account here and learn its username — a private fact turned into a
+ * public lookup. Players find each other by the name they show.
  */
 export async function searchUserDocs(
   query: string,
@@ -631,9 +635,7 @@ export async function searchUserDocs(
   tx: Tx = db(),
 ): Promise<UserDoc[]> {
   const q = query.trim();
-  const match = q.includes("@")
-    ? eq(users.email, q.toLowerCase())
-    : or(ilike(users.username, likePattern(q)), ilike(users.nickname, likePattern(q)));
+  const match = or(ilike(users.username, likePattern(q)), ilike(users.nickname, likePattern(q)));
   const where = excludeId && UUID_RE.test(excludeId) ? and(match, ne(users.id, excludeId)) : match;
   const rows = await tx.select().from(users).where(where).limit(limit);
   return hydrateMany(rows, tx);

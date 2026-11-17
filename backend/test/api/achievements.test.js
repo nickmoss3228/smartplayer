@@ -9,6 +9,7 @@ import { after, before, describe, it } from "node:test";
 // The harness MUST be the first project import — see its header.
 import "./harness.js";
 import { getQuizAnswerKey } from "../../src/config/quizData.js";
+import { dayBefore, moscowDay } from "../../src/helpers/moscowDay.js";
 import { LEGACY_VOCAB_KEYS as VOCAB_KEY_SET } from "../../src/config/vocabKeys.js";
 import { api, registerUser, setUserColumns, startServer, stopServer, userRow } from "./harness.js";
 
@@ -27,11 +28,10 @@ const achievements = async (u) => {
 const syncListening = (u, totalSeconds) =>
   api("PATCH", "/api/progress/listening-time", { token: u.token, body: { totalSeconds } });
 
-function yesterdayUTC() {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
+// Streaks count Moscow calendar days (helpers/moscowDay.js). A UTC "yesterday"
+// is two Moscow days back between 00:00 and 03:00 Moscow time, which made this
+// suite fail only when it ran late in the evening UTC.
+const yesterdayMoscow = () => dayBefore(moscowDay());
 
 describe("GET /api/progress/achievements", () => {
   it("requires a session", async () => {
@@ -106,7 +106,7 @@ describe("listening-time achievement", () => {
 describe("study-streak achievement", () => {
   it("records bronze when a completion extends the streak to three days", async () => {
     const u = await registerUser();
-    await setUserColumns(u.id, { streakCurrent: 2, streakLongest: 2, streakLastSubmittedDate: yesterdayUTC() });
+    await setUserColumns(u.id, { streakCurrent: 2, streakLongest: 2, streakLastSubmittedDate: yesterdayMoscow() });
 
     const key = getQuizAnswerKey(FREE.difficulty, FREE.storyId, FREE.partNumber);
     const res = await api("POST", "/api/progress/complete", {

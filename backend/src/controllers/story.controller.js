@@ -68,7 +68,6 @@ const savedPart = (story, req) =>
 // POST /api/admin/stories
 export async function createStory(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, localized, totalParts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
@@ -112,6 +111,7 @@ export async function createStory(req, res) {
         timeMarkers: remembered[part.partNumber] ?? [],
       })),
     });
+    invalidateCatalog();
 
     res.status(201).json({ story });
   } catch (error) {
@@ -140,7 +140,6 @@ export async function getStaticQuizSource(req, res) {
 // createStory, matching a static storyId is expected here, not rejected.
 export async function importStory(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, category, coverUrl, localized, totalParts, parts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
@@ -208,6 +207,7 @@ export async function importStory(req, res) {
       published: false,
       parts: partsWithMarkers,
     });
+    invalidateCatalog();
 
     res.status(201).json({ story, markersRestoredForParts: restoredParts });
   } catch (error) {
@@ -249,7 +249,6 @@ export async function getStory(req, res) {
 // creation would orphan progress/quiz data keyed by the old values.
 export async function updateStoryMeta(req, res) {
   try {
-    invalidateCatalog();
     const {
       storyName,
       description,
@@ -315,6 +314,7 @@ export async function updateStoryMeta(req, res) {
       if (previewSeconds !== undefined) story.previewSeconds = previewSeconds;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("updateStoryMeta error:", error);
@@ -326,7 +326,6 @@ export async function updateStoryMeta(req, res) {
 // 3" alongside an existing "part 1"/"part 2") and bumps totalParts to match.
 export async function addPart(req, res) {
   try {
-    invalidateCatalog();
     const result = await storiesRepo.mutateStory(req.params.id, (story) => {
       if (story.parts.length >= MAX_PARTS) {
         return { halt: { status: 400, body: { error: `A story can have at most ${MAX_PARTS} parts.` } } };
@@ -336,6 +335,7 @@ export async function addPart(req, res) {
       story.totalParts = story.parts.length;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.status(201).json({ story }));
   } catch (error) {
     console.error("addPart error:", error);
@@ -346,7 +346,6 @@ export async function addPart(req, res) {
 // DELETE /api/admin/stories/:id
 export async function deleteStory(req, res) {
   try {
-    invalidateCatalog();
     // Snapshot the markers before the story goes. saveMarkers already mirrors
     // them as they're placed, so this is a backstop — it rescues markers saved
     // before the durable copy existed, and covers any path that wrote markers
@@ -359,6 +358,7 @@ export async function deleteStory(req, res) {
         }
       }
       await storiesRepo.remove(story._id);
+      invalidateCatalog();
     }
     res.json({ success: true });
   } catch (error) {
@@ -1198,7 +1198,6 @@ export async function saveQuiz(req, res) {
 // PATCH /api/admin/stories/:id/publish  { published }
 export async function setStoryPublished(req, res) {
   try {
-    invalidateCatalog();
     const { published } = req.body;
     if (typeof published !== "boolean") {
       return res.status(400).json({ error: "published must be a boolean." });
@@ -1233,6 +1232,7 @@ export async function setStoryPublished(req, res) {
       story.published = published;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("setStoryPublished error:", error);
@@ -1543,7 +1543,6 @@ export async function getStoryVisibility(req, res) {
 // By slug, not by row id — a built-in story has no row to address.
 export async function setStoryVisibility(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId } = req.params;
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -1552,6 +1551,7 @@ export async function setStoryVisibility(req, res) {
       return res.status(400).json({ error: "hidden must be true or false." });
     }
     await storiesRepo.setHidden(difficulty, storyId, req.body.hidden);
+    invalidateCatalog();
     res.json({ success: true, difficulty, storyId, hidden: req.body.hidden });
   } catch (error) {
     console.error("setStoryVisibility error:", error);

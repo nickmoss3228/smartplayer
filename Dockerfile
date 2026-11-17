@@ -40,6 +40,9 @@ FROM nginx:stable-alpine AS runtime
 # nginx.conf is a static file in the image; see docs/staging.md.
 ARG BACKEND_UPSTREAM=http://backend:3000
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Security headers (CSP, HSTS, ...), included per location by nginx.conf. Lives
+# in snippets/, NOT conf.d/: everything in conf.d is loaded at http level.
+COPY nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 RUN sed -i "s|http://backend:3000|${BACKEND_UPSTREAM}|" /etc/nginx/conf.d/default.conf \
  && grep -q "${BACKEND_UPSTREAM}" /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

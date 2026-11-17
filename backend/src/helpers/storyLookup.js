@@ -23,10 +23,6 @@ function toStoryMeta(story) {
   };
 }
 
-function findDbPart(dbStory, partNumber) {
-  return dbStory?.parts.find((p) => p.partNumber === Number(partNumber)) ?? null;
-}
-
 // Looks up one story's metadata — published DB doc first, else static registry.
 export async function getStoryMeta(difficulty, storyId) {
   const dbStory = await stories.findPublishedByIdentity(difficulty, storyId);
@@ -50,14 +46,13 @@ export async function getAllStoryMeta(difficulty) {
 // part.quiz, even if empty — the doc is authoritative once published), else
 // static quizData.js.
 export async function getPublicQuizAsync(difficulty, storyId, partNumber) {
-  const dbStory = await stories.loadPublishedAggregate(difficulty, storyId);
-  if (dbStory) {
-    const part = findDbPart(dbStory, partNumber);
-    if (!part || part.quiz.length === 0) return null;
+  const quiz = await stories.loadPublishedPartQuiz(difficulty, storyId, Number(partNumber));
+  if (quiz) {
+    if (quiz.length === 0) return null;
     // Resolved here, not at import: a Story doc outlives the environment it
     // was created in, so quiz audio is stored bucket-relative and only
     // becomes a URL for THIS environment on the way out.
-    return part.quiz.map(({ correctAnswer, ...rest }) => ({
+    return quiz.map(({ correctAnswer, ...rest }) => ({
       ...rest,
       audio: {
         fast: resolveQuizAudioPath(rest.audio?.fast),
@@ -71,11 +66,10 @@ export async function getPublicQuizAsync(difficulty, storyId, partNumber) {
 
 // Server-only answer key for a part — same precedence as getPublicQuizAsync.
 export async function getQuizAnswerKeyAsync(difficulty, storyId, partNumber) {
-  const dbStory = await stories.loadPublishedAggregate(difficulty, storyId);
-  if (dbStory) {
-    const part = findDbPart(dbStory, partNumber);
-    if (!part || part.quiz.length === 0) return null;
-    return part.quiz.map((q) => q.correctAnswer);
+  const quiz = await stories.loadPublishedPartQuiz(difficulty, storyId, Number(partNumber));
+  if (quiz) {
+    if (quiz.length === 0) return null;
+    return quiz.map((q) => q.correctAnswer);
   }
 
   return getQuizAnswerKey(difficulty, storyId, partNumber);

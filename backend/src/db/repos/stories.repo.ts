@@ -229,6 +229,55 @@ export async function loadPublishedAggregate(
   return loadAggregate(head.id, tx);
 }
 
+/** One quiz question as storyLookup.js serves it (same shape as StoryAggregate's part.quiz). */
+export interface PublishedQuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  referenceTime: number | null;
+  audio: { fast: string | null; slow: string | null };
+}
+
+/**
+ * Just one part's quiz of a published story — three small queries instead of
+ * loadPublishedAggregate's six, for the answer-check path (once per question).
+ *
+ * Same null rule as loadPublishedAggregate: null when there is no published
+ * `contentSource: 'db'` story, so the caller falls back to the static files.
+ * For a DB story, a part that does not exist reads as an empty quiz.
+ */
+export async function loadPublishedPartQuiz(
+  difficulty: Difficulty,
+  storyId: string,
+  partNumber: number,
+  tx: Tx = db(),
+): Promise<PublishedQuizQuestion[] | null> {
+  const head = await findPublishedByIdentity(difficulty, storyId, tx);
+  if (!head || head.contentSource !== "db") return null;
+
+  // A non-integer part number (NaN from a bad URL) is no part, not a query error.
+  if (!Number.isInteger(partNumber)) return [];
+
+  const [part] = await tx
+    .select({ id: storyPart.id })
+    .from(storyPart)
+    .where(and(eq(storyPart.storyPk, head.id), eq(storyPart.partNumber, partNumber)));
+  if (!part) return [];
+
+  const rows = await tx
+    .select()
+    .from(storyPartQuiz)
+    .where(eq(storyPartQuiz.partPk, part.id))
+    .orderBy(asc(storyPartQuiz.ordinal));
+  return rows.map((q) => ({
+    question: q.question,
+    options: q.options,
+    correctAnswer: q.correctAnswer,
+    referenceTime: q.referenceTime,
+    audio: { fast: q.audioFast, slow: q.audioSlow },
+  }));
+}
+
 export async function findByPk(id: string, tx: Tx = db()): Promise<Story | null> {
   const [row] = await tx.select().from(story).where(eq(story.id, id));
   return row ?? null;

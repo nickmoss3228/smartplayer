@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import {
@@ -53,28 +54,40 @@ export const EntitlementsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const { getProduct } = useCatalog();
   const [data, setData] = useState<Entitlements>(NO_ENTITLEMENTS);
-  const [entitlementsLoading, setEntitlementsLoading] = useState(true);
+  const userKey = user ? user.id : "guest";
+  // Whose entitlements `data` holds. Loading is DERIVED from it: the render in
+  // which `user` first arrives must already read as loading, before any effect
+  // has had a chance to flip a flag (Player's redirect effect runs first).
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const entitlementsLoading = loadedFor !== userKey;
+  const currentKeyRef = useRef(userKey);
+  currentKeyRef.current = userKey;
 
   const load = useCallback(async () => {
-    if (!user) {
+    const key = userKey;
+    if (key === "guest") {
       // A guest owns nothing. Not an error state, and not worth a request.
       setData(NO_ENTITLEMENTS);
-      setEntitlementsLoading(false);
+      setLoadedFor(key);
       return;
     }
+    let next: Entitlements;
     try {
-      setData(await fetchEntitlements());
+      next = await fetchEntitlements();
     } catch (err) {
       // Fail CLOSED — see NO_ENTITLEMENTS.
       console.error("[EntitlementsContext] Failed to load entitlements:", err);
-      setData(NO_ENTITLEMENTS);
-    } finally {
-      setEntitlementsLoading(false);
+      next = NO_ENTITLEMENTS;
     }
-  }, [user]);
+    // The account changed while this was in flight: its answer is not ours.
+    if (currentKeyRef.current !== key) return;
+    setData(next);
+    setLoadedFor(key);
+  }, [userKey]);
 
   useEffect(() => {
-    setEntitlementsLoading(true);
+    // Account switch: drop the previous account's ownership while we fetch.
+    setData(NO_ENTITLEMENTS);
     load();
   }, [load]);
 

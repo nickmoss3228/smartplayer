@@ -5,6 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import { fetchProfile } from "../services/profileServices";
@@ -32,22 +33,29 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
+  const userId = user ? user.id : null;
+  // Lets an in-flight request notice the account changed under it.
+  const userIdRef = useRef<string | null>(userId);
+  userIdRef.current = userId;
+
   const loadProfile = useCallback(async () => {
     const token = localStorage.getItem("token");
-    if (!token || !user) {
+    if (!token || !userId) {
       setProfile(null);
       setProfileLoading(false);
       return;
     }
     try {
       const data = await fetchProfile(token);
+      // Another account is signed in by now; this profile is not theirs.
+      if (userIdRef.current !== userId) return;
       setProfile(data);
     } catch (err) {
       console.error("[ProfileContext] Failed to load profile:", err);
     } finally {
-      setProfileLoading(false);
+      if (userIdRef.current === userId) setProfileLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   // Re-fetch whenever the logged-in user changes
   useEffect(() => {

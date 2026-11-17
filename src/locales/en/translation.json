@@ -16,7 +16,7 @@
     "online": "Online",
     "offline": "Offline",
     "visit": "Visit",
-    "searchPlaceholder": "Search by username or email...",
+    "searchPlaceholder": "Search by username...",
     "searchHint": "Type at least 2 characters to search.",
     "noResults": "No players found.",
     "loadFailed": "Couldn't search players. Please try again later.",
@@ -327,6 +327,7 @@
     "result": "Result",
     "return-btn": "Return",
     "tryagain": "Try Again",
+    "checkFailed": "Could not check your answer. Check your connection and pick again.",
     "correctanswers": "Correct Answers",
     "incorrectanswers": "Incorrect Answers",
     "listenFirst": "Listen to the question to unlock the answers",
@@ -429,7 +430,7 @@
     "errors": {
       "agreementsRequired": "Please accept the User Agreement and the personal-data consent to continue.",
       "passwordMismatch": "Passwords do not match",
-      "passwordLength": "Password must be at least 6 characters long",
+      "passwordLength": "Password must be at least 8 characters long",
       "invalidEmail": "Please enter a valid email address",
       "invalidPhone": "Please enter a valid Russian phone number (+7XXXXXXXXXX).",
       "tooManyAttempts": "Too many sign-up attempts. Please try again in {{minutes}} minutes.",
@@ -538,7 +539,7 @@
     },
     "errors": {
       "passwordMismatch": "Passwords do not match",
-      "passwordTooShort": "Password must be at least 6 characters long",
+      "passwordTooShort": "Password must be at least 8 characters long",
       "invalidToken": "Invalid reset token",
       "tooManyAttempts": "Too many reset requests. Please try again in {{minutes}} minutes."
     },
@@ -580,7 +581,7 @@
       "errors": {
         "wrongPassword": "The current password is incorrect.",
         "samePassword": "The new password must be different from the current one.",
-        "tooShort": "The new password must be at least 6 characters.",
+        "tooShort": "The new password must be at least 8 characters.",
         "mismatch": "The new passwords don't match.",
         "required": "Fill in all three fields.",
         "tooManyAttempts": "Too many attempts. Try again in {{minutes}} min.",
@@ -1087,6 +1088,9 @@
     "quiz-bottom": "Listen until the end to open the quiz.",
     "quiz-loading": "Loading quiz...",
     "quiz-load-error": "Failed to load the quiz. Please try again.",
+    "saveProgressError": "Failed to save your progress. Please try again.",
+    "loadError": "Could not load this story. Check your connection and try again.",
+    "retry": "Retry",
     "partOf": "part {{n}} of {{total}}",
     "wordsTitle": "Words in this part",
     "wordsKnown": "{{known}} of {{total}} known",

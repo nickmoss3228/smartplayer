@@ -11,6 +11,7 @@ import {
 } from "../authKit";
 import { changePassword } from "../../services/profileServices";
 import Sheet from "../../components/Sheet/Sheet";
+import { MIN_PASSWORD_LENGTH } from "../passwordRules";
 
 interface ChangePasswordModalProps {
   /** ISO time of the last change, when the server has one */
@@ -52,7 +53,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     e.preventDefault();
     setError("");
 
-    if (next.length < 6) {
+    if (next.length < MIN_PASSWORD_LENGTH) {
       setError(t("dashboard.password.errors.tooShort"));
       return;
     }

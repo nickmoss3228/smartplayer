@@ -172,13 +172,11 @@ export async function heartbeat(req, res) {
   }
 }
 
-// GET /user/search?q=... — find a specific player by username/nickname or
-// exact email, rather than exposing a full browsable roster (no directory of
+// GET /user/search?q=... — find a specific player by a partial username or
+// nickname, rather than exposing a full browsable roster (no directory of
 // every signed-up user — you have to already know who you're looking for).
-// An email match must be exact (case-insensitive) so a partial guess can't
-// be used to enumerate other users' addresses; username/nickname allow a
-// partial, case-insensitive match since those are already shown to other
-// players once found. The matching rule itself lives in searchUserDocs.
+// Email is deliberately not searchable (see searchUserDocs). The matching rule
+// itself lives in searchUserDocs.
 export async function searchPlayers(req, res) {
   try {
     // `?q=a&q=b` arrives as an array, and `?q[x]=1` as an object.

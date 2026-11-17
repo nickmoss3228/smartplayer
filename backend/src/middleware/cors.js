@@ -15,14 +15,24 @@ export const corsMiddleware = (req, res, next) => {
     // Legacy domain, still live on Vercel until DNS is cut over.
     'https://infinityplayer.xyz',
     'https://www.infinityplayer.xyz',
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'http://localhost:5173',
-    'http://localhost:8081',
-    'http://127.0.0.1:5173',
-    // No trailing slash: a browser Origin header is never slash-terminated,
-    // so 'http://89.169.159.92/' could never match and was dead config.
-    'http://89.169.159.92',
+    // Local dev servers and the VM's bare IP, outside production only. A
+    // production API trusting http://localhost meant any page served from a
+    // visitor's own machine could call it cross-origin as that visitor, and
+    // the bare IP is plain HTTP that Caddy no longer serves at all.
+    ...(process.env.NODE_ENV !== 'production'
+      ? [
+          'http://localhost:3000',
+          'http://localhost:8080',
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:5175',
+          'http://localhost:8081',
+          'http://127.0.0.1:5173',
+          'http://127.0.0.1:5174',
+          // No trailing slash: a browser Origin header is never slash-terminated.
+          'http://89.169.159.92',
+        ]
+      : []),
   ];
 
   const origin = req.headers.origin;

@@ -18,6 +18,7 @@ import {
 } from "../helpers/storyLookup.js";
 import { awardCurrency } from "../helpers/awardCurrency.js";
 import { partitionVocabKeys } from "../helpers/vocabKeyCatalog.js";
+import { LEGACY_VOCAB_KEYS } from "../config/vocabKeys.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
 import { getShopItem } from "../config/shopCatalog.js";
@@ -36,6 +37,7 @@ import {
 import { accessFor, isPartVisible, isPreviewPart } from "../config/entitlements.js";
 import { getCatalog } from "../helpers/catalogStore.js";
 import { config } from "../config/env.js";
+import { advanceStreak, liveStreak } from "../helpers/moscowDay.js";
 
 const difficulties = ["easy", "medium", "hard"];
 
@@ -102,16 +104,6 @@ export async function getStoryProgress(req, res) {
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
-
-function todayUTC() {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-}
-
-function yesterdayUTC() {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
 
 /** The achievement tiers of a users row, in the shape the API returns. */
 function achievementsOf(row) {
@@ -278,7 +270,9 @@ export async function completeLevel(req, res) {
       return res.status(400).json({ message: "Invalid quiz submission for this part" });
     const { correctAnswers, totalQuestions } = scored;
 
-    const { isCompleted, storyProgress } = await applyLevelCompletion({
+    // The streak and the reward are written inside the completion's own
+    // transaction: a crash can no longer record a pass without its payout.
+    const { isCompleted, storyProgress, extra } = await applyLevelCompletion({
       userId,
       difficulty,
       storyId,
@@ -286,52 +280,54 @@ export async function completeLevel(req, res) {
       correctAnswers,
       totalQuestions,
       storyMeta,
+      inTransaction: async (tx, { isCompleted: passed, firstPass }) => {
+        if (!passed) return { wallet: null, user: null, streak: null };
+
+        // ── Streak (Moscow day, see helpers/moscowDay.js) ─────────────────
+        const user = await usersRepo.findById(userId, tx);
+        const streak = advanceStreak({
+          current: user?.streakCurrent ?? 0,
+          longest: user?.streakLongest ?? 0,
+          lastSubmittedDate: user?.streakLastSubmittedDate ?? null,
+        });
+        await usersRepo.update(
+          userId,
+          {
+            streakCurrent: streak.current,
+            streakLongest: streak.longest,
+            streakLastSubmittedDate: streak.lastSubmittedDate,
+          },
+          tx,
+        );
+
+        // ── BitAward: paid for the FIRST pass of a part only ──────────────
+        // It used to be paid on every passing submission. check-answer tells
+        // a student the right option once they have answered, so a script
+        // could learn a quiz and resubmit it in a loop, minting coins without
+        // limit. A part is learned once; it pays once.
+        const wallet = firstPass
+          ? await awardCurrency(userId, { bitAward: QUIZ_PASS_BITAWARD }, tx)
+          : null;
+        return { wallet, user, streak };
+      },
     });
 
-    // ── Streak update (only on completed submissions) ─────────────────────
     let wallet = null;
     if (isCompleted) {
-      const user = await usersRepo.findById(userId);
-      const today = todayUTC();
-      const yesterday = yesterdayUTC();
-      const last = user.streakLastSubmittedDate;
+      wallet = extra.wallet;
 
-      let current = user.streakCurrent ?? 0;
-      let longest = user.streakLongest ?? 0;
-
-      if (last === today) {
-        // Already counted today — no change
-      } else if (last === yesterday) {
-        // Consecutive day
-        current += 1;
-      } else {
-        // Streak broken or first ever
-        current = 1;
-      }
-
-      longest = Math.max(longest, current);
-
-      await usersRepo.update(userId, {
-        streakCurrent: current,
-        streakLongest: longest,
-        streakLastSubmittedDate: today,
-      });
-
-      // ── Achievement check ───────────────────────────────────────────────
+      // ── Achievement check (a recompute, safe outside the transaction) ───
       const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
         progressRepo.questionsAnsweredTotal(userId),
         progressRepo.uniqueCompletedStoriesCount(userId),
       ]);
 
       await updateAchievements(userId, {
-        listeningSeconds: user.totalListeningSeconds ?? 0,
+        listeningSeconds: extra.user?.totalListeningSeconds ?? 0,
         questionsAnswered,
-        currentStreak: current,
+        currentStreak: extra.streak.current,
         uniqueStoriesCount,
       });
-
-      // ── BitAward: flat payout for passing the quiz ───────────────────────
-      wallet = await awardCurrency(userId, { bitAward: QUIZ_PASS_BITAWARD });
     }
 
     res.json({
@@ -413,8 +409,14 @@ export async function migrateGuestProgress(req, res) {
       }
     }
 
+    // Held to the same rule as a live vocab round: only real catalogue words
+    // from parts a guest could open, and a sane number of them. This used to
+    // insert whatever strings arrived, so one request could add thousands of
+    // invented "learned words" and forge the wordsLearned achievement.
     if (learnedWords && learnedWords.length > 0) {
-      await progressRepo.addLearnedWords(userId, learnedWords);
+      const { known } = await partitionVocabKeys(normalizeVocabKeys(learnedWords.slice(0, MAX_GUEST_WORDS)));
+      const openToGuest = await keysOpenTo(known, null);
+      if (openToGuest.length > 0) await progressRepo.addLearnedWords(userId, openToGuest);
     }
 
     // A guest's bookmarks, kept in the browser until now. Malformed or unknown
@@ -452,6 +454,9 @@ export async function migrateGuestProgress(req, res) {
 // ── PATCH /progress/listening-time ────────────────────────────────────────
 // Called by the frontend periodically to sync localStorage seconds to DB.
 
+// Listening a guest may carry into a new account (see syncListeningTime).
+const GUEST_LISTENING_GRACE_SECONDS = 24 * 60 * 60;
+
 export async function syncListeningTime(req, res) {
   try {
     const { totalSeconds } = req.body;
@@ -463,13 +468,23 @@ export async function syncListeningTime(req, res) {
     const before = await usersRepo.findById(userId);
     if (!before) return res.status(404).json({ message: "User not found" });
 
-    if (Math.floor(totalSeconds) <= (before.totalListeningSeconds ?? 0)) {
+    // The total is the client's claim, so it is held to what is physically
+    // possible: nobody can have listened longer than their account has existed,
+    // plus a day of listening done as a guest before signing up. Without this a
+    // single request could claim 2,000,000,000 seconds — the top achievement on
+    // the spot, and never correctable since the total only rises — and anything
+    // past the integer column's range was a 500.
+    const accountAgeSeconds = Math.max(0, (Date.now() - new Date(before.createdAt).getTime()) / 1000);
+    const ceiling = Math.floor(accountAgeSeconds + GUEST_LISTENING_GRACE_SECONDS);
+    const claimed = Math.min(Math.floor(totalSeconds), ceiling);
+
+    if (claimed <= (before.totalListeningSeconds ?? 0)) {
       // Nothing to update, but still return current value so frontend is in sync
       return res.json({ totalListeningSeconds: before.totalListeningSeconds });
     }
 
     // Only ever increases — enforced inside the UPDATE, not by the check above.
-    const stored = await usersRepo.raiseListeningSeconds(userId, totalSeconds);
+    const stored = await usersRepo.raiseListeningSeconds(userId, claimed);
 
     // Check listening achievement with updated value
     const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
@@ -511,7 +526,9 @@ export async function getAchievements(req, res) {
       stats: {
         listeningSeconds:  user.totalListeningSeconds ?? 0,
         questionsAnswered,
-        currentStreak:     user.streakCurrent ?? 0,
+        // Live, not stored: the stored count only changes on a pass, so a
+        // student who stopped a week ago would otherwise still see their streak.
+        currentStreak:     liveStreak(user.streakCurrent, user.streakLastSubmittedDate),
         longestStreak:     user.streakLongest ?? 0,
         uniqueStoriesCount,
         wordsLearned,
@@ -603,6 +620,47 @@ export async function setVocabBookmark(req, res) {
 // may open, so this never shows the words of a part they have not unlocked.
 const MAX_LOOKUP_KEYS = 1500;
 
+// A guest's learned words carried into a new account: more than every word of
+// every free part, far less than a dictionary.
+const MAX_GUEST_WORDS = 500;
+
+/** The places among `places` that `user` (null for a guest) may open. */
+async function placesOpenTo(places, user) {
+  const catalog = await getCatalog();
+  const accessByStory = new Map();
+  return places.filter((place) => {
+    const id = `${place.difficulty}/${place.storyId}`;
+    if (!accessByStory.has(id)) {
+      accessByStory.set(
+        id,
+        accessFor(user?.entitlements, place.difficulty, place.storyId, {
+          authenticated: Boolean(user),
+          catalog,
+          paywallEnabled: config.payments.paywallEnabled,
+          signupWallEnabled: config.payments.signupWallEnabled,
+        }),
+      );
+    }
+    return isPartVisible(accessByStory.get(id), place.partNumber);
+  });
+}
+
+/**
+ * The catalogue keys among `keys` that appear in at least one part `user` may
+ * open. A word is only worth a BitWord (or a place in the learned set) if the
+ * student could have met it; otherwise a script could claim the vocabulary of
+ * every locked part. Legacy built-in keys predate per-part storage and have no
+ * place to check, so they pass as before.
+ */
+async function keysOpenTo(keys, user) {
+  const fromStories = keys.filter((key) => !LEGACY_VOCAB_KEYS.has(key));
+  if (fromStories.length === 0) return keys;
+  const open = new Set(
+    (await placesOpenTo(await storiesRepo.vocabPlaces(fromStories), user)).map((place) => place.key),
+  );
+  return keys.filter((key) => LEGACY_VOCAB_KEYS.has(key) || open.has(key));
+}
+
 export async function lookupVocab(req, res) {
   try {
     const { keys } = req.body ?? {};
@@ -610,24 +668,7 @@ export async function lookupVocab(req, res) {
       return res.status(400).json({ message: `keys must be an array of at most ${MAX_LOOKUP_KEYS} strings` });
     }
     const places = await storiesRepo.vocabPlaces(normalizeVocabKeys(keys));
-
-    const catalog = await getCatalog();
-    const accessByStory = new Map();
-    const visible = places.filter((place) => {
-      const id = `${place.difficulty}/${place.storyId}`;
-      if (!accessByStory.has(id)) {
-        accessByStory.set(
-          id,
-          accessFor(req.user?.entitlements, place.difficulty, place.storyId, {
-            authenticated: Boolean(req.user),
-            catalog,
-            paywallEnabled: config.payments.paywallEnabled,
-            signupWallEnabled: config.payments.signupWallEnabled,
-          }),
-        );
-      }
-      return isPartVisible(accessByStory.get(id), place.partNumber);
-    });
+    const visible = await placesOpenTo(places, req.user ?? null);
 
     res.json({ places: visible });
   } catch (error) {
@@ -678,7 +719,10 @@ export async function completeVocabQuiz(req, res) {
     // in one request. Unknown words are dropped rather than 400'd: a rejection
     // would turn this into an oracle for probing the catalogue, and a student
     // must not lose a whole round because one key drifted.
-    const { known, unknown } = await partitionVocabKeys(submitted);
+    const partitioned = await partitionVocabKeys(submitted);
+    const { unknown } = partitioned;
+    // Real words, but only from parts this student may open.
+    const known = await keysOpenTo(partitioned.known, req.user);
 
     if (unknown.length > 0) {
       // Loud on purpose. In normal use this should never fire, so if it starts

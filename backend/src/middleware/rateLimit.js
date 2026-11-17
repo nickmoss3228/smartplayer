@@ -126,6 +126,19 @@ export const vocabCompleteLimiter = make("vocab-complete", 60 * MINUTE, 60, {
   keyGenerator: byUser,
 });
 
+// A quiz pass pays only on a part's first pass, so this is a second line, not
+// the fix: it caps how fast one account can hammer the grader. A student who
+// passes a part every few minutes, retries included, stays far below it.
+export const quizCompleteLimiter = make("quiz-complete", 60 * MINUTE, 120, {
+  keyGenerator: byUser,
+});
+
+// A guest's history is folded in once, right after sign-in. A handful an hour
+// covers retries after a dropped connection; nobody needs more.
+export const migrateGuestLimiter = make("migrate-guest", 60 * MINUTE, 10, {
+  keyGenerator: byUser,
+});
+
 // Bookmarking a word is one tap and pays nothing; the ceiling only stops a
 // script from churning the table. A student going through a long part and
 // changing their mind a few times stays far below it.

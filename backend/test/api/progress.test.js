@@ -134,6 +134,32 @@ describe("POST /api/progress/complete", () => {
     assert.equal((await userRow(u.id)).bitAward, 0);
   });
 
+  // check-answer reveals the right option once a question is answered, so a
+  // script could learn a quiz and resubmit it forever. A part pays once.
+  it("a part's second pass still counts but pays nothing", async () => {
+    const u = await registerUser();
+    const body = { ...FREE, answers: answers(FREE, { correct: true }) };
+    const first = await api("POST", "/api/progress/complete", { token: u.token, body });
+    const again = await api("POST", "/api/progress/complete", { token: u.token, body });
+
+    assert.equal(first.body.wallet.bitAward, QUIZ_PASS_BITAWARD);
+    assert.equal(again.status, 200);
+    assert.equal(again.body.completed, true);
+    assert.equal(again.body.wallet, null);
+    assert.equal((await userRow(u.id)).bitAward, QUIZ_PASS_BITAWARD);
+  });
+
+  it("two simultaneous first passes of one part pay once", async () => {
+    const u = await registerUser();
+    const body = { ...FREE, answers: answers(FREE, { correct: true }) };
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () => api("POST", "/api/progress/complete", { token: u.token, body })),
+    );
+    assert.ok(results.every((r) => r.status === 200), JSON.stringify(results.map((r) => r.status)));
+    assert.equal(results.filter((r) => r.body.wallet).length, 1);
+    assert.equal((await userRow(u.id)).bitAward, QUIZ_PASS_BITAWARD);
+  });
+
   it("refuses a locked part until an admin grants the story", async () => {
     const u = await registerUser();
     const body = { ...LOCKED, answers: answers(LOCKED, { correct: true }) };
@@ -333,6 +359,20 @@ describe("vocabulary and phrase rewards", () => {
       const bad = await api("PATCH", "/api/progress/listening-time", { token: u.token, body: { totalSeconds } });
       assert.equal(bad.status, 400);
     }
+  });
+
+  it("listening time cannot exceed the account's age plus a day of guest listening", async () => {
+    const u = await registerUser();
+    const res = await api("PATCH", "/api/progress/listening-time", {
+      token: u.token,
+      body: { totalSeconds: 10_000_000 },
+    });
+    assert.equal(res.status, 200);
+    const day = 24 * 60 * 60;
+    // A brand-new account: the ceiling is the 24 h grace plus a few seconds of age.
+    assert.ok(res.body.totalListeningSeconds >= day, String(res.body.totalListeningSeconds));
+    assert.ok(res.body.totalListeningSeconds < day + 120, String(res.body.totalListeningSeconds));
+    assert.equal((await userRow(u.id)).totalListeningSeconds, res.body.totalListeningSeconds);
   });
 });
 
