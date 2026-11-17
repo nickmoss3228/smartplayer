@@ -40,8 +40,8 @@ export const LevelCard: React.FC<Props> = ({
 
   const isFree = level <= freeParts;
   const isPreview = !isFree && previewSeconds !== null && level === 1;
-  // Phone tiles zoom onto one clean panel so no gutter crosses a face or the
-  // caption (App.css .comic-focus); desktop keeps the whole-page crop.
+  // Phone tiles show one whole panel, so no gutter runs under the caption
+  // (App.css .comic-focus); desktop keeps the whole-page crop.
   const { focus, ready } = useComicFocus(comicSrc);
   const focusVars = focus
     ? ({
@@ -54,9 +54,12 @@ export const LevelCard: React.FC<Props> = ({
     : undefined;
 
   return (
-    <div
+    // A real button, so the part opens from the keyboard and is announced as
+    // something you can press; it used to be a div with onClick.
+    <button
+      type="button"
       onClick={() => onClick(level)}
-      className="group cursor-pointer animate-scale-in flex min-h-0 flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
+      className="group w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left animate-scale-in flex min-h-0 flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
       style={{ animationDelay: `${index * 50}ms` }}
     >
       {/* Cover — fills the grid cell, whatever shape the screen leaves it */}
@@ -67,11 +70,25 @@ export const LevelCard: React.FC<Props> = ({
           ${getStatusRingClass(status)}
         `}
       >
-        {/* Blinking highlight for the last story listened to but not yet finished — colored to the difficulty, not a fixed color */}
+        {/* The part to pick up from: a steady border in the difficulty's colour
+            and a "Continue" badge (below). It used to blink without end. */}
         {status === 'lastListened' && (
           <div
             aria-hidden
-            className={`absolute inset-0 rounded-card z-20 pointer-events-none border-4 ${theme.lastListenedBorder} animate-blink-ring`}
+            className={`absolute inset-0 rounded-card z-20 pointer-events-none border-[3px] ${theme.lastListenedBorder}`}
+          />
+        )}
+
+        {/* The panel again, blurred, behind the edges the fitted panel leaves */}
+        {comicSrc && focus && (
+          <img
+            src={comicSrc}
+            alt=""
+            aria-hidden
+            draggable={false}
+            data-focus="bg"
+            style={focusVars}
+            className="absolute"
           />
         )}
 
@@ -81,7 +98,7 @@ export const LevelCard: React.FC<Props> = ({
             src={comicSrc}
             alt={trackTitle}
             draggable={false}
-            data-focus={focus ? '' : undefined}
+            data-focus={focus ? 'fg' : undefined}
             style={focusVars}
             className={`
               w-full h-full object-cover object-center
@@ -121,8 +138,17 @@ export const LevelCard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Number / checkmark badge */}
-        {!isLocked && (
+        {/* Number / checkmark badge; on the part to resume it widens into "N · Continue" */}
+        {!isLocked && status === 'lastListened' && !isCompleted && (
+          <div className="absolute top-2 left-2 z-30 flex h-7 items-center gap-1.5 rounded-full bg-white px-2.5 text-xs font-bold text-black">
+            <span className="tabular-nums">{level}</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {t('levelProgress.continue')}
+          </div>
+        )}
+        {!isLocked && !(status === 'lastListened' && !isCompleted) && (
           <div
             className={`
               absolute top-2 left-2 w-7 h-7 rounded-full z-10
@@ -173,6 +199,6 @@ export const LevelCard: React.FC<Props> = ({
       >
         {trackTitle}
       </div>
-    </div>
+    </button>
   );
 };

@@ -243,27 +243,42 @@
   vertical-align: 0.02em;
 }
 
-/* ── Phone part tiles zoomed onto one comic panel ──────────────────────────
+/* ── Phone part tiles showing one whole comic panel ────────────────────────
    LevelCard sets the panel (--fx/--fy/--fw/--fh, fractions of the page) and
-   the page's width/height (--fr) from modules/comics/comicFocus. The image is
-   made just large enough for that panel to cover the tile, then centred on
-   it, so no gutter shows whatever shape the tile is. The tile is the size
-   container `cqw`/`cqh` measure. Unlayered, so it beats the card's
-   w-full/h-full utilities. The card's phone zoom (scale-[1.35]) is left off
-   in LevelCard instead of overridden here: the build's CSS minifier dropped
-   a `scale: none` override, so production showed every panel magnified. */
+   the page's width/height (--fr) from modules/comics/comicFocus. Both images
+   are clipped to that panel and centred on it, so no gutter shows:
+     fg — the panel fitted to the tile, trimmed by at most 20% so a panel of
+          a different shape is not cut into a close-up;
+     bg — the same panel blurred and dimmed, covering the tile, to fill the
+          edge fg leaves.
+   --a/--b are the image widths at which the panel spans the tile's width /
+   height; the tile is the size container `cqw`/`cqh` measure. Unlayered, so
+   it beats the card's w-full/h-full utilities. The card's phone zoom
+   (scale-[1.35]) is left off in LevelCard instead of overridden here: the
+   build's CSS minifier dropped a `scale: none` override, so production
+   showed every panel magnified. */
 @media (max-width: 767.98px) {
   .comic-focus {
     container-type: size;
   }
   .comic-focus > img[data-focus] {
-    --iw: max(calc(100cqw / var(--fw)), calc(100cqh * var(--fr) / var(--fh)));
+    --a: calc(100cqw / var(--fw));
+    --b: calc(100cqh * var(--fr) / var(--fh));
+    --iw: min(max(var(--a), var(--b)), calc(min(var(--a), var(--b)) * 1.2));
     position: absolute;
     max-width: none;
     width: var(--iw);
     height: auto;
     left: calc(50cqw - (var(--fx) + var(--fw) / 2) * var(--iw));
     top: calc(50cqh - (var(--fy) + var(--fh) / 2) * var(--iw) / var(--fr));
+    clip-path: inset(
+      calc(var(--fy) * 100%) calc((1 - var(--fx) - var(--fw)) * 100%)
+      calc((1 - var(--fy) - var(--fh)) * 100%) calc(var(--fx) * 100%)
+    );
+  }
+  .comic-focus > img[data-focus='bg'] {
+    --iw: calc(max(var(--a), var(--b)) * 1.1);
+    filter: blur(8px) brightness(0.55);
   }
 }
 

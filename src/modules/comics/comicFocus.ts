@@ -1,11 +1,12 @@
 /**
- * Finds a clean spot to zoom into on a comic page.
+ * Finds one whole panel on a comic page to show in a phone part tile.
  *
  * A phone part tile is a short landscape box, so the whole page cannot show:
  * an ordinary centre crop lands on the white gutters between panels, which
- * cut through faces and run under the title caption. This looks for the
- * largest landscape window that no gutter crosses, so the tile can be zoomed
- * onto a single panel.
+ * run under the title caption and make the tile hard to read. Zooming into a
+ * slice of one panel avoids them but loses the scene (2026-10-25: every tile
+ * became a close-up of the same face). So this finds a complete panel, and
+ * the tile shows all of it.
  *
  * Gutters are found as thin bright lines (brighter than the pixels a few px
  * either side) that run long and straight, which art rarely does. On these
@@ -14,7 +15,7 @@
  * still 2px. Any smaller and the downscale skips it in places.
  */
 
-/** A window on the page, as fractions of its width and height. */
+/** A rectangle on the page, as fractions of its width and height. */
 export interface FocusRect {
   x: number;
   y: number;
@@ -22,17 +23,17 @@ export interface FocusRect {
   h: number;
 }
 
-/** The pixels comicFocus reads — an ImageData, or anything shaped like one. */
+/** The pixels read here — an ImageData, or anything shaped like one. */
 export interface Pixels {
   data: Uint8ClampedArray;
   width: number;
   height: number;
 }
 
-/** Width/height of the window looked for: the phone 2×5 tile shape. */
-export const FOCUS_ASPECT = 1.4;
+/** Width/height of the phone 2×5 tile: panels near this shape are preferred. */
+export const TILE_ASPECT = 1.4;
 
-/** Draw the page this wide before handing its pixels to comicFocus. */
+/** Draw the page this wide before handing its pixels to comicPanel. */
 export const ANALYSIS_WIDTH = 512;
 
 // All px below are at ANALYSIS_WIDTH.
@@ -47,12 +48,20 @@ const BARE = { bright: 215, contrast: 18 };
 const BLACK = { dark: 24, run: 110 };
 const SIDES = [1, 2, 3, 4]; // for lines from a hairline to 3px wide
 const MIN_RUN = 40; // how long a line must run to count as a gutter
-const MARGIN = 4; // a gutter this close to the window edge is cropped away anyway
-const STEP = 6; // window scan step
 const MIN_VARIANCE = 400; // grey variance below this is a flat patch, not a picture
-const TOP_BIAS = 0.3; // how much a window's height on the page counts against it
-// Widest window first, so the zoom is as gentle as the page allows.
-const WIDTHS = [1, 0.9, 0.8, 0.7, 0.62, 0.55, 0.48, 0.42, 0.36, 0.3, 0.26, 0.22];
+const SEED = 0.08; // seed rectangle side, as a fraction of the page width
+const GROW = 2; // px a side moves per growth step
+// A page opens on its character; a big panel lower down is as often a
+// seascape or a wall. This much of a panel's height on the page counts
+// against it.
+const TOP_BIAS = 0.75;
+// Panel shape counts as fit^SHAPE_WEIGHT (fit = 1 when it matches the tile):
+// enough to pass over a long strip, not so much that a big panel loses to a
+// small one of the right shape.
+const SHAPE_WEIGHT = 0.75;
+// Growth stops at the white middle of a gutter, so the panel's own black
+// outline is still inside the rectangle; this much more is trimmed off.
+const INSET = 5;
 
 /** Summed-area table, (w+1)×(h+1), for O(1) window sums. */
 function integral(values: Float64Array, w: number, h: number): Float64Array {
@@ -194,19 +203,23 @@ export function gutterMask(px: Pixels): Uint8Array {
 }
 
 /**
- * A FOCUS_ASPECT window no gutter crosses, or null when even the smallest
- * cannot avoid one (the caller keeps its ordinary crop).
+ * The biggest whole panel on the page, as a rectangle just inside its
+ * gutters, or null when no panel is found (a photo with no gutters at all
+ * also returns null — the caller's ordinary crop already suits it).
  *
- * Bigger windows win, since they zoom less, but a window higher on the page
- * may beat a slightly bigger one lower down: a page opens on its character,
- * and a large clean panel further down is as often a seascape or a wall.
- * The winner is then centred across its panel and set in its upper part,
- * where the faces are.
+ * Grows a small seed rectangle at many points of the page until every side
+ * meets a gutter, and keeps the result with the best score: its area, times
+ * how close its shape is to the tile's (a long strip would be letterboxed
+ * into a sliver), times a preference for panels higher on the page.
  */
-export function comicFocus(px: Pixels): FocusRect | null {
+export function comicPanel(px: Pixels, tileAspect = TILE_ASPECT): FocusRect | null {
   const { width: w, height: h, data } = px;
-  const lines = integral(Float64Array.from(gutterMask(px)), w, h);
+  const mask = gutterMask(px);
+  let gutterPixels = 0;
+  for (const m of mask) gutterPixels += m;
+  if (gutterPixels < w) return null; // no panel grid to speak of
 
+  const lines = integral(Float64Array.from(mask), w, h);
   const gray = new Float64Array(w * h);
   const gray2 = new Float64Array(w * h);
   for (let i = 0; i < w * h; i++) {
@@ -216,53 +229,37 @@ export function comicFocus(px: Pixels): FocusRect | null {
   }
   const g1 = integral(gray, w, h);
   const g2 = integral(gray2, w, h);
+  const clean = (x0: number, y0: number, x1: number, y1: number) =>
+    x0 >= 0 && y0 >= 0 && x1 <= w && y1 <= h && sum(lines, w, x0, y0, x1, y1) === 0;
 
-  const clean = (x: number, y: number, ww: number, wh: number) =>
-    x >= 0 && y >= 0 && x + ww <= w && y + wh <= h &&
-    sum(lines, w, x + MARGIN, y + MARGIN, x + ww - MARGIN, y + wh - MARGIN) === 0;
-  // A flat patch (night sky, a blank caption box) is clean but shows nothing.
-  const busy = (x: number, y: number, ww: number, wh: number) => {
-    const n = ww * wh;
-    const mean = sum(g1, w, x, y, x + ww, y + wh) / n;
-    return sum(g2, w, x, y, x + ww, y + wh) / n - mean * mean >= MIN_VARIANCE;
-  };
-
-  let best: { x: number; y: number; ww: number; wh: number; score: number } | null = null;
-  for (const frac of WIDTHS) {
-    let ww = Math.round(w * frac);
-    let wh = Math.round(ww / FOCUS_ASPECT);
-    if (wh > h) {
-      wh = h;
-      ww = Math.round(h * FOCUS_ASPECT);
-    }
-    for (let y = 0; y + wh <= h; y += STEP) {
-      const score = ww / w - TOP_BIAS * (y + wh / 2) / h;
-      if (best && score <= best.score) continue; // every later x scores the same
-      for (let x = 0; x + ww <= w; x += STEP) {
-        if (clean(x, y, ww, wh) && busy(x, y, ww, wh)) {
-          best = { x, y, ww, wh, score };
-          break;
-        }
+  const seed = Math.round(w * SEED);
+  let best: { x0: number; y0: number; x1: number; y1: number; score: number } | null = null;
+  for (let sy = 0; sy + seed <= h; sy += seed) {
+    for (let sx = 0; sx + seed <= w; sx += seed) {
+      let x0 = sx, y0 = sy, x1 = sx + seed, y1 = sy + seed;
+      if (!clean(x0, y0, x1, y1)) continue;
+      // Grow each side in turn until none can move.
+      for (let moved = true; moved; ) {
+        moved = false;
+        if (clean(x0 - GROW, y0, x1, y1)) { x0 -= GROW; moved = true; }
+        if (clean(x0, y0, x1 + GROW, y1)) { x1 += GROW; moved = true; }
+        if (clean(x0, y0 - GROW, x1, y1)) { y0 -= GROW; moved = true; }
+        if (clean(x0, y0, x1, y1 + GROW)) { y1 += GROW; moved = true; }
       }
+      const pw = x1 - x0, ph = y1 - y0;
+      const n = pw * ph;
+      const mean = sum(g1, w, x0, y0, x1, y1) / n;
+      if (sum(g2, w, x0, y0, x1, y1) / n - mean * mean < MIN_VARIANCE) continue;
+      const aspect = pw / ph;
+      const fit = Math.min(aspect / tileAspect, tileAspect / aspect);
+      const score = (n / (w * h)) * fit ** SHAPE_WEIGHT * (1 - TOP_BIAS * ((y0 + y1) / 2 / h));
+      if (!best || score > best.score) best = { x0, y0, x1, y1, score };
     }
   }
   if (!best) return null;
-
-  // Centre across the panel, then sit in its upper third.
-  const { ww, wh } = best;
-  let { x, y } = best;
-  let left = x;
-  let right = x;
-  while (clean(left - STEP, y, ww, wh)) left -= STEP;
-  while (clean(right + STEP, y, ww, wh)) right += STEP;
-  const cx = left + Math.round((right - left) / 2 / STEP) * STEP;
-  if (clean(cx, y, ww, wh)) x = cx;
-  let top = y;
-  let bottom = y;
-  while (clean(x, top - STEP, ww, wh)) top -= STEP;
-  while (clean(x, bottom + STEP, ww, wh)) bottom += STEP;
-  const cy = top + Math.round(((bottom - top) * 0.3) / STEP) * STEP;
-  if (clean(x, cy, ww, wh)) y = cy;
-
-  return { x: x / w, y: y / h, w: ww / w, h: wh / h };
+  const x0 = Math.min(best.x0 + INSET, best.x1);
+  const y0 = Math.min(best.y0 + INSET, best.y1);
+  const x1 = Math.max(best.x1 - INSET, x0);
+  const y1 = Math.max(best.y1 - INSET, y0);
+  return { x: x0 / w, y: y0 / h, w: (x1 - x0) / w, h: (y1 - y0) / h };
 }

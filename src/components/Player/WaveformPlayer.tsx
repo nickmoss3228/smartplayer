@@ -385,7 +385,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               flex-1, so it doesn't force itself to consume the leftover space that
               justify-between needs to push the group down. */}
           <div className="flex-1 min-h-0 flex flex-col justify-between gap-3 px-4 overflow-y-auto">
-            <div
+            {comicUrl && <div
               data-tour="tour-comics"
               className="min-h-[56px] max-h-[32vh] flex items-center justify-center py-1"
             >
@@ -395,7 +395,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 title={trackTitle}
                 difficulty={difficulty}
               />
-            </div>
+            </div>}
 
             <div className="shrink-0 flex flex-col gap-2">
               {windowWords.length > 0 && (

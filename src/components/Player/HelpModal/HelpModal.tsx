@@ -1,7 +1,9 @@
-import { IoHeadsetOutline } from 'react-icons/io5';
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { IoChevronBack, IoChevronForward, IoClose, IoPause, IoPlay, IoReload } from "react-icons/io5";
+import { MdSos } from "react-icons/md";
 import { TimeMarker } from "../../../types";
-import { createPortal } from "react-dom"; 
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -11,7 +13,6 @@ interface HelpModalProps {
   initialMarkerIndex: number;
 }
 
-// ─── tiny helpers ─────────────────────────────────────────────────────────────
 const fmt = (s: number): string => {
   if (!isFinite(s) || s < 0) return "0:00";
   const m = Math.floor(s / 60);
@@ -19,13 +20,10 @@ const fmt = (s: number): string => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-// const mTime = (m: TimeMarker): number =>
-//   typeof m === "object" ? m.time : (m as unknown as number);
-
-// const mLabel = (m: TimeMarker, i: number): string =>
-//   typeof m === "object" && m.label ? m.label : `Part ${i + 1}`;
-// ─────────────────────────────────────────────────────────────────────────────
-
+// The SOS window: the sentence the student is stuck on, recorded again in
+// short phrases at normal speed (one clip per marker, uploaded in the Story
+// Builder's SOS tab). It plays as soon as it opens, since pressing SOS already
+// says "play me this sentence", and again on every Previous / Next.
 const HelpModal: React.FC<HelpModalProps> = ({
   isOpen,
   onClose,
@@ -33,61 +31,38 @@ const HelpModal: React.FC<HelpModalProps> = ({
   timeMarkers,
   initialMarkerIndex,
 }) => {
+  const { t } = useTranslation();
   const audioRef = useRef<HTMLAudioElement>(null);
-  const rafRef   = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  // Play the next clip once it has loaded: true on open and on Previous/Next.
+  const autoplayRef = useRef(false);
 
-  const [markerIdx,  setMarkerIdx]  = useState(initialMarkerIndex);
-  const [isPlaying,  setIsPlaying]  = useState(false);
-  const [progress,   setProgress]   = useState(0);
-  const [elapsed,    setElapsed]    = useState(0);
-  const [segDur,     setSegDur]     = useState(0);
-  const [isLoaded,   setIsLoaded]   = useState(false);
-  const [loadError,  setLoadError]  = useState(false);
+  const [markerIdx, setMarkerIdx] = useState(initialMarkerIndex);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [segDur, setSegDur] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  const currentUrl = helpAudioUrls?.[markerIdx];
+  const total = timeMarkers.length;
+  const currentUrl = helpAudioUrls?.[markerIdx] || "";
 
-  // ── DIAGNOSTIC: log every time the key values change ──────────────────────
-  useEffect(() => {
-    console.log("[HelpModal] isOpen:", isOpen);
-    console.log("[HelpModal] helpAudioUrls:", helpAudioUrls);
-    console.log("[HelpModal] initialMarkerIndex:", initialMarkerIndex);
-  }, [isOpen, helpAudioUrls, initialMarkerIndex]);
-
-  useEffect(() => {
-    console.log("[HelpModal] markerIdx changed to:", markerIdx);
-    console.log("[HelpModal] currentUrl for this segment:", currentUrl);
-  }, [markerIdx, currentUrl]);
-
-  // ── reset when modal opens / closes ───────────────────────────────────────
   useEffect(() => {
     if (isOpen) {
       setMarkerIdx(initialMarkerIndex);
-      setIsPlaying(false);
-      setProgress(0);
-      setElapsed(0);
+      autoplayRef.current = true;
     } else {
       audioRef.current?.pause();
       setIsPlaying(false);
+      autoplayRef.current = false;
     }
   }, [isOpen, initialMarkerIndex]);
 
-  // ── reset state when the url array reference changes ─────────────────────
-  useEffect(() => {
-    console.log("[HelpModal] helpAudioUrls reference changed, resetting state");
-    setIsLoaded(false);
-    setIsPlaying(false);
-    setProgress(0);
-    setElapsed(0);
-  }, [helpAudioUrls]);
-
-  // ── swap src and reload whenever the segment changes ──────────────────────
+  // Swap the clip whenever the sentence changes.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) {
-      console.warn("[HelpModal] audioRef.current is null — cannot load");
-      return;
-    }
-    console.log("[HelpModal] Loading segment. src will be:", currentUrl);
+    if (!audio) return;
     audio.pause();
     setIsPlaying(false);
     setIsLoaded(false);
@@ -95,81 +70,67 @@ const HelpModal: React.FC<HelpModalProps> = ({
     setProgress(0);
     setElapsed(0);
     setSegDur(0);
-    audio.load(); // picks up the new src React already set on the DOM element
-  }, [markerIdx, currentUrl]);
+    audio.load();
+  }, [markerIdx, currentUrl, isOpen]);
 
-  // ── RAF progress loop ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isPlaying) {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      return;
-    }
-    let cancelled = false;
+    if (!isPlaying) return;
     const tick = () => {
-      if (cancelled) return;
       const audio = audioRef.current;
       if (!audio) return;
       const dur = audio.duration || 0;
-      const now = audio.currentTime;
-      setElapsed(now);
-      setProgress(dur > 0 ? now / dur : 0);
+      setElapsed(audio.currentTime);
+      setProgress(dur > 0 ? audio.currentTime / dur : 0);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => {
-      cancelled = true;
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, [isPlaying]);
 
   const canInteract = isLoaded && !loadError && !!currentUrl;
 
+  const play = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch {
+      // Autoplay refused (some mobile browsers): the play button still works.
+      setIsPlaying(false);
+    }
+  }, []);
+
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current;
-    console.log("[HelpModal] handlePlayPause — canInteract:", canInteract, "isPlaying:", isPlaying);
     if (!audio || !canInteract) return;
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play()
-        .then(() => {
-          console.log("[HelpModal] audio.play() resolved OK");
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.error("[HelpModal] audio.play() rejected:", err);
-        });
+      void play();
     }
-  }, [isPlaying, canInteract]);
+  }, [isPlaying, canInteract, play]);
 
-  // const handleReplay = useCallback(() => {
-  //   const audio = audioRef.current;
-  //   if (!audio || !canInteract) return;
-  //   audio.pause();
-  //   audio.currentTime = 0;
-  //   setProgress(0);
-  //   setElapsed(0);
-  //   setTimeout(() => {
-  //     audio.play()
-  //       .then(() => setIsPlaying(true))
-  //       .catch(console.error);
-  //   }, 30);
-  // }, [canInteract]);
+  const handleReplay = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !canInteract) return;
+    audio.currentTime = 0;
+    void play();
+  }, [canInteract, play]);
 
-  const handlePrev = useCallback(() => {
-    if (markerIdx > 0) setMarkerIdx((i) => i - 1);
-  }, [markerIdx]);
-
-  const handleNext = useCallback(() => {
-    if (markerIdx < timeMarkers.length - 1) setMarkerIdx((i) => i + 1);
-  }, [markerIdx, timeMarkers.length]);
+  const go = useCallback(
+    (step: number) => {
+      const next = markerIdx + step;
+      if (next < 0 || next >= total) return;
+      autoplayRef.current = true;
+      setMarkerIdx(next);
+    },
+    [markerIdx, total],
+  );
 
   const handleBarClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -186,165 +147,121 @@ const HelpModal: React.FC<HelpModalProps> = ({
   if (!isOpen) return null;
 
   const canPrev = markerIdx > 0;
-  const canNext = markerIdx < timeMarkers.length - 1;
+  const canNext = markerIdx < total - 1;
+  const navButton =
+    "flex flex-1 items-center justify-center gap-1 rounded-[3px] bg-gray-50 py-2.5 text-[13px] font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 dialog-backdrop-in" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <div className="dialog-backdrop-in absolute inset-0 bg-black/60" onClick={onClose} />
 
-      <div className="relative z-10 w-full sm:max-w-sm bg-white rounded-t-[3px] sm:rounded-[3px] shadow-xl dialog-panel-in">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sos-title"
+        className="dialog-panel-in relative z-10 w-full rounded-t-[3px] bg-white shadow-xl sm:max-w-sm sm:rounded-[3px]"
+      >
         <div className="flex justify-center pt-3 sm:hidden">
-          <div className="w-9 h-1 bg-gray-200 rounded-full" />
+          <div className="h-1 w-9 rounded-full bg-gray-200" />
         </div>
 
-        <div className="px-6 pt-5 pb-8 flex flex-col gap-5">
-          {/* header */}
+        <div className="flex flex-col gap-5 px-6 pb-8 pt-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-[3px] bg-gray-100 flex items-center justify-center select-none">
-                <IoHeadsetOutline size={18} aria-hidden />
+              <div className="flex h-9 w-9 select-none items-center justify-center rounded-[3px] bg-gray-100">
+                <MdSos size={24} aria-hidden />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 leading-tight">Listening Aid</p>
-                <p className="text-xs text-gray-400">
-                  Segment{" "}
-                  <span className="font-semibold text-gray-600">{markerIdx + 1}</span>
-                  {" "}/ {timeMarkers.length}
-                </p>
+                <p id="sos-title" className="text-sm font-bold leading-tight text-gray-800">{t("helpModal.title")}</p>
+                <p className="text-xs text-gray-500">{t("helpModal.subtitle", { n: markerIdx + 1, total })}</p>
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              aria-label={t("helpModal.close")}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <IoClose size={18} aria-hidden />
             </button>
           </div>
 
-          {/* segment label
-          <div className="bg-gray-50 border border-gray-200 rounded-[3px] px-4 py-2.5 text-center min-h-[42px] flex items-center justify-center">
-            <p className="text-sm font-semibold text-gray-900 truncate">
-              {mLabel(timeMarkers[markerIdx], markerIdx)}
-            </p>
-          </div> */}
-
-          {/* ── KEY: audio element — src is driven by React state ── */}
           <audio
             ref={audioRef}
             src={currentUrl || undefined}
             preload="auto"
             onLoadedMetadata={(e) => {
-              const dur = (e.currentTarget as HTMLAudioElement).duration;
-              console.log("[HelpModal] onLoadedMetadata fired. duration:", dur, "src:", e.currentTarget.src);
+              const dur = e.currentTarget.duration;
               setSegDur(isFinite(dur) ? dur : 0);
               setIsLoaded(true);
               setLoadError(false);
+              if (autoplayRef.current) {
+                autoplayRef.current = false;
+                void play();
+              }
             }}
             onEnded={() => {
-              console.log("[HelpModal] onEnded fired");
               setIsPlaying(false);
               setProgress(0);
               setElapsed(0);
               if (audioRef.current) audioRef.current.currentTime = 0;
             }}
-            onError={(e) => {
-              console.error("[HelpModal] onError fired. src was:", (e.currentTarget as HTMLAudioElement).src, e);
+            onError={() => {
+              if (!currentUrl) return;
               setIsLoaded(false);
               setLoadError(true);
             }}
           />
 
-          {/* status messages */}
-          {!currentUrl && (
-            <p className="text-center text-xs text-amber-500">
-              No help audio for this segment yet.
-            </p>
-          )}
-          {loadError && (
-            <p className="text-center text-xs text-red-500">
-              Could not load: <code className="text-[10px]">{currentUrl}</code>
-            </p>
-          )}
+          {!currentUrl && <p className="text-center text-xs text-amber-600">{t("helpModal.noClip")}</p>}
+          {loadError && <p className="text-center text-xs text-red-500">{t("helpModal.loadError")}</p>}
 
-          {/* progress bar */}
           <div className="flex flex-col gap-1.5">
-            <div
-              className="relative h-2 bg-gray-100 rounded-full cursor-pointer group overflow-visible"
-              onClick={handleBarClick}
-            >
+            <div className="group relative h-2 cursor-pointer overflow-visible rounded-full bg-gray-100" onClick={handleBarClick}>
+              <div className="absolute inset-y-0 left-0 rounded-full bg-gray-900" style={{ width: `${progress * 100}%` }} />
               <div
-                className="absolute inset-y-0 left-0 bg-gray-900 rounded-full transition-none"
-                style={{ width: `${progress * 100}%` }}
-              />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-gray-900 shadow ring-2 ring-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-gray-900 opacity-0 shadow ring-2 ring-white transition-opacity group-hover:opacity-100"
                 style={{ left: `calc(${progress * 100}% - 7px)` }}
               />
             </div>
-            <div className="flex justify-between text-[11px] text-gray-400 tabular-nums">
+            <div className="flex justify-between text-[11px] tabular-nums text-gray-400">
               <span>{fmt(elapsed)}</span>
               <span>{segDur > 0 ? fmt(segDur) : "--:--"}</span>
             </div>
           </div>
 
-          {/* transport */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              disabled={!canPrev}
-              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-              Prev
+            <button type="button" onClick={() => go(-1)} disabled={!canPrev} aria-label={t("helpModal.prev")} className={navButton}>
+              <IoChevronBack aria-hidden />
             </button>
 
-            {/* <button 
+            <button
+              type="button"
               onClick={handleReplay}
               disabled={!canInteract}
-              className="p-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-500"
+              aria-label={t("helpModal.replay")}
+              className="rounded-[3px] bg-gray-50 p-2.5 text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
             >
-              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button> */}
-
-            <button
-              onClick={handlePlayPause}
-              disabled={!canInteract}
-              className="w-14 h-14 rounded-full bg-gray-900 hover:bg-gray-800 active:scale-95 text-white flex items-center justify-center transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {isPlaying ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="5" width="4" height="14" rx="1.5" />
-                  <rect x="14" y="5" width="4" height="14" rx="1.5" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
+              <IoReload size={18} aria-hidden />
             </button>
 
             <button
-              onClick={handleNext}
-              disabled={!canNext}
-              className="flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[3px] bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-[13px] font-medium"
+              type="button"
+              onClick={handlePlayPause}
+              disabled={!canInteract}
+              aria-label={isPlaying ? t("helpModal.pause") : t("helpModal.play")}
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-900 text-white transition-all duration-150 hover:bg-gray-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Next
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
+              {isPlaying ? <IoPause size={24} aria-hidden /> : <IoPlay size={24} className="ml-0.5" aria-hidden />}
+            </button>
+
+            <button type="button" onClick={() => go(1)} disabled={!canNext} aria-label={t("helpModal.next")} className={navButton}>
+              <IoChevronForward aria-hidden />
             </button>
           </div>
 
           {!canInteract && !loadError && currentUrl && (
-            <p className="text-center text-xs text-gray-400 animate-pulse -mt-1">
-              Loading audio…
-            </p>
+            <p className="-mt-1 animate-pulse text-center text-xs text-gray-400">{t("helpModal.loading")}</p>
           )}
         </div>
       </div>

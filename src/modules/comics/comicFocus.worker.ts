@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-import { ANALYSIS_WIDTH, comicFocus } from './comicFocus';
+import { ANALYSIS_WIDTH, comicPanel } from './comicFocus';
 
 /**
- * Runs comicFocus off the main thread: ~50–150ms a page would otherwise
+ * Runs comicPanel off the main thread: ~50–150ms a page would otherwise
  * stutter the tiles' entrance on a phone. Fetching here rather than reading
  * the on-screen <img> also sidesteps canvas tainting — the bucket answers
  * CORS requests, the built-in comics are same-origin.
@@ -20,7 +20,7 @@ self.onmessage = async (e: MessageEvent<{ id: number; url: string }>) => {
     if (!ctx) throw new Error('no 2d context');
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(bitmap, 0, 0, w, h);
-    const rect = comicFocus(ctx.getImageData(0, 0, w, h));
+    const rect = comicPanel(ctx.getImageData(0, 0, w, h));
     self.postMessage({ id, focus: rect && { ...rect, aspect: bitmap.width / bitmap.height } });
     bitmap.close();
   } catch {

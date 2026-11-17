@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { usePlayerPreview } from "../../context/PlayerPreviewContext";
 import { getGuestVocabBookmarks, setGuestVocabBookmark } from "../../services/guestProgress";
 import { fetchVocabBookmarks, setVocabBookmark } from "../../services/vocabProgressServices";
 
@@ -73,20 +74,29 @@ export interface VocabBookmarks {
 
 export function useVocabBookmarks(): VocabBookmarks {
   const { user } = useAuth();
+  const preview = usePlayerPreview();
   const owner = user ? user.id : "guest";
   const current = useSyncExternalStore(subscribe, snapshot, snapshot);
 
   useEffect(() => {
-    void load(owner);
-  }, [owner]);
+    if (!preview) void load(owner);
+  }, [owner, preview]);
 
-  const keys = useMemo(() => (current.owner === owner ? current.keys : NONE), [current, owner]);
+  const keys = useMemo(() => preview ? preview.bookmarkKeys : (current.owner === owner ? current.keys : NONE), [current, owner, preview]);
 
   const has = useCallback((key: string) => keys.includes(key.toLowerCase()), [keys]);
 
   const toggle = useCallback(
     (raw: string, on?: boolean) => {
       const key = raw.toLowerCase();
+      if (preview) {
+        preview.setBookmarkKeys((before) => {
+          const next = on ?? !before.includes(key);
+          const rest = before.filter((item) => item !== key);
+          return next ? [key, ...rest] : rest;
+        });
+        return;
+      }
       const before = state.keys;
       const next = on ?? !before.includes(key);
       const rest = before.filter((k) => k !== key);
@@ -105,8 +115,8 @@ export function useVocabBookmarks(): VocabBookmarks {
           if (state.owner === owner) emit({ owner, keys: before });
         });
     },
-    [owner],
+    [owner, preview],
   );
 
-  return { keys, has, toggle, ready: current.owner === owner };
+  return { keys, has, toggle, ready: preview !== null || current.owner === owner };
 }

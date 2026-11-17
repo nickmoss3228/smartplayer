@@ -224,7 +224,8 @@
     "back": "Back",
     "doneOf": "{{done}} of {{total}} done",
     "currentPart": "Now: part {{part}}",
-    "allDone": "All done"
+    "allDone": "All done",
+    "continue": "Continue"
   },
   "cast": {
     "label": "Characters",
@@ -370,6 +371,8 @@
       "backToPart": "Back to the part",
       "saving": "Saving your result…",
       "replay": "Hear question {{n}}",
+      "questionN": "Question {{n}}",
+      "showText": "Tap a question to read it and see the answers",
       "right": "right",
       "wrong": "wrong"
     }
@@ -874,7 +877,9 @@
       "title": "Guide",
       "doIt": "What you'll do",
       "then": "Then",
-      "repeat": "Repeat out loud"
+      "repeat": "Repeat out loud",
+      "why": "Why it works",
+      "onPage": "On this page"
     },
     "intro": {
       "eyebrow": "How malako works",
@@ -909,7 +914,10 @@
       "s6": {
         "title": "Answer, then advance",
         "text": "A spoken quiz — every question in a normal and a slow version. Pass it and the next story unlocks."
-      }
+      },
+      "wordsNote": "Meaning in Russian, sound in English",
+      "repeatLink": "How the recording works",
+      "speedsNote": "Three speeds: 0.65×, 0.8× and 1×"
     },
     "repeat": {
       "label": "Repeat out loud",
@@ -959,6 +967,22 @@
       "text": "How full the glass sits is how hard the stories are. Change it whenever you like — nothing is locked behind the choice.",
       "cta": "Choose your level",
       "note": "You can switch levels at any time."
+    },
+    "given": {
+      "hear": "Hear a new word"
+    },
+    "taken": {
+      "wordExample": "квартира"
+    },
+    "shots": {
+      "player": "The malako player: a comic, a waveform cut into phrases, and the words of the part",
+      "words": "The words of a part, each with a speaker button",
+      "wave": "The story's waveform, cut into phrases",
+      "controls": "Player controls: play by phrase, speed 0.65, three repetitions",
+      "repeatBar": "The player's “Your turn: repeat” bar",
+      "comic": "The player with the story's comic above the waveform",
+      "quiz": "The spoken quiz: a play button, “again” and “slower”, four answers",
+      "repeatMode": "The player in “Repeat after me” mode, waiting for you to say the phrase"
     }
   },
   "notFound": {
@@ -2368,5 +2392,18 @@
       "button": "Try it yourself",
       "text": "The first three parts need no sign-up."
     }
+  },
+  "helpModal": {
+    "title": "SOS",
+    "subtitle": "Sentence {{n}} of {{total}}, in short phrases",
+    "noClip": "No SOS clip for this sentence yet.",
+    "loadError": "Could not load this clip.",
+    "loading": "Loading…",
+    "prev": "Previous sentence",
+    "next": "Next sentence",
+    "play": "Play",
+    "pause": "Pause",
+    "replay": "Play again",
+    "close": "Close"
   }
 }

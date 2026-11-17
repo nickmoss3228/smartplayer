@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { FocusRect } from './comicFocus';
 
-/** Where to zoom a comic page, plus the page's width/height ratio. */
+/** The panel to show from a comic page, plus the page's width/height ratio. */
 export interface ComicFocus extends FocusRect {
   aspect: number;
 }
 
 /** Same edge as Tailwind's `md`: below it, part tiles are short landscape boxes. */
 const PHONE = '(max-width: 767.98px)';
-/** Results survive reloads; bump the version when comicFocus changes. */
-const STORE_KEY = 'comicFocus:v1';
+/** Results survive reloads; bump the version when comicPanel changes. */
+const STORE_KEY = 'comicFocus:v2';
 /** Show the ordinary crop rather than an empty tile if the worker is slow. */
 const GIVE_UP_MS = 2500;
 
@@ -78,11 +78,11 @@ function focusFor(src: string): Promise<Known> {
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia?.(PHONE).matches === true;
 
 /**
- * The clean panel to zoom a phone part tile onto (see comicFocus.ts).
+ * The whole panel a phone part tile shows (see comicFocus.ts).
  *
  * `ready` is false only while a page is being analysed for the first time on
  * a phone, so the tile can wait instead of jumping from the ordinary crop to
- * the zoomed one. Desktop never analyses and is always ready.
+ * the panel. Desktop never analyses and is always ready.
  */
 export function useComicFocus(src: string | undefined): { focus: Known; ready: boolean } {
   const cached = src && known.has(src) ? (known.get(src) ?? null) : undefined;

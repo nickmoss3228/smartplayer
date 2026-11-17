@@ -7,6 +7,8 @@ interface AudioScrubberProps {
   url: string | null;
   /** Shown in place of the length while `url` is null. */
   pendingText: string;
+  playbackRate?: number;
+  onDuration?: (seconds: number) => void;
 }
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal";
@@ -21,13 +23,16 @@ const clock = (s: number) => {
  * «Послушай себя» and on a shared recording's page. Give it a new `key` when
  * the track changes so it starts from the top.
  */
-export const AudioScrubber: React.FC<AudioScrubberProps> = ({ url, pendingText }) => {
+export const AudioScrubber: React.FC<AudioScrubberProps> = ({ url, pendingText, playbackRate = 1, onDuration }) => {
   const { t } = useTranslation();
   const audioRef = useRef<HTMLAudioElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = playbackRate;
+  }, [playbackRate, url]);
 
   // The bar follows the audio every frame while it plays; timeupdate alone
   // moves it in visible steps.
@@ -101,7 +106,7 @@ export const AudioScrubber: React.FC<AudioScrubberProps> = ({ url, pendingText }
           ref={audioRef}
           src={url}
           preload="auto"
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          onLoadedMetadata={(e) => { setDuration(e.currentTarget.duration); onDuration?.(e.currentTarget.duration); }}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onEnded={() => {
