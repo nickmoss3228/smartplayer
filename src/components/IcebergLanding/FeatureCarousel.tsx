@@ -145,12 +145,30 @@ export function useOnScreen(ref: RefObject<HTMLElement | null>) {
   return on;
 }
 
+/**
+ * Whether an element is within about two screens of the viewport; once true it
+ * stays true. The photo deck loads all its screenshots from then on: left to
+ * lazy loading, Safari only fetched a print once it was swiped into view (the
+ * prints are moved by transforms, not by scrolling), so it showed empty frames.
+ */
+export function useNear(ref: RefObject<HTMLElement | null>) {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setNear(true); }, { rootMargin: '200% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, near]);
+  return near;
+}
+
 /** A slide's framed screenshot with its scene looping over it. */
-export function SlideFrame({ s, alt }: { s: Slide; alt: string }) {
+export function SlideFrame({ s, alt, eager }: { s: Slide; alt: string; eager?: boolean }) {
   return (
     <div className={`fc-frame fc-${s.kind}${s.wide ? ' fc-wide' : ''}`}>
       <div className="fc-shot">
-        <img src={s.img} alt={alt} loading="lazy" draggable={false} width={s.size[0]} height={s.size[1]} />
+        <img src={s.img} alt={alt} loading={eager ? 'eager' : 'lazy'} draggable={false} width={s.size[0]} height={s.size[1]} />
         <Scene s={s} />
       </div>
     </div>

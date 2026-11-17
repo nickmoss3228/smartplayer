@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { SLIDES, SlideFrame, useOnScreen, useSlideText } from './FeatureCarousel';
+import { SLIDES, SlideFrame, useNear, useOnScreen, useSlideText } from './FeatureCarousel';
 
 /**
  * The feature slides as photographs in one 3D space, swiped through by hand:
@@ -42,6 +42,7 @@ export default function PhotoDeck() {
   const dragged = useRef(false);
   const [active, setActive] = useState(0);
   const onScreen = useOnScreen(rootRef);
+  const near = useNear(rootRef);
   const n = SLIDES.length;
   const pad = (v: number) => String(v).padStart(2, '0');
 
@@ -168,7 +169,7 @@ export default function PhotoDeck() {
           {SLIDES.map((s, i) => (
             <li key={s.kind} ref={(el) => { cards.current[i] = el; }} className={`fc-photo${i === active ? ' is-on' : ''}`}
               aria-hidden={i !== active} onClick={() => { if (!dragged.current && i !== active) goTo(i); }}>
-              <SlideFrame s={s} alt={textOf(s).title} />
+              <SlideFrame s={s} alt={textOf(s).title} eager={near} />
             </li>
           ))}
         </ul>
