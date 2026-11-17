@@ -15,6 +15,7 @@ import {
   uploadPartAsset,
   saveMarkers,
   saveComic,
+  saveHelpAudio,
   saveIntro,
   getStoryVisibility,
   setStoryVisibility,
@@ -57,6 +58,7 @@ adminRouter.post("/:id/parts", adminAuth, addPart);
 adminRouter.post("/:id/parts/:partNumber/upload", adminAuth, adminUpload, uploadPartAsset);
 adminRouter.patch("/:id/parts/:partNumber/markers", adminAuth, saveMarkers);
 adminRouter.put("/:id/parts/:partNumber/comic", adminAuth, saveComic);
+adminRouter.put("/:id/parts/:partNumber/help-audio", adminAuth, saveHelpAudio);
 adminRouter.put("/:id/parts/:partNumber/intro", adminAuth, saveIntro);
 adminRouter.put("/:id/parts/:partNumber/vocabulary", adminAuth, saveVocabulary);
 adminRouter.put("/:id/parts/:partNumber/phrasal-verbs", adminAuth, savePhrasalVerbs);

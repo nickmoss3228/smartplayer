@@ -408,6 +408,7 @@ const UPLOAD_KINDS = new Set([
   "pictureSheet",
   "quizFast",
   "quizSlow",
+  "help",
 ]);
 
 /** The upload kinds that are pictures rather than audio. */
@@ -440,12 +441,15 @@ function assetKeyFor(story, partNumber, kind, extra) {
       return `${base}/quiz/q${extra.index}-fast.mp3`;
     case "quizSlow":
       return `${base}/quiz/q${extra.index}-slow.mp3`;
+    // The SOS clip for one sentence, numbered from 1 like the markers are.
+    case "help":
+      return `${base}/help/${extra.index + 1}.mp3`;
     default:
       return null;
   }
 }
 
-// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|vocabImage|phrasalImage|pictureSheet|quizFast|quizSlow[&audioKey=][&index=]
+// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|vocabImage|phrasalImage|pictureSheet|quizFast|quizSlow|help[&audioKey=][&index=]
 export async function uploadPartAsset(req, res) {
   try {
     const story = await storiesRepo.loadStoryJson(req.params.id);
@@ -476,6 +480,21 @@ export async function uploadPartAsset(req, res) {
     if (["quizFast", "quizSlow"].includes(kind) && (index === undefined || Number.isNaN(Number(index)))) {
       return res.status(400).json({ error: "index is required for quiz audio uploads." });
     }
+    // An SOS clip belongs to one marker, so the markers have to be settled
+    // first and the index has to name one of them.
+    let helpIndex;
+    if (kind === "help") {
+      // Number("") is 0, so an empty index would quietly mean the first marker.
+      helpIndex = typeof index === "string" && /^\d+$/.test(index) ? Number(index) : NaN;
+      const markers = part.timeMarkers?.length ?? 0;
+      if (markers === 0) {
+        return res.status(400).json({ error: "Set this part's markers before adding SOS clips." });
+      }
+      if (!Number.isInteger(helpIndex) || helpIndex < 0 || helpIndex >= markers) {
+        return res.status(400).json({ error: `index must be a marker number from 0 to ${markers - 1}.` });
+      }
+    }
+
 
     // Content-Type is the only thing deciding how a browser treats one of these
     // objects, and every one of them is written ACL public-read on the same
@@ -510,7 +529,12 @@ export async function uploadPartAsset(req, res) {
     }
 
     const contentHash = crypto.createHash("sha256").update(req.file.buffer).digest("hex").slice(0, 16);
-    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext, contentHash });
+    const key = assetKeyFor(story, partNumber, kind, {
+      audioKey: audioKey?.trim(),
+      index: kind === "help" ? helpIndex : index,
+      ext,
+      contentHash,
+    });
     if (!key) return res.status(400).json({ error: "Invalid kind." });
 
     const url = await uploadBuffer(key, req.file.buffer, contentType);
@@ -824,6 +848,47 @@ export async function saveComic(req, res) {
   } catch (error) {
     console.error("saveComic error:", error);
     res.status(500).json({ error: "Failed to save the comic page." });
+  }
+}
+
+// An uploaded clip's URL, or "" for a sentence that has none yet.
+const AUDIO_URL_PATTERN = /^https:\/\/[^\u0000-\u001f\s]{1,2048}$/;
+
+// PUT /api/admin/stories/:id/parts/:partNumber/help-audio   { helpAudio: string[] }
+// The SOS clips, one per marker, in marker order, written whole. Slot i is
+// played when the student presses SOS inside sentence i. The markers have to
+// exist first: without them there is nothing for a clip to belong to.
+export async function saveHelpAudio(req, res) {
+  try {
+    const { helpAudio } = req.body;
+    if (!Array.isArray(helpAudio)) {
+      return res.status(400).json({ error: "helpAudio must be a list of URLs." });
+    }
+    const bad = helpAudio.findIndex((url) => typeof url !== "string" || (url !== "" && !AUDIO_URL_PATTERN.test(url)));
+    if (bad !== -1) {
+      return res.status(400).json({ error: `Clip ${bad + 1} is not an https URL.` });
+    }
+
+    const result = await mutatePart(req, (part) => {
+      const markers = part.timeMarkers?.length ?? 0;
+      if (markers === 0 && helpAudio.some(Boolean)) {
+        return { halt: { status: 400, body: { error: "Set this part's markers before adding SOS clips." } } };
+      }
+      if (helpAudio.length > markers) {
+        return {
+          halt: { status: 400, body: { error: `This part has ${markers} markers, so at most ${markers} SOS clips.` } },
+        };
+      }
+      // Trailing empty slots carry nothing; dropping them keeps "no clips"
+      // stored as [] whatever the editor sent.
+      const clips = [...helpAudio];
+      while (clips.length && !clips[clips.length - 1]) clips.pop();
+      part.helpAudio = clips;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("saveHelpAudio error:", error);
+    res.status(500).json({ error: "Failed to save the SOS clips." });
   }
 }
 

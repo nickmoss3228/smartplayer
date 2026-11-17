@@ -71,5 +71,31 @@
     "mismatch": "Paragraphs: {{count}} here, {{transcript}} in the transcript. They will not line up in the PDF.",
     "match": "Paragraphs: {{count}}, matching the transcript.",
     "clear": "Clear"
+  },
+  "sos": {
+    "intro": "One clip per marker: the same sentence said again in short phrases, at normal speed. A student who presses SOS during sentence N hears clip N. This part has {{markers}} markers.",
+    "needMarkers": "Set the markers first",
+    "needMarkersHint": "SOS clips belong to sentences, and the markers decide where each sentence starts. Upload the part's audio and place its markers, then come back here.",
+    "goToMarkers": "Go to Audio & markers",
+    "drop": "Drop up to {{markers}} MP3 clips",
+    "dropHint": "or click to choose. Files named 1.mp3, 2.mp3… go to those sentences; otherwise they fill sentences 1, 2, 3… in name order.",
+    "notMp3": "{{name}} is not an MP3.",
+    "tooMany": "You picked {{picked}} clips, but this part has {{markers}} markers. Fix the markers or the clips first.",
+    "someFailed": "Could not upload: {{names}}.",
+    "uploadFailed": "Upload failed.",
+    "saveFailed": "Failed to save the SOS clips.",
+    "playFailed": "Could not play this audio.",
+    "extra_one": "{{count}} clip is stored past the last of the {{markers}} markers — the markers changed after the clips went in. Check the clips still match their sentences; the extra one is dropped on the next save.",
+    "extra_other": "{{count}} clips are stored past the last of the {{markers}} markers — the markers changed after the clips went in. Check the clips still match their sentences; the extra ones are dropped on the next save.",
+    "playOriginal": "Play this sentence from the part",
+    "end": "end",
+    "playClip": "SOS clip",
+    "addClip": "Add clip",
+    "replace": "Replace",
+    "replaceN": "Replace the clip for sentence {{n}}",
+    "removeN": "Remove the clip for sentence {{n}}",
+    "removeAll": "Remove all clips",
+    "confirmRemoveAll": "Remove every SOS clip for part {{n}}?",
+    "summary": "SOS clips: {{count}} of {{total}} sentences."
   }
 }

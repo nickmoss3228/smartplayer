@@ -14,7 +14,7 @@
 import type { TFunction } from "i18next";
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 
-export type ElementId = "audio" | "markers" | "comic" | "intro" | "transcript" | "vocab" | "phrasal" | "quiz" | "panels";
+export type ElementId = "audio" | "markers" | "comic" | "intro" | "transcript" | "vocab" | "phrasal" | "quiz" | "panels" | "sos";
 
 /** Empty, partially filled, or finished. `n/a` is only ever for optional
  *  elements a story does not use — it reads as "nothing owed", not "missing". */
@@ -132,7 +132,26 @@ export const ELEMENTS: ElementSpec[] = [
     },
     count: (p) => p.panelQuiz?.clips.length ?? 0,
   },
+  {
+    id: "sos",
+    short: "Sos",
+    label: "SOS",
+    // Optional help: the player greys the SOS button out on a part without
+    // clips. One clip per marker, so it is done once every marker has one.
+    required: false,
+    state: (p) => {
+      const clips = sosClipCount(p);
+      if (clips === 0) return "na";
+      return p.timeMarkers.length > 0 && clips >= p.timeMarkers.length ? "done" : "partial";
+    },
+    count: (p) => sosClipCount(p),
+  },
 ];
+
+/** SOS clips actually uploaded — slots for unrecorded sentences hold "". */
+export function sosClipCount(part: Pick<StoryPart, "helpAudio">): number {
+  return (part.helpAudio ?? []).filter(Boolean).length;
+}
 
 export interface PartStatus {
   partNumber: number;

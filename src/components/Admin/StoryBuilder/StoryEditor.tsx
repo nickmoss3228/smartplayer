@@ -20,6 +20,7 @@ import PartIntroEditor from "./PartIntroEditor";
 import PartTranscriptEditor from "./PartTranscriptEditor";
 import PartTranslationEditor from "./PartTranslationEditor";
 import PartPanelQuizEditor from "./PartPanelQuizEditor";
+import PartSosEditor from "./PartSosEditor";
 
 interface StoryEditorProps {
   token: string;
@@ -51,7 +52,7 @@ const PREVIEW_PART = 1;
  *  panel. Everything else is one column, one editor. */
 const PANEL_FOR: Record<
   ElementId,
-  "audio" | "comics" | "intro" | "transcript" | "vocabulary" | "phrasal" | "quiz" | "panels"
+  "audio" | "comics" | "intro" | "transcript" | "vocabulary" | "phrasal" | "quiz" | "panels" | "sos"
 > = {
   audio: "audio",
   markers: "audio",
@@ -62,6 +63,7 @@ const PANEL_FOR: Record<
   phrasal: "phrasal",
   quiz: "quiz",
   panels: "panels",
+  sos: "sos",
 };
 
 // Per-part tabs within one "editing story X" view — the admin can jump
@@ -331,6 +333,18 @@ const StoryEditor = ({ token, story, onStoryUpdated, onDeleted, onBack, switcher
           story={story}
           part={part}
           onPartUpdated={handlePartUpdated}
+        />
+      )}
+      {part && step === "sos" && (
+        // Keyed per part: the clip being played and the uploads in flight
+        // belong to one part's markers.
+        <PartSosEditor
+          key={`${story._id}:${part.partNumber}`}
+          token={token}
+          story={story}
+          part={part}
+          onPartUpdated={handlePartUpdated}
+          onEditMarkers={() => setElement("audio")}
         />
       )}
 
