@@ -47,13 +47,14 @@ interface Deep {
 }
 const DEEP_KEYS = ['spelling', 'speed', 'perception', 'linking'] as const;
 
-export default function Iceberg() {
+/** ready=false holds the reveal back while the hero is still rising in on first open. */
+export default function Iceberg({ ready = true }: { ready?: boolean }) {
   const { t } = useTranslation();
   const [ref, seen] = useInView<HTMLDivElement>(0.2);
   const deep = DEEP_KEYS.map((k) => t(`iceberg.berg.${k}`, { returnObjects: true }) as Deep);
 
   return (
-    <div ref={ref} className={`ib-berg${seen ? ' in' : ''}`}>
+    <div ref={ref} className={`ib-berg${seen && ready ? ' in' : ''}`}>
       {/* above the water: the small tip */}
       <div className="ib-berg-sky">
         <svg className="ib-berg-layer" viewBox="0 0 1000 310" aria-hidden="true" preserveAspectRatio="none">
