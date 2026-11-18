@@ -18,6 +18,10 @@ interface Props {
   /** When set, part 1 is a timed preview of this many seconds. */
   previewSeconds: number | null;
   isPartLocked: (level: number) => boolean;
+  /** A locked part is behind the sign-up wall, not a purchase. */
+  signupLock?: boolean;
+  /** The part's player URL, the href of its tile. */
+  getLevelHref: (level: number) => string;
   onLevelClick: (level: number) => void;
 }
 
@@ -37,7 +41,7 @@ interface Props {
 export const LevelGrid: React.FC<Props> = ({
   totalLevels, completedLevels, lastListenedLevel,
   audioTracks, comics, theme, freeParts, previewSeconds,
-  getLevelData, isPartLocked, onLevelClick,
+  getLevelData, isPartLocked, signupLock = false, getLevelHref, onLevelClick,
 }) => {
   const { t } = useTranslation();
 
@@ -75,11 +79,13 @@ export const LevelGrid: React.FC<Props> = ({
             status={levelData.status}
             isCompleted={completedLevels.includes(level)}
             isLocked={isPartLocked(level)}
+            signupLock={signupLock}
             freeParts={freeParts}
             previewSeconds={previewSeconds}
             trackTitle={trackTitle}
             comicSrc={comics[level - 1]}
             theme={theme}
+            href={getLevelHref(level)}
             onClick={onLevelClick}
           />
         );

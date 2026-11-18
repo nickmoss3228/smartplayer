@@ -360,7 +360,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           localStorage.setItem('progressData', JSON.stringify(progressData));
           localStorage.setItem('progressCacheTime', Date.now().toString());
-          console.log('✅ Progress data prefetched and cached');
         } catch (error) {
           console.error('Failed to prefetch progress:', error);
         }

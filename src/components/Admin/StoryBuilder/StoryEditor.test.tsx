@@ -4,7 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 import StoryEditor from "./StoryEditor";
-import i18n from "../../../i18n";
+import { setLanguage } from "../../../i18n";
+import "../../../i18nStudio";
 
 const audio = vi.hoisted(() => ({ callbacks: [] as Array<(part: StoryPart) => void> }));
 vi.mock("./PartAudioMarkerEditor", () => ({ default: ({ active, part, onPartUpdated }: { active: boolean; part: StoryPart; onPartUpdated: (part: StoryPart) => void }) => {
@@ -29,7 +30,7 @@ vi.mock("./StoryPricingPanel", () => ({ default: () => <div>Access editor</div> 
 let root: Root, container: HTMLDivElement;
 const part = (n: number): StoryPart => ({partNumber:n,title:"",audioUrl:"/recording.mp3",timeMarkers:[{time:0,label:"1",color:"red"}],vocabulary:[],phrasalVerbs:[],quiz:[]});
 const sample = (): AdminStory => ({_id:"desk-test",storyId:"test",storyName:"Test set",difficulty:"easy",description:"",characterIcon:"",totalParts:2,published:false,createdAt:"2026-11-02",parts:[part(1),part(2)]});
-beforeEach(async () => {await i18n.changeLanguage("en");container=document.createElement("div");document.body.append(container);root=createRoot(container);audio.callbacks=[];});
+beforeEach(async () => {await setLanguage("en");container=document.createElement("div");document.body.append(container);root=createRoot(container);audio.callbacks=[];});
 afterEach(async () => {await act(async () => root.unmount());container.remove();});
 const click = async (label: string) => {
   const button=Array.from(container.querySelectorAll("button")).find(b=>b.textContent===label);

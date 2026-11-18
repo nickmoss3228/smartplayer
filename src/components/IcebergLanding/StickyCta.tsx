@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 /**
  * The way in, following the reader down the page. It shows once the hero's
@@ -34,7 +35,7 @@ export default function StickyCta({ label }: { label: string }) {
 
   return (
     <div className={`dv-sticky${show ? ' on' : ''}`} aria-hidden={!show}>
-      <Link to="/levels" className="ib-cta" tabIndex={show ? 0 : -1}>
+      <Link to={TRY_IT_PATH} state={TRY_IT_STATE} className="ib-cta" tabIndex={show ? 0 : -1}>
         {label}
         <ArrowRightIcon aria-hidden="true" />
       </Link>

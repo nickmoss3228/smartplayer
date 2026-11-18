@@ -4,7 +4,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AdminStory, StoryPart } from "../../../services/adminStoryServices";
 import PartSosEditor from "./PartSosEditor";
-import i18n from "../../../i18n";
+import { setLanguage } from "../../../i18n";
+import "../../../i18nStudio";
 
 const api = vi.hoisted(() => ({
   uploadPartAsset: vi.fn(),
@@ -24,7 +25,7 @@ const part = (over: Partial<StoryPart> = {}): StoryPart => ({
 const story = { _id: "s1", parts: [] } as unknown as AdminStory;
 
 beforeEach(async () => {
-  await i18n.changeLanguage("en");
+  await setLanguage("en");
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);

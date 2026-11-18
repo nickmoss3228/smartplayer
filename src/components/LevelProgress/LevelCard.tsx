@@ -1,6 +1,8 @@
 import { IoMusicalNotesOutline } from 'react-icons/io5';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { isPlainClick } from '../../utils/plainClick';
 import type { Theme } from '../../types/LevelProgress';
 import { useComicFocus } from '../../modules/comics/useComicFocus';
 
@@ -10,6 +12,8 @@ interface Props {
   status: string;
   isCompleted: boolean;
   isLocked: boolean;
+  /** The lock is the sign-up wall: say so instead of a bare "Locked". */
+  signupLock?: boolean;
   /**
    * How many parts play in full without owning the story. Drives the FREE
    * badge, for guests and signed-in non-owners alike — both get the same
@@ -21,6 +25,8 @@ interface Props {
   trackTitle: string;
   comicSrc: string | undefined;
   theme: Theme;
+  /** The part's player URL. */
+  href: string;
   onClick: (level: number) => void;
 }
 
@@ -33,8 +39,8 @@ const getStatusRingClass = (status: string) => {
 };
 
 export const LevelCard: React.FC<Props> = ({
-  level, index, status, isCompleted, isLocked,
-  freeParts, previewSeconds, trackTitle, comicSrc, theme, onClick,
+  level, index, status, isCompleted, isLocked, signupLock = false,
+  freeParts, previewSeconds, trackTitle, comicSrc, theme, href, onClick,
 }) => {
   const { t } = useTranslation();
 
@@ -54,11 +60,16 @@ export const LevelCard: React.FC<Props> = ({
     : undefined;
 
   return (
-    // A real button, so the part opens from the keyboard and is announced as
-    // something you can press; it used to be a div with onClick.
-    <button
-      type="button"
-      onClick={() => onClick(level)}
+    // A real link to the part's player URL, so it can be opened in a new tab
+    // and crawled. A plain click keeps the old behaviour (preview, paywall or
+    // login sheet); the player and server handle a locked part opened directly.
+    <Link
+      to={href}
+      onClick={(e) => {
+        if (!isPlainClick(e)) return;
+        e.preventDefault();
+        onClick(level);
+      }}
       className="group w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left animate-scale-in flex min-h-0 flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -118,10 +129,12 @@ export const LevelCard: React.FC<Props> = ({
 
         {/* Lock overlay */}
         {isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-card z-10 gap-1.5">
+          // On phones the part's title sits on the art (up to two lines at the
+          // bottom), so the lock centres in the space above it, not over it.
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-card z-10 gap-1.5 max-md:pb-9">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-7 h-7 text-white/95 drop-shadow"
+              className="w-6 h-6 md:w-7 md:h-7 text-white/95 drop-shadow"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -132,9 +145,15 @@ export const LevelCard: React.FC<Props> = ({
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            <span className="font-mono text-white/90 text-[10px] tracking-[0.16em] uppercase drop-shadow">
-              {t('paywall.locked')}
-            </span>
+            {signupLock ? (
+              <span className="max-w-[90%] text-center text-[11px] font-semibold leading-tight text-white drop-shadow">
+                {t('signupWall.lockLabel')}
+              </span>
+            ) : (
+              <span className="font-mono text-white/90 text-[10px] tracking-[0.16em] uppercase drop-shadow">
+                {t('paywall.locked')}
+              </span>
+            )}
           </div>
         )}
 
@@ -199,6 +218,6 @@ export const LevelCard: React.FC<Props> = ({
       >
         {trackTitle}
       </div>
-    </button>
+    </Link>
   );
 };

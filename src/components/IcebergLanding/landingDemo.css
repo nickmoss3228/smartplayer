@@ -1,0 +1,40 @@
+/*
+ * /landing-demo only (IcebergLandingDemo.tsx): the landing's sections in a new
+ * order, so a few edges that used to be soft are now hard. Everything is scoped
+ * under .ib-demo; nothing here reaches the real landing.
+ *
+ * Seams:
+ * 1. the final berg's water (#a9d0e6) into the steps, which start in the deep (#0d2c47):
+ *    .ib-demo-spacer-down, a gradient strip between them;
+ * 2. the steps' light end (#cfe6f3) into band 1, whose own water starts at the
+ *    page colour: the band's background is overridden in the component to start at #cfe6f3;
+ * 3. the darkest band (#0d2c47) into Rivals on the page colour:
+ *    .ib-demo-spacer-up, a gradient strip, and Rivals' top rule is dropped;
+ * 4. the footer, which no longer sits in the water, gets its own place below Rivals.
+ */
+
+.ib-demo .ib-demo-spacer { height: 200px; margin-top: -1px; }
+.ib-demo .ib-demo-spacer-down {
+  background: linear-gradient(180deg,
+    #a9d0e6 0%,
+    color-mix(in oklab, #a9d0e6 84%, #2a6390) 16%,
+    color-mix(in oklab, #a9d0e6 50%, #1b4b72) 42%,
+    color-mix(in oklab, #1b4b72 50%, #0d2c47) 72%,
+    #0d2c47 100%);
+}
+.ib-demo .ib-demo-spacer-up {
+  background: linear-gradient(180deg,
+    #0d2c47 0%,
+    color-mix(in oklab, #0d2c47 84%, #2a6390) 14%,
+    color-mix(in oklab, #1b4b72 50%, #2a6390) 38%,
+    color-mix(in oklab, #cfe6f3 50%, #2a6390) 66%,
+    color-mix(in oklab, var(--room) 70%, #cfe6f3) 88%,
+    var(--room) 100%);
+}
+@media (min-width: 960px) { .ib-demo .ib-demo-spacer { height: 260px; } }
+
+/* the rule between bands means nothing after a gradient */
+.ib-demo .ib-rivals { border-top: 0; }
+
+.ib-demo .ib-demo-footer { display: grid; gap: 10px; justify-items: center; text-align: center; padding: 48px var(--gutter) 40px; }
+.ib-demo .ib-demo-footer .ib-micro { color: var(--sea); }

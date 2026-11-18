@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { useNavigate, useSearchParams, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useParams, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
@@ -17,7 +17,8 @@ import { storyKey } from "../config/priceCatalog";
 import { useCatalog } from "../context/CatalogContext";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
-import { IoChatbubbleEllipsesOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { IoChatbubbleEllipsesOutline, IoCloseOutline, IoCloudDoneOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { saveLastPlayed } from "../services/lastPlayed";
 import { useAppSelector } from "../hooks/hooks";
 import { useRepeatMode } from "../components/Player/hooks/useRepeatMode";
 import { RepeatModeBar } from "../components/Player/RepeatMode/RepeatModeBar";
@@ -66,6 +67,23 @@ const hasListenedFullyStored = (difficulty: string, storySlug: string, level: nu
 
 const markListenedFullyStored = (difficulty: string, storySlug: string, level: number): void => {
   localStorage.setItem(getListenedKey(difficulty, storySlug, level), "true");
+};
+
+// Set once the guest has been offered to save their progress (see showSavePrompt).
+const SAVE_PROMPT_KEY = "malako:savePromptShown";
+const readFlag = (key: string): boolean => {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+};
+const writeFlag = (key: string): void => {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    // private mode: the prompt may come back next time, nothing worse
+  }
 };
 
 // Used only while a DB-backed story's tracks are still being fetched (static
@@ -358,26 +376,41 @@ const Player = React.memo(() => {
     if (levelOutOfRange) navigate(backPath, { replace: true });
   }, [levelOutOfRange, navigate, backPath]);
 
+  // The landing's «Продолжить» card points back here (services/lastPlayed.ts).
+  // Written only for a part that actually plays: not locked, not out of range.
+  const partPlays =
+    !!dbStory && !catalogLoading && !partLocked && !levelOutOfRange && audioTracks.length > 0;
+  useEffect(() => {
+    if (!partPlays || !dbStory) return;
+    saveLastPlayed({
+      difficulty,
+      storySlug: resolvedStorySlug,
+      part: level,
+      titles: {
+        ru: dbStory.localized?.title?.ru?.trim() || dbStory.storyName,
+        en: dbStory.localized?.title?.en?.trim() || dbStory.storyName,
+      },
+    });
+  }, [partPlays, dbStory, difficulty, resolvedStorySlug, level]);
+
+  // Arrived from the landing's «Попробуй сам», which picks the easy level for
+  // the visitor: offer the level picker in case it is the wrong one. Router
+  // state, so it is gone on the next part, a reload or a shared link.
+  const fromLanding = Boolean(
+    (routerLocation.state as { fromLanding?: boolean } | null)?.fromLanding,
+  );
+
+  // After a guest's first passed quiz, offer to keep the progress by signing
+  // up, once per browser. Their progress is in localStorage until then, and
+  // AuthContext moves it into the new account.
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  useEffect(() => setShowSavePrompt(false), [level, difficulty, storySlug]);
+
   const handleWavesurferMount = useCallback(
     (wavesurfer: WaveSurferInstance) => {
       wavesurferRef.current = wavesurfer;
     },
     [],
-  );
-
-  console.log(
-    "[Player] difficulty:",
-    difficulty,
-    "storySlug:",
-    storySlug,
-    "level:",
-    level,
-  );
-  console.log(
-    "[Player] resolved audioTrack:",
-    audioTrack?.id,
-    audioTrack?.title,
-    audioTrack?.audio,
   );
 
   // called by WaveformPlayer when the track ends
@@ -394,7 +427,7 @@ const Player = React.memo(() => {
       // they sign up later (AuthContext migrates this into their account).
       if (!user) {
         setQuizResults(results);
-        saveGuestQuizResult(
+        const saved = saveGuestQuizResult(
           difficulty,
           resolvedStorySlug,
           level,
@@ -403,6 +436,10 @@ const Player = React.memo(() => {
           audioTracks.length,
         );
         setLocalProgressTick((n) => n + 1);
+        if (saved.results[level]?.completed && !readFlag(SAVE_PROMPT_KEY)) {
+          writeFlag(SAVE_PROMPT_KEY);
+          setShowSavePrompt(true);
+        }
         return;
       }
 
@@ -419,7 +456,6 @@ const Player = React.memo(() => {
           partNumber: level,
           answers: results.answers,
         });
-        console.log("Progress saved:", response.data);
 
         // The endpoint only awards BitAward (and returns a wallet) on an
         // actual pass — push it straight into the shared cache so the navbar
@@ -605,10 +641,6 @@ const Player = React.memo(() => {
     },
     [difficulty, resolvedStorySlug, level],
   );
-  
-  // useEffect(() => {
-  // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
-  // }, [audioTrack]);
 
   return dbStoryLoading ? (
     <div className="flex justify-center items-center h-dvh">
@@ -766,7 +798,7 @@ const Player = React.memo(() => {
               )}
               <button
                 onClick={handleOpenFeedback}
-                aria-label={t("controls.feedback", "Send feedback")}
+                aria-label={t("controls.feedback")}
                 className="p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer"
               >
                 <IoChatbubbleEllipsesOutline className="w-6 h-6" />
@@ -784,6 +816,18 @@ const Player = React.memo(() => {
             />
           )}
 
+          {fromLanding && playerVisible && (
+            <p className="shrink-0 px-4 text-center text-xs text-black/70 md:text-left md:px-0">
+              {t("player.tooEasy")}{" "}
+              <Link
+                to="/levels"
+                className="font-semibold text-black underline underline-offset-2 hover:text-black/70"
+              >
+                {t("player.changeLevel")}
+              </Link>
+            </p>
+          )}
+
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
             // The quiz fills what is left of the panel, in the Practice
@@ -793,6 +837,33 @@ const Player = React.memo(() => {
                 <p role="alert" className="px-4 pb-2 text-center text-xs text-red-700">
                   {t("player.saveProgressError")}
                 </p>
+              )}
+              {showSavePrompt && !user && (
+                <div
+                  role="status"
+                  className="mb-2 flex shrink-0 items-start gap-3 rounded-[3px] bg-white px-3 py-2.5 text-left shadow-sm ring-1 ring-black/5 animate-fade-in"
+                >
+                  <IoCloudDoneOutline className="mt-0.5 h-5 w-5 shrink-0 text-black/70" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900">{t("savePrompt.title")}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{t("savePrompt.body")}</p>
+                    <Link
+                      to="/signup"
+                      state={{ returnTo: routerLocation.pathname + routerLocation.search }}
+                      className="mt-2 inline-flex rounded-[3px] bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                      {t("savePrompt.signUp")}
+                    </Link>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSavePrompt(false)}
+                    aria-label={t("savePrompt.dismiss")}
+                    className="-mr-1 -mt-1 cursor-pointer rounded-full p-1 text-black/50 transition-colors hover:bg-black/5 hover:text-black"
+                  >
+                    <IoCloseOutline className="h-5 w-5" />
+                  </button>
+                </div>
               )}
               {quizLoading || !quizQuestions ? (
                 <p className="m-auto text-center text-black/50 text-sm py-10">

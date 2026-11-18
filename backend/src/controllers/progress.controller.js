@@ -21,6 +21,7 @@ import { partitionVocabKeys } from "../helpers/vocabKeyCatalog.js";
 import { LEGACY_VOCAB_KEYS } from "../config/vocabKeys.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
+import { grantPhraseRepeat } from "../helpers/phraseRepeatCap.js";
 import { getShopItem } from "../config/shopCatalog.js";
 import { getCharacterItem } from "../config/characterCatalog.js";
 import { sanitizeLook } from "../config/characterLook.js";
@@ -50,8 +51,18 @@ export async function getProgress(req, res) {
     if (!difficulties.includes(difficulty))
       return res.status(400).json({ message: "Invalid difficulty level" });
 
-    // Created on first read, as before.
-    const progress = await progressRepo.ensure(userId, difficulty);
+    // Read-only: the row is created by the first quiz completion
+    // (applyLevelCompletion), so opening a level writes nothing. With no row,
+    // answer with the column defaults.
+    const progress = await progressRepo.findFor(userId, difficulty);
+    if (!progress) {
+      return res.json({
+        completedLevels: [],
+        currentLevel: 1,
+        levelResults: {},
+        totalLevels: 0,
+      });
+    }
 
     res.json({
       completedLevels: progress.completedLevels,
@@ -785,12 +796,13 @@ export async function recordPhraseRepeat(req, res) {
       return res.status(400).json({ message: "repeatCount must be 1, 2, or 3" });
     }
 
-    const bitPhrase = PHRASE_REPEAT_BITPHRASE[repeatCount] ?? 0;
+    // Capped per Moscow day, so a script posting repeats cannot mint without limit.
+    const bitPhrase = grantPhraseRepeat(userId, PHRASE_REPEAT_BITPHRASE[repeatCount] ?? 0);
     const wallet = bitPhrase > 0
       ? await awardCurrency(userId, { bitPhrase })
       : await walletRepo.get(userId);
 
-    res.json({ wallet });
+    res.json({ wallet, bitPhraseAwarded: bitPhrase });
   } catch (error) {
     console.error("Record phrase repeat error:", error);
     res.status(500).json({ message: "Server error" });

@@ -16,3 +16,9 @@ export const PHRASE_REPEAT_BITPHRASE = {
   2: 1,
   3: 2,
 };
+
+// Most BitPhrase one user can earn from phrase repeats in a Moscow day. The
+// longest story has about 170 segments, so playing all of it at 3x pays about
+// 340, which a real learner stays under; scripted farming drops from ~9,600 to
+// 400 a day.
+export const PHRASE_REPEAT_DAILY_BITPHRASE_CAP = 400;

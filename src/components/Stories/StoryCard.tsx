@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { IoBookOutline, IoNewspaperOutline, IoLockClosed, IoCheckmark, IoPlay } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import type { StoryGroup, DifficultySlug } from '../../types/storyGroups';
 import { formatPrice } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
@@ -91,7 +92,10 @@ interface BaseProps {
   completed: number;
   /** Entrance stagger only — capped by the caller. */
   index: number;
-  onOpen: () => void;
+  /** The story page this card opens: the card is then a real link (new tab, crawlable). */
+  href?: string;
+  /** Without `href`, what a press does instead (the shop opens a preview). */
+  onOpen?: () => void;
 }
 
 /**
@@ -124,6 +128,7 @@ export const StoryCard = ({
   index,
   variant = 'browse',
   inCart = false,
+  href,
   onOpen,
   onBuy,
   onPreview,
@@ -156,6 +161,14 @@ export const StoryCard = ({
   const FallbackIcon = story.category === 'news' ? IoNewspaperOutline : IoBookOutline;
 
   const revealRef = useRevealOnScroll<HTMLDivElement>();
+  // A link when the card leads to a page, a button when it opens something in place.
+  // (Typed loosely on purpose: TypeScript cannot infer children for a Link | 'button' union.)
+  const Card = (href ? Link : 'button') as unknown as React.ElementType<{
+    className?: string;
+    children?: React.ReactNode;
+    [prop: string]: unknown;
+  }>;
+  const cardProps: Record<string, unknown> = href ? { to: href } : { type: 'button', onClick: onOpen };
 
   return (
     <div
@@ -169,9 +182,8 @@ export const StoryCard = ({
       }
       data-list-reveal="out"
     >
-      <button
-        type="button"
-        onClick={onOpen}
+      <Card
+        {...cardProps}
         className={`group relative block w-full cursor-pointer overflow-hidden rounded-card text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
           story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
         }`}
@@ -255,7 +267,7 @@ export const StoryCard = ({
             />
           </span>
         )}
-      </button>
+      </Card>
 
       {/* Below the panel: "available", or parts · price · buy. Kept outside
           the card button so "open" and "buy" are two separate targets —

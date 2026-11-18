@@ -9,6 +9,7 @@ import { CongratsModal } from '../../modules/levelprogress/congratsModule';
 import { LevelProgressSkeleton } from '../../modules/levelprogress/LevelProgressSkeleton';
 import { StoryPreviewModal } from '../../modules/storypreview/StoryPreviewModal';
 import type { LevelProgressProps } from '../../types/LevelProgress';
+import { SignupWallSheet } from './SignupWallSheet';
 import { PaywallModal } from '../Paywall/PaywallModal';
 import { storyKey } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
@@ -23,7 +24,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     difficulty, storyTitle, theme, user,
     audioTracks, comics, completedLevels, totalLevels,
     lastListenedLevel, navigationState,
-    isLoading, getLevelData, isPartLocked,
+    isLoading, getLevelData, isPartLocked, getLevelHref,
     showCongrats, previewLevel, previewData,
     handleLevelCardClick, handleStartListening,
     handleClosePreview, handleCloseCongrats,
@@ -31,6 +32,10 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     showPaywall,
     setShowPaywall,
     storyOwned,
+    signupLock,
+    catalogLoading,
+    showSignupWall,
+    setShowSignupWall,
     freeParts,
     previewSeconds,
     castCards,
@@ -112,6 +117,8 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           previewSeconds={storyOwned ? null : previewSeconds}
           getLevelData={getLevelData}
           isPartLocked={isPartLocked}
+          signupLock={signupLock}
+          getLevelHref={getLevelHref}
           onLevelClick={handleLevelCardClick}
         />
       </div>
@@ -150,12 +157,18 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       <PaywallModal
         // Never while the shop is off: there is nothing to offer, and the
         // guest has already been sent to sign up instead (useLevelProgressPage).
-        isOpen={SHOP_ENABLED && showPaywall && !storyOwned}
+        isOpen={SHOP_ENABLED && showPaywall && !storyOwned && !catalogLoading && !signupLock}
         theme={theme}
         storyTitle={storyTitle}
         requiredSkus={catalog.skusGranting(storyKey(difficulty, storySlug))}
         onClose={() => setShowPaywall(false)}
       />
+
+      {/* The same arrival flag (the player sends locked-part visitors back with
+          openPaywall) shows the sign-up sheet while that is the only lock. */}
+      {!catalogLoading && signupLock && (showSignupWall || showPaywall) && (
+        <SignupWallSheet onClose={() => { setShowSignupWall(false); setShowPaywall(false); }} />
+      )}
     </div>
   );
 };

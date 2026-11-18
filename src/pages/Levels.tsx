@@ -5,7 +5,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { motionEnter, STAGGER } from '../components/ui/motion';
 import MilkGlass from '../components/Levels/MilkGlass';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
-import { buttonPrimary } from '../components/ui/buttonStyles';
+
+const MotionLink = motion.create(Link);
 
 /**
  * Level picker, told as three glasses of milk.
@@ -20,10 +21,10 @@ import { buttonPrimary } from '../components/ui/buttonStyles';
  * the real thing: skim milk is genuinely blue-tinged, cream genuinely yellow.
  * So the colour ramp doubles as the difficulty ramp.
  *
- * Two steps on purpose: a tap pours the glass and only selects it, and the
- * Continue button under the shelf moves on. The last level picked is
- * remembered on this device and comes back already poured, so a returning
- * learner only has to press Continue.
+ * One tap opens the level: each glass is a link to that level's stories, with
+ * its CEFR band under the title. The level picked is remembered on this device
+ * and comes back already poured and lifted, so a returning learner sees where
+ * they were.
  */
 
 const LAST_LEVEL_KEY = 'malako:lastLevel';
@@ -43,6 +44,7 @@ type Level = {
   fat: string;
   /** 0–1, how full the glass sits. */
   fill: number;
+  cefr: string;
 };
 
 const Levels = () => {
@@ -60,12 +62,10 @@ const Levels = () => {
   };
 
   const levels: Level[] = [
-    { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28 },
-    { id: 'medium', title: t('levels.medium'), fat: t('levels.fatMedium'), fill: 0.58 },
-    { id: 'hard', title: t('levels.hard'), fat: t('levels.fatHard'), fill: 0.92 },
+    { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28, cefr: t('levels.cefrEasy') },
+    { id: 'medium', title: t('levels.medium'), fat: t('levels.fatMedium'), fill: 0.58, cefr: t('levels.cefrMedium') },
+    { id: 'hard', title: t('levels.hard'), fat: t('levels.fatHard'), fill: 0.92, cefr: t('levels.cefrHard') },
   ];
-
-  const chosen = levels.find((l) => l.id === selectedLevel);
 
   return (
     // Plain white, same as every other page. White milk stays readable because
@@ -98,11 +98,10 @@ const Levels = () => {
             const isSelected = selectedLevel === level.id;
 
             return (
-              <motion.button
+              <MotionLink
                 key={level.id}
-                type="button"
+                to={`/levels/${level.id}`}
                 onClick={() => choose(level.id)}
-                aria-pressed={isSelected}
                 className="group flex flex-col items-center cursor-pointer rounded-card
                   px-1 pt-2 pb-3 sm:px-3
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-black/60
@@ -152,29 +151,14 @@ const Levels = () => {
                   >
                     {level.title}
                   </span>
+
+                  <span className="mt-1 font-mono text-[10px] tracking-[0.16em] text-dim">
+                    {level.cefr}
+                  </span>
                 </motion.div>
-              </motion.button>
+              </MotionLink>
             );
           })}
-        </div>
-
-        {/* ── Continue ── */}
-        <div className="mt-7 sm:mt-12 w-full max-w-xs px-4 sm:px-0">
-          {chosen ? (
-            <motion.div
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={motionEnter}
-            >
-              <Link to={`/levels/${chosen.id}`} className={`${buttonPrimary} w-full`}>
-                {t('levels.continue')}
-              </Link>
-            </motion.div>
-          ) : (
-            <button disabled className={`${buttonPrimary} w-full`}>
-              {t('levels.continue')}
-            </button>
-          )}
         </div>
 
       </div>

@@ -97,7 +97,7 @@ const MarkerTrack = ({
     selected >= 0 ? (selected + 1 < times.length ? times[selected + 1] : duration) : null;
 
   return createPortal(
-    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>
+    <div className="ym-hide-content" style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>
       {/* The sentence being auditioned, shaded across the wave — the thing a
           producer is actually judging when they press play. */}
       {bandStart !== null && bandEnd !== null && (

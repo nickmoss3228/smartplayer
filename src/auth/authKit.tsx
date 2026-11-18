@@ -279,6 +279,7 @@ export const TextField = ({
       <label htmlFor={id} className={microLabel}>{label}</label>
       {hint && <span className="text-xs text-muted">{hint}</span>}
     </div>
+    {/* ym-disable-keys: Yandex Webvisor records this field's typing as asterisks. */}
     <input
       id={id}
       name={name}
@@ -289,7 +290,7 @@ export const TextField = ({
       onChange={(e) => onChange(e.target.value)}
       required={required}
       placeholder={placeholder}
-      className={fieldBase}
+      className={`${fieldBase} ym-disable-keys`}
     />
   </div>
 )
@@ -337,7 +338,7 @@ export const PasswordField = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className={fieldBase}
+        className={`${fieldBase} ym-disable-keys`}
       />
       {children}
     </div>
@@ -385,7 +386,7 @@ export const PhoneField = ({
         value={value.replace(/^\+7\s?/, '')}
         onChange={(e) => onChange(format(e.target.value))}
         placeholder="999 123-45-67"
-        className="flex-1 min-w-0 px-3.5 bg-transparent border-0 font-mono text-[15px] tracking-[0.04em] text-ink placeholder:text-muted focus:outline-none"
+        className="flex-1 min-w-0 px-3.5 bg-transparent border-0 font-mono text-[15px] tracking-[0.04em] text-ink placeholder:text-muted focus:outline-none ym-disable-keys"
       />
     </div>
   </div>
@@ -459,7 +460,7 @@ export const OtpField = ({
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             onFocus={(e) => e.target.select()}
-            className="w-full min-w-0 h-[60px] sm:h-[68px] border border-line-strong rounded-[3px] bg-white text-center font-mono text-[22px] sm:text-[26px] text-ink focus:outline-2 focus:outline-offset-2 focus:outline-signal focus:border-ink"
+            className="w-full min-w-0 h-[60px] sm:h-[68px] border border-line-strong rounded-[3px] bg-white text-center font-mono text-[22px] sm:text-[26px] text-ink focus:outline-2 focus:outline-offset-2 focus:outline-signal focus:border-ink ym-disable-keys"
           />
         ))}
       </div>

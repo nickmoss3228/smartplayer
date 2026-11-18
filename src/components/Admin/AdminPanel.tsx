@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trans, useTranslation } from "react-i18next";
+// Registers the "studio" strings; they ship in this lazy chunk, not the main bundle.
+import "../../i18nStudio";
 import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
 import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
@@ -92,7 +94,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 ym-hide-content">
         {/* See the note on the same tag in the authenticated return below. */}
         <meta name="robots" content="noindex, nofollow" />
         <form
@@ -108,7 +110,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
             onChange={(e) => setCode(e.target.value)}
             placeholder={t("admin.login.placeholder")}
             required
-            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black ym-disable-keys"
           />
           {loginError && (
             <p className="text-sm text-red-600 mb-3">{loginError}</p>
@@ -126,7 +128,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10">
+    <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10 ym-hide-content">
       {/* /admin is listed as a public route in App.tsx, so it is reachable and
           therefore indexable. robots.txt disallows it, but Disallow only stops
           crawling — a URL linked from anywhere else can still be indexed

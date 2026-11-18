@@ -97,8 +97,8 @@ const List = () => {
 
       <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 animate-fade-in">
-          <button
-            onClick={() => navigate('/levels')}
+          <Link
+            to="/levels"
             className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
             aria-label={t('levels.title')}
           >
@@ -113,7 +113,7 @@ const List = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
+          </Link>
 
           <div className="text-center flex-1 min-w-0 px-2">
             <div className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide">
@@ -187,7 +187,7 @@ const List = () => {
                     /* A free-to-start story opens like any other: its free
                        parts play, and the level grid is where a signed-out
                        visitor is asked to sign up for the rest. */
-                    onOpen={() => navigate(`/levels/${diff}/${story.slug}`)}
+                    href={`/levels/${diff}/${story.slug}`}
                   />
                 ))}
               </div>

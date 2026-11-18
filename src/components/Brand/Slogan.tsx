@@ -46,21 +46,32 @@ const Slogan = ({ className = '' }: { className?: string }) => {
       {t('homepage.slogan.prefix')}{' '}
 
       {/*
-        The slot is inline-grid with a single cell that every word shares, so
-        the outgoing and incoming words stack instead of sitting side by side
-        while they cross-fade. Without it the line visibly jumps as each word's
-        width lands. `align-bottom` keeps the baseline steady.
+        A fixed box: every word sits, invisible, in the same grid cell, so the
+        cell is as wide as the longest word and the line never changes width.
+        In a centred line a changing width moved the prefix too, and the old
+        `popLayout` exit pulled the leaving word out of the cell, so on phones
+        the two words were seen overlapping mid-switch. Now the old word fades
+        out before the new one fades in (mode="wait"), in the same place.
       */}
-      <span className="inline-grid align-bottom">
-        <AnimatePresence mode="popLayout" initial={false}>
+      <span className="inline-grid align-bottom text-left">
+        {words.map((w) => (
+          <span
+            key={`sizer-${w}`}
+            aria-hidden="true"
+            className="invisible col-start-1 row-start-1 whitespace-nowrap font-extrabold"
+          >
+            {w}
+          </span>
+        ))}
+        <AnimatePresence mode="wait" initial={false}>
           <motion.span
             key={word}
             className="col-start-1 row-start-1 whitespace-nowrap font-extrabold"
             style={{ color: accent }}
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: '0.45em' }}
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: '0.3em' }}
             animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: '-0.45em' }}
-            transition={{ duration: shouldReduceMotion ? 0.2 : 0.42, ease: EASE_ENTER }}
+            exit={{ opacity: 0, transition: { duration: shouldReduceMotion ? 0.15 : 0.16, ease: 'easeIn' } }}
+            transition={{ duration: shouldReduceMotion ? 0.2 : 0.34, ease: EASE_ENTER }}
           >
             {word}
           </motion.span>

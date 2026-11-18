@@ -22,14 +22,14 @@ export const useLevelProgress = (props: LevelProgressProps) => {
 
   const navigate = useNavigate();
 
+  // The part's player URL — also the href of its tile, so it can be opened in a new tab.
+  const getLevelHref = (level: number): string =>
+    storySlug
+      ? `/levels/${difficulty}/${storySlug}/${level}`
+      : `/player?difficulty=${difficulty}&level=${level}`;
+
   const handleLevelClick = (level: number): void => {
-    if (canClickLevel()) {
-      if (storySlug) {
-        navigate(`/levels/${difficulty}/${storySlug}/${level}`);
-      } else {
-        navigate(`/player?difficulty=${difficulty}&level=${level}`);
-      }
-    }
+    if (canClickLevel()) navigate(getLevelHref(level));
   };
 
   const goToStoryList = (): void => {
@@ -70,6 +70,7 @@ export const useLevelProgress = (props: LevelProgressProps) => {
     goToStoryList,
     goToDifficulty,
     getLevelData,
+    getLevelHref,
     progressPercentage,
     navigationState,
   };

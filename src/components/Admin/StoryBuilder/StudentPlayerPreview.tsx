@@ -144,7 +144,7 @@ function PreviewPlayer({ story, initialPart, onClose }: PreviewProps) {
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}
-      className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-gradient-to-br ${playerThemes[story.difficulty].background}`} data-testid="student-player-preview">
+      className={`fixed inset-0 z-50 flex h-dvh flex-col overflow-hidden bg-gradient-to-br ${playerThemes[story.difficulty].background} ym-hide-content`} data-testid="student-player-preview">
       {/* The admin's own bar, outside the student's screen, so the way back to
           the editor is never confused with the player's controls. */}
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 bg-ink px-3 text-white sm:px-5">

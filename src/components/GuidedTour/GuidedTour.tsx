@@ -3,7 +3,27 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 // ─── Bump version to force the tour to re-show for existing users ─────────────
-const TOUR_KEY = "playerTourV5";
+const TOUR_KEY = "playerTourV6";
+// Whoever finished the old 11-step tour (V5) has already read every hint below,
+// so they get neither the short tour nor the hints.
+const LEGACY_TOUR_KEY = "playerTourV5";
+// The hints already shown on this device, as a JSON array of HintKey.
+const HINTS_KEY = "playerHintsV1";
+
+const readStorage = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const writeStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // private mode: the tour or hint may show again next time, nothing worse
+  }
+};
 
 // ─── Static step config (layout-only, no text) ───────────────────────────────
 // Title and body come from i18n; only the structural fields live here.
@@ -13,22 +33,59 @@ interface TourStepConfig {
   padding: number;
 }
 
+// Three steps: what to press to listen, how fast, how many times. Everything
+// else is explained the first time the learner uses it (HINTS below), so the
+// first minute in the player is spent listening, not reading.
+//
 // Text is matched to a step by POSITION (guidedTour.steps.<i> in the locales),
-// so reordering here means reordering both translation files too. Each "why"
-// step spotlights the same control as the "what" step right before it.
+// so reordering here means reordering both translation files too.
 const STEP_CONFIG: TourStepConfig[] = [
-  { target: "tour-player",     side: "top",    padding: 14 },
-  { target: "tour-comics",     side: "bottom", padding: 10 },
-  { target: "tour-speed",      side: "bottom", padding: 10 },
-  { target: "tour-speed",      side: "bottom", padding: 10 }, // why 3 speeds
-  { target: "tour-repeat",     side: "bottom", padding: 10 },
-  { target: "tour-repeat",     side: "bottom", padding: 10 }, // why 3 repetitions
-  { target: "tour-vocabulary", side: "top",    padding: 10 },
-  { target: "tour-vocabulary", side: "top",    padding: 10 }, // why the words are in Russian
-  { target: "tour-mic",        side: "bottom", padding: 6 },  // repeat after me
-  { target: "tour-mic",        side: "bottom", padding: 6 },  // why say it aloud
-  // { target: "tour-quiz",       side: "top",    padding: 12 }, // its text is the last entry in the locales
+  { target: "tour-player", side: "top",    padding: 14 },
+  { target: "tour-speed",  side: "bottom", padding: 10 },
+  { target: "tour-repeat", side: "bottom", padding: 10 },
 ];
+
+// ─── First-use hints ──────────────────────────────────────────────────────────
+// One card per control, shown once, right after the learner first uses it
+// (text: guidedTour.hints.<key>). Not modal: the player keeps working
+// underneath, and a tap anywhere else puts the card away.
+type HintKey = "comics" | "speed" | "repeat" | "vocabulary" | "mic";
+
+interface HintConfig {
+  key: HintKey;
+  target: string;
+  side: "top" | "bottom";
+}
+
+const HINTS: HintConfig[] = [
+  { key: "comics",     target: "tour-comics",     side: "bottom" },
+  { key: "speed",      target: "tour-speed",      side: "top" },
+  { key: "repeat",     target: "tour-repeat",     side: "top" },
+  { key: "vocabulary", target: "tour-vocabulary", side: "top" },
+  { key: "mic",        target: "tour-mic",        side: "bottom" },
+];
+
+// Long enough for what the tap opened (the comic viewer, the word sheet) to be
+// on screen, so the card is placed against what is actually there.
+const HINT_DELAY_MS = 450;
+
+const readSeenHints = (): Set<HintKey> => {
+  try {
+    const parsed: unknown = JSON.parse(readStorage(HINTS_KEY) ?? "[]");
+    return new Set(Array.isArray(parsed) ? (parsed as HintKey[]) : []);
+  } catch {
+    return new Set();
+  }
+};
+
+const markHintSeen = (key: HintKey) => {
+  const seen = readSeenHints();
+  seen.add(key);
+  writeStorage(HINTS_KEY, JSON.stringify([...seen]));
+};
+
+/** Only a real control counts as using it, not its caption. */
+const CONTROL = 'button, a, input, [role="button"], [role="slider"]';
 
 // ─── Geometry helpers ─────────────────────────────────────────────────────────
 interface SpotRect { x: number; y: number; w: number; h: number }
@@ -137,8 +194,175 @@ const readViewport = () => ({
   h: document.documentElement.clientHeight || window.innerHeight,
 });
 
+/** The card's connector arrow, on the edge that faces the target. */
+const arrowStyleFor = (layout: Layout): React.CSSProperties | null =>
+    layout.side === "bottom" ? { top: -7,    left: layout.arrowOffset - 8 }
+  : layout.side === "top"    ? { bottom: -7, left: layout.arrowOffset - 8 }
+  : layout.side === "right"  ? { left: -7,   top:  layout.arrowOffset - 8 }
+  : layout.side === "left"   ? { right: -7,  top:  layout.arrowOffset - 8 }
+  : null;
+
+const Arrow = ({ style }: { style: React.CSSProperties }) => (
+  <div
+    style={{
+      position: "absolute",
+      ...style,
+      width:        16,
+      height:       16,
+      background:   "white",
+      transform:    "rotate(45deg)",
+      borderRadius: 3,
+    }}
+  />
+);
+
+/**
+ * The tapped element's spotlight, or null when it is gone or covered (the tap
+ * opened the comic viewer or the word sheet over it): the card then sits in
+ * the middle of the screen instead of pointing at something hidden.
+ */
+function measureVisible(el: HTMLElement, padding: number): SpotRect | null {
+  if (!el.isConnected) return null;
+  const r = el.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return null;
+  const cx = clamp(r.left + r.width / 2, 0, window.innerWidth - 1);
+  const cy = clamp(r.top + r.height / 2, 0, window.innerHeight - 1);
+  const top = document.elementFromPoint(cx, cy);
+  if (top && !el.contains(top)) return null;
+  return { x: r.left - padding, y: r.top - padding, w: r.width + padding * 2, h: r.height + padding * 2 };
+}
+
+function FirstUseHints() {
+  const { t } = useTranslation();
+  const [hint, setHint] = useState<{ cfg: HintConfig; el: HTMLElement } | null>(null);
+  const [rect, setRect] = useState<SpotRect | null>(null);
+  const [vp, setVp] = useState(readViewport);
+  const [cardH, setCardH] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setHint(null), []);
+
+  // Listen for the first use of each control. Capture phase, so a control that
+  // stops propagation still counts; nothing is prevented, the tap does what it
+  // always did. Attached for good, also while a card is up: the tap that puts
+  // one card away can be the first use of another control.
+  useEffect(() => {
+    let timer = 0;
+    const onClick = (e: MouseEvent) => {
+      const target = e.target instanceof Element ? e.target : null;
+      const el = target?.closest<HTMLElement>("[data-tour]");
+      if (!el || !target?.closest(CONTROL)) return;
+      const cfg = HINTS.find((h) => h.target === el.dataset.tour);
+      if (!cfg || readSeenHints().has(cfg.key)) return;
+      // Seen the moment it is shown: ignoring it is an answer too.
+      markHintSeen(cfg.key);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setHint({ cfg, el }), HINT_DELAY_MS);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  // Follow the control while the card is up (it can scroll or re-layout).
+  useEffect(() => {
+    if (!hint) return;
+    let raf = 0;
+    const tick = () => {
+      const next = measureVisible(hint.el, 8);
+      setRect((prev) => (sameRect(prev, next) ? prev : next));
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [hint]);
+
+  // Put away by Escape or by a tap anywhere outside the card.
+  useEffect(() => {
+    if (!hint) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const onDown = (e: PointerEvent) => {
+      if (!cardRef.current?.contains(e.target as Node)) close();
+    };
+    const onResize = () => setVp(readViewport());
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [hint, close]);
+
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!hint || !el) return;
+    const measure = () => setCardH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hint, vp]);
+
+  if (!hint) return null;
+
+  const title = t(`guidedTour.hints.${hint.cfg.key}.title`);
+  const layout = resolveLayout(rect, hint.cfg.side, vp.w, vp.h, cardH);
+  const arrowStyle = arrowStyleFor(layout);
+
+  return createPortal(
+    <div
+      ref={cardRef}
+      role="dialog"
+      aria-label={title}
+      className="animate-fade-in"
+      style={{
+        position:  "fixed",
+        left:      layout.left,
+        top:       layout.top,
+        width:     layout.width,
+        maxHeight: vp.h - TIP_MARGIN * 2,
+        zIndex:    10000, // above the comic viewer (ComicsModal, 9999) a tap may have opened
+        display:   "flex",
+      }}
+    >
+      {arrowStyle && <Arrow style={arrowStyle} />}
+      <div className="relative min-h-0 w-full bg-white rounded-[3px] shadow-xl ring-1 ring-black/5 px-5 pt-4 pb-3 flex flex-col gap-2">
+        <h3 className="text-[15px] font-bold text-gray-900 leading-snug">{title}</h3>
+        <p className="min-h-0 overflow-y-auto text-[13px] text-gray-600 leading-relaxed">
+          {t(`guidedTour.hints.${hint.cfg.key}.body`)}
+        </p>
+        <div className="flex shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={close}
+            className="cursor-pointer rounded-[3px] px-3 py-2 text-[13px] font-semibold text-gray-900 transition-colors hover:bg-gray-100"
+          >
+            {t("guidedTour.gotIt")}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
+/**
+ * The player's onboarding: a three-step tour on the first visit, then the
+ * first-use hints. A learner who finished the old long tour gets neither.
+ */
 export const GuidedTour: React.FC = () => {
+  const [veteran] = useState(() => readStorage(LEGACY_TOUR_KEY) !== null);
+  const [tourDone, setTourDone] = useState(() => readStorage(TOUR_KEY) !== null);
+  if (veteran) return null;
+  return tourDone ? <FirstUseHints /> : <Tour onDone={() => setTourDone(true)} />;
+};
+
+function Tour({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();
 
   const [step,    setStep]    = useState(0);
@@ -161,11 +385,10 @@ export const GuidedTour: React.FC = () => {
     [t],
   );
 
+  // Mounted only while the tour is still to be shown (see GuidedTour).
   useEffect(() => {
-    if (!localStorage.getItem(TOUR_KEY)) {
-      const id = setTimeout(() => setVisible(true), 700);
-      return () => clearTimeout(id);
-    }
+    const id = setTimeout(() => setVisible(true), 700);
+    return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
@@ -193,10 +416,11 @@ export const GuidedTour: React.FC = () => {
   }, [visible, step, steps, vp]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem(TOUR_KEY, "1");
+    writeStorage(TOUR_KEY, "1");
     cancelAnimationFrame(rafRef.current);
     setVisible(false);
-  }, []);
+    onDone();
+  }, [onDone]);
 
   useEffect(() => {
     if (!visible) return;
@@ -252,12 +476,7 @@ export const GuidedTour: React.FC = () => {
   const layout: Layout = resolveLayout(rect, current.side, vp.w, vp.h, cardH);
 
   // The arrow sits on the card edge that faces the spotlight.
-  const arrowStyle: React.CSSProperties | null =
-      layout.side === "bottom" ? { top: -7,    left: layout.arrowOffset - 8 }
-    : layout.side === "top"    ? { bottom: -7, left: layout.arrowOffset - 8 }
-    : layout.side === "right"  ? { left: -7,   top:  layout.arrowOffset - 8 }
-    : layout.side === "left"   ? { right: -7,  top:  layout.arrowOffset - 8 }
-    : null;
+  const arrowStyle = arrowStyleFor(layout);
 
   return createPortal(
     <>
@@ -325,19 +544,7 @@ export const GuidedTour: React.FC = () => {
       >
 
         {/* Connector arrow */}
-        {arrowStyle && (
-          <div
-            style={{
-              position: "absolute",
-              ...arrowStyle,
-              width:       16,
-              height:      16,
-              background:  "white",
-              transform:   "rotate(45deg)",
-              borderRadius: 3,
-            }}
-          />
-        )}
+        {arrowStyle && <Arrow style={arrowStyle} />}
 
         {/* Card body — only the description scrolls, so on a very short
             screen the buttons stay visible */}
@@ -386,7 +593,8 @@ export const GuidedTour: React.FC = () => {
             <button
               onClick={goNext}
               className="flex items-center gap-1.5 px-4 py-2 rounded-[3px]
-                         text-white text-[13px] font-semibold
+                         bg-gray-900 hover:bg-black active:scale-95
+                         text-white text-[13px] font-semibold
                          cursor-pointer shadow-sm transition-all"
             >
               {!isLast ? (

@@ -12,7 +12,8 @@ import { LEGACY_VOCAB_KEYS as VOCAB_KEY_SET } from "../../src/config/vocabKeys.j
 const LEGACY_VOCAB_KEYS = [...VOCAB_KEY_SET];
 import { SHOP_CATALOG as SHOP_ITEMS } from "../../src/config/shopCatalog.js";
 import { CHARACTER_CATALOG as CHARACTER_ITEMS } from "../../src/config/characterCatalog.js";
-import { QUIZ_PASS_BITAWARD } from "../../src/config/currency.js";
+import { PHRASE_REPEAT_DAILY_BITPHRASE_CAP, QUIZ_PASS_BITAWARD } from "../../src/config/currency.js";
+import { grantPhraseRepeat, resetPhraseRepeatCap } from "../../src/helpers/phraseRepeatCap.js";
 import {
   buyBlocker,
   getExteriorStyle,
@@ -22,8 +23,10 @@ import {
 import {
   adminToken,
   api,
+  db,
   fundWallet,
   registerUser,
+  schema,
   setUserColumns,
   startServer,
   stopServer,
@@ -92,6 +95,32 @@ describe("quiz endpoints", () => {
   it("unknown difficulty or story is a 400, not a 500", async () => {
     assert.equal((await api("GET", "/api/progress/quiz/extreme/leo/1")).status, 400);
     assert.equal((await api("GET", "/api/progress/quiz/easy/no-such-story/1")).status, 400);
+  });
+});
+
+describe("GET /api/progress/:difficulty", () => {
+  const progressRows = async (userId) => {
+    const { eq } = await import("drizzle-orm");
+    return db().select().from(schema.progress).where(eq(schema.progress.userId, userId));
+  };
+
+  it("is read-only: defaults for a fresh user, no row written, still works after a completion", async () => {
+    const u = await registerUser();
+    const fresh = await api("GET", "/api/progress/easy", { token: u.token });
+    assert.equal(fresh.status, 200);
+    assert.deepEqual(fresh.body, { completedLevels: [], currentLevel: 1, levelResults: {}, totalLevels: 0 });
+    assert.equal((await progressRows(u.id)).length, 0);
+
+    const done = await api("POST", "/api/progress/complete", {
+      token: u.token,
+      body: { ...FREE, answers: answers(FREE, { correct: true }) },
+    });
+    assert.equal(done.status, 200, JSON.stringify(done.body));
+    assert.equal((await progressRows(u.id)).length, 1);
+
+    const after = await api("GET", "/api/progress/easy", { token: u.token });
+    assert.equal(after.status, 200);
+    assert.equal(after.body.levelResults[`${FREE.storyId}:${FREE.partNumber}`].completed, true);
   });
 });
 
@@ -343,10 +372,29 @@ describe("vocabulary and phrase rewards", () => {
     const thrice = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
     assert.equal(once.body.wallet.bitPhrase, 0);
     assert.equal(thrice.body.wallet.bitPhrase, 2);
+    assert.equal(once.body.bitPhraseAwarded, 0);
+    assert.equal(thrice.body.bitPhraseAwarded, 2);
     for (const repeatCount of [0, 4, "2", null]) {
       const res = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount } });
       assert.equal(res.status, 400);
     }
+  });
+
+  it("phrase repeats stop paying at the daily cap, paying only what is left", async () => {
+    resetPhraseRepeatCap();
+    const u = await registerUser();
+    // The API runs in this process, so the cap can be filled through the helper.
+    grantPhraseRepeat(u.id, PHRASE_REPEAT_DAILY_BITPHRASE_CAP - 1);
+
+    const partial = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
+    assert.equal(partial.body.bitPhraseAwarded, 1);
+    assert.equal(partial.body.wallet.bitPhrase, 1);
+
+    const capped = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
+    assert.equal(capped.status, 200);
+    assert.equal(capped.body.bitPhraseAwarded, 0);
+    assert.equal(capped.body.wallet.bitPhrase, 1);
+    resetPhraseRepeatCap();
   });
 
   it("listening time only ever goes up", async () => {

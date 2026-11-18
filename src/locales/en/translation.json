@@ -1,4 +1,15 @@
 {
+  "common": {
+    "loading": "Loading…"
+  },
+  "contentStudio": {
+    "preview": "Student preview",
+    "previous": "Previous part or prompt",
+    "next": "Next part or prompt",
+    "closePreview": "Close student preview",
+    "backToEditor": "Back to editor",
+    "noAudio": "Reference audio has not been added yet."
+  },
   "brand": "malako",
   "navbar": {
     "dashboard": "Dashboard",
@@ -194,7 +205,7 @@
     "medium": "Medium",
     "hard": "Hard",
     "title": "Choose Your Level",
-    "selectProficiency": "Select Your Level:",
+    "selectProficiency": "Choose your level",
     "proficiencyLevel": "",
     "level": "Level",
     "easySubtitle": "Foundational Level",
@@ -206,7 +217,10 @@
     "fatHard": "6%",
     "proceedToAssessment": "Proceed to Assessment →",
     "continue": "Continue",
-    "notSure": ""
+    "notSure": "",
+    "cefrEasy": "A1–A2",
+    "cefrMedium": "B1",
+    "cefrHard": "B2–C1"
   },
   "levelProgress": {
     "easyTitle": "Easy",
@@ -313,7 +327,10 @@
     "keyReplay": "replay",
     "volume": "Volume",
     "mute": "Mute",
-    "unmute": "Unmute"
+    "unmute": "Unmute",
+    "repeatEach_one": "Repeat each phrase {{count}} time",
+    "repeatEach_other": "Repeat each phrase {{count}} times",
+    "feedback": "Send feedback"
   },
   "quiz": {
     "question": "Question",
@@ -1017,50 +1034,41 @@
         "body": "This is your English listening story. You can use it as a plain audio player — or switch on Enhanced Mode (we highly recommend it!) for a structured, segment-by-segment workout."
       },
       {
-        "title": "Story Comics",
-        "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
-      },
-      {
         "title": "Playback Speed",
         "body": "Speed sets how fast the audio plays: 0.65×, 0.8× or 1×. Begin at 0.65×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
       },
       {
-        "title": "Why three speeds?",
-        "body": "Think back to being a small child. Your mother explained everything to you slowly, word by word, and only later did you follow normal fast speech. Every child hears and speaks their first language slowly at first, then speeds up gradually. The three speeds retrace that path."
-      },
-      {
         "title": "Enhanced Mode & Repeats",
         "body": "With Enhanced Mode ON, every segment repeats automatically — pick ×1, ×2 or ×3."
-      },
-      {
-        "title": "Why three repetitions?",
-        "body": "The brain rarely remembers something after hearing it once. Think of a favourite song: the part you know best is the chorus, because it comes back again and again. Hearing each phrase three times turns it into a chorus."
-      },
-      {
-        "title": "Key Vocabulary",
-        "body": "Maybe your personal dictionary is missing a few words you need. Here they are. Tap any word to hear its English pronunciation!"
-      },
-      {
-        "title": "Why are the words written in Russian?",
-        "body": "We solve the main problem first: learning to hear spoken English. English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. So first you hear the word and understand it — learning how to write it comes later."
-      },
-      {
-        "title": "Repeat after me",
-        "body": "Tap the microphone and the player will stop after each sentence and wait for you to say it aloud. Once you finish, it moves on by itself. Your browser will ask for microphone access; without it, the player just waits a few seconds."
-      },
-      {
-        "title": "Why say it aloud?",
-        "body": "Children listen first, then repeat after grown-ups — that's how the sounds of a new language become their own. A phrase you have said yourself is easier for your ear to catch later. You can play your takes back under Practice, on the \"Hear yourself\" tile. The recording stays on this device only."
-      },
-      {
-        "title": "Take the Quiz",
-        "body": "Once you've listened to the full story this button lights up! Take the quiz and find out how many facts you caught. Good luck!"
       }
     ],
     "stepCounter": "Step {{current}} of {{total}}",
     "next": "Next",
     "letsGo": "Let's go!",
-    "skip": "Skip"
+    "skip": "Skip",
+    "hints": {
+      "comics": {
+        "title": "Story Comics",
+        "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
+      },
+      "speed": {
+        "title": "Why three speeds?",
+        "body": "Think back to being a small child. Your mother explained everything to you slowly, word by word, and only later did you follow normal fast speech. Every child hears and speaks their first language slowly at first, then speeds up gradually. The three speeds retrace that path."
+      },
+      "repeat": {
+        "title": "Why three repetitions?",
+        "body": "The brain rarely remembers something after hearing it once. Think of a favourite song: the part you know best is the chorus, because it comes back again and again. Hearing each phrase three times turns it into a chorus."
+      },
+      "vocabulary": {
+        "title": "Key words",
+        "body": "Tap a word to hear it in English. They are written in Russian on purpose: English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. First you hear the word and understand it; writing it comes later."
+      },
+      "mic": {
+        "title": "Repeat after me",
+        "body": "Now the player waits after each sentence for you to say it aloud, then moves on by itself. That is how the sounds of a new language become your own: a phrase you have said yourself is easier for your ear to catch later. Your takes are under Practice, on the \"Hear yourself\" tile. The recording stays on this device only."
+      }
+    },
+    "gotIt": "Got it"
   },
   "storyModal": {
     "grammarFocus": "Grammar",
@@ -1082,6 +1090,15 @@
     "pdfSignInHint": "The PDF with the text, translation and words is for signed-in learners: sign in and pass this part's quiz."
   },
   "player": {
+    "aria": {
+      "openComic": "Open comic",
+      "close": "Close",
+      "resetZoom": "Reset zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "audioProgress": "Audio progress",
+      "comic": "Comic"
+    },
     "vocabulary": "Vocabulary",
     "phrasal-verbs": "Phrasal verbs",
     "quiz": "Quiz",
@@ -1097,7 +1114,9 @@
     "wordKnown": "known",
     "wholeComic": "Whole comic",
     "phraseOf": "phrase {{n}} of {{total}}",
-    "back": "Back"
+    "back": "Back",
+    "tooEasy": "Too easy?",
+    "changeLevel": "Change level"
   },
   "character": {
     "eyebrow": "Your character",
@@ -2154,14 +2173,6 @@
     "english": "English",
     "russian": "Russian"
   },
-  "contentStudio": {
-    "backToEditor": "Back to editor",
-    "closePreview": "Close student preview",
-    "next": "Next part or prompt",
-    "noAudio": "Reference audio has not been added yet.",
-    "preview": "Student preview",
-    "previous": "Previous part or prompt"
-  },
   "iceberg": {
     "hero": {
       "checks": [
@@ -2394,7 +2405,21 @@
     "cta": {
       "title": "Hear the difference yourself",
       "button": "Try it yourself",
-      "text": "The first three parts need no sign-up."
+      "text": "The first three parts need no sign-up.",
+      "chooseLevel": "Choose a level"
+    },
+    "footer": {
+      "label": "Site links",
+      "howToUse": "How to use",
+      "levels": "Levels",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "consent": "Data consent"
+    },
+    "continue": {
+      "eyebrow": "Continue",
+      "part": "{{story}}, part {{n}}",
+      "label": "Continue: {{story}}, part {{n}}"
     }
   },
   "helpModal": {
@@ -2409,5 +2434,19 @@
     "pause": "Pause",
     "replay": "Play again",
     "close": "Close"
+  },
+  "signupWall": {
+    "lockLabel": "Free after sign-up",
+    "title": "The rest is free once you sign up",
+    "body": "The first parts play without an account. Sign up and the whole story opens, and your progress is kept. We will bring you back here afterwards.",
+    "signUp": "Sign up",
+    "logIn": "Already have an account? Log in",
+    "notNow": "Not now"
+  },
+  "savePrompt": {
+    "title": "Keep your progress",
+    "body": "Right now it lives only in this browser. Sign up for free and it follows you to any device.",
+    "signUp": "Sign up",
+    "dismiss": "Close"
   }
 }

@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 // the same choices into segmented controls (segBtn below), and both share
 // GHOST_BTN for the round transport buttons.
 const ACTIVE_PILL = "bg-gray-700/30 text-white";
-const IDLE_PILL = "text-white/90 hover:bg-white/10";
+const IDLE_PILL = "text-black/80 hover:bg-black/10";
 /** Round transport/utility button: no fill until hover. */
 const GHOST_BTN =
   "flex items-center justify-center rounded-full text-white " +
@@ -154,7 +154,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                  w-[clamp(44px,13vw,64px)] h-[clamp(44px,13vw,64px)]
                  disabled:opacity-30 disabled:pointer-events-none
                  active:scale-95 transition"
-                aria-label="Previous segment"
+                aria-label={t("controls.prevPhrase")}
               >
                 <IoChevronBack className="w-[clamp(22px,6vw,32px)] h-[clamp(22px,6vw,32px)]" />
               </button>
@@ -170,7 +170,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
             : "bg-black/20 hover:bg-black/30"
         } text-white`}
                 onClick={onPlayPause}
-                aria-label={showPauseIcon ? "Pause" : "Play"}
+                aria-label={showPauseIcon ? t("controls.pause") : t("controls.play")}
               >
                 {showPauseIcon ? (
                   <IoPause className="text-white w-[clamp(36px,11vw,56px)] h-[clamp(36px,11vw,56px)]" />
@@ -187,7 +187,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                  w-[clamp(44px,13vw,64px)] h-[clamp(44px,13vw,64px)]
                  disabled:opacity-30 disabled:pointer-events-none
                  active:scale-95 transition"
-                aria-label="Next segment"
+                aria-label={t("controls.nextPhrase")}
               >
                 <IoChevronForward className="w-[clamp(22px,6vw,32px)] h-[clamp(22px,6vw,32px)]" />
               </button>
@@ -230,7 +230,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                     key={count}
                     className={`${repeatBtnBase} ${pillFor(repeatCount === count)}`}
                     onClick={() => onRepeatCountChange(count)}
-                    title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+                    title={t("controls.repeatEach", { count })}
                   >
                     x{count}
                   </button>
@@ -250,13 +250,13 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
     // keyboard shortcuts usePlayerControls already listens for — which nothing
     // on screen used to mention. The comic left this row for the column above.
     const deskLabel =
-      "text-white/70 text-[10px] uppercase tracking-[0.16em] font-mono whitespace-nowrap";
+      "text-black/80 text-[10px] uppercase tracking-[0.16em] font-mono whitespace-nowrap";
     const segGroup = "inline-flex rounded-full bg-black/15 p-[3px]";
     const segBtn = (on: boolean) =>
       "h-[30px] min-w-10 cursor-pointer rounded-full px-2.5 text-[13px] font-semibold tabular-nums " +
       "transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white " +
-      (on ? "bg-white text-ink" : "text-white/90 hover:bg-white/10");
-    const kbd = "mr-1.5 rounded-[3px] border border-white/40 px-1.5 py-px text-white/90";
+      (on ? "bg-white text-ink" : "text-black/80 hover:bg-black/10");
+    const kbd = "mr-1.5 rounded-[3px] border border-black/40 px-1.5 py-px text-black/80";
 
     return (
       <div className="flex w-full flex-col gap-4">
@@ -274,7 +274,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                 : t("controls.helpUnavailable", "No help audio for this part")
             }
             className="inline-flex cursor-pointer items-center gap-2 justify-self-start rounded-full py-1.5 pl-1.5 pr-3
-              text-sm font-semibold text-white/90 transition-colors duration-200 hover:bg-white/10 hover:text-white
+              text-sm font-semibold text-black/80 transition-colors duration-200 hover:bg-black/10 hover:text-black
               disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <TbLifebuoy className="h-6 w-6" aria-hidden="true" />
@@ -383,7 +383,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
                   disabled={!isEnhancedMode}
                   aria-pressed={repeatCount === count}
                   onClick={() => onRepeatCountChange(count)}
-                  title={`Repeat each segment ${count} time${count > 1 ? "s" : ""}`}
+                  title={t("controls.repeatEach", { count })}
                   className={segBtn(repeatCount === count && isEnhancedMode)}
                 >
                   ×{count}
@@ -393,7 +393,7 @@ export const PlayerControls: React.FC<PlayerControlsProps> = React.memo(
           </div>
         </div>
 
-        <p className="hidden justify-center gap-5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/60 lg:flex">
+        <p className="hidden justify-center gap-5 font-mono text-[10px] uppercase tracking-[0.1em] text-black/80 lg:flex">
           <span>
             <kbd className={kbd}>{t("controls.keySpace")}</kbd>
             {t("controls.keyPause")}
