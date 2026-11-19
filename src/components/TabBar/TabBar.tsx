@@ -14,11 +14,13 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
 import { HUB_TABS } from './hubTabs';
 
 const TabBar = () => {
   const { pathname } = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.add('has-tabbar');
@@ -38,7 +40,7 @@ const TabBar = () => {
           return (
             <li key={tab.id} className="h-full">
               <Link
-                to={tab.to()}
+                to={tab.to(user?.englishLevel)}
                 aria-current={active ? 'page' : undefined}
                 className={`relative h-full flex flex-col items-center justify-center gap-0.5
                   text-[11px] font-semibold leading-none transition-colors

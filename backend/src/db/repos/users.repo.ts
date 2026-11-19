@@ -295,20 +295,24 @@ export async function saveOnboardingAnswers(
 }
 
 /**
- * Both answers plus the end of the flow, in one statement. COALESCE keeps the
- * FIRST completion time: a second call (a double tap, a retry after a lost
+ * The given answers plus the end of the flow, in one statement. A finish sends
+ * both answers; a skip sends whichever the student got to (maybe none), and an
+ * answer left out is NOT overwritten, so earlier PATCHes stay. COALESCE keeps
+ * the FIRST completion time: a second call (a double tap, a retry after a lost
  * response) updates the answers but never moves onboarded_at.
  */
 export async function completeOnboarding(
   userId: string,
-  answers: { englishLevel: string; listeningExperience: string },
+  answers: { englishLevel?: string; listeningExperience?: string },
   tx: Tx = db(),
 ): Promise<OnboardingState | null> {
+  const set: Partial<User> = {};
+  if (answers.englishLevel !== undefined) set.onboardingEnglishLevel = answers.englishLevel;
+  if (answers.listeningExperience !== undefined) set.onboardingListeningExperience = answers.listeningExperience;
   const [row] = await tx
     .update(users)
     .set({
-      onboardingEnglishLevel: answers.englishLevel,
-      onboardingListeningExperience: answers.listeningExperience,
+      ...set,
       onboardedAt: sql`COALESCE(${users.onboardedAt}, now())`,
     })
     .where(eq(users.id, userId))

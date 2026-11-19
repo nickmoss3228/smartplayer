@@ -1,6 +1,8 @@
 import React, { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IoCheckmark } from 'react-icons/io5';
 import MilkGlass from '../../components/Levels/MilkGlass';
+import { Eyebrow, GREEN, WATER } from '../../components/Guide/guideKit';
 import { themes } from '../levelprogress/themes.levelprogress';
 import {
   ENGLISH_LEVEL_OPTIONS,
@@ -10,9 +12,9 @@ import {
   type ListeningExperience,
 } from './onboardingOptions';
 
-const eyebrow = 'font-mono text-[10px] uppercase tracking-[0.16em] text-dim';
+// The guide's headings (pages/HowToUse.tsx), a size down: a question is one screen.
 const title =
-  'mt-3 text-[26px] sm:text-[30px] font-extrabold leading-tight tracking-[-0.03em] text-ink outline-none';
+  'mt-3.5 text-balance text-[clamp(30px,5vw,44px)] font-extrabold leading-[1.06] tracking-[-0.04em] text-ink outline-none';
 
 /**
  * One option card. A real radio underneath, visually hidden, so arrow keys
@@ -27,7 +29,7 @@ const Option: React.FC<{
   children: React.ReactNode;
 }> = ({ name, value, checked, onChange, children }) => (
   <label
-    className={`flex min-h-[60px] cursor-pointer items-center gap-4 rounded-card border bg-white px-4 py-3
+    className={`flex min-h-[64px] cursor-pointer items-center gap-4 rounded-[18px] border bg-white px-4 py-3
       transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-signal
       ${checked ? 'border-ink shadow-[inset_0_0_0_1px_var(--color-ink)]' : 'border-line hover:border-line-strong'}`}
   >
@@ -42,10 +44,11 @@ const Option: React.FC<{
     {children}
     <span
       aria-hidden
-      className={`ml-auto flex h-5 w-5 flex-none items-center justify-center rounded-full border
-        ${checked ? 'border-ink bg-ink' : 'border-line-strong bg-white'}`}
+      className={`ml-auto flex h-6 w-6 flex-none items-center justify-center rounded-full border
+        ${checked ? 'border-transparent text-ink' : 'border-line-strong bg-white'}`}
+      style={checked ? { background: GREEN } : undefined}
     >
-      {checked && <span className="h-2 w-2 rounded-full bg-white" />}
+      {checked && <IoCheckmark className="h-4 w-4" />}
     </span>
   </label>
 );
@@ -59,11 +62,11 @@ export const LevelQuestion: React.FC<{
   const headingId = useId();
   return (
     <fieldset aria-labelledby={headingId} className="m-0 min-w-0 border-0 p-0">
-      <p className={eyebrow}>{t('onboarding.level.eyebrow')}</p>
+      <Eyebrow>{t('onboarding.level.eyebrow')}</Eyebrow>
       <h1 id={headingId} ref={headingRef} tabIndex={-1} className={title}>
         {t('onboarding.level.title')}
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-dim">{t('onboarding.level.hint')}</p>
+      <p className="mt-3.5 text-[17px] leading-relaxed text-dim">{t('onboarding.level.hint')}</p>
 
       <div className="mt-6 flex flex-col gap-2.5">
         {ENGLISH_LEVEL_OPTIONS.map(({ id, fill }) => (
@@ -106,11 +109,11 @@ export const ListeningQuestion: React.FC<{
   const headingId = useId();
   return (
     <fieldset aria-labelledby={headingId} className="m-0 min-w-0 border-0 p-0">
-      <p className={eyebrow}>{t('onboarding.listening.eyebrow')}</p>
+      <Eyebrow>{t('onboarding.listening.eyebrow')}</Eyebrow>
       <h1 id={headingId} ref={headingRef} tabIndex={-1} className={title}>
         {t('onboarding.listening.title')}
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-dim">{t('onboarding.listening.hint')}</p>
+      <p className="mt-3.5 text-[17px] leading-relaxed text-dim">{t('onboarding.listening.hint')}</p>
 
       <div className="mt-6 flex flex-col gap-2.5">
         {LISTENING_OPTIONS.map(({ id, Icon }) => (
@@ -123,7 +126,8 @@ export const ListeningQuestion: React.FC<{
           >
             <span
               aria-hidden
-              className="flex h-10 w-10 flex-none items-center justify-center rounded-tile border border-line bg-room text-ink"
+              className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] text-ink"
+              style={{ background: WATER }}
             >
               <Icon className="h-5 w-5" />
             </span>

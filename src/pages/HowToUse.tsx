@@ -16,6 +16,8 @@ import {
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import MilkGlass from '../components/Levels/MilkGlass';
+// The guide's colours, kicker and card live in guideKit so /welcome shares them.
+import { Eyebrow, GREEN, GREEN_INK, WATER, guideCard } from '../components/Guide/guideKit';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
 import { METHOD_GROUPS, type WhyQuestionId } from '../components/Homepage/WhyClouds/whyCloudsData';
 import playerShot from '../assets/landing/d3-player.webp';
@@ -70,14 +72,10 @@ const ANCHORS = [
   { id: 'levels', label: 'howToUse.pick.navLabel' },
 ] as const;
 
-const WATER = '#cfe6f3';
 const DEEP = '#0d2c47';
 const ROOM = '#f5f8fa';
-/** The landing's green, as a fill behind ink; `GREEN_INK` is the shade that passes AA as text on white. */
-const GREEN = '#00c951';
-const GREEN_INK = '#007a33';
 
-const card = 'rounded-[22px] bg-white p-5 sm:p-7';
+const card = guideCard;
 const shot = 'block h-auto w-full rounded-[14px]';
 
 // ─── Pieces ───────────────────────────────────────────────────────────────
@@ -99,18 +97,6 @@ const Waterline: React.FC<{ from: string; to: string; down?: boolean }> = ({ fro
     </svg>
   );
 };
-
-/** The landing's kicker, small: a bar of colour and a mono label. */
-const Eyebrow: React.FC<{ children: React.ReactNode; bar?: string; className?: string }> = ({
-  children,
-  bar = GREEN,
-  className = 'text-dim',
-}) => (
-  <p className={`m-0 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.16em] ${className}`}>
-    <span aria-hidden className="h-1.5 w-7 flex-none rounded-full" style={{ background: bar }} />
-    {children}
-  </p>
-);
 
 /** A step's "in the app" line, as on the landing's steps. */
 const AppNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
