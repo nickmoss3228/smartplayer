@@ -73,6 +73,8 @@ import {
 import { useSchoolState } from "../modules/school/useSchoolState";
 import { useCharacter } from "../context/CharacterContext";
 import { useProfile } from "../context/ProfileContext";
+import { useAuth } from "../context/AuthContext";
+import { saveSchoolShot } from "../services/schoolShot";
 import { SchoolLookPatch, WalletBalances } from "../services/schoolServices";
 
 // three.js and the whole scene are ~500kB that only this page needs, and even
@@ -577,6 +579,7 @@ const Room = () => {
   const [params, setParams] = useSearchParams();
   const { character, characterLoading } = useCharacter();
   const { profile } = useProfile();
+  const { user } = useAuth();
   const {
     school,
     wallet,
@@ -884,6 +887,10 @@ const Room = () => {
           playerName={profile?.nickname || t("school.findMe.you")}
           seekMe={seekMe}
           walking={walking}
+          // A picture for the hub's school card: only of the plain view (no
+          // ghosts or room picks in it), retaken after a build or a step outside.
+          onSnapshot={user ? (url) => saveSchoolShot(user.id, url) : undefined}
+          snapshotKey={mode === "play" ? `${school.ownedRoomIds.length}:${exterior ? "out" : "in"}` : undefined}
         />
       </Suspense>
 

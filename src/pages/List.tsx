@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
 import StoryCard from '../components/Stories/StoryCard';
 import { StoryCardSkeletonGrid } from '../components/Stories/StoryCardSkeleton';
+import { useAuth } from '../context/AuthContext';
+import { HUB_ENABLED } from '../config/features';
 
 /**
  * One level's shelf, reached from the level picker: every story on the level.
@@ -55,6 +57,8 @@ const List = () => {
   const location = useLocation();
   const { getStoryData } = useProgress();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const backToHub = HUB_ENABLED && !!user;
 
   // Arrived from the end of /welcome, which opened the level the student's
   // own answer suggested — say so once, so landing here is not a mystery and
@@ -98,9 +102,11 @@ const List = () => {
       <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 animate-fade-in">
           <button
-            onClick={() => navigate('/levels')}
+            // With the hub on, a signed-in student who opened this shelf from
+            // the hub goes back to it; everyone else goes to the level picker.
+            onClick={() => navigate(backToHub ? '/home' : '/levels')}
             className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
-            aria-label={t('levels.title')}
+            aria-label={backToHub ? t('tabs.home') : t('levels.title')}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

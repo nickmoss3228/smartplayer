@@ -2392,7 +2392,12 @@
       "title": "This week",
       "parts_one": "{{count}} part",
       "parts_other": "{{count}} parts",
-      "earned": "Earned"
+      "earned": "Earned",
+      "from": {
+        "bitAward": "From passed quizzes",
+        "bitWord": "From new words in the jar, from the audio vocabulary",
+        "bitPhrase": "From phrases repeated out loud"
+      }
     },
     "levels": {
       "title": "Levels",
