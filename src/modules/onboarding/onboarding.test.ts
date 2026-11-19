@@ -6,10 +6,8 @@ import {
   difficultyForLevel,
 } from './onboardingOptions';
 import { shouldRedirectToOnboarding } from './gate';
-import { SLIDES, MIN_DWELL_MS, slideQuestions, unlockMsFor } from './slides';
-import { onboardingDestination } from './destination';
-import { ALL_WHY_QUESTIONS, METHOD_ORDER } from '../../components/Homepage/WhyClouds/whyCloudsData';
-import { SCENE_CYCLE_S, SCENE_ORDER } from '../../components/Method/scenes';
+import { onboardingDestination, skipDestination } from './destination';
+import { TOUR_ORDER } from './tourFeatures';
 import { ENGLISH_LEVELS, LISTENING_EXPERIENCES } from '../../../backend/src/config/onboarding.js';
 import ru from '../../locales/ru/translation.json';
 import en from '../../locales/en/translation.json';
@@ -84,29 +82,43 @@ describe('shouldRedirectToOnboarding', () => {
   });
 });
 
-describe('slides', () => {
-  it("are the login screen's five pictures, in its order", () => {
-    expect(SLIDES).toEqual(SCENE_ORDER);
+describe('feature tour', () => {
+  it('shows the six sections, in order', () => {
+    expect(TOUR_ORDER).toEqual(['player', 'words', 'quiz', 'points', 'school', 'dashboard']);
   });
 
-  it('tell every why-question exactly once, in the guide order', () => {
-    expect(SLIDES.flatMap(slideQuestions)).toEqual(METHOD_ORDER);
-    expect(new Set(METHOD_ORDER)).toEqual(new Set(ALL_WHY_QUESTIONS.map((q) => q.id)));
-    expect(slideQuestions('passes')).toEqual(['repetition', 'speeds']);
-    expect(slideQuestions('subtitles')).toEqual(['noSubtitles', 'earsOnly']);
-    expect(slideQuestions('loop')).toEqual([]);
-  });
-
-  it('unlock after one full round of the picture, never under the floor', () => {
-    for (const slide of SLIDES) {
-      const ms = unlockMsFor(slide, false);
-      expect(ms).toBeGreaterThanOrEqual(MIN_DWELL_MS);
-      expect(ms).toBe(Math.max(MIN_DWELL_MS, SCENE_CYCLE_S[slide] * 1000));
+  it('has its copy in both languages', () => {
+    type TourCopy = Record<string, { title?: string; text?: string } | string | undefined>;
+    for (const locale of [ru, en] as unknown as { onboarding: { tour: TourCopy; skip?: string } }[]) {
+      const tour = locale.onboarding.tour;
+      for (const id of TOUR_ORDER) {
+        const card = tour[id] as { title?: string; text?: string } | undefined;
+        expect(card?.title, id).toBeTruthy();
+        expect(card?.text, id).toBeTruthy();
+      }
+      for (const key of ['eyebrow', 'title', 'menu', 'guide']) expect(tour[key], key).toBeTruthy();
+      expect(locale.onboarding.skip).toBeTruthy();
     }
   });
+});
 
-  it('with reduced motion wait only the reading floor', () => {
-    for (const slide of SLIDES) expect(unlockMsFor(slide, true)).toBe(MIN_DWELL_MS);
+describe('skipDestination', () => {
+  it('goes to the hub when the student was headed nowhere specific', () => {
+    expect(skipDestination(null).to).toBe('/home');
+    expect(skipDestination({ returnTo: '/welcome' }).to).toBe('/home');
+    expect(skipDestination({ returnTo: '/' }).to).toBe('/home');
+  });
+
+  it('keeps a destination it interrupted, never a suggested shelf', () => {
+    expect(skipDestination({ returnTo: '/levels' }).to).toBe('/levels');
+    expect(skipDestination({ returnTo: '/levels/easy/leo', openPaywall: true })).toEqual({
+      to: '/levels/easy/leo',
+      state: { openPaywall: true, highlightSku: undefined },
+    });
+  });
+
+  it('never leaves the app', () => {
+    expect(skipDestination({ returnTo: '//evil.example' }).to).toBe('/home');
   });
 });
 

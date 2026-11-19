@@ -27,3 +27,15 @@ export const onboardingDestination = (
   }
   return { to: path, state: forwardedState(routerState) };
 };
+
+/**
+ * Where «Пропустить» goes: wherever the student was headed, and otherwise the
+ * hub. No suggested shelf — someone who skipped chose to look around first.
+ */
+export const skipDestination = (
+  routerState: unknown,
+): { to: string; state: AuthReturnState | undefined } => {
+  const path = returnPathFrom(routerState);
+  if (path === '/welcome' || path === '/') return { to: '/home', state: undefined };
+  return { to: path, state: forwardedState(routerState) };
+};

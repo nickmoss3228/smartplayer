@@ -34,6 +34,21 @@ export const completeOnboarding = async (answers: {
 };
 
 /**
+ * Leave the intro at any step: ends the flow with whichever answers were given
+ * (maybe none). The server keeps an answer left out as it was.
+ */
+export const skipOnboarding = async (answers: {
+  englishLevel?: EnglishLevel;
+  listeningExperience?: ListeningExperience;
+}): Promise<OnboardingState> => {
+  const res = await api.post<{ onboarding: OnboardingState }>(
+    "/api/user/onboarding/complete",
+    { ...answers, skipped: true },
+  );
+  return res.data.onboarding;
+};
+
+/**
  * "Take the intro again": clears both answers and the finish on the server.
  * The caller then sends the student to /welcome; until it is finished again
  * the gate keeps every other page away.

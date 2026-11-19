@@ -119,17 +119,22 @@ export async function saveOnboarding(req, res) {
 // POST /user/onboarding/complete — the last slide's button. Takes both answers
 // again rather than trusting the PATCHes before it landed (they are
 // best-effort), and is idempotent: onboardedAt is set once and kept.
+// `skipped: true` (the boolean only) lets the student leave at any step: the
+// answers become optional, any that are sent must still be valid, and any left
+// out keep what an earlier PATCH stored.
 export async function completeOnboarding(req, res) {
   try {
-    const { englishLevel, listeningExperience } = req.body ?? {};
-    if (englishLevel === undefined || listeningExperience === undefined) {
+    const { englishLevel, listeningExperience, skipped } = req.body ?? {};
+    if (skipped !== true && (englishLevel === undefined || listeningExperience === undefined)) {
       return res.status(400).json({
         code: "ONBOARDING_INCOMPLETE",
         message: "Both englishLevel and listeningExperience are required",
       });
     }
-    if (!isEnglishLevel(englishLevel)) return invalidAnswer(res, "englishLevel", ENGLISH_LEVELS);
-    if (!isListeningExperience(listeningExperience)) {
+    if (englishLevel !== undefined && !isEnglishLevel(englishLevel)) {
+      return invalidAnswer(res, "englishLevel", ENGLISH_LEVELS);
+    }
+    if (listeningExperience !== undefined && !isListeningExperience(listeningExperience)) {
       return invalidAnswer(res, "listeningExperience", LISTENING_EXPERIENCES);
     }
 

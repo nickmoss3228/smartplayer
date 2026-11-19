@@ -206,6 +206,72 @@ describe("POST /api/user/onboarding/complete", () => {
     assert.ok(row.onboardedAt instanceof Date);
   });
 
+  it("skips with no answers at all", async () => {
+    const user = await registerUser({ prefix: "onbk1" });
+    const res = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { skipped: true },
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.onboarding.englishLevel, null);
+    assert.equal(res.body.onboarding.listeningExperience, null);
+    assert.ok(res.body.onboarding.onboardedAt);
+
+    const me = await api("GET", "/api/validate-token", { token: user.token });
+    assert.equal(me.body.user.onboardedAt, res.body.onboarding.onboardedAt);
+  });
+
+  it("a skip keeps an answer saved earlier and leaves the other null", async () => {
+    const user = await registerUser({ prefix: "onbk2" });
+    await api("PATCH", "/api/user/onboarding", { token: user.token, body: { englishLevel: "advanced" } });
+    const res = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { skipped: true },
+    });
+    assert.equal(res.status, 200, JSON.stringify(res.body));
+    assert.equal(res.body.onboarding.englishLevel, "advanced");
+    assert.equal(res.body.onboarding.listeningExperience, null);
+    assert.ok(res.body.onboarding.onboardedAt);
+  });
+
+  it("a skip with an invalid answer is refused and finishes nothing", async () => {
+    const user = await registerUser({ prefix: "onbk3" });
+    const res = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { skipped: true, englishLevel: "nonsense" },
+    });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, "INVALID_ONBOARDING_ANSWER");
+    assert.equal((await userRow(user.id)).onboardedAt, null);
+  });
+
+  it("only the boolean true counts as a skip", async () => {
+    const user = await registerUser({ prefix: "onbk5" });
+    const res = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { skipped: "true" },
+    });
+    assert.equal(res.status, 400);
+    assert.equal(res.body.code, "ONBOARDING_INCOMPLETE");
+    assert.equal((await userRow(user.id)).onboardedAt, null);
+  });
+
+  it("a skip after a completion keeps the first onboardedAt", async () => {
+    const user = await registerUser({ prefix: "onbk4" });
+    const first = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { englishLevel: "beginner", listeningExperience: "none" },
+    });
+    assert.equal(first.status, 200);
+    const skip = await api("POST", "/api/user/onboarding/complete", {
+      token: user.token,
+      body: { skipped: true },
+    });
+    assert.equal(skip.status, 200);
+    assert.equal(skip.body.onboarding.onboardedAt, first.body.onboarding.onboardedAt);
+    assert.equal(skip.body.onboarding.englishLevel, "beginner");
+  });
+
   it("survives a later user.save() elsewhere (the doc layer round-trips the columns)", async () => {
     const user = await registerUser({ prefix: "onbs" });
     await api("POST", "/api/user/onboarding/complete", {

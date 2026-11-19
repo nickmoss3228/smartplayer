@@ -116,7 +116,7 @@ const Navbar = () => {
                     return (
                       <li key={tab.id}>
                         <Link
-                          to={tab.to()}
+                          to={tab.to(user?.englishLevel)}
                           aria-current={active ? "page" : undefined}
                           className={`relative flex items-center h-13 px-3 text-[14px] font-semibold transition-colors
                             focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal
