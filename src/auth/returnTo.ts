@@ -8,6 +8,8 @@
 // clicked "buy" signed in and landed on /levels instead of back on the story
 // they were about to pay for.
 
+import { HUB_ENABLED } from "../config/features";
+
 export interface AuthReturnState {
   returnTo?: string;
   from?: { pathname?: string };
@@ -17,7 +19,9 @@ export interface AuthReturnState {
   highlightSku?: string;
 }
 
-const FALLBACK = "/levels";
+// With the hub on, a plain sign-in lands on it; a first sign-up still goes
+// through /welcome, which sends it straight to a shelf (onboarding/destination.ts).
+const FALLBACK = HUB_ENABLED ? "/home" : "/levels";
 
 /** Only a path inside this app — never "//evil.example" or a full URL. */
 const isInternalPath = (path: unknown): path is string =>

@@ -854,7 +854,8 @@ const Room = () => {
   };
 
   return (
-    <div className="fixed inset-x-0 top-13 bottom-0 overflow-hidden bg-[#d8ebf6]">
+    // Stands on the hub's tab bar when there is one (--tabbar-h, App.css); 0 otherwise.
+    <div className="fixed inset-x-0 top-13 bottom-(--tabbar-h) overflow-hidden bg-[#d8ebf6]">
       <Suspense
         fallback={
           <div className="w-full h-full flex items-center justify-center">

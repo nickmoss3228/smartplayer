@@ -2448,5 +2448,48 @@
     "body": "Right now it lives only in this browser. Sign up for free and it follows you to any device.",
     "signUp": "Sign up",
     "dismiss": "Close"
+  },
+  "tabs": {
+    "label": "Sections",
+    "home": "Home",
+    "levels": "Levels",
+    "words": "Words",
+    "school": "School"
+  },
+  "hub": {
+    "greeting": "Hi, {{name}}",
+    "greetingPlain": "Hi",
+    "continue": {
+      "eyebrow": "Pick up where you left off",
+      "startEyebrow": "Start here",
+      "part": "Part {{part}} of {{total}}",
+      "partOnly": "Part {{part}}",
+      "play": "Continue",
+      "start": "Listen",
+      "empty": "Pick a level and let's begin.",
+      "chooseLevel": "Choose a level"
+    },
+    "week": {
+      "title": "This week",
+      "parts_one": "{{count}} part",
+      "parts_other": "{{count}} parts",
+      "earned": "Earned"
+    },
+    "levels": {
+      "title": "Levels",
+      "all": "All levels",
+      "partsOf": "{{done}} of {{total}}",
+      "notStarted": "not started"
+    },
+    "started": {
+      "title": "Stories in progress"
+    },
+    "school": {
+      "title": "Your school",
+      "unnamed": "An unnamed school",
+      "rooms_one": "{{count}} room",
+      "rooms_other": "{{count}} rooms",
+      "enter": "Go to school"
+    }
   }
 }

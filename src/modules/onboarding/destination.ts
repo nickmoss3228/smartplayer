@@ -19,7 +19,10 @@ export const onboardingDestination = (
   suggested: DifficultySlug,
 ): { to: string; state: AuthReturnState | OnboardingPickState | undefined } => {
   const path = returnPathFrom(routerState);
-  if (path === '/levels' || path === '/' || path === '/welcome') {
+  // '/home' is the sign-in default while the hub is on (auth/returnTo.ts). The
+  // first session should be spent listening, not browsing, so it is treated as
+  // "nowhere specific" too.
+  if (path === '/levels' || path === '/' || path === '/welcome' || path === '/home') {
     return { to: `/levels/${suggested}`, state: { onboardingPick: suggested } };
   }
   return { to: path, state: forwardedState(routerState) };

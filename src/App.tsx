@@ -21,7 +21,7 @@ import { ProgressProvider } from "./context/ProgressContext";
 import { ProfileProvider } from './context/ProfileContext';
 import { WalletProvider } from './context/WalletContext';
 import { CatalogProvider } from './context/CatalogContext';
-import { SHOP_ENABLED } from './config/features';
+import { HUB_ENABLED, SHOP_ENABLED } from './config/features';
 import { EntitlementsProvider } from './context/EntitlementsContext';
 import { CartProvider } from './context/CartContext';
 import { CharacterProvider } from './context/CharacterContext';
@@ -49,6 +49,8 @@ const Players = lazy(() => import("./pages/Players"));
 const PlayerRoom = lazy(() => import("./pages/PlayerRoom"));
 const Kopilka = lazy(() => import("./pages/Kopilka"));
 const Onboarding = lazy(() => import("./modules/onboarding/OnboardingPage"));
+// The signed-in hub, behind HUB_ENABLED (config/features.ts).
+const Home = lazy(() => import("./pages/Home"));
 
 const Stories = lazy(() => import("./pages/Stories"));
 // Public and unauthenticated on purpose — see the note in Legal.tsx.
@@ -69,6 +71,26 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   return user ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+const hasStoredToken = (): boolean => {
+  try {
+    return Boolean(localStorage.getItem("token"));
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * `/` while the hub is on: the landing for a visitor, the hub for a student.
+ * A stored token means "probably a student", so the check waits for it rather
+ * than flashing the landing first and then jumping away.
+ */
+const LandingOrHub = () => {
+  const { user, loading } = useAuth();
+  if (user) return <Navigate to="/home" replace />;
+  if (loading && hasStoredToken()) return <PageLoader />;
+  return <Homepage />;
 };
 
 
@@ -96,7 +118,7 @@ function App() {
               <RouteMeta />
               <Routes>
                 {/* ── Fully public ── */}
-                <Route path="/"                element={<Homepage />} />
+                <Route path="/"                element={HUB_ENABLED ? <LandingOrHub /> : <Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
                 {import.meta.env.DEV && <Route path="/landing-old" element={<OldLanding />} />}
                 {/* A reordered landing to compare: hidden, not linked, noindex (see the component) */}
@@ -145,6 +167,14 @@ function App() {
                 <Route
                   path="/welcome"
                   element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
+                />
+                <Route
+                  path="/home"
+                  element={
+                    HUB_ENABLED
+                      ? <ProtectedRoute><Home /></ProtectedRoute>
+                      : <Navigate to="/levels" replace />
+                  }
                 />
                 <Route
                   path="/dashboard"

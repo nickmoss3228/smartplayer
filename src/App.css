@@ -297,3 +297,19 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── The hub's bottom tab bar (components/TabBar) ──────────────────────────
+   --tabbar-h is the bar's height wherever it is drawn and 0 everywhere else,
+   so a fixed screen can stand on it with `bottom-(--tabbar-h)` and needs no
+   breakpoint of its own. The bar is lg:hidden; the media query matches. */
+:root {
+  --tabbar-h: 0px;
+}
+@media (max-width: 1023.98px) {
+  html.has-tabbar {
+    --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+  html.has-tabbar body {
+    padding-bottom: var(--tabbar-h);
+  }
+}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { SHOP_ENABLED } from "../../config/features";
+import { HUB_ENABLED, SHOP_ENABLED } from "../../config/features";
+import { HUB_TABS } from "../TabBar/hubTabs";
 import {
   IoChevronDown,
   IoGlobeOutline,
@@ -48,7 +49,11 @@ const Navbar = () => {
   const { user } = useAuth();
   const { character } = useCharacter();
   const { count: cartCount } = useCart();
-  const onLanding = useLocation().pathname === "/";
+  const { pathname } = useLocation();
+  const onLanding = pathname === "/";
+  // With the hub on, a student's sections are tabs (components/TabBar): here
+  // from lg up, in the bottom bar below that.
+  const hubTabs = HUB_ENABLED && !!user;
 
   const portrait = useCharacterPortrait(character);
 
@@ -88,7 +93,7 @@ const Navbar = () => {
 
             <div className="flex items-center">
               <Link
-                to={user ? "/levels" : "/"}
+                to={user ? (HUB_ENABLED ? "/home" : "/levels") : "/"}
                 className="flex items-center gap-2 cursor-pointer text-black hover:text-gray-500 transition-colors duration-200"
                 aria-label={t("brand")}
               >
@@ -102,13 +107,38 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
+
+              {hubTabs && (
+                <ul aria-label={t("tabs.label")} className="hidden lg:flex m-0 ml-8 p-0 list-none items-center gap-1">
+                  {HUB_TABS.map((tab) => {
+                    const active = tab.isActive(pathname);
+                    return (
+                      <li key={tab.id}>
+                        <Link
+                          to={tab.to()}
+                          aria-current={active ? "page" : undefined}
+                          className={`relative flex items-center h-13 px-3 text-[14px] font-semibold transition-colors
+                            focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal
+                            ${active ? "text-ink" : "text-dim hover:text-ink"}`}
+                        >
+                          {t(tab.labelKey)}
+                          {active && (
+                            <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-signal" />
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
 
               {user && <WalletChips />}
 
-              {user && (
+              {/* The school is a tab while the hub is on. */}
+              {user && !hubTabs && (
                 <Link
                   to="/room"
                   title={t("navbar.room")}
