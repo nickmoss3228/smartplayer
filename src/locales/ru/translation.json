@@ -2380,5 +2380,52 @@
       "button": "Попробуй сам",
       "text": "Первые три части — без регистрации."
     }
+  },
+  "tabs": {
+    "label": "Разделы",
+    "home": "Главная",
+    "levels": "Уровни",
+    "words": "Слова",
+    "school": "Школа"
+  },
+  "hub": {
+    "greeting": "Привет, {{name}}",
+    "greetingPlain": "Привет",
+    "continue": {
+      "eyebrow": "Продолжить",
+      "startEyebrow": "Начни отсюда",
+      "part": "Часть {{part}} из {{total}}",
+      "partOnly": "Часть {{part}}",
+      "play": "Продолжить",
+      "start": "Слушать",
+      "empty": "Выбери уровень — и начнём.",
+      "chooseLevel": "Выбрать уровень"
+    },
+    "week": {
+      "title": "Эта неделя",
+      "parts_one": "{{count}} часть",
+      "parts_few": "{{count}} части",
+      "parts_many": "{{count}} частей",
+      "parts_other": "{{count}} части",
+      "earned": "Заработано"
+    },
+    "levels": {
+      "title": "Уровни",
+      "all": "Все уровни",
+      "partsOf": "{{done}} из {{total}}",
+      "notStarted": "не начат"
+    },
+    "started": {
+      "title": "Начатые истории"
+    },
+    "school": {
+      "title": "Твоя школа",
+      "unnamed": "Школа без названия",
+      "rooms_one": "{{count}} комната",
+      "rooms_few": "{{count}} комнаты",
+      "rooms_many": "{{count}} комнат",
+      "rooms_other": "{{count}} комнаты",
+      "enter": "В школу"
+    }
   }
 }

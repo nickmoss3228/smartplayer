@@ -14,7 +14,11 @@ const CHIPS = 4;
 const LOOKUP_KEYS = 40;
 
 /** The Dashboard's копилка card: the count, a few recent words, and the way in. */
-const KopilkaCard: React.FC = () => {
+/**
+ * `quiet`: both buttons secondary, for a screen whose one primary action is
+ * elsewhere (the hub's Continue; design manifest §5).
+ */
+const KopilkaCard: React.FC<{ quiet?: boolean }> = ({ quiet = false }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -95,7 +99,7 @@ const KopilkaCard: React.FC = () => {
           type="button"
           onClick={() => navigate("/kopilka#review")}
           disabled={markCount === 0}
-          className={`${buttonPrimary} flex-1`}
+          className={`${quiet ? buttonSecondary : buttonPrimary} flex-1`}
         >
           {t("kopilka.repeatMarks")}
         </button>

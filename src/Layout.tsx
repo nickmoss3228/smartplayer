@@ -1,5 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
+import TabBar from "./components/TabBar/TabBar";
+import { HUB_ENABLED } from "./config/features";
 import { ReactNode } from "react";
 import { useAuth } from "./context/AuthContext";
 import { useHeartbeat } from "./hooks/useHeartbeat";
@@ -42,10 +44,16 @@ export function Layout({ children }: { children: ReactNode }) {
     location.pathname,
   );
 
+  // The hub's bottom bar: a signed-in student, wherever the navbar is, except
+  // the admin panel (its own login, nothing to do with this account).
+  const showTabBar =
+    HUB_ENABLED && !!user && !isPlayerRoute && !isAuthRoute && !location.pathname.startsWith("/admin");
+
   return (
     <>
       {!isPlayerRoute && !isAuthRoute && <Navbar />}
       {children}
+      {showTabBar && <TabBar />}
     </>
   );
 }

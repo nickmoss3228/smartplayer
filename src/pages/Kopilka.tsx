@@ -276,7 +276,7 @@ const Kopilka: React.FC = () => {
         </div>
 
         {showReviewButton && (
-          <div className="sticky bottom-3 z-10 mt-4 sm:static">
+          <div className="sticky bottom-[calc(var(--tabbar-h)+0.75rem)] z-10 mt-4 sm:static">
             <button
               type="button"
               onClick={() => setReviewOpen(true)}

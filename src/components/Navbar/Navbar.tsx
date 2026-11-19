@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { SHOP_ENABLED } from "../../config/features";
+import { HUB_ENABLED, SHOP_ENABLED } from "../../config/features";
+import { HUB_TABS } from "../TabBar/hubTabs";
 import {
   IoChevronDown,
   IoGlobeOutline,
@@ -9,7 +10,7 @@ import {
   // IoPeopleOutline,
   IoBookOutline,
 } from "react-icons/io5";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
@@ -46,7 +47,11 @@ const Navbar = () => {
   const { user } = useAuth();
   const { character } = useCharacter();
   const navigate = useNavigate();
-  const onLanding = useLocation().pathname === "/";
+  const { pathname } = useLocation();
+  const onLanding = pathname === "/";
+  // With the hub on, a student's sections are tabs (components/TabBar): here
+  // from lg up, in the bottom bar below that.
+  const hubTabs = HUB_ENABLED && !!user;
 
   const portrait = useCharacterPortrait(character);
 
@@ -71,7 +76,7 @@ const Navbar = () => {
     setIsDropdownOpen(false);
   };
 
-  const handleLogoClick = () => navigate(user ? "/levels" : "/");
+  const handleLogoClick = () => navigate(user ? (HUB_ENABLED ? "/home" : "/levels") : "/");
   const handleGuideClick = () => {
     navigate("/how-to-use");
     setIsDropdownOpen(false);
@@ -103,13 +108,38 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
+
+              {hubTabs && (
+                <ul aria-label={t("tabs.label")} className="hidden lg:flex m-0 ml-8 p-0 list-none items-center gap-1">
+                  {HUB_TABS.map((tab) => {
+                    const active = tab.isActive(pathname);
+                    return (
+                      <li key={tab.id}>
+                        <Link
+                          to={tab.to()}
+                          aria-current={active ? "page" : undefined}
+                          className={`relative flex items-center h-13 px-3 text-[14px] font-semibold transition-colors
+                            focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal
+                            ${active ? "text-ink" : "text-dim hover:text-ink"}`}
+                        >
+                          {t(tab.labelKey)}
+                          {active && (
+                            <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-signal" />
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
 
             <div className="flex items-center space-x-2">
 
               {user && <WalletChips />}
 
-              {user && (
+              {/* The school is a tab while the hub is on. */}
+              {user && !hubTabs && (
                 <button
                   onClick={() => navigate("/room")}
                   title={t("navbar.room")}

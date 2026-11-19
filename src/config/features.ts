@@ -34,3 +34,11 @@
  *        node --import tsx src/scripts/seedExtensionPacks.js
  */
 export const SHOP_ENABLED = true;
+
+/**
+ * The signed-in hub (/home, pages/Home.tsx) and the tab bar under it
+ * (components/TabBar): Главная, Уровни, Слова, Школа. ON since 2026-11-19.
+ * With it off, /home redirects to the level picker, sign-in lands on /levels
+ * and the navbar is the one from before the hub.
+ */
+export const HUB_ENABLED = true;
