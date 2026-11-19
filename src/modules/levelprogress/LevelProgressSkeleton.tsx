@@ -4,7 +4,7 @@ import React from "react";
 /** The same one-screen frame as LevelProgress, so nothing jumps when it loads. */
 export const LevelProgressSkeleton: React.FC = () => {
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-room pt-13 animate-pulse">
+    <div className="flex h-[calc(100dvh-var(--tabbar-h))] flex-col overflow-hidden bg-room pt-13 animate-pulse">
       <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 px-4 pt-3 pb-4 md:gap-5 md:px-8 md:pt-7 md:pb-8">
         {/* Header */}
         <div className="flex items-center gap-3">

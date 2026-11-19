@@ -942,11 +942,58 @@ const Scene = ({
 
 // ── Canvas ──────────────────────────────────────────────────────────────────
 
+/**
+ * Takes a picture of the scene for the hub's school card (services/schoolShot.ts):
+ * a while after mount, and again whenever `trigger` changes, so the camera rig
+ * has finished framing the school. Renders and reads in the same task, which
+ * is what lets it work without `preserveDrawingBuffer` (and its per-frame cost).
+ */
+const Snapshot = ({ onShot, trigger, delayMs = 3500 }: { onShot: (url: string) => void; trigger: unknown; delayMs?: number }) => {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const shot = useRef(onShot);
+  shot.current = onShot;
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        gl.render(scene, camera);
+        const src = gl.domElement;
+        if (!src.width || !src.height) return;
+        const width = Math.min(720, src.width);
+        const height = Math.round((src.height * width) / src.width);
+        const out = document.createElement("canvas");
+        out.width = width;
+        out.height = height;
+        const ctx = out.getContext("2d");
+        if (!ctx) return;
+        // The scene is pixel art: keep the edges hard when scaling down.
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(src, 0, 0, width, height);
+        let url = out.toDataURL("image/webp", 0.82);
+        // Safari cannot encode webp and silently returns a (much bigger) png.
+        if (!url.startsWith("data:image/webp")) url = out.toDataURL("image/jpeg", 0.82);
+        shot.current(url);
+      } catch {
+        // A tainted or lost context: the card keeps the picture it has.
+      }
+    }, delayMs);
+    return () => window.clearTimeout(id);
+  }, [gl, scene, camera, trigger, delayMs]);
+
+  return null;
+};
+
 export interface SchoolCanvasProps extends SceneProps {
   className?: string;
+  /** Called with a picture of the school once the view has settled (see Snapshot). */
+  onSnapshot?: (url: string) => void;
+  /** Changing this takes a new picture; leave undefined to take none (building, decorating). */
+  snapshotKey?: string;
 }
 
-export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) => {
+export const SchoolCanvas = ({ className = "", onSnapshot, snapshotKey, ...scene }: SchoolCanvasProps) => {
   const scale = useRenderScale();
   return (
   <div className={`relative ${className}`}>
@@ -965,6 +1012,7 @@ export const SchoolCanvas = ({ className = "", ...scene }: SchoolCanvasProps) =>
       <Suspense fallback={null}>
         <Scene {...scene} />
       </Suspense>
+      {onSnapshot && snapshotKey !== undefined && <Snapshot onShot={onSnapshot} trigger={snapshotKey} />}
       <MapControls
         makeDefault
         enableRotate={false}

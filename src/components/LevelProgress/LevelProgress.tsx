@@ -87,9 +87,11 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   // One screen, no scroll: the page is exactly the viewport under the fixed
   // 52px navbar and the grid takes whatever height the header and the
   // progress bar leave (LevelGrid). It scrolls only if the grid's minimum row
-  // height cannot fit — a phone held sideways.
+  // height cannot fit — a phone held sideways. Under the hub's tab bar the
+  // screen ends at the bar (--tabbar-h, App.css; 0 wherever there is none), or
+  // the bar covers the last row of parts.
   return (
-    <div className="flex h-[100dvh] flex-col overflow-y-auto bg-room pt-13">
+    <div className="flex h-[calc(100dvh-var(--tabbar-h))] flex-col overflow-y-auto bg-room pt-13">
       <div className="@container mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 px-4 pt-3 pb-4 md:gap-5 md:px-8 md:pt-7 md:pb-8">
 
         <LevelProgressHeader

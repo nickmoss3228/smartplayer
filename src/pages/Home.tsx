@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../context/ProfileContext';
 import { loadLastPlayed } from '../services/lastPlayed';
 import { readLastLevel } from '../services/lastLevel';
+import { readSchoolShot } from '../services/schoolShot';
 import { pickContinue, startedStories, partsCompletedSince, startOfWeek } from '../modules/hub/hubData';
 import { difficultyForLevel, isEnglishLevel } from '../modules/onboarding/onboardingOptions';
 import KopilkaCard from '../auth/Dashboard/KopilkaCard';
@@ -26,7 +27,8 @@ const Home = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { overview, detailed, loading } = useHubProgress();
-  const { school, wallet } = useHubSchool();
+  const { school } = useHubSchool();
+  const [schoolShot] = useState(() => readSchoolShot(user?.id)?.url ?? null);
   const [lastPlayed] = useState(loadLastPlayed);
   const [lastLevel] = useState(readLastLevel);
 
@@ -78,7 +80,7 @@ const Home = () => {
             <KopilkaCard quiet />
           </div>
           <div className="animate-fade-in-delay-3">
-            <SchoolCard school={school} wallet={wallet} />
+            <SchoolCard school={school} shot={schoolShot} />
           </div>
         </div>
       </div>

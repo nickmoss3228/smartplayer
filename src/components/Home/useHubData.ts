@@ -11,6 +11,8 @@
 import { useEffect, useState } from 'react';
 import { fetchAllDashboardData } from '../../services/dashboardServices';
 import { fetchSchool, type SchoolState, type WalletBalances } from '../../services/schoolServices';
+import { fetchPublishedStory } from '../../services/storyServices';
+import { CHARACTER_COVER, type DifficultySlug } from '../../types/storyGroups';
 import type { DetailedProgressMap, OverviewData } from '../../types/Dashboard';
 
 const CACHE_KEY = 'dashboardData';
@@ -98,4 +100,33 @@ export const useHubSchool = () => {
   }, []);
 
   return { ...state, failed };
+};
+
+/**
+ * The picture behind the Continue card: that part's comic page, else the
+ * story's cover, else its level's character art. Starts with the character
+ * art, so the card never paints empty while the story loads.
+ */
+export const useContinueComic = (target: { difficulty: string; storyId: string; part: number } | null) => {
+  const difficulty = target?.difficulty as DifficultySlug | undefined;
+  const fallback = difficulty ? CHARACTER_COVER[difficulty] ?? null : null;
+  const [comic, setComic] = useState<{ key: string; url: string | null } | null>(null);
+  const key = target ? `${target.difficulty}/${target.storyId}/${target.part}` : '';
+
+  useEffect(() => {
+    if (!target) return;
+    let alive = true;
+    (async () => {
+      const story = await fetchPublishedStory(target.difficulty, target.storyId);
+      if (!alive || !story) return;
+      const part = story.parts?.find((p) => p.partNumber === target.part);
+      setComic({ key, url: part?.comicUrl || story.coverUrl || null });
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the key stands for the target
+  }, [key]);
+
+  return (comic?.key === key ? comic.url : null) ?? fallback;
 };
