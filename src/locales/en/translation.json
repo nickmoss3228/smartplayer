@@ -2435,9 +2435,7 @@
     },
     "cta": {
       "title": "Hear the difference yourself",
-      "button": "Try it yourself",
-      "text": "The first three parts need no sign-up.",
-      "chooseLevel": "Choose a level"
+      "button": "Try it yourself"
     },
     "footer": {
       "label": "Site links",
@@ -2446,11 +2444,6 @@
       "terms": "Terms of use",
       "privacy": "Privacy policy",
       "consent": "Data consent"
-    },
-    "continue": {
-      "eyebrow": "Continue",
-      "part": "{{story}}, part {{n}}",
-      "label": "Continue: {{story}}, part {{n}}"
     }
   },
   "helpModal": {

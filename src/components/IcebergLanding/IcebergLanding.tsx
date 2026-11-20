@@ -15,7 +15,6 @@ import Steps from './Steps';
 import Fish from './Fish';
 import Lazy3D, { prefersStill } from './Lazy3D';
 import StickyCta from './StickyCta';
-import ContinueCard from './ContinueCard';
 import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 // three.js scenes, in their own chunks: fetched only when the first one nears the screen
@@ -168,7 +167,6 @@ export default function IcebergLanding() {
     <div ref={rootRef} className="ib ib-dive" data-skin="deep">
       <header className={heroClass}>
         <div className="ib-wrap">
-          <ContinueCard />
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
           {/* what learners say: two things ticked off and greyed, so the eye lands on the one that hurts */}
@@ -188,8 +186,6 @@ export default function IcebergLanding() {
             {t('iceberg.cta.button')}
             <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <p className="ib-micro dv-hero-note">{t('iceberg.cta.text')}</p>
-          <Link to="/levels" className="ib-micro ib-choose dv-hero-choose">{t('iceberg.cta.chooseLevel')}</Link>
         </div>
         <div className="ib-berg-wrap">
           <Iceberg ready={bergReady} />
@@ -230,7 +226,6 @@ export default function IcebergLanding() {
           {t('iceberg.cta.button')}
           <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <Link to="/levels" className="ib-micro ib-choose">{t('iceberg.cta.chooseLevel')}</Link>
         {/* the waterline is the middle of this stage: the 3D berg's camera sits at water level.
             The page ends here: the last two lines sit in the water, over the berg's body. */}
         <div className="dv-final-stage">
@@ -238,7 +233,6 @@ export default function IcebergLanding() {
             <Iceberg3D still={prefersStill()} />
           </Lazy3D>
           <div className="dv-final-notes">
-            <p className="ib-micro">{t('iceberg.cta.text')}</p>
             <footer>
               <p className="ib-micro">{t('howToUse.footer')}</p>
               <nav className="ib-footer-nav" aria-label={t('iceberg.footer.label')}>

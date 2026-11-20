@@ -61,31 +61,19 @@
 .ib-q-check { display: inline-flex; align-items: center; gap: .4em; font-size: clamp(24px, 5vw, 40px); color: var(--dim); opacity: .7; }
 .ib-q-check svg { width: 1em; height: 1em; padding: .2em; border-radius: 50%; background: rgba(0, 201, 81, .16); color: var(--green-ink); stroke-width: 3; flex: none; }
 .ib-q-pain { display: block; margin-top: 12px; font-size: clamp(38px, 8.6vw, 78px); letter-spacing: -.05em; }
-.dv-continue { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 340px; margin: 0 auto 14px; padding: 8px 14px; border-radius: 14px; background: #f5f8fa; border: 1px solid rgba(14, 20, 27, .1); color: var(--ink); text-align: left; text-decoration: none; transition: background-color .15s ease-out; }
-.dv-continue:hover { background: #fff; }
-.dv-continue > svg { width: 20px; height: 20px; flex: none; stroke-width: 2.2; }
-.dv-continue > svg:last-child { transition: transform .15s ease-out; }
-.dv-continue:hover > svg:last-child { transform: translateX(3px); }
-.dv-continue-text { flex: 1; min-width: 0; display: grid; }
-.dv-continue-line { font-size: 14px; font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* the quiet second way in, under the button: the micro text with an underline */
-.ib-choose { display: block; width: fit-content; margin: 6px auto 0; text-decoration: underline; text-underline-offset: 3px; }
-.ib-choose:hover { color: var(--ink); }
 .ib-q-hurt { display: inline-block; background: linear-gradient(transparent 62%, rgba(217, 58, 43, .28) 62%); }
 /* First open (useHeroIntro): the hero is held invisible until the font is in,
    then each piece rises into place, top to bottom, the pain line on its own
    beat and the iceberg last and slowest. `backwards` fill, so once a piece has
    landed its own styles (the checks' .7 opacity, the button's hover) take over.
    Reduced motion never gets .ib-intro (prefersStill in the hook). */
-.ib-intro:not(.ib-go) :is(.dv-continue, .ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .dv-hero-note, .dv-hero-choose, .ib-berg-wrap, .ib-down) { opacity: 0; }
-.ib-intro.ib-go :is(.dv-continue, .ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .dv-hero-note, .dv-hero-choose, .ib-down) { animation: ib-enter .8s cubic-bezier(.16, 1, .3, 1) backwards; }
+.ib-intro:not(.ib-go) :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-berg-wrap, .ib-down) { opacity: 0; }
+.ib-intro.ib-go :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-down) { animation: ib-enter .8s cubic-bezier(.16, 1, .3, 1) backwards; }
 .ib-intro.ib-go .ib-slogan { animation-delay: 70ms; }
 .ib-intro.ib-go .ib-q-check:nth-child(1) { animation-delay: 150ms; }
 .ib-intro.ib-go .ib-q-check:nth-child(2) { animation-delay: 220ms; }
 .ib-intro.ib-go .ib-q-pain { animation-duration: .9s; animation-delay: 360ms; }
 .ib-intro.ib-go .dv-hero-cta { animation-delay: 500ms; }
-.ib-intro.ib-go .dv-hero-note { animation-delay: 560ms; }
-.ib-intro.ib-go .dv-hero-choose { animation-delay: 600ms; }
 .ib-intro.ib-go .ib-berg-wrap { animation: ib-enter-berg 1.1s cubic-bezier(.16, 1, .3, 1) 420ms backwards; }
 .ib-intro.ib-go .ib-down { animation-delay: 720ms; }
 .ib-intro.ib-go .ib-q-check { animation-name: ib-enter-dim; }
@@ -94,14 +82,12 @@
    On desktop the slower cascade has room to breathe; on a phone the pain line
    used to land last of all, well after the reader had started scrolling. */
 @media (max-width: 640px) {
-  .ib-intro.ib-go :is(.dv-continue, .ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .dv-hero-note, .dv-hero-choose, .ib-down) { animation-duration: .6s; }
+  .ib-intro.ib-go :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-down) { animation-duration: .6s; }
   .ib-intro.ib-go .ib-slogan { animation-delay: 40ms; }
   .ib-intro.ib-go .ib-q-check:nth-child(1) { animation-delay: 80ms; }
   .ib-intro.ib-go .ib-q-check:nth-child(2) { animation-delay: 130ms; }
   .ib-intro.ib-go .ib-q-pain { animation-duration: .65s; animation-delay: 200ms; }
   .ib-intro.ib-go .dv-hero-cta { animation-delay: 300ms; }
-  .ib-intro.ib-go .dv-hero-note { animation-delay: 340ms; }
-  .ib-intro.ib-go .dv-hero-choose { animation-delay: 370ms; }
   .ib-intro.ib-go .ib-berg-wrap { animation-delay: 300ms; }
   .ib-intro.ib-go .ib-down { animation-delay: 450ms; }
 }

@@ -15,7 +15,6 @@ import Steps from './Steps';
 import Fish from './Fish';
 import Lazy3D, { prefersStill } from './Lazy3D';
 import StickyCta from './StickyCta';
-import ContinueCard from './ContinueCard';
 import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 import { BANDS, BergDrawing, LAYER_KEYS, WATER, useHeroIntro, water } from './IcebergLanding';
 import './icebergLanding.css';
@@ -66,7 +65,6 @@ export default function IcebergLandingDemo() {
       <meta name="robots" content="noindex, nofollow" />
       <header className={heroClass}>
         <div className="ib-wrap">
-          <ContinueCard />
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
           <h1 className="ib-question">
@@ -84,8 +82,6 @@ export default function IcebergLandingDemo() {
             {t('iceberg.cta.button')}
             <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <p className="ib-micro dv-hero-note">{t('iceberg.cta.text')}</p>
-          <Link to="/levels" className="ib-micro ib-choose dv-hero-choose">{t('iceberg.cta.chooseLevel')}</Link>
         </div>
         <div className="ib-berg-wrap">
           <Iceberg ready={bergReady} />
@@ -109,14 +105,10 @@ export default function IcebergLandingDemo() {
           {t('iceberg.cta.button')}
           <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <Link to="/levels" className="ib-micro ib-choose">{t('iceberg.cta.chooseLevel')}</Link>
         <div className="dv-final-stage">
           <Lazy3D className="dv-final-3d" still fallback={<BergDrawing />}>
             <Iceberg3D still={prefersStill()} />
           </Lazy3D>
-          <div className="dv-final-notes">
-            <p className="ib-micro">{t('iceberg.cta.text')}</p>
-          </div>
         </div>
       </section>
 
