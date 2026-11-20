@@ -103,6 +103,8 @@
 @keyframes ib-nudge { 50% { transform: translateY(4px); } }
 
 .ib-berg { position: relative; border-radius: 28px; overflow: hidden; isolation: isolate; box-shadow: 0 40px 80px -50px rgba(13, 58, 92, .7); text-align: center; }
+/* Phones: the hero berg runs edge to edge, square-cornered, so it uses the whole screen width */
+@media (max-width: 640px) { .ib-berg-wrap { padding: 0; } .ib-hero .ib-berg { border-radius: 0; } }
 .ib-berg-sky { position: relative; aspect-ratio: 1000 / 310; }
 /* the water: darkens all the way down; its height follows the column of labels */
 .ib-berg-sea { position: relative; padding: clamp(18px, 4vw, 36px) 16px clamp(110px, 18vw, 190px); background: linear-gradient(180deg, #bfe2f3 0%, #5fa8cf 14%, #1d5b86 44%, #0a2740 72%, #04121f 88%, #020a12 100%); }
