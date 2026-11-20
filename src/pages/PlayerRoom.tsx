@@ -52,7 +52,7 @@ const PlayerRoom = () => {
   const total = school.ownedRoomIds.length + buildableRooms(school.variantId, school.ownedRoomIds).length;
 
   return (
-    <div className="fixed inset-x-0 top-13 bottom-0 overflow-hidden bg-[#d8ebf6]">
+    <div className="fixed inset-x-0 top-13 bottom-(--tabbar-h) overflow-hidden bg-[#d8ebf6]">
       <Suspense
         fallback={
           <div className="w-full h-full flex items-center justify-center">

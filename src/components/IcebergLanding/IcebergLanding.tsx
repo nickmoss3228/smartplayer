@@ -20,6 +20,7 @@ import StickyCta from './StickyCta';
 const MarineSnow = lazy(() => import('./three/MarineSnow'));
 const Iceberg3D = lazy(() => import('./three/Iceberg3D'));
 import './icebergLanding.css';
+import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 /**
  * The landing (/), built as one argument and drawn as a dive down the iceberg
@@ -181,7 +182,7 @@ export default function IcebergLanding() {
             </span>
           </h1>
           {/* the way in, on the first screen too, not only at the bottom */}
-          <Link to="/levels" className="ib-cta dv-hero-cta">
+          <Link to={TRY_IT_PATH} state={TRY_IT_STATE} className="ib-cta dv-hero-cta">
             {t('iceberg.cta.button')}
             <ArrowRightIcon aria-hidden="true" />
           </Link>
@@ -222,7 +223,7 @@ export default function IcebergLanding() {
         <p className="ib-brand">{t('brand')}</p>
         <Slogan className="ib-slogan" />
         <h2 className="ib-h2">{t('iceberg.cta.title')}</h2>
-        <Link to="/levels" className="ib-cta">
+        <Link to={TRY_IT_PATH} state={TRY_IT_STATE} className="ib-cta">
           {t('iceberg.cta.button')}
           <ArrowRightIcon aria-hidden="true" />
         </Link>

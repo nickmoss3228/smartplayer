@@ -9,6 +9,7 @@ import StoryCard from '../components/Stories/StoryCard';
 import { StoryCardSkeletonGrid } from '../components/Stories/StoryCardSkeleton';
 import { useAuth } from '../context/AuthContext';
 import { HUB_ENABLED } from '../config/features';
+import { readShelfBack } from '../services/shelfBack';
 
 /**
  * One level's shelf, reached from the level picker: every story on the level.
@@ -58,7 +59,9 @@ const List = () => {
   const { getStoryData } = useProgress();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const backToHub = HUB_ENABLED && !!user;
+  // Back returns to the way in: the hub's levels card or the picker (the
+  // «Уровни» tab). See services/shelfBack.ts. Guests have no hub.
+  const [backToHub] = useState(() => HUB_ENABLED && !!user && readShelfBack() === '/home');
 
   // Arrived from the end of /welcome, which opened the level the student's
   // own answer suggested — say so once, so landing here is not a mystery and

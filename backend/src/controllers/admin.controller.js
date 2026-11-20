@@ -7,6 +7,7 @@ import {
   isId,
   progress as progressRepo,
   sessions as sessionsRepo,
+  stats as statsRepo,
   userDocs,
   users as usersRepo,
 } from "../db/index.js";
@@ -210,6 +211,7 @@ export const listPlayers = async (req, res) => {
   const limit = PLAYERS_PAGE_LIMIT;
 
   const { docs: users, total } = await userDocs.pageUserDocs(q, (page - 1) * limit, limit);
+  const figures = await statsRepo.playerFigures(users.map((user) => user._id));
 
   res.json({
     players: users.map((user) => ({
@@ -235,10 +237,20 @@ export const listPlayers = async (req, res) => {
         listeningExperience: user.onboarding?.listeningExperience ?? null,
         onboardedAt: user.onboarding?.completedAt ?? null,
       },
+      // What they have done: parts, quizzes, words, listening time (db/repos/stats.repo.ts).
+      stats: figures.get(String(user._id)) ?? null,
     })),
     page,
     hasMore: page * limit < total,
   });
+};
+
+// GET /api/admin/stats — one summary of every learner: how many there are,
+// how many came back, what they have done and what they said about themselves
+// in /welcome. Read-only aggregates; see db/repos/stats.repo.ts for what each
+// figure means.
+export const getLearnerStats = async (_req, res) => {
+  res.json(await statsRepo.learnerSummary());
 };
 
 // POST /api/admin/players/:userId/logout-all — revoke every session on an

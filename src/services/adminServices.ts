@@ -88,6 +88,16 @@ export interface AdminPlayerSharing {
   blockedLogins: number;
 }
 
+/** Per-player learning figures on the players list. Null when the backend has none for them. */
+export interface AdminPlayerStats {
+  partsCompleted: number;
+  storiesStarted: number;
+  quizzesPassed: number;
+  wordsLearned: number;
+  listeningSeconds: number;
+  lastPartAt: string | null;
+}
+
 export interface AdminPlayer {
   id: string;
   username: string;
@@ -99,6 +109,8 @@ export interface AdminPlayer {
   createdAt: string;
   lastActiveAt: string;
   sharing: AdminPlayerSharing;
+  /** Absent on an older backend, null for a player with no progress record. */
+  stats?: AdminPlayerStats | null;
   /** The /welcome flow: onboardedAt null means it is still owed. */
   onboarding?: {
     englishLevel: string | null;
@@ -280,6 +292,42 @@ export const fetchAuditLog = async (
   if (action) params.set("action", action);
   if (actor) params.set("actor", actor);
   const res = await fetch(`${API_URL}/api/admin/audit?${params}`, {
+    headers: authHeaders(token),
+  });
+  return parseOrThrow(res);
+};
+
+export interface LearnerStats {
+  users: {
+    total: number;
+    onboarded: number;
+    banned: number;
+    newLast7: number;
+    newLast30: number;
+    activeLast1: number;
+    activeLast7: number;
+    activeLast30: number;
+  };
+  learning: {
+    learnersWithAPart: number;
+    partsCompleted: number;
+    quizzesPassed: number;
+    wordsLearned: number;
+    listeningSeconds: number;
+    byDifficulty: Record<"easy" | "medium" | "hard", { learners: number; parts: number }>;
+  };
+  wallet: { bitAward: number; bitWord: number; bitPhrase: number };
+  onboarding: {
+    /** Key 'none' counts learners who did not answer. */
+    englishLevel: Record<string, number>;
+    listeningExperience: Record<string, number>;
+  };
+  /** Last 30 days, oldest first, zero-filled. */
+  signupsByDay: { day: string; count: number }[];
+}
+
+export const fetchLearnerStats = async (token: string): Promise<LearnerStats> => {
+  const res = await fetch(`${API_URL}/api/admin/stats`, {
     headers: authHeaders(token),
   });
   return parseOrThrow(res);

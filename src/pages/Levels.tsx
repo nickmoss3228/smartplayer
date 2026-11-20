@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -6,6 +6,8 @@ import { motionEnter, STAGGER } from '../components/ui/motion';
 import MilkGlass from '../components/Levels/MilkGlass';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
 import { buttonPrimary } from '../components/ui/buttonStyles';
+import { saveShelfBack } from '../services/shelfBack';
+import { firstPartPath, isTryIt, PLAYER_FROM_TRY_IT_STATE } from '../components/IcebergLanding/tryIt';
 
 /**
  * Level picker, told as three glasses of milk.
@@ -49,6 +51,9 @@ const Levels = () => {
   const [selectedLevel, setSelectedLevel] = useState(readLastLevel);
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
+  // Arrived from the landing's «Попробуй сам»: «Продолжить» opens the level's
+  // first story in the player instead of its shelf (components/IcebergLanding/tryIt.ts).
+  const tryIt = isTryIt(useLocation().state);
 
   const choose = (id: string) => {
     setSelectedLevel(id);
@@ -87,6 +92,7 @@ const Levels = () => {
           <h1 className="text-[26px] sm:text-[30px] lg:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-black">
             {t('levels.selectProficiency')}
           </h1>
+          {tryIt && <p className="mt-2 text-[15px] text-dim">{t('levels.tryItHint')}</p>}
         </motion.div>
 
         {/* ── The shelf ──
@@ -166,7 +172,13 @@ const Levels = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={motionEnter}
             >
-              <Link to={`/levels/${chosen.id}`} className={`${buttonPrimary} w-full`}>
+              <Link
+                to={tryIt ? firstPartPath(chosen.id) : `/levels/${chosen.id}`}
+                state={tryIt ? PLAYER_FROM_TRY_IT_STATE : undefined}
+                // The shelf this opens goes back here, not to the hub.
+                onClick={() => saveShelfBack('/levels')}
+                className={`${buttonPrimary} w-full`}
+              >
                 {t('levels.continue')}
               </Link>
             </motion.div>

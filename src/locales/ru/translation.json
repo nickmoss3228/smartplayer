@@ -206,7 +206,8 @@
     "fatHard": "6%",
     "proceedToAssessment": "Начать",
     "continue": "Продолжить",
-    "notSure": ""
+    "notSure": "",
+    "tryItHint": "Первая история уровня начнётся сразу"
   },
   "levelProgress": {
     "easyTitle": "Базовый",
@@ -2446,7 +2447,6 @@
     },
     "levels": {
       "title": "Уровни",
-      "all": "Все уровни",
       "partsOf": "{{done}} из {{total}}",
       "notStarted": "не начат"
     },

@@ -270,7 +270,17 @@
   html.has-tabbar {
     --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom));
   }
-  html.has-tabbar body {
-    padding-bottom: var(--tabbar-h);
+  /* A spacer after the page, not padding on <body>: html, body and #root are
+     pinned to height 100% (index.css), so the page overflows them and a
+     padding at the bottom of <body> sat at the bottom of the FIRST screen,
+     under the content, adding nothing to the scroll. The bar then covered the
+     last card of every page longer than the screen. As the last box inside
+     #root the spacer is part of what overflows, so the page always scrolls
+     its own height plus the bar. A fixed-height screen sized to
+     100dvh - --tabbar-h plus this spacer is exactly one screen. */
+  html.has-tabbar #root::after {
+    content: "";
+    display: block;
+    height: var(--tabbar-h);
   }
 }

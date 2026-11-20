@@ -5,6 +5,7 @@
 // profile page. Only the Continue card gets the filled button: one primary
 // action per screen (design manifest §5).
 
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { IoChevronForward, IoPlay } from 'react-icons/io5';
@@ -14,6 +15,7 @@ import { buttonPrimary } from '../ui/buttonStyles';
 import { CURRENCIES } from '../../config/currencies';
 import { useWallet } from '../../context/WalletContext';
 import { saveLastLevel, type LevelId } from '../../services/lastLevel';
+import { saveShelfBack } from '../../services/shelfBack';
 import type { ContinueTarget, StartedStory } from '../../modules/hub/hubData';
 import type { OverviewData } from '../../types/Dashboard';
 import type { SchoolState } from '../../services/schoolServices';
@@ -171,39 +173,69 @@ const ContinueHero = ({ target }: { target: ContinueTarget }) => {
 export const WeekCard = ({ parts }: { parts: number }) => {
   const { t } = useTranslation();
   const { wallet } = useWallet();
+  // The coin whose explanation is open after a tap. Hover shows it with a
+  // mouse; a phone has no hover, and iOS does not focus a tapped button, so
+  // focus alone never opened it there. A tap toggles it; a tap anywhere else
+  // or Escape closes it.
+  const [open, setOpen] = useState<string | null>(null);
+  const coinsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      if (!coinsRef.current?.contains(e.target as Node)) setOpen(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(null);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   return (
-    <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 h-full">
-      <div className={`${card} px-4 py-3.5 lg:flex-1`}>
+    // Two small cards side by side at every width: on a desktop they sit
+    // above the levels beside the Continue card and only take their own height.
+    <div className="grid grid-cols-2 gap-3">
+      <div className={`${card} px-4 py-3.5`}>
         <p className={eyebrow}>{t('hub.week.title')}</p>
         <p className="m-0 mt-1 text-2xl font-extrabold text-ink tabular-nums">{t('hub.week.parts', { count: parts })}</p>
       </div>
       {/* The balance, kept compact. Each coin says where it comes from on
-          hover, and on focus (which is a tap on a phone). */}
+          hover, on keyboard focus, and on a tap. */}
       <div className={`${card} px-3 py-2.5`}>
         <p className={eyebrow}>{t('hub.week.earned')}</p>
-        <div className="mt-1 flex flex-wrap gap-x-1 gap-y-0.5 -ml-1.5">
+        <div ref={coinsRef} className="mt-1 flex flex-wrap gap-x-1 gap-y-0.5 -ml-1.5">
           {CURRENCIES.map(({ key, label, icon: Icon, textClasses }, i) => {
             const from = t(`hub.week.from.${key}`);
             const value = wallet ? wallet[key] : '–';
+            const isOpen = open === key;
+            const tipId = `hub-coin-${key}`;
             const align =
               i === 0 ? 'left-0' : i === CURRENCIES.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2';
             return (
               <span key={key} className="group relative">
                 <button
                   type="button"
-                  aria-label={`${label}: ${value}. ${from}`}
-                  className="flex cursor-help items-center gap-1 rounded-chip px-1.5 py-0.5 text-[13px] font-bold text-ink tabular-nums
-                    transition-colors hover:bg-room focus-visible:outline-2 focus-visible:outline-signal"
+                  onClick={() => setOpen(isOpen ? null : key)}
+                  aria-expanded={isOpen}
+                  aria-describedby={tipId}
+                  aria-label={`${label}: ${value}`}
+                  className={`flex cursor-help items-center gap-1 rounded-chip px-1.5 py-0.5 text-[13px] font-bold text-ink tabular-nums
+                    transition-colors hover:bg-room focus-visible:outline-2 focus-visible:outline-signal ${isOpen ? 'bg-room' : ''}`}
                 >
                   <Icon size={13} className={textClasses} aria-hidden="true" />
                   {value}
                 </button>
                 <span
+                  id={tipId}
                   role="tooltip"
                   className={`pointer-events-none absolute bottom-full z-20 mb-1.5 w-max max-w-[210px] rounded-tile bg-ink px-2.5 py-1.5
-                    text-[12px] font-medium leading-snug text-white opacity-0 shadow-lg transition-opacity duration-150
-                    group-hover:opacity-100 group-focus-within:opacity-100 ${align}`}
+                    text-[12px] font-medium leading-snug text-white shadow-lg transition-opacity duration-150
+                    group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 ${isOpen ? 'opacity-100' : 'opacity-0'} ${align}`}
                 >
                   <span className="block font-bold">{label}</span>
                   {from}
@@ -224,12 +256,9 @@ export const LevelsCard = ({ overview, current }: { overview: OverviewData | nul
 
   return (
     <div className={`${card} p-4 sm:p-6 h-full`}>
-      <div className="flex items-baseline justify-between">
-        <p className={eyebrow}>{t('hub.levels.title')}</p>
-        <Link to="/levels" className="text-[13px] font-semibold text-dim hover:text-ink">
-          {t('hub.levels.all')}
-        </Link>
-      </div>
+      {/* No "all levels" link: the three levels ARE all of them, and the
+          full-screen picker is the «Уровни» tab. */}
+      <p className={eyebrow}>{t('hub.levels.title')}</p>
       <ul className="m-0 mt-3 p-0 list-none grid grid-cols-3 gap-2">
         {LEVELS.map((level) => {
           const info = overview?.[level.id];
@@ -238,7 +267,10 @@ export const LevelsCard = ({ overview, current }: { overview: OverviewData | nul
             <li key={level.id}>
               <Link
                 to={`/levels/${level.id}`}
-                onClick={() => saveLastLevel(level.id)}
+                onClick={() => {
+                  saveLastLevel(level.id);
+                  saveShelfBack('/home');
+                }}
                 className="flex flex-col items-center rounded-tile py-2 hover:bg-room transition-colors
                   focus-visible:outline-2 focus-visible:outline-signal"
               >

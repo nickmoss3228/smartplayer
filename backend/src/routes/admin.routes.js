@@ -5,6 +5,7 @@ import {
   grantEntitlement,
   revokeEntitlement,
   listPlayers,
+  getLearnerStats,
   setPlayerBanned,
   logoutAllPlayerSessions,
   getPlayerProgress,
@@ -35,6 +36,7 @@ router.post("/grant-currency", adminAuth, asyncHandler(grantCurrency));
 router.post("/grant-entitlement", adminAuth, asyncHandler(grantEntitlement));
 router.delete("/entitlement", adminAuth, asyncHandler(revokeEntitlement));
 router.get("/players", adminAuth, asyncHandler(listPlayers));
+router.get("/stats", adminAuth, asyncHandler(getLearnerStats));
 router.patch("/players/:userId/ban", adminAuth, asyncHandler(setPlayerBanned));
 router.post("/players/:userId/logout-all", adminAuth, asyncHandler(logoutAllPlayerSessions));
 router.get("/players/:userId/progress", adminAuth, asyncHandler(getPlayerProgress));

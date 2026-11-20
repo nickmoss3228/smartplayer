@@ -59,8 +59,12 @@ const Home = () => {
           {name ? t('hub.greeting', { name }) : t('hub.greetingPlain')}
         </h1>
 
+        {/* Desktop: Continue spans two rows on the left, and the week and the
+            levels stack beside it, each at its own height. The week card used
+            to have a row of its own beside Continue and was stretched to
+            Continue's full height to fill it. Phones keep the source order. */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4 items-stretch">
-          <div className="lg:col-span-2 animate-fade-in-delay-1">
+          <div className="lg:col-span-2 lg:row-span-2 animate-fade-in-delay-1">
             <ContinueCard target={target} loading={loading} />
           </div>
           <div className="animate-fade-in-delay-1">
@@ -76,10 +80,13 @@ const Home = () => {
             </div>
           )}
 
-          <div className={`animate-fade-in-delay-3 ${started.length > 0 ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
+          {/* With started stories, the school sits beside them and the jar
+              takes the whole row under both; without, the jar and the school
+              share a row. */}
+          <div className={`animate-fade-in-delay-3 ${started.length > 0 ? 'lg:col-span-3' : 'lg:col-span-2'}`}>
             <KopilkaCard quiet />
           </div>
-          <div className="animate-fade-in-delay-3">
+          <div className={`animate-fade-in-delay-3 ${started.length > 0 ? 'lg:col-start-3 lg:row-start-3' : ''}`}>
             <SchoolCard school={school} shot={schoolShot} />
           </div>
         </div>

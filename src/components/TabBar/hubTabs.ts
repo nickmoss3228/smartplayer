@@ -10,8 +10,6 @@
 import type { ComponentType } from 'react';
 import { IoHeadsetOutline, IoHomeOutline, IoSchoolOutline } from 'react-icons/io5';
 import { JarIcon } from '../../modules/vocab/JarIcon';
-import { readLastLevel } from '../../services/lastLevel';
-import { difficultyForLevel, isEnglishLevel } from '../../modules/onboarding/onboardingOptions';
 
 type TabIcon = ComponentType<{ size?: number; className?: string }>;
 
@@ -22,8 +20,8 @@ export interface HubTab {
   /** Outline in every state (design manifest §7): ink colour and the signal
    *  marker say which tab is current, not a filled icon. */
   icon: TabIcon;
-  /** Read at render, not at import: the levels tab follows the last level
-   *  opened, or else the level the student gave in the intro (/welcome). */
+  /** Where the tab leads. Takes the level the student gave in /welcome,
+   *  for a tab that wants it; none does today. */
   to: (englishLevel?: string | null) => string;
   isActive: (pathname: string) => boolean;
 }
@@ -43,13 +41,11 @@ export const HUB_TABS: HubTab[] = [
     id: 'levels',
     labelKey: 'tabs.levels',
     icon: IoHeadsetOutline,
-    // Straight to the shelf of the level last opened; the picker is one tap
-    // back from there («Сменить уровень») and on the hub itself.
-    to: (englishLevel) => {
-      const level =
-        readLastLevel() ?? (isEnglishLevel(englishLevel) ? difficultyForLevel(englishLevel) : null);
-      return level ? `/levels/${level}` : '/levels';
-    },
+    // The full-screen level picker. It used to open the shelf of the last
+    // level, which made the tab and the hub's levels card two ways into the
+    // same shelf and left the picker reachable only through a link on the
+    // hub. The picker remembers and lifts the last level itself.
+    to: () => '/levels',
     isActive: (p) => startsWith(p, '/levels', '/stories', '/shop', '/library'),
   },
   {

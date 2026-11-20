@@ -206,7 +206,8 @@
     "fatHard": "6%",
     "proceedToAssessment": "Proceed to Assessment →",
     "continue": "Continue",
-    "notSure": ""
+    "notSure": "",
+    "tryItHint": "The first story of your level starts right away"
   },
   "levelProgress": {
     "easyTitle": "Easy",
@@ -2401,7 +2402,6 @@
     },
     "levels": {
       "title": "Levels",
-      "all": "All levels",
       "partsOf": "{{done}} of {{total}}",
       "notStarted": "not started"
     },
