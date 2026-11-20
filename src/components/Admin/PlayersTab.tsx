@@ -14,6 +14,12 @@ import PlayerProgressModal from "./PlayerProgressModal";
 
 const DEBOUNCE_MS = 350;
 
+const formatListening = (seconds: number, t: (k: string, o?: Record<string, unknown>) => string) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return h > 0 ? t("admin.stats.duration.hm", { h, m }) : t("admin.stats.duration.m", { m });
+};
+
 // Three fields, one per currency. The backend has always accepted all three
 // (POST /api/admin/grant-currency), but this form hardcoded bitWord and
 // bitPhrase to 0, so only bitAward could ever be granted — which made the two
@@ -163,7 +169,7 @@ function GrantCurrencyForm({
 }
 
 const PlayersTab = ({ token }: { token: string }) => {
-  const { t } = useTranslation("studio");
+  const { t, i18n } = useTranslation("studio");
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<AdminPlayer[]>([]);
   const [page, setPage] = useState(1);
@@ -338,6 +344,20 @@ const PlayersTab = ({ token }: { token: string }) => {
                 <SharingBadge sharing={player.sharing} />
               </div>
               <div className="text-xs text-gray-500">{player.email}</div>
+              {player.stats && (
+                <div className="text-xs text-gray-600 mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                  <span>{player.stats.partsCompleted} {t("players.list.statParts")}</span>
+                  <span>{player.stats.quizzesPassed} {t("players.list.statQuizzes")}</span>
+                  <span>{player.stats.wordsLearned} {t("players.list.statWords")}</span>
+                  <span>{formatListening(player.stats.listeningSeconds, t)} {t("players.list.statListening")}</span>
+                  <span className="text-gray-400">
+                    {t("players.list.statLastPart")}:{" "}
+                    {player.stats.lastPartAt
+                      ? new Date(player.stats.lastPartAt).toLocaleDateString(i18n.language)
+                      : t("players.list.statNever")}
+                  </span>
+                </div>
+              )}
               {player.onboarding && (
                 <div className="text-xs text-gray-500 mt-0.5">
                   {t("players.list.intro")}{" "}

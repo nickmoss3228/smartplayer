@@ -16,7 +16,13 @@
     "schoolReset": "Школа сброшена",
     "intro": "Вступление:",
     "introDone": "пройдено",
-    "introPending": "ещё нет"
+    "introPending": "ещё нет",
+    "statParts": "частей",
+    "statQuizzes": "квизов",
+    "statWords": "слов",
+    "statListening": "прослушано",
+    "statLastPart": "последняя часть",
+    "statNever": "пока нет"
   },
   "ban": {
     "ban": "Заблокировать",

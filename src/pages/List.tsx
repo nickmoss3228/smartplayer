@@ -9,6 +9,7 @@ import StoryCard from '../components/Stories/StoryCard';
 import { StoryCardSkeletonGrid } from '../components/Stories/StoryCardSkeleton';
 import { useAuth } from '../context/AuthContext';
 import { HUB_ENABLED } from '../config/features';
+import { readShelfBack } from '../services/shelfBack';
 
 /**
  * One level's shelf, reached from the level picker: every story on the level.
@@ -58,7 +59,9 @@ const List = () => {
   const { getStoryData } = useProgress();
   const { t } = useTranslation();
   const { user } = useAuth();
-  const backToHub = HUB_ENABLED && !!user;
+  // Back returns to the way in: the hub's levels card or the picker (the
+  // «Уровни» tab). See services/shelfBack.ts. Guests have no hub.
+  const [backToHub] = useState(() => HUB_ENABLED && !!user && readShelfBack() === '/home');
 
   // Arrived from the end of /welcome, which opened the level the student's
   // own answer suggested — say so once, so landing here is not a mystery and
@@ -102,9 +105,8 @@ const List = () => {
       <div className="max-w-5xl pt-20 mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between gap-2 sm:gap-4 mb-4 animate-fade-in">
           <Link
-            // With the hub on, a signed-in student reaches a shelf from the hub
-            // or its «Уровни» tab, so back goes to the hub; the level picker is
-            // a card there. Guests still go back to the picker.
+            // Back to the hub when the shelf was opened from it, otherwise to
+            // the level picker.
             to={backToHub ? '/home' : '/levels'}
             className="flex items-center cursor-pointer gap-2 text-gray-500 hover:text-gray-800 transition-colors text-sm flex-shrink-0"
             aria-label={backToHub ? t('tabs.home') : t('levels.title')}

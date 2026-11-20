@@ -220,7 +220,8 @@
     "notSure": "",
     "cefrEasy": "A1–A2",
     "cefrMedium": "B1",
-    "cefrHard": "B2–C1"
+    "cefrHard": "B2–C1",
+    "tryItHint": "The first story of your level starts right away"
   },
   "levelProgress": {
     "easyTitle": "Easy",
@@ -2512,7 +2513,6 @@
     },
     "levels": {
       "title": "Levels",
-      "all": "All levels",
       "partsOf": "{{done}} of {{total}}",
       "notStarted": "not started"
     },

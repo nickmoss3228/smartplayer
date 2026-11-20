@@ -5,8 +5,8 @@
 // so this is lg:hidden.
 //
 // While it is on screen it puts `has-tabbar` on <html>. App.css turns that into
-// --tabbar-h (the bar's height, 0 wherever the bar is not drawn) and pads the
-// body by it, so ordinary pages scroll clear of the bar; fixed screens, like
+// --tabbar-h (the bar's height, 0 wherever the bar is not drawn) and adds a
+// spacer that tall after the page, so ordinary pages scroll clear of the bar; fixed screens, like
 // the school, stand on it with `bottom-(--tabbar-h)`.
 //
 // Behind HUB_ENABLED; Layout decides where it shows.

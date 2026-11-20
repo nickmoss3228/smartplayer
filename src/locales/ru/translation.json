@@ -220,7 +220,8 @@
     "notSure": "",
     "cefrEasy": "A1–A2",
     "cefrMedium": "B1",
-    "cefrHard": "B2–C1"
+    "cefrHard": "B2–C1",
+    "tryItHint": "Первая история уровня начнётся сразу"
   },
   "levelProgress": {
     "easyTitle": "Базовый",
@@ -2558,7 +2559,6 @@
     },
     "levels": {
       "title": "Уровни",
-      "all": "Все уровни",
       "partsOf": "{{done}} из {{total}}",
       "notStarted": "не начат"
     },

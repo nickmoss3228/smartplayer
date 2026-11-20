@@ -3,6 +3,7 @@
   "actingAs": "Acting as <b>{{name}}</b> — actions are recorded in the audit log",
   "logOut": "Log out",
   "tabs": {
+    "stats": "Overview",
     "feedback": "Feedback",
     "players": "Players",
     "storyBuilder": "Story Builder",
@@ -17,5 +18,55 @@
     "tooMany": "Too many attempts. Try again in 15 minutes.",
     "failed": "Something went wrong.",
     "expired": "Session expired. Enter the code word again."
+  },
+  "stats": {
+    "title": "Learners overview",
+    "loading": "Loading…",
+    "loadError": "Could not load the statistics.",
+    "tiles": {
+      "total": "Learners",
+      "new7": "New, 7 days",
+      "new30": "New, 30 days",
+      "active1": "Active today",
+      "active7": "Active, 7 days",
+      "active30": "Active, 30 days",
+      "onboarded": "Finished /welcome",
+      "withPart": "With at least one part"
+    },
+    "activeHint": "Active means the app was open in that window.",
+    "learning": {
+      "title": "Learning",
+      "parts": "Parts completed",
+      "quizzes": "Quizzes passed",
+      "words": "Words learned",
+      "listening": "Listening time",
+      "byLevel": "By level",
+      "level": "Level",
+      "learners": "Learners",
+      "partsCol": "Parts",
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard"
+    },
+    "coins": {
+      "title": "Coins in circulation",
+      "award": "Award",
+      "word": "Word",
+      "phrase": "Phrase"
+    },
+    "onboarding": {
+      "englishLevel": "English level",
+      "listeningExperience": "Listening experience",
+      "none": "no answer",
+      "empty": "No data."
+    },
+    "signups": {
+      "title": "Sign-ups, last 30 days",
+      "bar": "{{day}}: {{count}}"
+    },
+    "duration": {
+      "hm": "{{h}} h {{m}} min",
+      "m": "{{m}} min"
+    }
   }
 }

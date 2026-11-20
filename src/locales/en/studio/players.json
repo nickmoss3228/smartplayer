@@ -16,7 +16,13 @@
     "schoolReset": "School reset",
     "intro": "Intro:",
     "introDone": "done",
-    "introPending": "not yet"
+    "introPending": "not yet",
+    "statParts": "parts",
+    "statQuizzes": "quizzes",
+    "statWords": "words",
+    "statListening": "listened",
+    "statLastPart": "last part",
+    "statNever": "none yet"
   },
   "ban": {
     "ban": "Ban",

@@ -6,6 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import { Link, useNavigate, useSearchParams, useParams, useLocation } from "react-router-dom";
+import { TRY_IT_PATH, TRY_IT_STATE } from "../components/IcebergLanding/tryIt";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
@@ -820,7 +821,8 @@ const Player = React.memo(() => {
             <p className="shrink-0 px-4 text-center text-xs text-black/70 md:text-left md:px-0">
               {t("player.tooEasy")}{" "}
               <Link
-                to="/levels"
+                to={TRY_IT_PATH}
+                state={TRY_IT_STATE}
                 className="font-semibold text-black underline underline-offset-2 hover:text-black/70"
               >
                 {t("player.changeLevel")}

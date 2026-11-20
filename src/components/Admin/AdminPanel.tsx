@@ -6,14 +6,16 @@ import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
 import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
 import AuditTab from "./AuditTab";
+import StatsTab from "./StatsTab";
 import { ADMIN_UNAUTHORIZED_EVENT } from "../../services/adminServices";
 import { API_BASE as API_URL } from "../../services/apiClient";
 
 const TOKEN_KEY = "admin_token";
 
-type Tab = "feedback" | "players" | "story-builder" | "audit";
+type Tab = "stats" | "feedback" | "players" | "story-builder" | "audit";
 
 const TABS: { id: Tab; labelKey: string }[] = [
+  { id: "stats", labelKey: "admin.tabs.stats" },
   { id: "feedback", labelKey: "admin.tabs.feedback" },
   { id: "players", labelKey: "admin.tabs.players" },
   { id: "story-builder", labelKey: "admin.tabs.storyBuilder" },
@@ -173,6 +175,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
           ))}
         </div>
 
+        {activeTab === "stats" && <StatsTab token={token} />}
         {activeTab === "feedback" && <FeedbackTab token={token} />}
         {activeTab === "players" && <PlayersTab token={token} />}
         {activeTab === "story-builder" && <StoryBuilderTab token={token} />}

@@ -54,6 +54,7 @@ export * as entitlements from "./repos/entitlements.repo.js";
 export * as payments from "./repos/payments.repo.js";
 export * as progress from "./repos/progress.repo.js";
 export * as sessions from "./repos/sessions.repo.js";
+export * as stats from "./repos/stats.repo.js";
 export * as stories from "./repos/stories.repo.js";
 export * as users from "./repos/users.repo.js";
 export * as wallet from "./repos/wallet.repo.js";
