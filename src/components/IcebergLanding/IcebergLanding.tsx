@@ -186,7 +186,6 @@ export default function IcebergLanding() {
             {t('iceberg.cta.button')}
             <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <p className="ib-micro dv-hero-note">{t('iceberg.cta.text')}</p>
         </div>
         <div className="ib-berg-wrap">
           <Iceberg ready={bergReady} />
@@ -234,7 +233,6 @@ export default function IcebergLanding() {
             <Iceberg3D still={prefersStill()} />
           </Lazy3D>
           <div className="dv-final-notes">
-            <p className="ib-micro">{t('iceberg.cta.text')}</p>
             <footer>
               <p className="ib-micro">{t('howToUse.footer')}</p>
             </footer>

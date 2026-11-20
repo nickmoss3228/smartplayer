@@ -67,14 +67,13 @@
    beat and the iceberg last and slowest. `backwards` fill, so once a piece has
    landed its own styles (the checks' .7 opacity, the button's hover) take over.
    Reduced motion never gets .ib-intro (prefersStill in the hook). */
-.ib-intro:not(.ib-go) :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .dv-hero-note, .ib-berg-wrap, .ib-down) { opacity: 0; }
-.ib-intro.ib-go :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .dv-hero-note, .ib-down) { animation: ib-enter .8s cubic-bezier(.16, 1, .3, 1) backwards; }
+.ib-intro:not(.ib-go) :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-berg-wrap, .ib-down) { opacity: 0; }
+.ib-intro.ib-go :is(.ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-down) { animation: ib-enter .8s cubic-bezier(.16, 1, .3, 1) backwards; }
 .ib-intro.ib-go .ib-slogan { animation-delay: 70ms; }
 .ib-intro.ib-go .ib-q-check:nth-child(1) { animation-delay: 150ms; }
 .ib-intro.ib-go .ib-q-check:nth-child(2) { animation-delay: 220ms; }
 .ib-intro.ib-go .ib-q-pain { animation-duration: .9s; animation-delay: 360ms; }
 .ib-intro.ib-go .dv-hero-cta { animation-delay: 500ms; }
-.ib-intro.ib-go .dv-hero-note { animation-delay: 560ms; }
 .ib-intro.ib-go .ib-berg-wrap { animation: ib-enter-berg 1.1s cubic-bezier(.16, 1, .3, 1) 420ms backwards; }
 .ib-intro.ib-go .ib-down { animation-delay: 720ms; }
 .ib-intro.ib-go .ib-q-check { animation-name: ib-enter-dim; }
