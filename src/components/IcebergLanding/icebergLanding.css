@@ -762,11 +762,15 @@ button.dv-aw-btn:hover { background: #e9eff4; }
 
 /* ── try it: the whole iceberg, tip in the air and body under the water ── */
 .ib-dive .dv-final { position: relative; border-top: 0; padding-bottom: 0; margin-bottom: 0; background: linear-gradient(180deg, var(--room) 0%, #e2f0f8 100%); overflow: hidden; }
-/* the stage: sky above its middle line, sea below; the 3D berg (or its drawing) spans both */
-.dv-final-stage { position: relative; align-self: stretch; margin: 16px calc(-1 * var(--gutter)) 0; height: clamp(400px, 50vw, 560px); background: linear-gradient(180deg, transparent 50%, #a9d0e6 50%); }
-.dv-final-stage::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% - 12px); height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='24' viewBox='0 0 200 24'%3E%3Cpath d='M0 12 q50 -12 100 0 t100 0' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 0 / 200px 24px; animation: dv-swell 4s linear infinite; pointer-events: none; }
-.dv-final-3d { position: absolute; inset: 0; -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent); mask-image: linear-gradient(180deg, #000 80%, transparent); }
-.dv-final-notes { position: absolute; left: var(--gutter); right: var(--gutter); bottom: 28px; z-index: 1; display: grid; gap: 10px; justify-items: center; text-align: center; }
+/* The stage, kept short so the page ends close to the button: a strip of sky
+   (--sky) with the berg's small tip, then a band of sea that holds the footer
+   and sets the stage's height. The berg's canvas is centred on the waterline
+   (the 3D camera sits at water level), --sky tall each way, and fades out just
+   under the surface, so no deep body shows. */
+.dv-final-stage { --sky: clamp(112px, 11vw, 150px); position: relative; align-self: stretch; margin: 8px calc(-1 * var(--gutter)) 0; background: linear-gradient(180deg, transparent var(--sky), #a9d0e6 var(--sky)); }
+.dv-final-stage::after { content: ''; position: absolute; left: 0; right: 0; top: calc(var(--sky) - 12px); height: 24px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='24' viewBox='0 0 200 24'%3E%3Cpath d='M0 12 q50 -12 100 0 t100 0' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x 0 0 / 200px 24px; animation: dv-swell 4s linear infinite; pointer-events: none; }
+.dv-final-3d { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--sky) * 2); -webkit-mask-image: linear-gradient(180deg, #000 calc(50% + 4px), transparent calc(50% + 34px)); mask-image: linear-gradient(180deg, #000 calc(50% + 4px), transparent calc(50% + 34px)); }
+.dv-final-notes { position: relative; z-index: 1; margin-top: var(--sky); padding: 30px var(--gutter) 28px; display: grid; gap: 10px; justify-items: center; text-align: center; }
 .dv-final-notes .ib-micro { color: var(--sea); }
 .dv-final-svg { display: block; width: 100%; height: 100%; }
 
