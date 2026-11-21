@@ -2335,7 +2335,8 @@
       "sounds_few": "{{count}} звука",
       "sounds_many": "{{count}} звуков",
       "sounds_other": "{{count}} звука",
-      "oneLetter": "Одна буква —"
+      "oneLetter": "Одна буква —",
+      "tap": "Нажми на слово, чтобы его услышать"
     },
     "link": {
       "title": "Пишем шесть слов, слышим три",

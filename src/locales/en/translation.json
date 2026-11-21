@@ -2291,7 +2291,8 @@
       "outro": "Learning words through their spelling is the most thankless path. The brain will always swap the letter “O” for a familiar Russian sound and build distorted neural connections.",
       "sounds_one": "{{count}} sound",
       "sounds_other": "{{count}} sounds",
-      "oneLetter": "One letter —"
+      "oneLetter": "One letter —",
+      "tap": "Tap a word to hear it"
     },
     "link": {
       "title": "Six words written, three heard",

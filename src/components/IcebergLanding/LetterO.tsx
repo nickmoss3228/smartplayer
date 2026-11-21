@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SpeakerWaveIcon } from '@heroicons/react/24/outline';
 import { canSpeak, hush, say, type Lang } from './speech';
 import { useInView } from './useInView';
 import Outro from './Outro';
@@ -8,8 +9,8 @@ import Outro from './Outro';
  * The letter "o" in Russian and in English. Russian: two sounds and one rule
  * (unstressed "о" is said "а": «молоко» → «малако», hence the name), one word each. English:
  * eight sounds around one letter (General American, as the en-US voice says
- * them). Every word is a button that says it (speech.ts); no prompt says so,
- * and the cards carry no language label: the words show which is which. The outro closes the
+ * them). Every word is a button that says it (speech.ts); a small line under
+ * the title says so (only where the browser can speak), and the cards carry no language label: the words show which is which. The outro closes the
  * "how words sound" part; word linking follows in Linking.tsx.
  */
 
@@ -171,6 +172,12 @@ export default function LetterO() {
     <section className="ib-sec ib-layer ib-letter" aria-labelledby="ib-letter-title">
       <div className="ib-wrap">
         <h2 id="ib-letter-title" className="ib-h2">{t('iceberg.letter.title')}</h2>
+        {canSpeak && (
+          <p className="ib-letter-tap">
+            <SpeakerWaveIcon aria-hidden="true" />
+            {t('iceberg.letter.tap')}
+          </p>
+        )}
 
         <div ref={ref} className={`ib-letter-grid${seen ? ' in' : ''}`}>
           {/* Russian */}
