@@ -2466,7 +2466,9 @@
     "body": "The first parts play without an account. Sign up and the whole story opens, and your progress is kept. We will bring you back here afterwards.",
     "signUp": "Sign up",
     "logIn": "Already have an account? Log in",
-    "notNow": "Not now"
+    "notNow": "Not now",
+    "finishedTitle": "You have finished the free parts",
+    "finishedBody": "Sign up for free to keep all your progress and listen on. We will bring you back to the story afterwards."
   },
   "savePrompt": {
     "title": "Keep your progress",

@@ -20,6 +20,7 @@ import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
 import { IoChatbubbleEllipsesOutline, IoCloseOutline, IoCloudDoneOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
 import { saveLastPlayed } from "../services/lastPlayed";
+import { SignupWallSheet } from "../components/LevelProgress/SignupWallSheet";
 import { useAppSelector } from "../hooks/hooks";
 import { useRepeatMode } from "../components/Player/hooks/useRepeatMode";
 import { RepeatModeBar } from "../components/Player/RepeatMode/RepeatModeBar";
@@ -407,6 +408,17 @@ const Player = React.memo(() => {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   useEffect(() => setShowSavePrompt(false), [level, difficulty, storySlug]);
 
+  // A guest behind the sign-up wall plays parts 1..guestFreeParts of this
+  // story; null when nothing stops them (signed in, wall off, story open).
+  // Passing the last of those parts' quizzes is the moment to ask them to sign
+  // up: everything they did so far is kept (AuthContext migrates it).
+  const guestFreeParts =
+    !user && !paywallEnabled && signupWallEnabled && allowance && Number.isFinite(allowance.freeParts)
+      ? allowance.freeParts
+      : null;
+  const [showFinishedWall, setShowFinishedWall] = useState(false);
+  useEffect(() => setShowFinishedWall(false), [level, difficulty, storySlug]);
+
   const handleWavesurferMount = useCallback(
     (wavesurfer: WaveSurferInstance) => {
       wavesurferRef.current = wavesurfer;
@@ -437,6 +449,18 @@ const Player = React.memo(() => {
           audioTracks.length,
         );
         setLocalProgressTick((n) => n + 1);
+        // The free parts are all passed and the story goes on behind the wall.
+        if (
+          guestFreeParts !== null &&
+          guestFreeParts > 0 &&
+          audioTracks.length > guestFreeParts &&
+          saved.results[level]?.completed &&
+          Array.from({ length: guestFreeParts }, (_, i) => i + 1).every((p) => saved.results[p]?.completed)
+        ) {
+          writeFlag(SAVE_PROMPT_KEY);
+          setShowFinishedWall(true);
+          return;
+        }
         if (saved.results[level]?.completed && !readFlag(SAVE_PROMPT_KEY)) {
           writeFlag(SAVE_PROMPT_KEY);
           setShowSavePrompt(true);
@@ -480,6 +504,7 @@ const Player = React.memo(() => {
       refreshStoryProgress,
       audioTracks,
       setWalletDirect,
+      guestFreeParts,
     ],
   );
 
@@ -877,7 +902,14 @@ const Player = React.memo(() => {
                   difficulty={difficulty}
                   storyId={resolvedStorySlug}
                   partNumber={level}
-                  nextPart={level < audioTracks.length ? level + 1 : null}
+                  // A guest at the last free part has no next part to open
+                  // yet (it opens with an account): the result says the quiz
+                  // is passed, and the sign-up sheet takes it from there.
+                  nextPart={
+                    level < audioTracks.length && !(guestFreeParts !== null && level >= guestFreeParts)
+                      ? level + 1
+                      : null
+                  }
                   onQuizComplete={handleQuizComplete}
                   onClose={() => setShowQuiz(false)}
                   onNextPart={() =>
@@ -952,6 +984,9 @@ const Player = React.memo(() => {
         </div>
       </div>
       {showFeedback && <FeedbackModal onClose={handleCloseFeedback} />}
+      {showFinishedWall && !user && (
+        <SignupWallSheet variant="finished" returnTo={backPath} onClose={() => setShowFinishedWall(false)} />
+      )}
       {showPractice && practiceOptions.length > 0 && (
         <PracticeModal
           part={level}
