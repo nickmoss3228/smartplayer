@@ -97,7 +97,7 @@ const PLACEHOLDER_TRACK: AudioTrack = { id: "", title: "", audio: "", subtitles:
 const Player = React.memo(() => {
   const { user, loading: authLoading } = useAuth();
   const { owns, entitlementsLoading } = useEntitlements();
-  const { setWalletDirect } = useWallet();
+  const { setWalletDirect, announceBonus } = useWallet();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const locale = useAppLocale();
@@ -486,6 +486,7 @@ const Player = React.memo(() => {
         // actual pass — push it straight into the shared cache so the navbar
         // chip updates immediately, no extra fetch needed.
         if (response.data.wallet) setWalletDirect(response.data.wallet);
+        announceBonus(response.data.bonus);
 
         await refreshStoryProgress(difficulty, resolvedStorySlug);
       } catch (error) {
@@ -504,6 +505,7 @@ const Player = React.memo(() => {
       refreshStoryProgress,
       audioTracks,
       setWalletDirect,
+      announceBonus,
       guestFreeParts,
     ],
   );
@@ -969,6 +971,7 @@ const Player = React.memo(() => {
                 onAudioComplete={handleAudioComplete}
                 helpAudioUrls={audioTrack.helpAudio}
                 storySlug={storySlug}
+                storyId={resolvedStorySlug}
                 comicUrl={audioTrack.comicUrl}
                 trackTitle={audioTrack.title}
                 hasListenedFully={hasListenedFully}

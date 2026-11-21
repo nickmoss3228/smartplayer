@@ -333,6 +333,18 @@
     "repeatEach_other": "Repeat each phrase {{count}} times",
     "feedback": "Send feedback"
   },
+  "rewards": {
+    "bonus": {
+      "surprise": "Surprise bonus!",
+      "surpriseSub": "Your reward is doubled this time",
+      "golden": "Golden phrase!",
+      "goldenSub": "You found a hidden golden phrase",
+      "goldenWord": "Golden word!",
+      "goldenWordSub": "“{{word}}” was a golden word",
+      "goldenWordsSub_one": "{{count}} golden word this round",
+      "goldenWordsSub_other": "{{count}} golden words this round"
+    }
+  },
   "quiz": {
     "question": "Question",
     "score": "Score",

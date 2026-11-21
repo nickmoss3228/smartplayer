@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { fetchWallet } from "../services/walletServices";
-import { Wallet } from "../types/Wallet";
+import { RewardBonus, Wallet } from "../types/Wallet";
+import BonusToast from "../components/Rewards/BonusToast";
 
 interface WalletContextValue {
   wallet: Wallet | null;
@@ -18,6 +19,8 @@ interface WalletContextValue {
   /** Push a wallet we already have (e.g. from an award-endpoint response)
    *  straight into the cache, without a round-trip back to the server. */
   setWalletDirect: (w: Wallet) => void;
+  /** Show the celebratory toast for a server-rolled bonus; null is a no-op. */
+  announceBonus: (bonus: RewardBonus | null | undefined) => void;
 }
 
 const WalletContext = createContext<WalletContextValue>({
@@ -25,6 +28,7 @@ const WalletContext = createContext<WalletContextValue>({
   walletLoading: true,
   refreshWallet: async () => {},
   setWalletDirect: () => {},
+  announceBonus: () => {},
 });
 
 // Mounted once above the Router (see App.tsx), so it survives navigating in
@@ -71,6 +75,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
     loadWallet();
   }, [loadWallet]);
 
+  // The latest surprise bonus; `id` re-keys the toast so a new one replaces
+  // the visible one (and replays its pop-in) instead of just updating it.
+  const [bonusShown, setBonusShown] = useState<{ id: number; bonus: RewardBonus } | null>(null);
+  const announceBonus = useCallback((bonus: RewardBonus | null | undefined) => {
+    if (!bonus) return;
+    setBonusShown((prev) => ({ id: (prev?.id ?? 0) + 1, bonus }));
+  }, []);
+
   return (
     <WalletContext.Provider
       value={{
@@ -78,9 +90,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
         walletLoading,
         refreshWallet: loadWallet,
         setWalletDirect: setWallet,
+        announceBonus,
       }}
     >
       {children}
+      <BonusToast key={bonusShown?.id ?? 0} bonus={bonusShown?.bonus ?? null} />
     </WalletContext.Provider>
   );
 };

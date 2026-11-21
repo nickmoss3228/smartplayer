@@ -41,6 +41,8 @@ export interface WaveformPlayerProps {
   trackId: string;
   difficulty: string;
   storySlug: string;
+  /** The story id the progress endpoints use (can differ from `storySlug`). */
+  storyId?: string;
   /** Comic page for this track, resolved by modules/story/resolveStory.ts. */
   comicUrl?: string | null;
   /** The part's name, used as the comic page's title. */

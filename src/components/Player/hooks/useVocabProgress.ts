@@ -17,7 +17,7 @@ import { useWallet } from "../../../context/WalletContext";
 // it survives a reload and can be migrated into their account on signup.
 export function useVocabProgress(enabled: boolean) {
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
-  const { setWalletDirect } = useWallet();
+  const { setWalletDirect, announceBonus } = useWallet();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -44,11 +44,12 @@ export function useVocabProgress(enabled: boolean) {
       return;
     }
     submitLearnedWords(token, words)
-      .then(({ wallet }) => {
+      .then(({ wallet, bonus }) => {
         if (wallet) setWalletDirect(wallet);
+        announceBonus(bonus);
       })
       .catch(() => {});
-  }, [setWalletDirect]);
+  }, [setWalletDirect, announceBonus]);
 
   return { learnedWords, markLearned };
 }
