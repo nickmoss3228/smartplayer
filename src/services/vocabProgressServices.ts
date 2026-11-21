@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Wallet } from "../types/Wallet";
+import { RewardBonus, Wallet } from "../types/Wallet";
 import { API_BASE } from "./apiClient";
 
 
@@ -13,13 +13,17 @@ export const fetchLearnedWords = async (token: string): Promise<string[]> => {
 export const submitLearnedWords = async (
   token: string,
   words: string[],
-): Promise<{ learnedWords: string[]; wallet: Wallet | null }> => {
+): Promise<{ learnedWords: string[]; wallet: Wallet | null; bonus: RewardBonus | null }> => {
   const res = await axios.post(
     `${API_BASE}/api/progress/vocab-complete`,
     { words },
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  return { learnedWords: res.data.learnedWords, wallet: res.data.wallet ?? null };
+  return {
+    learnedWords: res.data.learnedWords,
+    wallet: res.data.wallet ?? null,
+    bonus: res.data.bonus ?? null,
+  };
 };
 
 // ── Bookmarks: words a student chose to come back to ───────────────────────

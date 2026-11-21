@@ -8,7 +8,7 @@
 // but NOT during a storage swap. Two changes at once means a post-cutover bug
 // could be either, and separating them afterwards is expensive.
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
 
 import { db } from "../client.js";
 import { newId } from "../ids.js";
@@ -16,6 +16,7 @@ import {
   progress,
   progressLevelResult,
   storyProgress,
+  userGoldenPhrase,
   userLearnedWord,
   userVocabBookmark,
 } from "../schema.js";
@@ -441,4 +442,43 @@ export async function removeLearnedWords(
     .delete(userLearnedWord)
     .where(and(eq(userLearnedWord.userId, userId), inArray(userLearnedWord.word, [...words])));
   return result.rowCount ?? 0;
+}
+
+// ── user_golden_phrase ──────────────────────────────────────────────────────
+
+export interface GoldenPhraseKey {
+  difficulty: string;
+  storyId: string;
+  partNumber: number;
+  segmentIndex: number;
+}
+
+/**
+ * Record a found golden phrase. True only when THIS call inserted it, so two
+ * racing repeats of one segment cannot both be paid — the conflict is the check.
+ */
+export async function recordGoldenPhrase(
+  userId: string,
+  key: GoldenPhraseKey,
+  tx: Tx = db(),
+): Promise<boolean> {
+  const inserted = await tx
+    .insert(userGoldenPhrase)
+    .values({ userId, ...key })
+    .onConflictDoNothing()
+    .returning({ userId: userGoldenPhrase.userId });
+  return inserted.length > 0;
+}
+
+/** Golden phrases this student found since `since` (the daily cap). */
+export async function goldenPhrasesFoundSince(
+  userId: string,
+  since: Date,
+  tx: Tx = db(),
+): Promise<number> {
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)`.mapWith(Number) })
+    .from(userGoldenPhrase)
+    .where(and(eq(userGoldenPhrase.userId, userId), gte(userGoldenPhrase.foundAt, since)));
+  return row?.n ?? 0;
 }

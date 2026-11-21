@@ -51,12 +51,14 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     onAudioComplete,
     onWavesurferMount,
     difficulty,
+    level,
     comicUrl,
     trackTitle,
     vocabulary,
     phrasalVerbs,
     textShape,
     storySlug,
+    storyId,
     helpAudioUrls,
     hasListenedFully,
     practices = [],
@@ -69,7 +71,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     const waveformRef = useRef<HTMLDivElement>(null);
     const userPlaybackRateRef = useRef<number>(1.0);
     const { t } = useTranslation();
-    const { setWalletDirect } = useWallet();
+    const { setWalletDirect, announceBonus } = useWallet();
     const isPreview = usePlayerPreview() !== null;
 
     const {
@@ -120,12 +122,22 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     // guest-side accrual/migration exists for the wallet (see currency plan).
     // The endpoint returns the updated wallet directly, so push it into the
     // shared cache instead of letting the display go stale until next fetch.
-    const handleSegmentRepeatComplete = useCallback((repeatCount: number) => {
+    const handleSegmentRepeatComplete = useCallback((repeatCount: number, segmentIndex: number) => {
       if (isPreview) return;
       const token = localStorage.getItem("token");
       if (!token) return;
-      submitPhraseRepeat(token, repeatCount).then(setWalletDirect).catch(() => {});
-    }, [setWalletDirect, isPreview]);
+      // The segment context lets the server decide whether this one is golden.
+      const context =
+        storyId && level
+          ? { difficulty, storyId, partNumber: Number(level), segmentIndex }
+          : undefined;
+      submitPhraseRepeat(token, repeatCount, context)
+        .then(({ wallet, bonus }) => {
+          setWalletDirect(wallet);
+          announceBonus(bonus);
+        })
+        .catch(() => {});
+    }, [setWalletDirect, announceBonus, isPreview, storyId, level, difficulty]);
 
     // Reset marker/time/subtitle state (and the enhanced-mode session) on track change
     useTrackReset(audioUrl, setIsEnhancedSessionActive);

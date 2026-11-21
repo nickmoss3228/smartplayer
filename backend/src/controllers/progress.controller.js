@@ -20,7 +20,20 @@ import { awardCurrency } from "../helpers/awardCurrency.js";
 import { partitionVocabKeys } from "../helpers/vocabKeyCatalog.js";
 import { LEGACY_VOCAB_KEYS } from "../config/vocabKeys.js";
 import { spendCurrency } from "../helpers/spendCurrency.js";
-import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE } from "../config/currency.js";
+import {
+  QUIZ_PASS_BITAWARD,
+  PHRASE_REPEAT_BITPHRASE,
+  GOLDEN_PHRASE_BITPHRASE,
+  GOLDEN_PHRASE_DAILY_CAP,
+  GOLDEN_WORD_BITWORD,
+} from "../config/currency.js";
+import {
+  isGoldenSegment,
+  isGoldenWord,
+  isHardWord,
+  rollSurpriseBonus,
+  startOfMoscowDay,
+} from "../helpers/surpriseRewards.js";
 import { grantPhraseRepeat } from "../helpers/phraseRepeatCap.js";
 import { getShopItem } from "../config/shopCatalog.js";
 import { getCharacterItem } from "../config/characterCatalog.js";
@@ -292,7 +305,7 @@ export async function completeLevel(req, res) {
       totalQuestions,
       storyMeta,
       inTransaction: async (tx, { isCompleted: passed, firstPass }) => {
-        if (!passed) return { wallet: null, user: null, streak: null };
+        if (!passed) return { wallet: null, user: null, streak: null, bonus: null };
 
         // ── Streak (Moscow day, see helpers/moscowDay.js) ─────────────────
         const user = await usersRepo.findById(userId, tx);
@@ -316,16 +329,23 @@ export async function completeLevel(req, res) {
         // a student the right option once they have answered, so a script
         // could learn a quiz and resubmit it in a loop, minting coins without
         // limit. A part is learned once; it pays once.
+        // A surprise sometimes doubles it, paid in the same UPDATE as the base.
+        const extraAward = firstPass ? rollSurpriseBonus(QUIZ_PASS_BITAWARD) : 0;
         const wallet = firstPass
-          ? await awardCurrency(userId, { bitAward: QUIZ_PASS_BITAWARD }, tx)
+          ? await awardCurrency(userId, { bitAward: QUIZ_PASS_BITAWARD + extraAward }, tx)
           : null;
-        return { wallet, user, streak };
+        const bonus = extraAward
+          ? { kind: "surprise", currency: "bitAward", amount: extraAward }
+          : null;
+        return { wallet, user, streak, bonus };
       },
     });
 
     let wallet = null;
+    let bonus = null;
     if (isCompleted) {
       wallet = extra.wallet;
+      bonus = extra.bonus ?? null;
 
       // ── Achievement check (a recompute, safe outside the transaction) ───
       const [questionsAnswered, uniqueStoriesCount] = await Promise.all([
@@ -351,6 +371,7 @@ export async function completeLevel(req, res) {
         currentPart: storyProgress.currentPart,
       },
       wallet,
+      bonus,
     });
   } catch (error) {
     console.error("Complete level error:", error);
@@ -752,7 +773,7 @@ export async function completeVocabQuiz(req, res) {
         progressRepo.learnedWords(userId),
         walletRepo.get(userId),
       ]);
-      return res.json({ learnedWords, wallet });
+      return res.json({ learnedWords, wallet, bonus: null });
     }
 
     // The merge and the payout are one transaction, and the payout is sized by
@@ -760,25 +781,62 @@ export async function completeVocabQuiz(req, res) {
     // The Mongo version read the set, counted "new" words, then $addToSet-ed,
     // so two racing submissions both counted the same word as new and it was
     // paid for twice. ON CONFLICT DO NOTHING RETURNING cannot be fooled that way.
-    const wallet = await db().transaction(async (tx) => {
+    const { wallet, bonus } = await db().transaction(async (tx) => {
       const added = await progressRepo.addLearnedWords(userId, known, tx);
+      // A surprise sometimes doubles the round. Rolled only when the round
+      // paid something, so resending learned words cannot fish for it.
+      const extraWords = rollSurpriseBonus(added.length);
+      // Golden words among the words learned just now: each pays once, ever,
+      // because a word is only ever added once.
+      const golden = await goldenWordsAmong(userId, added, tx);
+      const goldenPay = golden.length * GOLDEN_WORD_BITWORD;
       // awardCurrency returns null for a zero award, which is what a re-sent
       // round of already-learned words produces. The response still owes the
       // client its balance, as the known.length === 0 branch above gives it.
-      return (
-        (await awardCurrency(userId, { bitWord: added.length }, tx)) ??
-        walletRepo.get(userId, tx)
-      );
+      const paid =
+        (await awardCurrency(userId, { bitWord: added.length + extraWords + goldenPay }, tx)) ??
+        (await walletRepo.get(userId, tx));
+      // One toast: a golden word is the bigger news, and carries any surprise
+      // doubling in its amount.
+      const bonus = golden.length
+        ? {
+            kind: "goldenWord",
+            currency: "bitWord",
+            amount: goldenPay + extraWords,
+            word: golden[0],
+            count: golden.length,
+          }
+        : extraWords
+          ? { kind: "surprise", currency: "bitWord", amount: extraWords }
+          : null;
+      return { wallet: paid, bonus };
     });
 
     const learnedWords = await progressRepo.learnedWords(userId);
     await updateAchievements(userId, { wordsLearned: learnedWords.length });
 
-    res.json({ learnedWords, wallet });
+    res.json({ learnedWords, wallet, bonus });
   } catch (error) {
     console.error("Complete vocab quiz error:", error);
     res.status(500).json({ message: "Server error" });
   }
+}
+
+/**
+ * The golden words among `keys` (words this student has just learned), as the
+ * word to show for each: the story's own spelling when it has one.
+ */
+async function goldenWordsAmong(userId, keys, tx) {
+  if (keys.length === 0) return [];
+  const places = await storiesRepo.vocabPlaces(keys, tx);
+  const byKey = new Map();
+  for (const place of places) {
+    if (!byKey.has(place.key)) byKey.set(place.key, []);
+    byKey.get(place.key).push(place);
+  }
+  return keys
+    .filter((key) => isGoldenWord(userId, key, isHardWord(key, byKey.get(key))))
+    .map((key) => byKey.get(key)?.[0]?.word?.trim() || key);
 }
 
 // ── POST /progress/phrase-repeat ────────────────────────────────────────────
@@ -798,15 +856,62 @@ export async function recordPhraseRepeat(req, res) {
 
     // Capped per Moscow day, so a script posting repeats cannot mint without limit.
     const bitPhrase = grantPhraseRepeat(userId, PHRASE_REPEAT_BITPHRASE[repeatCount] ?? 0);
-    const wallet = bitPhrase > 0
+    let wallet = bitPhrase > 0
       ? await awardCurrency(userId, { bitPhrase })
       : await walletRepo.get(userId);
 
-    res.json({ wallet, bitPhraseAwarded: bitPhrase });
+    const bonus = await findGoldenPhrase(req, repeatCount);
+    if (bonus) wallet = bonus.wallet;
+
+    res.json({
+      wallet,
+      bitPhraseAwarded: bitPhrase,
+      bonus: bonus ? { kind: "golden", currency: "bitPhrase", amount: bonus.amount } : null,
+    });
   } catch (error) {
     console.error("Record phrase repeat error:", error);
     res.status(500).json({ message: "Server error" });
   }
+}
+
+// A golden phrase: a segment that is secretly worth GOLDEN_PHRASE_BITPHRASE to
+// this student when they repeat it (2x or 3x — a 1x cycle repeated nothing).
+// The segment context is optional so an older client still earns its ordinary
+// BitPhrase. Returns { amount, wallet } when one was found now, else null.
+// Every refusal is a silent null: the client must not learn which segments are
+// golden from error messages.
+const MAX_SEGMENT_INDEX = 999;
+
+async function findGoldenPhrase(req, repeatCount) {
+  const { difficulty, storyId, partNumber, segmentIndex } = req.body;
+  const userId = req.user._id;
+
+  if (repeatCount < 2) return null;
+  if (!difficulties.includes(difficulty) || typeof storyId !== "string" || !storyId) return null;
+  if (!Number.isInteger(partNumber) || partNumber < 1) return null;
+  if (!Number.isInteger(segmentIndex) || segmentIndex < 0 || segmentIndex > MAX_SEGMENT_INDEX) return null;
+
+  // The cheap, pure check first, so most repeats never touch the database.
+  if (!isGoldenSegment(userId, difficulty, storyId, partNumber, segmentIndex)) return null;
+
+  // A real, open part — a locked one must not pay, as completeLevel refuses.
+  if (!(await getStoryMeta(difficulty, storyId))) return null;
+  if (await refuseIfLocked(req, difficulty, storyId, partNumber)) return null;
+
+  return db().transaction(async (tx) => {
+    const foundToday = await progressRepo.goldenPhrasesFoundSince(userId, startOfMoscowDay(), tx);
+    if (foundToday >= GOLDEN_PHRASE_DAILY_CAP) return null;
+
+    const isNew = await progressRepo.recordGoldenPhrase(
+      userId,
+      { difficulty, storyId, partNumber, segmentIndex },
+      tx,
+    );
+    if (!isNew) return null;
+
+    const wallet = await awardCurrency(userId, { bitPhrase: GOLDEN_PHRASE_BITPHRASE }, tx);
+    return { amount: GOLDEN_PHRASE_BITPHRASE, wallet };
+  });
 }
 
 // ── GET /progress/wallet ─────────────────────────────────────────────────────

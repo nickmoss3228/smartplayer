@@ -155,6 +155,10 @@ export async function startServer() {
   process.env.PUBLIC_API_BASE = baseUrl;
   const { config } = await import("../../src/config/env.js");
   config.payments.publicApiBase = baseUrl;
+  // Surprise bonuses never fire unless a test asks for one, so balances stay exact.
+  const { setGoldenWordsForTests, setSurpriseRollForTests } = await import("../../src/helpers/surpriseRewards.js");
+  setSurpriseRollForTests(() => 1);
+  setGoldenWordsForTests(() => false);
   return baseUrl;
 }
 

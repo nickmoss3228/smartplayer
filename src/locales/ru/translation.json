@@ -335,6 +335,20 @@
     "repeatEach_other": "Повторять каждую фразу {{count}} раза",
     "feedback": "Отправить отзыв"
   },
+  "rewards": {
+    "bonus": {
+      "surprise": "Сюрприз-бонус!",
+      "surpriseSub": "В этот раз награда удвоена",
+      "golden": "Золотая фраза!",
+      "goldenSub": "Вы нашли спрятанную золотую фразу",
+      "goldenWord": "Золотое слово!",
+      "goldenWordSub": "«{{word}}» оказалось золотым",
+      "goldenWordsSub_one": "{{count}} золотое слово за раунд",
+      "goldenWordsSub_few": "{{count}} золотых слова за раунд",
+      "goldenWordsSub_many": "{{count}} золотых слов за раунд",
+      "goldenWordsSub_other": "{{count}} золотых слова за раунд"
+    }
+  },
   "quiz": {
     "question": "Вопрос",
     "score": "Счёт",

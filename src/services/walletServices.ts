@@ -1,5 +1,5 @@
 import { api } from "./apiClient";
-import { Wallet } from "../types/Wallet";
+import { RewardBonus, Wallet } from "../types/Wallet";
 
 // Reference migration for the shared axios client — the other service modules
 // still hand-build their own Authorization header and should follow this shape:
@@ -22,7 +22,16 @@ export const fetchWallet = async (_token?: string): Promise<Wallet> => {
 export const submitPhraseRepeat = async (
   _token: string | undefined,
   repeatCount: number,
-): Promise<Wallet> => {
-  const res = await api.post("/api/progress/phrase-repeat", { repeatCount });
-  return res.data.wallet;
+  context?: {
+    difficulty: string;
+    storyId: string;
+    partNumber: number;
+    segmentIndex: number;
+  },
+): Promise<{ wallet: Wallet; bonus: RewardBonus | null }> => {
+  const res = await api.post("/api/progress/phrase-repeat", {
+    repeatCount,
+    ...context,
+  });
+  return { wallet: res.data.wallet, bonus: res.data.bonus ?? null };
 };

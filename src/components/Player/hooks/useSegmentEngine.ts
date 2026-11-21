@@ -30,7 +30,7 @@ interface UseSegmentEngineOptions {
   userPlaybackRateRef: React.MutableRefObject<number>;
   /** Fired once each time a segment finishes its full auto-repeat cycle, with
    *  the repeat-count setting (1/2/3) that was active during that cycle. */
-  onSegmentRepeatComplete?: (repeatCount: number) => void;
+  onSegmentRepeatComplete?: (repeatCount: number, segmentIndex: number) => void;
   /** «Повтори за мной»: when set, each sentence ends parked on the next one,
    *  paused, until this resolves — true to play on, false to stay put. */
   repeatGate?:
@@ -210,7 +210,7 @@ export const useSegmentEngine = ({
             } else {
               // All repeats for this segment are complete — fire the onSegmentRepeatComplete callback and reset the repeat counter. 
               // Then, either move to the next segment or finish playback if there are no more segments. 
-              onSegmentRepeatCompleteRef.current?.(repeatCountRef.current);
+              onSegmentRepeatCompleteRef.current?.(repeatCountRef.current, idx);
               currentRepeatRef.current = 0;
               const restoreRate = userPlaybackRateRef.current ?? 1.0;
               dispatch(setPlaybackRate(restoreRate));

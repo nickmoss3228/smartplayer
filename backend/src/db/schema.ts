@@ -400,6 +400,37 @@ export const userVocabBookmark = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.word] })],
 );
 
+// ── user_golden_phrase ──────────────────────────────────────────────────────
+//
+// Golden phrases a student has found (helpers/surpriseRewards.js). Which
+// segments are golden is decided by an HMAC, so nothing about them is stored
+// until one is caught. The primary key makes each one pay once, ever: the
+// INSERT ... ON CONFLICT DO NOTHING RETURNING is the check and the record in one
+// statement, the same idiom as user_learned_word. found_at counts the day's
+// catches for the daily cap. No FK to story: keyed like part_markers, by
+// identity, so a reimported story keeps its found phrases.
+
+export const userGoldenPhrase = pgTable(
+  "user_golden_phrase",
+  {
+    userId: fk("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    difficulty: text().notNull(),
+    storyId: text("story_id").notNull(),
+    partNumber: integer("part_number").notNull(),
+    segmentIndex: integer("segment_index").notNull(),
+    foundAt: ts("found_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({
+      name: "user_golden_phrase_pkey",
+      columns: [t.userId, t.difficulty, t.storyId, t.partNumber, t.segmentIndex],
+    }),
+    index("user_golden_phrase_user_found_idx").on(t.userId, t.foundAt),
+  ],
+);
+
 // ── progress ────────────────────────────────────────────────────────────────
 
 export const progress = pgTable(
