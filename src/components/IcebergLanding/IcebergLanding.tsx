@@ -15,6 +15,7 @@ import Steps from './Steps';
 import Fish from './Fish';
 import Lazy3D, { prefersStill } from './Lazy3D';
 import StickyCta from './StickyCta';
+import HeroMark from './HeroMark';
 
 // three.js scenes, in their own chunks: fetched only when the first one nears the screen
 const MarineSnow = lazy(() => import('./three/MarineSnow'));
@@ -167,6 +168,7 @@ export default function IcebergLanding() {
     <div ref={rootRef} className="ib ib-dive" data-skin="deep">
       <header className={heroClass}>
         <div className="ib-wrap">
+          <HeroMark />
           <p className="ib-brand">{t('brand')}</p>
           <Slogan className="ib-slogan" />
           {/* what learners say: two things ticked off and greyed, so the eye lands on the one that hurts */}
