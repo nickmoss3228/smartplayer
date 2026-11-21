@@ -92,6 +92,13 @@
       "when": 1792753858484,
       "tag": "0012_part_translation",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795259629636,
+      "tag": "0013_golden_phrase",
+      "breakpoints": true
     }
   ]
 }
