@@ -9,6 +9,7 @@
 // put back, and it doubles as the progress report: a row reads as "what this
 // part owes", a column as "the pass I still owe the whole story".
 
+import { useTranslation } from "react-i18next";
 import { ElementSpec, ElementId, CellState, StoryReadiness, partVerdict } from "./partStatus";
 
 interface PartMatrixProps {
@@ -23,7 +24,8 @@ interface PartMatrixProps {
   /** The set already has MAX_PARTS parts; the add button is off. */
   atLimit?: boolean;
   elements: ElementSpec[];
-  itemLabel?: "Part" | "Prompt";
+  /** Which word the rows are called: a story has parts, a lesson has prompts. */
+  kind?: "part" | "prompt";
 }
 
 const CELL_STYLE: Record<CellState, string> = {
@@ -50,26 +52,30 @@ const PartMatrix = ({
   addingPart,
   atLimit = false,
   elements,
-  itemLabel = "Part",
-}: PartMatrixProps) => (
+  kind = "part",
+}: PartMatrixProps) => {
+  const { t } = useTranslation("studio");
+  const itemName = (n: number) => t(kind === "part" ? "common.partN" : "common.promptN", { n });
+  const elementName = (id: ElementId) => t(`common.elements.${id}`);
+  return (
   <div className="relative max-w-full overflow-x-auto">
     <table className="w-full text-sm border-collapse min-w-[880px]">
       <thead>
         <tr>
           <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-dim pb-2 pr-3">
-            {itemLabel}
+            {t(kind === "part" ? "common.part" : "common.prompt")}
           </th>
           {elements.map((el) => (
             <th
               key={el.id}
-              title={el.required ? el.label : `${el.label} — optional`}
+              title={el.required ? elementName(el.id) : t("shell.matrix.optional", { element: elementName(el.id) })}
               className="font-mono text-center text-[11px] uppercase tracking-[0.18em] pb-2 px-1 text-dim"
             >
-              {el.label}
+              {elementName(el.id)}
             </th>
           ))}
           <th className="font-mono text-left text-[11px] uppercase tracking-[0.18em] text-dim pb-2 pl-3">
-            Status
+            {t("shell.matrix.status")}
           </th>
         </tr>
       </thead>
@@ -87,10 +93,10 @@ const PartMatrix = ({
                 </span>
                 {status.partNumber === previewPart && (
                   <span
-                    title="A non-owner hears this part before deciding to buy"
+                    title={t("shell.matrix.previewTitle")}
                     className="font-mono ml-1.5 text-[10px] uppercase tracking-[0.16em] text-amber-700 bg-amber-100 rounded-[3px] px-1 py-0.5"
                   >
-                    preview
+                    {t("shell.matrix.preview")}
                   </span>
                 )}
               </td>
@@ -107,14 +113,14 @@ const PartMatrix = ({
                     <button
                       type="button"
                       onClick={() => onPick(status.partNumber, el.id)}
-                      aria-label={`${itemLabel} ${status.partNumber} — ${el.label}: ${state}`} title={`${itemLabel} ${status.partNumber} — ${el.label}`}
+                      aria-label={`${itemName(status.partNumber)} — ${elementName(el.id)}: ${t(`shell.matrix.cellState.${state}`)}`} title={`${itemName(status.partNumber)} — ${elementName(el.id)}`}
                       className={`relative min-w-11 min-h-11 px-2 rounded-[3px] text-[11px] font-bold leading-none tabular-nums transition-colors ${
                         CELL_STYLE[state]
                       } ${here ? "ring-2 ring-ink ring-offset-1" : "hover:brightness-95"}`}
                     >
                       <span aria-hidden="true">{glyph}</span>
                       <span className="sr-only">
-                        {el.label}: {state}
+                        {elementName(el.id)}: {t(`shell.matrix.cellState.${state}`)}
                         {typeof n === "number" ? `, ${n}` : ""}
                       </span>
                     </button>
@@ -131,7 +137,7 @@ const PartMatrix = ({
                       : "text-amber-700"
                 }`}
               >
-                {partVerdict(status)}
+                {partVerdict(status, t)}
               </td>
             </tr>
           );
@@ -144,22 +150,23 @@ const PartMatrix = ({
         type="button"
         onClick={onAddPart}
         disabled={addingPart || atLimit}
-        title={`Add another ${itemLabel.toLowerCase()}`}
+        title={t(`shell.matrix.addTitle.${kind}`)}
         className="text-xs text-gray-600 bg-white border border-dashed border-gray-300 rounded-[3px] px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50"
       >
-        {addingPart ? "Adding…" : `+ Add ${itemLabel.toLowerCase()}`}
+        {addingPart ? t("shell.editor.adding") : t(`shell.matrix.addItem.${kind}`)}
       </button>
       <span className="text-[11px] text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
-        <span>✓ complete</span>
-        <span>~ needs a look</span>
-        <span>· empty</span>
-        <span>– not used</span>
+        <span>{t("shell.matrix.legendDone")}</span>
+        <span>{t("shell.matrix.legendPartial")}</span>
+        <span>{t("shell.matrix.legendEmpty")}</span>
+        <span>{t("shell.matrix.legendNa")}</span>
         <span className="text-gray-300">
-          {elements.map((e) => `${e.short} ${e.label.toLowerCase()}`).join(" · ")}
+          {elements.map((e) => `${e.short} ${elementName(e.id).toLowerCase()}`).join(" · ")}
         </span>
       </span>
     </div>
   </div>
-);
+  );
+};
 
 export default PartMatrix;

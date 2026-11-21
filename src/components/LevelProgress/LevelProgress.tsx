@@ -3,17 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { SHOP_ENABLED } from '../../config/features';
 import { useLevelProgressPage } from './useLevelProgressPage';
 import { LevelProgressHeader } from './LevelProgressHeader';
-import { LevelProgressBar } from './LevelProgressBar';
+import { LevelSegments } from './LevelSegments';
 import { LevelGrid } from './LevelGrid';
-import { LevelLegend } from './LevelLegend';
 import { CongratsModal } from '../../modules/levelprogress/congratsModule';
 import { LevelProgressSkeleton } from '../../modules/levelprogress/LevelProgressSkeleton';
 import { StoryPreviewModal } from '../../modules/storypreview/StoryPreviewModal';
 import type { LevelProgressProps } from '../../types/LevelProgress';
+import { SignupWallSheet } from './SignupWallSheet';
 import { PaywallModal } from '../Paywall/PaywallModal';
 import { storyKey } from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
-import { CastStrip } from '../../modules/cast/CastStrip';
+import { CastStack } from '../../modules/cast/CastStack';
 import { CastSheet } from '../../modules/cast/CastSheet';
 import { downloadPartHandout } from '../../modules/handout/downloadHandout';
 import type { HandoutLabels } from '../../modules/handout/handoutModel';
@@ -23,8 +23,8 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
   const {
     difficulty, storyTitle, theme, user,
     audioTracks, comics, completedLevels, totalLevels,
-    lastListenedLevel, progressPercentage, navigationState,
-    isLoading, getLevelData, isPartLocked,
+    lastListenedLevel, navigationState,
+    isLoading, getLevelData, isPartLocked, getLevelHref,
     showCongrats, previewLevel, previewData,
     handleLevelCardClick, handleStartListening,
     handleClosePreview, handleCloseCongrats,
@@ -32,9 +32,14 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
     showPaywall,
     setShowPaywall,
     storyOwned,
+    signupLock,
+    catalogLoading,
+    showSignupWall,
+    setShowSignupWall,
     freeParts,
     previewSeconds,
     castCards,
+    castReached,
     castFocus,
     handleOpenCast,
     handleCloseCast,
@@ -79,19 +84,28 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
 
   if (isLoading) return <LevelProgressSkeleton />;
 
+  // One screen, no scroll: the page is exactly the viewport under the fixed
+  // 52px navbar and the grid takes whatever height the header and the
+  // progress bar leave (LevelGrid). It scrolls only if the grid's minimum row
+  // height cannot fit — a phone held sideways. Under the hub's tab bar the
+  // screen ends at the bar (--tabbar-h, App.css; 0 wherever there is none), or
+  // the bar covers the last row of parts.
   return (
-    <div className={`min-h-screen bg-room p-8 transition-all duration-1000 ease-in-out`}>
-      <div className="max-w-4xl pt-12 mx-auto">
+    <div className="flex h-[calc(100dvh-var(--tabbar-h))] flex-col overflow-y-auto bg-room pt-13">
+      <div className="@container mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col gap-3 px-4 pt-3 pb-4 md:gap-5 md:px-8 md:pt-7 md:pb-8">
 
-        <LevelProgressHeader difficulty={difficulty} theme={theme} storyTitle={storyTitle} />
-
-        <CastStrip cards={castCards} accent={theme.accent} onOpen={handleOpenCast} />
-
-        <LevelProgressBar
-          completedCount={completedLevels.length}
-          totalLevels={totalLevels}
-          progressPercentage={progressPercentage}
+        <LevelProgressHeader
+          difficulty={difficulty}
           theme={theme}
+          storyTitle={storyTitle}
+          aside={<CastStack cards={castCards} accent={theme.accent} onOpen={handleOpenCast} />}
+        />
+
+        <LevelSegments
+          totalLevels={totalLevels}
+          completedLevels={completedLevels}
+          lastListenedLevel={lastListenedLevel}
+          accent={theme.accent}
         />
 
         <LevelGrid
@@ -105,11 +119,11 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
           previewSeconds={storyOwned ? null : previewSeconds}
           getLevelData={getLevelData}
           isPartLocked={isPartLocked}
+          signupLock={signupLock}
+          getLevelHref={getLevelHref}
           onLevelClick={handleLevelCardClick}
         />
       </div>
-
-      <LevelLegend theme={theme} />
 
       <CongratsModal
         isOpen={showCongrats}
@@ -123,6 +137,7 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       {castFocus !== undefined && (
         <CastSheet
           cards={castCards}
+          reachedPart={castReached}
           focusKey={castFocus}
           accent={theme.accent}
           onClose={handleCloseCast}
@@ -144,12 +159,18 @@ const LevelProgress: React.FC<LevelProgressProps> = (props) => {
       <PaywallModal
         // Never while the shop is off: there is nothing to offer, and the
         // guest has already been sent to sign up instead (useLevelProgressPage).
-        isOpen={SHOP_ENABLED && showPaywall && !storyOwned}
+        isOpen={SHOP_ENABLED && showPaywall && !storyOwned && !catalogLoading && !signupLock}
         theme={theme}
         storyTitle={storyTitle}
         requiredSkus={catalog.skusGranting(storyKey(difficulty, storySlug))}
         onClose={() => setShowPaywall(false)}
       />
+
+      {/* The same arrival flag (the player sends locked-part visitors back with
+          openPaywall) shows the sign-up sheet while that is the only lock. */}
+      {!catalogLoading && signupLock && (showSignupWall || showPaywall) && (
+        <SignupWallSheet onClose={() => { setShowSignupWall(false); setShowPaywall(false); }} />
+      )}
     </div>
   );
 };

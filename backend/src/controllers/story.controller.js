@@ -68,7 +68,6 @@ const savedPart = (story, req) =>
 // POST /api/admin/stories
 export async function createStory(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, localized, totalParts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
@@ -112,6 +111,7 @@ export async function createStory(req, res) {
         timeMarkers: remembered[part.partNumber] ?? [],
       })),
     });
+    invalidateCatalog();
 
     res.status(201).json({ story });
   } catch (error) {
@@ -140,7 +140,6 @@ export async function getStaticQuizSource(req, res) {
 // createStory, matching a static storyId is expected here, not rejected.
 export async function importStory(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId, storyName, description, characterIcon, category, coverUrl, localized, totalParts, parts } = req.body;
 
     if (!["easy", "medium", "hard"].includes(difficulty)) {
@@ -208,6 +207,7 @@ export async function importStory(req, res) {
       published: false,
       parts: partsWithMarkers,
     });
+    invalidateCatalog();
 
     res.status(201).json({ story, markersRestoredForParts: restoredParts });
   } catch (error) {
@@ -249,7 +249,6 @@ export async function getStory(req, res) {
 // creation would orphan progress/quiz data keyed by the old values.
 export async function updateStoryMeta(req, res) {
   try {
-    invalidateCatalog();
     const {
       storyName,
       description,
@@ -315,6 +314,7 @@ export async function updateStoryMeta(req, res) {
       if (previewSeconds !== undefined) story.previewSeconds = previewSeconds;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("updateStoryMeta error:", error);
@@ -326,7 +326,6 @@ export async function updateStoryMeta(req, res) {
 // 3" alongside an existing "part 1"/"part 2") and bumps totalParts to match.
 export async function addPart(req, res) {
   try {
-    invalidateCatalog();
     const result = await storiesRepo.mutateStory(req.params.id, (story) => {
       if (story.parts.length >= MAX_PARTS) {
         return { halt: { status: 400, body: { error: `A story can have at most ${MAX_PARTS} parts.` } } };
@@ -336,6 +335,7 @@ export async function addPart(req, res) {
       story.totalParts = story.parts.length;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.status(201).json({ story }));
   } catch (error) {
     console.error("addPart error:", error);
@@ -346,7 +346,6 @@ export async function addPart(req, res) {
 // DELETE /api/admin/stories/:id
 export async function deleteStory(req, res) {
   try {
-    invalidateCatalog();
     // Snapshot the markers before the story goes. saveMarkers already mirrors
     // them as they're placed, so this is a backstop — it rescues markers saved
     // before the durable copy existed, and covers any path that wrote markers
@@ -359,6 +358,7 @@ export async function deleteStory(req, res) {
         }
       }
       await storiesRepo.remove(story._id);
+      invalidateCatalog();
     }
     res.json({ success: true });
   } catch (error) {
@@ -408,6 +408,7 @@ const UPLOAD_KINDS = new Set([
   "pictureSheet",
   "quizFast",
   "quizSlow",
+  "help",
 ]);
 
 /** The upload kinds that are pictures rather than audio. */
@@ -440,12 +441,15 @@ function assetKeyFor(story, partNumber, kind, extra) {
       return `${base}/quiz/q${extra.index}-fast.mp3`;
     case "quizSlow":
       return `${base}/quiz/q${extra.index}-slow.mp3`;
+    // The SOS clip for one sentence, numbered from 1 like the markers are.
+    case "help":
+      return `${base}/help/${extra.index + 1}.mp3`;
     default:
       return null;
   }
 }
 
-// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|vocabImage|phrasalImage|pictureSheet|quizFast|quizSlow[&audioKey=][&index=]
+// POST /api/admin/stories/:id/parts/:partNumber/upload?kind=audio|comic|intro|vocab|phrasal|vocabImage|phrasalImage|pictureSheet|quizFast|quizSlow|help[&audioKey=][&index=]
 export async function uploadPartAsset(req, res) {
   try {
     const story = await storiesRepo.loadStoryJson(req.params.id);
@@ -476,6 +480,21 @@ export async function uploadPartAsset(req, res) {
     if (["quizFast", "quizSlow"].includes(kind) && (index === undefined || Number.isNaN(Number(index)))) {
       return res.status(400).json({ error: "index is required for quiz audio uploads." });
     }
+    // An SOS clip belongs to one marker, so the markers have to be settled
+    // first and the index has to name one of them.
+    let helpIndex;
+    if (kind === "help") {
+      // Number("") is 0, so an empty index would quietly mean the first marker.
+      helpIndex = typeof index === "string" && /^\d+$/.test(index) ? Number(index) : NaN;
+      const markers = part.timeMarkers?.length ?? 0;
+      if (markers === 0) {
+        return res.status(400).json({ error: "Set this part's markers before adding SOS clips." });
+      }
+      if (!Number.isInteger(helpIndex) || helpIndex < 0 || helpIndex >= markers) {
+        return res.status(400).json({ error: `index must be a marker number from 0 to ${markers - 1}.` });
+      }
+    }
+
 
     // Content-Type is the only thing deciding how a browser treats one of these
     // objects, and every one of them is written ACL public-read on the same
@@ -510,7 +529,12 @@ export async function uploadPartAsset(req, res) {
     }
 
     const contentHash = crypto.createHash("sha256").update(req.file.buffer).digest("hex").slice(0, 16);
-    const key = assetKeyFor(story, partNumber, kind, { audioKey: audioKey?.trim(), index, ext, contentHash });
+    const key = assetKeyFor(story, partNumber, kind, {
+      audioKey: audioKey?.trim(),
+      index: kind === "help" ? helpIndex : index,
+      ext,
+      contentHash,
+    });
     if (!key) return res.status(400).json({ error: "Invalid kind." });
 
     const url = await uploadBuffer(key, req.file.buffer, contentType);
@@ -827,6 +851,47 @@ export async function saveComic(req, res) {
   }
 }
 
+// An uploaded clip's URL, or "" for a sentence that has none yet.
+const AUDIO_URL_PATTERN = /^https:\/\/[^\u0000-\u001f\s]{1,2048}$/;
+
+// PUT /api/admin/stories/:id/parts/:partNumber/help-audio   { helpAudio: string[] }
+// The SOS clips, one per marker, in marker order, written whole. Slot i is
+// played when the student presses SOS inside sentence i. The markers have to
+// exist first: without them there is nothing for a clip to belong to.
+export async function saveHelpAudio(req, res) {
+  try {
+    const { helpAudio } = req.body;
+    if (!Array.isArray(helpAudio)) {
+      return res.status(400).json({ error: "helpAudio must be a list of URLs." });
+    }
+    const bad = helpAudio.findIndex((url) => typeof url !== "string" || (url !== "" && !AUDIO_URL_PATTERN.test(url)));
+    if (bad !== -1) {
+      return res.status(400).json({ error: `Clip ${bad + 1} is not an https URL.` });
+    }
+
+    const result = await mutatePart(req, (part) => {
+      const markers = part.timeMarkers?.length ?? 0;
+      if (markers === 0 && helpAudio.some(Boolean)) {
+        return { halt: { status: 400, body: { error: "Set this part's markers before adding SOS clips." } } };
+      }
+      if (helpAudio.length > markers) {
+        return {
+          halt: { status: 400, body: { error: `This part has ${markers} markers, so at most ${markers} SOS clips.` } },
+        };
+      }
+      // Trailing empty slots carry nothing; dropping them keeps "no clips"
+      // stored as [] whatever the editor sent.
+      const clips = [...helpAudio];
+      while (clips.length && !clips[clips.length - 1]) clips.pop();
+      part.helpAudio = clips;
+    });
+    sendMutation(res, result, (story) => res.json({ part: savedPart(story, req) }));
+  } catch (error) {
+    console.error("saveHelpAudio error:", error);
+    res.status(500).json({ error: "Failed to save the SOS clips." });
+  }
+}
+
 // Generous for a card that has to fit a phone screen, tight enough that a
 // paste of the whole transcript into the description is refused, not stored.
 const INTRO_LIMITS = { title: 120, description: 1000, tip: 500, grammarLine: 200, grammarLines: 8 };
@@ -1133,7 +1198,6 @@ export async function saveQuiz(req, res) {
 // PATCH /api/admin/stories/:id/publish  { published }
 export async function setStoryPublished(req, res) {
   try {
-    invalidateCatalog();
     const { published } = req.body;
     if (typeof published !== "boolean") {
       return res.status(400).json({ error: "published must be a boolean." });
@@ -1168,6 +1232,7 @@ export async function setStoryPublished(req, res) {
       story.published = published;
     });
 
+    invalidateCatalog();
     sendMutation(res, result, (story) => res.json({ story }));
   } catch (error) {
     console.error("setStoryPublished error:", error);
@@ -1478,7 +1543,6 @@ export async function getStoryVisibility(req, res) {
 // By slug, not by row id — a built-in story has no row to address.
 export async function setStoryVisibility(req, res) {
   try {
-    invalidateCatalog();
     const { difficulty, storyId } = req.params;
     if (!["easy", "medium", "hard"].includes(difficulty)) {
       return res.status(400).json({ error: "Invalid difficulty." });
@@ -1487,6 +1551,7 @@ export async function setStoryVisibility(req, res) {
       return res.status(400).json({ error: "hidden must be true or false." });
     }
     await storiesRepo.setHidden(difficulty, storyId, req.body.hidden);
+    invalidateCatalog();
     res.json({ success: true, difficulty, storyId, hidden: req.body.hidden });
   } catch (error) {
     console.error("setStoryVisibility error:", error);

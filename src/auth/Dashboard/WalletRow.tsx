@@ -52,7 +52,8 @@ const WalletRow: React.FC<WalletRowProps> = ({ compact = false }) => {
                 {wallet?.[key] ?? 0}
               </span>
             )}
-            <span className="sr-only">{label}</span>
+            {/* The name in ink: the currency tints are too light for small text. */}
+            <span className="text-[13px] font-semibold text-ink/80">{label}</span>
           </li>
         ))}
       </ul>

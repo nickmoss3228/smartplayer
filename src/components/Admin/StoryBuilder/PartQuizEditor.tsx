@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -27,6 +28,7 @@ const blankQuestion = (): QuizQuestion => ({
 });
 
 const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorProps) => {
+  const { t } = useTranslation("studio");
   const [questions, setQuestions] = useState<QuizQuestion[]>(part.quiz);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -84,7 +86,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
         prev.map((q, i) => (i === qIndex ? { ...q, audio: { ...q.audio, [speed]: url } } : q))
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("practice.quiz.errors.uploadFailed"));
     } finally {
       setUploadingKey(null);
     }
@@ -93,15 +95,15 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
   const handleSave = async () => {
     setError("");
     for (const q of questions) {
-      if (!q.question.trim()) return setError("Every question needs text.");
-      if (q.options.some((o) => !o.trim())) return setError("Every question needs 4 options filled in.");
+      if (!q.question.trim()) return setError(t("practice.quiz.errors.needText"));
+      if (q.options.some((o) => !o.trim())) return setError(t("practice.quiz.errors.needOptions"));
     }
     setSaving(true);
     try {
       const updated = await saveQuiz(token, story._id, part.partNumber, questions);
       onPartUpdated(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save quiz.");
+      setError(err instanceof Error ? err.message : t("practice.quiz.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -114,13 +116,13 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
       {questions.map((q, qIndex) => (
         <div key={qIndex} className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-black">Question {qIndex + 1}</span>
+            <span className="text-sm font-semibold text-black">{t("practice.quiz.question", { n: qIndex + 1 })}</span>
             <button
               type="button"
               onClick={() => removeQuestion(qIndex)}
               className="text-red-500 text-xs hover:text-red-700"
             >
-              Remove
+              {t("common.remove")}
             </button>
           </div>
 
@@ -128,7 +130,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
             type="text"
             value={q.question}
             onChange={(e) => updateQuestion(qIndex, { question: e.target.value })}
-            placeholder="Question text"
+            placeholder={t("practice.quiz.questionPlaceholder")}
             className="w-full text-black text-sm px-3 py-2 border border-gray-300 rounded-[3px]"
           />
 
@@ -147,7 +149,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
               <div key={speed} className="flex items-center gap-1.5">
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <span>
-                    {speed === "fast" ? "Fast audio (plays first)" : "Slow audio (plays second)"}
+                    {speed === "fast" ? t("practice.quiz.fastAudio") : t("practice.quiz.slowAudio")}
                   </span>
                   <input
                     type="file"
@@ -158,10 +160,10 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
                   />
                   <span className="text-blue-600 underline">
                     {uploadingKey === `${qIndex}-${speed}`
-                      ? "Uploading..."
+                      ? t("common.uploading")
                       : q.audio[speed]
-                      ? "Replace"
-                      : "Choose file"}
+                      ? t("common.replace")
+                      : t("practice.quiz.chooseFile")}
                   </span>
                 </label>
                 {/* Replaces the old ✓, which only ever meant "this question
@@ -185,7 +187,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
                   type="text"
                   value={option}
                   onChange={(e) => updateOption(qIndex, optIndex, e.target.value)}
-                  placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
+                  placeholder={t("practice.quiz.optionPlaceholder", { letter: String.fromCharCode(65 + optIndex) })}
                   className="flex-1 text-black text-sm px-2 py-1.5 border border-gray-300 rounded-[3px]"
                 />
               </label>
@@ -201,7 +203,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           disabled={questions.length >= MAX_QUESTIONS}
           className="text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
-          Add question ({questions.length}/{MAX_QUESTIONS})
+          {t("practice.quiz.addQuestion", { count: questions.length, max: MAX_QUESTIONS })}
         </button>
         <button
           type="button"
@@ -209,7 +211,7 @@ const PartQuizEditor = ({ token, story, part, onPartUpdated }: PartQuizEditorPro
           disabled={saving}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Save quiz"}
+          {saving ? t("common.saving") : t("practice.quiz.save")}
         </button>
       </div>
     </div>

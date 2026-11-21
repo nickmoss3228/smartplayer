@@ -14,6 +14,11 @@ import { db, progress as progressRepo } from "../db/index.js";
 // concurrent submissions could interleave. Here the story bookmark advances and
 // the result is recorded together, and the set/advance rules run inside the SQL
 // (see progress.repo completeStoryPart and upsertLevelResult).
+//
+// `inTransaction(tx, { isCompleted, firstPass })`, when given, runs inside the
+// same transaction after both writes, and its return value comes back as
+// `extra`. completeLevel pays the quiz reward there, so a crash can no longer
+// leave a recorded pass without its payout, or a payout without its pass.
 export async function applyLevelCompletion({
   userId,
   difficulty,
@@ -22,10 +27,11 @@ export async function applyLevelCompletion({
   correctAnswers,
   totalQuestions,
   storyMeta,
+  inTransaction,
 }) {
   const isCompleted = correctAnswers >= Math.ceil(totalQuestions * 0.7);
 
-  const storyProgress = await db().transaction(async (tx) => {
+  const { storyProgress, firstPass, extra } = await db().transaction(async (tx) => {
     // A pass adds the part to the completed set and advances the bookmark if
     // it was the current part; a fail only makes sure the row exists.
     const story = isCompleted
@@ -37,16 +43,19 @@ export async function applyLevelCompletion({
 
     // The result is recorded either way, but a part that is already marked
     // completed is never overwritten by a re-attempt — that guard is inside
-    // upsertLevelResult's conflict clause, not a check before it.
+    // upsertLevelResult's conflict clause, not a check before it. Which is also
+    // why "it wrote, and this was a pass" means "first pass of this part".
     const row = await progressRepo.ensure(userId, difficulty, tx);
-    await progressRepo.upsertLevelResult(
+    const written = await progressRepo.upsertLevelResult(
       { progressId: row.id, storyId, partNumber, completed: isCompleted, correctAnswers, totalQuestions },
       new Date(),
       tx,
     );
+    const first = isCompleted && written;
 
-    return story;
+    const more = inTransaction ? await inTransaction(tx, { isCompleted, firstPass: first }) : undefined;
+    return { storyProgress: story, firstPass: first, extra: more };
   });
 
-  return { isCompleted, storyProgress };
+  return { isCompleted, firstPass, storyProgress, extra };
 }

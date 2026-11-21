@@ -1,4 +1,15 @@
 {
+  "common": {
+    "loading": "Loading…"
+  },
+  "contentStudio": {
+    "preview": "Student preview",
+    "previous": "Previous part or prompt",
+    "next": "Next part or prompt",
+    "closePreview": "Close student preview",
+    "backToEditor": "Back to editor",
+    "noAudio": "Reference audio has not been added yet."
+  },
   "brand": "malako",
   "navbar": {
     "dashboard": "Dashboard",
@@ -16,7 +27,7 @@
     "online": "Online",
     "offline": "Offline",
     "visit": "Visit",
-    "searchPlaceholder": "Search by username or email...",
+    "searchPlaceholder": "Search by username...",
     "searchHint": "Type at least 2 characters to search.",
     "noResults": "No players found.",
     "loadFailed": "Couldn't search players. Please try again later.",
@@ -194,7 +205,7 @@
     "medium": "Medium",
     "hard": "Hard",
     "title": "Choose Your Level",
-    "selectProficiency": "Select Your Level:",
+    "selectProficiency": "Choose your level",
     "proficiencyLevel": "",
     "level": "Level",
     "easySubtitle": "Foundational Level",
@@ -207,6 +218,9 @@
     "proceedToAssessment": "Proceed to Assessment →",
     "continue": "Continue",
     "notSure": "",
+    "cefrEasy": "A1–A2",
+    "cefrMedium": "B1",
+    "cefrHard": "B2–C1",
     "tryItHint": "The first story of your level starts right away"
   },
   "levelProgress": {
@@ -221,7 +235,12 @@
     "locked": "Not Completed",
     "overallProgress": "My Progress",
     "completedCount": "",
-    "levelLabel": "Level"
+    "levelLabel": "Level",
+    "back": "Back",
+    "doneOf": "{{done}} of {{total}} done",
+    "currentPart": "Now: part {{part}}",
+    "allDone": "All done",
+    "continue": "Continue"
   },
   "cast": {
     "label": "Characters",
@@ -234,7 +253,9 @@
     "meetInPart": "You'll meet them in part {{part}}",
     "lockedHint": "Reach that part to find out who this is.",
     "lockedAria": "Hidden character, arrives in part {{part}}",
-    "openAria": "More about {{name}}"
+    "openAria": "More about {{name}}",
+    "now": "now",
+    "timelineAria": "Characters by the part they arrive in"
   },
   "legal": {
     "backHome": "Back to the homepage",
@@ -307,7 +328,10 @@
     "keyReplay": "replay",
     "volume": "Volume",
     "mute": "Mute",
-    "unmute": "Unmute"
+    "unmute": "Unmute",
+    "repeatEach_one": "Repeat each phrase {{count}} time",
+    "repeatEach_other": "Repeat each phrase {{count}} times",
+    "feedback": "Send feedback"
   },
   "quiz": {
     "question": "Question",
@@ -321,6 +345,7 @@
     "result": "Result",
     "return-btn": "Return",
     "tryagain": "Try Again",
+    "checkFailed": "Could not check your answer. Check your connection and pick again.",
     "correctanswers": "Correct Answers",
     "incorrectanswers": "Incorrect Answers",
     "listenFirst": "Listen to the question to unlock the answers",
@@ -365,6 +390,8 @@
       "backToPart": "Back to the part",
       "saving": "Saving your result…",
       "replay": "Hear question {{n}}",
+      "questionN": "Question {{n}}",
+      "showText": "Tap a question to read it and see the answers",
       "right": "right",
       "wrong": "wrong"
     }
@@ -421,7 +448,7 @@
     "errors": {
       "agreementsRequired": "Please accept the User Agreement and the personal-data consent to continue.",
       "passwordMismatch": "Passwords do not match",
-      "passwordLength": "Password must be at least 6 characters long",
+      "passwordLength": "Password must be at least 8 characters long",
       "invalidEmail": "Please enter a valid email address",
       "invalidPhone": "Please enter a valid Russian phone number (+7XXXXXXXXXX).",
       "tooManyAttempts": "Too many sign-up attempts. Please try again in {{minutes}} minutes.",
@@ -560,7 +587,7 @@
     },
     "errors": {
       "passwordMismatch": "Passwords do not match",
-      "passwordTooShort": "Password must be at least 6 characters long",
+      "passwordTooShort": "Password must be at least 8 characters long",
       "invalidToken": "Invalid reset token",
       "tooManyAttempts": "Too many reset requests. Please try again in {{minutes}} minutes."
     },
@@ -602,7 +629,7 @@
       "errors": {
         "wrongPassword": "The current password is incorrect.",
         "samePassword": "The new password must be different from the current one.",
-        "tooShort": "The new password must be at least 6 characters.",
+        "tooShort": "The new password must be at least 8 characters.",
         "mismatch": "The new passwords don't match.",
         "required": "Fill in all three fields.",
         "tooManyAttempts": "Too many attempts. Try again in {{minutes}} min.",
@@ -750,6 +777,46 @@
       "text": "Answer the two questions again and walk through the method. Your progress stays as it is.",
       "button": "Take the intro again",
       "error": "That didn't work. Try again."
+    },
+    "home": {
+      "sectionsLabel": "Page sections",
+      "learn": "Learning",
+      "learnHint": "words, levels, weeks",
+      "rewards": "Rewards",
+      "rewardsHint": "rank, achievements, currency",
+      "character": "Character",
+      "characterHint": "you at your school",
+      "account": "Account",
+      "levelsTitle": "Levels",
+      "levelsHint": "How many parts you have done. Tap a level to see its stories.",
+      "notStarted": "not started",
+      "partsOf_one": "{{completed}} of {{count}} part",
+      "partsOf_other": "{{completed}} of {{count}} parts",
+      "weeksTitle": "How the weeks are going",
+      "weeksHint": "Parts finished each week",
+      "rankHint": "Your rank. Next: {{rank}}",
+      "rankTop": "Your rank. It is the highest",
+      "achievementsHint": "{{earned}} of {{total}} · time, questions, streak, stories, words",
+      "walletTitle": "Currency",
+      "characterMade": "Your character",
+      "characterNew": "Make yourself",
+      "characterText": "Sits among the students at your school. Change it any time, for free.",
+      "characterEdit": "Edit",
+      "characterCreate": "Create",
+      "openSchool": "Open the school",
+      "editorClose": "Close",
+      "name": "Name",
+      "nameHint": "How others see you",
+      "password": "Password",
+      "passwordHint": "Change your sign-in password",
+      "introHint": "Two questions and how the method works. Your progress stays.",
+      "ranksSubtitle_one": "{{completed}} of {{count}} part done",
+      "ranksSubtitle_other": "{{completed}} of {{count}} parts done",
+      "toNext_one": "{{count}} more part to reach {{rank}}",
+      "toNext_other": "{{count}} more parts to reach {{rank}}",
+      "unlockAt_one": "From {{count}} part",
+      "unlockAt_other": "From {{count}} parts",
+      "fromStart": "From the start"
     }
   },
   "howToUse": {
@@ -859,7 +926,9 @@
       "title": "Guide",
       "doIt": "What you'll do",
       "then": "Then",
-      "repeat": "Repeat out loud"
+      "repeat": "Repeat out loud",
+      "why": "Why it works",
+      "onPage": "On this page"
     },
     "intro": {
       "eyebrow": "How malako works",
@@ -894,7 +963,10 @@
       "s6": {
         "title": "Answer, then advance",
         "text": "A spoken quiz — every question in a normal and a slow version. Pass it and the next story unlocks."
-      }
+      },
+      "wordsNote": "Meaning in Russian, sound in English",
+      "repeatLink": "How the recording works",
+      "speedsNote": "Three speeds: 0.65×, 0.8× and 1×"
     },
     "repeat": {
       "label": "Repeat out loud",
@@ -944,6 +1016,22 @@
       "text": "How full the glass sits is how hard the stories are. Change it whenever you like — nothing is locked behind the choice.",
       "cta": "Choose your level",
       "note": "You can switch levels at any time."
+    },
+    "given": {
+      "hear": "Hear a new word"
+    },
+    "taken": {
+      "wordExample": "квартира"
+    },
+    "shots": {
+      "player": "The malako player: a comic, a waveform cut into phrases, and the words of the part",
+      "words": "The words of a part, each with a speaker button",
+      "wave": "The story's waveform, cut into phrases",
+      "controls": "Player controls: play by phrase, speed 0.65, three repetitions",
+      "repeatBar": "The player's “Your turn: repeat” bar",
+      "comic": "The player with the story's comic above the waveform",
+      "quiz": "The spoken quiz: a play button, “again” and “slower”, four answers",
+      "repeatMode": "The player in “Repeat after me” mode, waiting for you to say the phrase"
     }
   },
   "notFound": {
@@ -977,41 +1065,41 @@
         "body": "This is your English listening story. You can use it as a plain audio player — or switch on Enhanced Mode (we highly recommend it!) for a structured, segment-by-segment workout."
       },
       {
-        "title": "Story Comics",
-        "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
-      },
-      {
         "title": "Playback Speed",
         "body": "Speed sets how fast the audio plays: 0.65×, 0.8× or 1×. Begin at 0.65×, and let your brain build real confidence rather than the illusion of it. After that, it is up to you!"
       },
       {
-        "title": "Why three speeds?",
-        "body": "Think back to being a small child. Your mother explained everything to you slowly, word by word, and only later did you follow normal fast speech. Every child hears and speaks their first language slowly at first, then speeds up gradually. The three speeds retrace that path."
-      },
-      {
         "title": "Enhanced Mode & Repeats",
         "body": "With Enhanced Mode ON, every segment repeats automatically — pick ×1, ×2 or ×3."
-      },
-      {
-        "title": "Why three repetitions?",
-        "body": "The brain rarely remembers something after hearing it once. Think of a favourite song: the part you know best is the chorus, because it comes back again and again. Hearing each phrase three times turns it into a chorus."
-      },
-      {
-        "title": "Key Vocabulary",
-        "body": "Maybe your personal dictionary is missing a few words you need. Here they are. Tap any word to hear its English pronunciation!"
-      },
-      {
-        "title": "Why are the words written in Russian?",
-        "body": "We solve the main problem first: learning to hear spoken English. English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. So first you hear the word and understand it — learning how to write it comes later."
-      },
-      {
-        "title": "Take the Quiz",
-        "body": "Once you've listened to the full story this button lights up! Take the quiz and find out how many facts you caught. Good luck!"
       }
     ],
     "stepCounter": "Step {{current}} of {{total}}",
     "next": "Next",
-    "letsGo": "Let's go!"
+    "letsGo": "Let's go!",
+    "skip": "Skip",
+    "hints": {
+      "comics": {
+        "title": "Story Comics",
+        "body": "Every story comes with illustrated comics! Press the button and follow the visuals as you listen — seeing the scenes helps your brain connect English words to real meaning, making comprehension faster and more enjoyable."
+      },
+      "speed": {
+        "title": "Why three speeds?",
+        "body": "Think back to being a small child. Your mother explained everything to you slowly, word by word, and only later did you follow normal fast speech. Every child hears and speaks their first language slowly at first, then speeds up gradually. The three speeds retrace that path."
+      },
+      "repeat": {
+        "title": "Why three repetitions?",
+        "body": "The brain rarely remembers something after hearing it once. Think of a favourite song: the part you know best is the chorus, because it comes back again and again. Hearing each phrase three times turns it into a chorus."
+      },
+      "vocabulary": {
+        "title": "Key words",
+        "body": "Tap a word to hear it in English. They are written in Russian on purpose: English spelling often doesn't match the sound and gets in the way of hearing a word as it really is. First you hear the word and understand it; writing it comes later."
+      },
+      "mic": {
+        "title": "Repeat after me",
+        "body": "Now the player waits after each sentence for you to say it aloud, then moves on by itself. That is how the sounds of a new language become your own: a phrase you have said yourself is easier for your ear to catch later. Your takes are under Practice, on the \"Hear yourself\" tile. The recording stays on this device only."
+      }
+    },
+    "gotIt": "Got it"
   },
   "storyModal": {
     "grammarFocus": "Grammar",
@@ -1033,19 +1121,33 @@
     "pdfSignInHint": "The PDF with the text, translation and words is for signed-in learners: sign in and pass this part's quiz."
   },
   "player": {
+    "aria": {
+      "openComic": "Open comic",
+      "close": "Close",
+      "resetZoom": "Reset zoom",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "audioProgress": "Audio progress",
+      "comic": "Comic"
+    },
     "vocabulary": "Vocabulary",
     "phrasal-verbs": "Phrasal verbs",
     "quiz": "Quiz",
     "quiz-bottom": "Listen until the end to open the quiz.",
     "quiz-loading": "Loading quiz...",
     "quiz-load-error": "Failed to load the quiz. Please try again.",
+    "saveProgressError": "Failed to save your progress. Please try again.",
+    "loadError": "Could not load this story. Check your connection and try again.",
+    "retry": "Retry",
     "partOf": "part {{n}} of {{total}}",
     "wordsTitle": "Words in this part",
     "wordsKnown": "{{known}} of {{total}} known",
     "wordKnown": "known",
     "wholeComic": "Whole comic",
     "phraseOf": "phrase {{n}} of {{total}}",
-    "back": "Back"
+    "back": "Back",
+    "tooEasy": "Too easy?",
+    "changeLevel": "Change level"
   },
   "character": {
     "eyebrow": "Your character",
@@ -1677,61 +1779,36 @@
   },
   "paywall": {
     "title": "This part is locked",
-    "description": "Open the whole level with a subscription — or all three at once.",
+    "description": "Buy this story, or the whole set about the character — every track is cheaper that way.",
     "locked": "Locked",
     "comingSoon": "Coming soon",
-    "loginFirst": "To subscribe, log in or sign up — we will bring you straight back here.",
+    "buyStory": "This story",
+    "buySet": "The whole set",
+    "buyLevel": "The whole level",
+    "loginFirst": "To buy, log in or sign up — we will bring you straight back here.",
     "browseShop": "See everything in the shop",
     "maybeLater": "Maybe later",
-    "signUpToContinue": "Sign up free to keep listening — we will bring you straight back here.",
-    "subscribeLevel": "{{level}} level",
-    "subscribeAll": "All three levels",
-    "pricePerPeriod_one": "{{price}} / {{count}} day",
-    "pricePerPeriod_other": "{{price}} / {{count}} days"
+    "signUpToContinue": "Sign up free to keep listening — we will bring you straight back here."
   },
   "shop": {
     "title": "Shop",
-    "subtitle": "Subscribe to one level, or to all three at once. New stories come at no extra cost.",
+    "subtitle": "A story is 29 ₽ a track. The whole set about a character is 19 ₽ a track.",
+    "packs": "Level packs",
+    "packBlurb": "Three more stories with the character you already know.",
+    "singleStories": "Single stories",
+    "owned": "Owned",
     "comingSoon": "Coming soon",
+    "addToCart": "Add",
+    "inCart": "In basket",
+    "remove": "Remove",
+    "cartTitle": "Basket",
+    "cartEmpty": "Your basket is empty.",
+    "total": "Total",
+    "checkout": "Checkout",
+    "checkoutLoginRequired": "Log in to buy",
     "paymentsDisabled": "The shop is not taking payments yet.",
-    "whatsInside": "What's inside?",
-    "plans": {
-      "label": "Subscriptions",
-      "levels": "Levels",
-      "level": {
-        "kicker": "One level",
-        "title": "{{level}} level"
-      },
-      "all": {
-        "kicker": "Everything",
-        "title": "All three levels"
-      },
-      "best": "Best value · −{{percent}}%",
-      "perPeriod_one": "for {{count}} day",
-      "perPeriod_other": "for {{count}} days",
-      "activeUntil": "Active until {{date}}",
-      "coveredByAll": "Already in your all-levels subscription — until {{date}}",
-      "subscribe": "Subscribe",
-      "renew_one": "Extend by {{count}} day",
-      "renew_other": "Extend by {{count}} days",
-      "loginToSubscribe": "Log in to subscribe",
-      "redirecting": "Going to payment…",
-      "newStoriesIncluded": "New stories open on their own, at no extra cost.",
-      "separately_one": "{{count}} level separately — {{price}}",
-      "separately_other": "{{count}} levels separately — {{price}}",
-      "footnote": "A subscription never renews or charges you on its own. Extend it any time — the new days are added to the ones left.",
-      "storiesCount_one": "{{count}} story",
-      "storiesCount_other": "{{count}} stories",
-      "tracksCount_one": "{{count}} track",
-      "tracksCount_other": "{{count}} tracks",
-      "levelsCount_one": "{{count}} level",
-      "levelsCount_other": "{{count}} levels",
-      "minutes": "{{count}} min",
-      "minutesSoFar": "{{count}} min to listen to now",
-      "moreSoon_one": "{{count}} more story coming soon",
-      "moreSoon_other": "{{count}} more stories coming soon",
-      "tracksShort": "{{count}} tr."
-    }
+    "buy": "Buy",
+    "whatsInside": "What's inside?"
   },
   "library": {
     "title": "My library",
@@ -1753,30 +1830,33 @@
     "stillProcessing": "Your payment is still being confirmed. This usually takes a moment — your library will update on its own, and you do not need to pay again.",
     "canceled": "Payment canceled",
     "canceledBody": "Nothing was charged.",
-    "successBody": "Your subscription is on — the stories are open in your library.",
+    "successBody": "Everything you bought is unlocked and waiting in your library.",
     "failedBody": "Nothing was charged. You can try again from the shop whenever you like.",
     "unlocked": "Unlocked",
     "startListening": "Start listening",
-    "itemLevel": "{{level}} level subscription",
-    "itemAll": "All-levels subscription",
-    "activeUntil": "active until {{date}}"
+    "itemSet": "Story set",
+    "itemLevel": "Whole level",
+    "itemStory": "Single story"
   },
   "shelf": {
     "title": "Stories",
     "subtitle": "Everything in the app. Yours, and the rest.",
     "filterAll": "All",
     "filterMine": "Mine",
-    "filterBuy": "Locked",
+    "filterBuy": "To buy",
     "yours": "Available",
     "freeParts": "{{count}} parts free",
     "freePreview": "{{seconds}} seconds free",
     "previewBadge": "{{seconds}} sec",
     "parts": "{{count}} parts",
     "ownedOf": "{{owned}} of {{total}}",
-    "characters": {
-      "leo": "Leo",
-      "maya": "Maya",
-      "daniel": "Daniel"
+    "wholeLevel": "All of {{level}}",
+    "levelMeta": "Every story and news item on the level",
+    "setMeta": "{{count}} tracks · {{perTrack}} a track",
+    "sets": {
+      "leo": "Everything about Leo",
+      "maya": "Everything about Maya",
+      "daniel": "Everything about Daniel"
     }
   },
   "shopPreview": {
@@ -1788,11 +1868,8 @@
     "loading": "Loading…",
     "listen": "Listen",
     "listenFree": "Listen for free",
-    "close": "Close",
-    "subscribeLevel": "{{level}} level",
-    "subscribeAll": "All levels",
-    "days_one": "{{count}} day",
-    "days_other": "{{count}} days"
+    "buyStory": "Buy the story",
+    "close": "Close"
   },
   "panelQuiz": {
     "prompt": "Listen, then tap the panel where it happens",
@@ -2127,13 +2204,6 @@
     "english": "English",
     "russian": "Russian"
   },
-  "contentStudio": {
-    "closePreview": "Close student preview",
-    "next": "Next part or prompt",
-    "noAudio": "Reference audio has not been added yet.",
-    "preview": "Student preview",
-    "previous": "Previous part or prompt"
-  },
   "iceberg": {
     "hero": {
       "checks": [
@@ -2367,7 +2437,44 @@
     "cta": {
       "title": "Hear the difference yourself",
       "button": "Try it yourself"
+    },
+    "footer": {
+      "label": "Site links",
+      "howToUse": "How to use",
+      "levels": "Levels",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
+      "consent": "Data consent"
     }
+  },
+  "helpModal": {
+    "title": "SOS",
+    "subtitle": "Sentence {{n}} of {{total}}, in short phrases",
+    "noClip": "No SOS clip for this sentence yet.",
+    "loadError": "Could not load this clip.",
+    "loading": "Loading…",
+    "prev": "Previous sentence",
+    "next": "Next sentence",
+    "play": "Play",
+    "pause": "Pause",
+    "replay": "Play again",
+    "close": "Close"
+  },
+  "signupWall": {
+    "lockLabel": "Free after sign-up",
+    "title": "The rest is free once you sign up",
+    "body": "The first parts play without an account. Sign up and the whole story opens, and your progress is kept. We will bring you back here afterwards.",
+    "signUp": "Sign up",
+    "logIn": "Already have an account? Log in",
+    "notNow": "Not now",
+    "finishedTitle": "You have finished the free parts",
+    "finishedBody": "Sign up for free to keep all your progress and listen on. We will bring you back to the story afterwards."
+  },
+  "savePrompt": {
+    "title": "Keep your progress",
+    "body": "Right now it lives only in this browser. Sign up for free and it follows you to any device.",
+    "signUp": "Sign up",
+    "dismiss": "Close"
   },
   "tabs": {
     "label": "Sections",

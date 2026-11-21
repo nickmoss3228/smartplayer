@@ -5,10 +5,10 @@ import React, {
   useMemo,
   useEffect,
 } from "react";
-import { useNavigate, useSearchParams, useParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useParams, useLocation } from "react-router-dom";
+import { TRY_IT_PATH, TRY_IT_STATE } from "../components/IcebergLanding/tryIt";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
-import axios from "axios";
 import WaveformPlayer from "../components/Player/WaveformPlayer";
 import Quiz from "../components/Quiz/Quiz";
 import { Difficulty, QuizResults, WaveSurferInstance } from "../types/Player";
@@ -18,7 +18,9 @@ import { storyKey } from "../config/priceCatalog";
 import { useCatalog } from "../context/CatalogContext";
 import { GuidedTour } from "../components/GuidedTour/GuidedTour";
 import { useTranslation } from "react-i18next";
-import { IoChatbubbleEllipsesOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { IoChatbubbleEllipsesOutline, IoCloseOutline, IoCloudDoneOutline, IoMicOffOutline, IoMicOutline } from "react-icons/io5";
+import { saveLastPlayed } from "../services/lastPlayed";
+import { SignupWallSheet } from "../components/LevelProgress/SignupWallSheet";
 import { useAppSelector } from "../hooks/hooks";
 import { useRepeatMode } from "../components/Player/hooks/useRepeatMode";
 import { RepeatModeBar } from "../components/Player/RepeatMode/RepeatModeBar";
@@ -43,7 +45,7 @@ import {
   passed as panelQuizPassed,
 } from "../modules/comicPractice/panelQuizProgress";
 import {
-  fetchPublishedStory,
+  fetchPublishedStoryStrict,
   PublishedStory,
 } from "../services/storyServices";
 import { AudioTrack } from "../types";
@@ -60,13 +62,30 @@ import { QuizQuestion } from "../types/Quiz";
 // back would make them re-listen just to see the button again.
 const getListenedKey = (difficulty: string, storySlug: string, level: number) =>
   `listenedFully_${difficulty}_${storySlug}_${level}`;
-import { API_BASE as API_BASE_URL } from "../services/apiClient";
+import { api } from "../services/apiClient";
 
 const hasListenedFullyStored = (difficulty: string, storySlug: string, level: number): boolean =>
   localStorage.getItem(getListenedKey(difficulty, storySlug, level)) === "true";
 
 const markListenedFullyStored = (difficulty: string, storySlug: string, level: number): void => {
   localStorage.setItem(getListenedKey(difficulty, storySlug, level), "true");
+};
+
+// Set once the guest has been offered to save their progress (see showSavePrompt).
+const SAVE_PROMPT_KEY = "malako:savePromptShown";
+const readFlag = (key: string): boolean => {
+  try {
+    return localStorage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+};
+const writeFlag = (key: string): void => {
+  try {
+    localStorage.setItem(key, "1");
+  } catch {
+    // private mode: the prompt may come back next time, nothing worse
+  }
 };
 
 // Used only while a DB-backed story's tracks are still being fetched (static
@@ -109,9 +128,13 @@ const Player = React.memo(() => {
   const { refreshStoryProgress, getStoryData, storyProgress, isInitialLoad } = useProgress();
 
   const navigate = useNavigate();
+  const routerLocation = useLocation();
 
   const wavesurferRef = useRef<WaveSurferInstance | null>(null);
-  const [selectedTrackId, setSelectedTrackId] = useState(level.toString());
+  // Derived, not synced in an effect, so the waveform never mounts with the
+  // previous part's audio.
+  const selectedTrackId = level.toString();
+  const [saveError, setSaveError] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showPanelQuiz, setShowPanelQuiz] = useState(false);
   // The practice window: opens by itself when a part ends, and from «Практика».
@@ -152,7 +175,7 @@ const Player = React.memo(() => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+  }, [routerLocation.pathname]);
 
   const themes: Record<Difficulty, { background: string }> = {
     easy: { background: "from-green-500 via-emerald-500 to-teal-500" },
@@ -165,8 +188,8 @@ const Player = React.memo(() => {
   // Reset per-track UI state whenever the level changes, but restore the
   // listened-gate from storage instead of always relocking it.
   useEffect(() => {
-    setSelectedTrackId(level.toString());
     setShowQuiz(false);
+    setSaveError(false);
     setShowPanelQuiz(false);
     setShowPractice(false);
     setShowReplay(false);
@@ -245,23 +268,30 @@ const Player = React.memo(() => {
   // modules/story/resolveStory.ts). Nothing plays until the server answers.
   const [dbStory, setDbStory] = useState<PublishedStory | null>(null);
   const [dbChecked, setDbChecked] = useState(false);
+  // A network/server failure (not a 404): shown with a Retry, which bumps loadAttempt.
+  const [dbLoadError, setDbLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setDbChecked(false);
-    fetchPublishedStory(difficulty, storySlug)
-      .then((story) => {
+    setDbLoadError(false);
+    const load = async () => {
+      try {
+        const story = await fetchPublishedStoryStrict(difficulty, storySlug);
         if (cancelled) return;
         setDbStory(story);
-        setDbChecked(true);
-      })
-      .catch(() => {
-        if (!cancelled) setDbChecked(true);
-      });
+      } catch {
+        if (cancelled) return;
+        setDbLoadError(true);
+      }
+      setDbChecked(true);
+    };
+    load();
     return () => {
       cancelled = true;
     };
-  }, [difficulty, storySlug]);
+  }, [difficulty, storySlug, loadAttempt]);
 
   const resolvedStory = useMemo(() => {
     const resolved = resolveStory(difficulty, storySlug, dbStory);
@@ -337,26 +367,63 @@ const Player = React.memo(() => {
     [selectedTrackId, audioTracks],
   );
 
+  // A part number the story does not have (NaN, 0, 99) would play the first
+  // track under the wrong number; once the story is here, send the learner back.
+  const levelOutOfRange =
+    dbChecked &&
+    !dbLoadError &&
+    audioTracks.length > 0 &&
+    !(Number.isInteger(level) && level >= 1 && level <= audioTracks.length);
+  useEffect(() => {
+    if (levelOutOfRange) navigate(backPath, { replace: true });
+  }, [levelOutOfRange, navigate, backPath]);
+
+  // The landing's «Продолжить» card points back here (services/lastPlayed.ts).
+  // Written only for a part that actually plays: not locked, not out of range.
+  const partPlays =
+    !!dbStory && !catalogLoading && !partLocked && !levelOutOfRange && audioTracks.length > 0;
+  useEffect(() => {
+    if (!partPlays || !dbStory) return;
+    saveLastPlayed({
+      difficulty,
+      storySlug: resolvedStorySlug,
+      part: level,
+      titles: {
+        ru: dbStory.localized?.title?.ru?.trim() || dbStory.storyName,
+        en: dbStory.localized?.title?.en?.trim() || dbStory.storyName,
+      },
+    });
+  }, [partPlays, dbStory, difficulty, resolvedStorySlug, level]);
+
+  // Arrived from the landing's «Попробуй сам», which picks the easy level for
+  // the visitor: offer the level picker in case it is the wrong one. Router
+  // state, so it is gone on the next part, a reload or a shared link.
+  const fromLanding = Boolean(
+    (routerLocation.state as { fromLanding?: boolean } | null)?.fromLanding,
+  );
+
+  // After a guest's first passed quiz, offer to keep the progress by signing
+  // up, once per browser. Their progress is in localStorage until then, and
+  // AuthContext moves it into the new account.
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  useEffect(() => setShowSavePrompt(false), [level, difficulty, storySlug]);
+
+  // A guest behind the sign-up wall plays parts 1..guestFreeParts of this
+  // story; null when nothing stops them (signed in, wall off, story open).
+  // Passing the last of those parts' quizzes is the moment to ask them to sign
+  // up: everything they did so far is kept (AuthContext migrates it).
+  const guestFreeParts =
+    !user && !paywallEnabled && signupWallEnabled && allowance && Number.isFinite(allowance.freeParts)
+      ? allowance.freeParts
+      : null;
+  const [showFinishedWall, setShowFinishedWall] = useState(false);
+  useEffect(() => setShowFinishedWall(false), [level, difficulty, storySlug]);
+
   const handleWavesurferMount = useCallback(
     (wavesurfer: WaveSurferInstance) => {
       wavesurferRef.current = wavesurfer;
     },
     [],
-  );
-
-  console.log(
-    "[Player] difficulty:",
-    difficulty,
-    "storySlug:",
-    storySlug,
-    "level:",
-    level,
-  );
-  console.log(
-    "[Player] resolved audioTrack:",
-    audioTrack?.id,
-    audioTrack?.title,
-    audioTrack?.audio,
   );
 
   // called by WaveformPlayer when the track ends
@@ -373,7 +440,7 @@ const Player = React.memo(() => {
       // they sign up later (AuthContext migrates this into their account).
       if (!user) {
         setQuizResults(results);
-        saveGuestQuizResult(
+        const saved = saveGuestQuizResult(
           difficulty,
           resolvedStorySlug,
           level,
@@ -382,6 +449,22 @@ const Player = React.memo(() => {
           audioTracks.length,
         );
         setLocalProgressTick((n) => n + 1);
+        // The free parts are all passed and the story goes on behind the wall.
+        if (
+          guestFreeParts !== null &&
+          guestFreeParts > 0 &&
+          audioTracks.length > guestFreeParts &&
+          saved.results[level]?.completed &&
+          Array.from({ length: guestFreeParts }, (_, i) => i + 1).every((p) => saved.results[p]?.completed)
+        ) {
+          writeFlag(SAVE_PROMPT_KEY);
+          setShowFinishedWall(true);
+          return;
+        }
+        if (saved.results[level]?.completed && !readFlag(SAVE_PROMPT_KEY)) {
+          writeFlag(SAVE_PROMPT_KEY);
+          setShowSavePrompt(true);
+        }
         return;
       }
 
@@ -389,20 +472,15 @@ const Player = React.memo(() => {
 
       setIsSubmitting(true);
       setQuizResults(results);
+      setSaveError(false);
 
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.post(
-          `${API_BASE_URL}/api/progress/complete`,
-          {
-            difficulty,
-            storyId: resolvedStorySlug,
-            partNumber: level,
-            answers: results.answers,
-          },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        console.log("Progress saved:", response.data);
+        const response = await api.post("/api/progress/complete", {
+          difficulty,
+          storyId: resolvedStorySlug,
+          partNumber: level,
+          answers: results.answers,
+        });
 
         // The endpoint only awards BitAward (and returns a wallet) on an
         // actual pass — push it straight into the shared cache so the navbar
@@ -412,10 +490,7 @@ const Player = React.memo(() => {
         await refreshStoryProgress(difficulty, resolvedStorySlug);
       } catch (error) {
         console.error("Failed to save progress:", error);
-        if (axios.isAxiosError(error)) {
-          console.error("Error response:", error.response?.data);
-        }
-        alert("Failed to save your progress. Please try again.");
+        setSaveError(true);
       } finally {
         setIsSubmitting(false);
       }
@@ -429,6 +504,7 @@ const Player = React.memo(() => {
       refreshStoryProgress,
       audioTracks,
       setWalletDirect,
+      guestFreeParts,
     ],
   );
 
@@ -488,6 +564,14 @@ const Player = React.memo(() => {
   const quizCount = dbStory?.parts.find((p) => p.partNumber === level)?.quiz?.length ?? 0;
   const comicQuestions = useMemo(() => (panelQuiz ? questionsFromClips(panelQuiz.clips).length : 0), [panelQuiz]);
   const completedParts = user ? getStoryData(difficulty, resolvedStorySlug).completedParts : null;
+
+  // The server pays BitAward for a part's FIRST pass only. Decided when the
+  // quiz opens, not live: passing adds the part to completedParts, which would
+  // otherwise hide the reward chip on the very pass that earned it.
+  const [quizRewardAvailable, setQuizRewardAvailable] = useState(true);
+  const partAlreadyPassed = Boolean(completedParts?.includes(level));
+  const partAlreadyPassedRef = useRef(partAlreadyPassed);
+  partAlreadyPassedRef.current = partAlreadyPassed;
 
   // ── «Повтори за мной» ─────────────────────────────────────────────────
   // After each sentence the player waits for the student to say it back —
@@ -567,8 +651,10 @@ const Player = React.memo(() => {
   const closePractice = useCallback(() => setShowPractice(false), []);
   const handlePickPractice = useCallback((kind: PracticeKind) => {
     setShowPractice(false);
-    if (kind === "quiz") setShowQuiz(true);
-    else if (kind === "words") setShowVocabQuiz(true);
+    if (kind === "quiz") {
+      setQuizRewardAvailable(!partAlreadyPassedRef.current);
+      setShowQuiz(true);
+    } else if (kind === "words") setShowVocabQuiz(true);
     else if (kind === "voice") setShowReplay(true);
     else setShowPanelQuiz(true);
   }, []);
@@ -581,14 +667,30 @@ const Player = React.memo(() => {
     },
     [difficulty, resolvedStorySlug, level],
   );
-  
-  // useEffect(() => {
-  // console.log("Audio URL being passed to WaveformPlayer:", audioTrack.audio);
-  // }, [audioTrack]);
 
   return dbStoryLoading ? (
     <div className="flex justify-center items-center h-dvh">
       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white/70" />
+    </div>
+  ) : dbLoadError ? (
+    <div
+      className={`flex h-dvh flex-col items-center justify-center gap-4 bg-gradient-to-br ${theme.background} px-6 text-center`}
+    >
+      <p role="alert" className="text-sm text-black/70">{t("player.loadError")}</p>
+      <div className="flex gap-3">
+        <button
+          onClick={() => setLoadAttempt((n) => n + 1)}
+          className="cursor-pointer rounded-[3px] bg-gray-900 px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          {t("player.retry")}
+        </button>
+        <button
+          onClick={() => navigate(backPath)}
+          className="cursor-pointer text-sm text-black/60 transition-colors hover:text-black"
+        >
+          {t("player.back")}
+        </button>
+      </div>
     </div>
   ) : (
     <div
@@ -698,6 +800,7 @@ const Player = React.memo(() => {
               {canRepeat && playerVisible && (
                 <button
                   type="button"
+                  data-tour="tour-mic"
                   onClick={repeat.toggle}
                   aria-pressed={repeat.enabled}
                   aria-label={repeat.enabled ? t("repeatMode.buttonOn") : t("repeatMode.button")}
@@ -721,7 +824,7 @@ const Player = React.memo(() => {
               )}
               <button
                 onClick={handleOpenFeedback}
-                aria-label={t("controls.feedback", "Send feedback")}
+                aria-label={t("controls.feedback")}
                 className="p-2 rounded-full text-black/50 hover:text-black/80 active:scale-95 transition-all cursor-pointer"
               >
                 <IoChatbubbleEllipsesOutline className="w-6 h-6" />
@@ -739,11 +842,56 @@ const Player = React.memo(() => {
             />
           )}
 
+          {fromLanding && playerVisible && (
+            <p className="shrink-0 px-4 text-center text-xs text-black/70 md:text-left md:px-0">
+              {t("player.tooEasy")}{" "}
+              <Link
+                to={TRY_IT_PATH}
+                state={TRY_IT_STATE}
+                className="font-semibold text-black underline underline-offset-2 hover:text-black/70"
+              >
+                {t("player.changeLevel")}
+              </Link>
+            </p>
+          )}
+
           {/* ── MIDDLE + BOTTOM: everything else lives inside WaveformPlayer now ── */}
           {showQuiz ? (
             // The quiz fills what is left of the panel, in the Practice
             // window's ink, and scrolls inside itself.
             <div className="flex-1 min-h-0 flex flex-col px-3 pb-3 md:px-0 md:pb-0">
+              {saveError && (
+                <p role="alert" className="px-4 pb-2 text-center text-xs text-red-700">
+                  {t("player.saveProgressError")}
+                </p>
+              )}
+              {showSavePrompt && !user && (
+                <div
+                  role="status"
+                  className="mb-2 flex shrink-0 items-start gap-3 rounded-[3px] bg-white px-3 py-2.5 text-left shadow-sm ring-1 ring-black/5 animate-fade-in"
+                >
+                  <IoCloudDoneOutline className="mt-0.5 h-5 w-5 shrink-0 text-black/70" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900">{t("savePrompt.title")}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-gray-600">{t("savePrompt.body")}</p>
+                    <Link
+                      to="/signup"
+                      state={{ returnTo: routerLocation.pathname + routerLocation.search }}
+                      className="mt-2 inline-flex rounded-[3px] bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                      {t("savePrompt.signUp")}
+                    </Link>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSavePrompt(false)}
+                    aria-label={t("savePrompt.dismiss")}
+                    className="-mr-1 -mt-1 cursor-pointer rounded-full p-1 text-black/50 transition-colors hover:bg-black/5 hover:text-black"
+                  >
+                    <IoCloseOutline className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
               {quizLoading || !quizQuestions ? (
                 <p className="m-auto text-center text-black/50 text-sm py-10">
                   {quizLoadError ? t("player.quiz-load-error") : t("player.quiz-loading")}
@@ -754,13 +902,21 @@ const Player = React.memo(() => {
                   difficulty={difficulty}
                   storyId={resolvedStorySlug}
                   partNumber={level}
-                  nextPart={level < audioTracks.length ? level + 1 : null}
+                  // A guest at the last free part has no next part to open
+                  // yet (it opens with an account): the result says the quiz
+                  // is passed, and the sign-up sheet takes it from there.
+                  nextPart={
+                    level < audioTracks.length && !(guestFreeParts !== null && level >= guestFreeParts)
+                      ? level + 1
+                      : null
+                  }
                   onQuizComplete={handleQuizComplete}
                   onClose={() => setShowQuiz(false)}
                   onNextPart={() =>
                     navigate(`/levels/${difficulty}/${resolvedStorySlug}/${level + 1}`)
                   }
                   isSubmitting={isSubmitting}
+                  rewardAvailable={quizRewardAvailable}
                 />
               )}
             </div>
@@ -798,7 +954,7 @@ const Player = React.memo(() => {
           ) : (
             <div className="flex-1 min-h-0 flex flex-col relative">
               <WaveformPlayer
-                key={`${difficulty}-${level}`}
+                key={`${difficulty}-${storySlug}-${level}`}
                 audioUrl={audioTrack.audio}
                 slowCopies={audioTrack.slowCopies}
                 trackId={audioTrack.id}
@@ -828,6 +984,9 @@ const Player = React.memo(() => {
         </div>
       </div>
       {showFeedback && <FeedbackModal onClose={handleCloseFeedback} />}
+      {showFinishedWall && !user && (
+        <SignupWallSheet variant="finished" returnTo={backPath} onClose={() => setShowFinishedWall(false)} />
+      )}
       {showPractice && practiceOptions.length > 0 && (
         <PracticeModal
           part={level}

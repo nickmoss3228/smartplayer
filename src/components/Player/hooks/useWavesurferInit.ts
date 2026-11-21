@@ -145,6 +145,8 @@ export const useWavesurferInit = ({
         instance.unAll();
         instance.destroy();
       }
+      // unAll() dropped the pause listener, so say it here.
+      dispatch(setIsPlaying(false));
       setIsInitialized(false);
     };
   }, [audioUrl]);

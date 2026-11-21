@@ -8,6 +8,7 @@
 // caller's entitlements, and a request with no Authorization header looks
 // anonymous. Called with bare axios (as this file used to), a paying customer
 // would be served the locked, audio-stripped version of a story they own.
+import axios from "axios";
 import { api } from "./apiClient";
 import { AudioTrack } from "../types";
 
@@ -205,6 +206,22 @@ export const fetchPublishedStory = async (
     return res.data;
   } catch {
     return null;
+  }
+};
+
+// Like fetchPublishedStory, but only a 404 means "no such story" (null). A
+// network drop or a server error throws, so the player can offer a retry
+// instead of treating a transient failure as a missing story.
+export const fetchPublishedStoryStrict = async (
+  difficulty: string,
+  storyId: string
+): Promise<PublishedStory | null> => {
+  try {
+    const res = await api.get(`/api/stories/${difficulty}/${storyId}`);
+    return res.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
   }
 };
 

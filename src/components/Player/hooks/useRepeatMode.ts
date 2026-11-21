@@ -144,7 +144,11 @@ export const useRepeatMode = ({
     pending.timer = window.setTimeout(() => settle(true), NEXT_MS);
   }, [settle, stopCapture]);
 
+  /** Counts mic requests; a result from an older one is stale and gets closed. */
+  const micTokenRef = useRef(0);
+
   const stopMic = useCallback(() => {
+    micTokenRef.current++;
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -156,6 +160,7 @@ export const useRepeatMode = ({
 
   const startMic = useCallback(async (): Promise<boolean> => {
     if (!navigator.mediaDevices?.getUserMedia || typeof AudioContext === "undefined") return false;
+    const token = ++micTokenRef.current;
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
@@ -164,8 +169,8 @@ export const useRepeatMode = ({
     } catch {
       return false;
     }
-    // Turned off while the browser was asking.
-    if (!enabledRef.current) {
+    // Turned off while the browser was asking, or a newer request replaced this one.
+    if (!enabledRef.current || token !== micTokenRef.current) {
       stream.getTracks().forEach((track) => track.stop());
       return false;
     }

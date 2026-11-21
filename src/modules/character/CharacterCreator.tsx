@@ -197,7 +197,9 @@ const TABS: Tab[] = ["skin", "hair", "clothes", "extras"];
 
 // ── The card ────────────────────────────────────────────────────────────────
 
-export const CharacterCreator = () => {
+/** `inDialog`: inside the Dashboard's full-screen editor, which has its own
+ *  title bar, so the card drops its heading and outer margin. */
+export const CharacterCreator = ({ inDialog = false }: { inDialog?: boolean }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { character, saveLook } = useCharacter();
@@ -248,15 +250,19 @@ export const CharacterCreator = () => {
     <section
       ref={card}
       id="character"
-      className="scroll-mt-20 bg-white rounded-card p-4 sm:p-6 mb-4 sm:mb-6 border border-line animate-fade-in"
+      className={`scroll-mt-20 bg-white rounded-card p-4 sm:p-6 border border-line animate-fade-in ${
+        inDialog ? "" : "mb-4 sm:mb-6"
+      }`}
     >
-      <div className="mb-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">{t("character.eyebrow")}</p>
-        <h2 className="text-[15px] sm:text-lg font-bold text-ink">
-          {made ? t("character.title") : t("character.titleNew")}
-        </h2>
-        <p className="text-sm text-dim mt-0.5">{made ? t("character.intro") : t("character.introNew")}</p>
-      </div>
+      {!inDialog && (
+        <div className="mb-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">{t("character.eyebrow")}</p>
+          <h2 className="text-[15px] sm:text-lg font-bold text-ink">
+            {made ? t("character.title") : t("character.titleNew")}
+          </h2>
+          <p className="text-sm text-dim mt-0.5">{made ? t("character.intro") : t("character.introNew")}</p>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,17rem)_1fr]">
         <Stage look={draft} wave={wave} hint={t("character.dragHint")} />

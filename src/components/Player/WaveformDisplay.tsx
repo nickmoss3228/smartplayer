@@ -100,10 +100,10 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
             </div>
 
             {/* Under the waveform rather than hung off its corners. */}
-            <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-white/80">
+            <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-black/80">
               <span id="time">{currentTime}</span>
               {activeMarkerIndex != null && timeMarkers.length > 0 && (
-                <span className="text-white/65">
+                <span className="text-black/75">
                   {t("player.phraseOf", { n: activeMarkerIndex + 1, total: timeMarkers.length })}
                 </span>
               )}
@@ -164,7 +164,7 @@ WaveformDisplay.displayName = "WaveformDisplay";
                            flex items-center justify-center
                            disabled:opacity-30 disabled:pointer-events-none
                            active:scale-95 transition shadow"
-                aria-label="Previous segment"
+                aria-label={t("controls.prevPhrase")}
               >
                 <IoChevronBack className="w-5 h-5" />
               </button>
@@ -176,7 +176,7 @@ WaveformDisplay.displayName = "WaveformDisplay";
                            flex items-center justify-center
                            disabled:opacity-30 disabled:pointer-events-none
                            active:scale-95 transition shadow"
-                aria-label="Next segment"
+                aria-label={t("controls.nextPhrase")}
               >
                 <IoChevronForward className="w-5 h-5" />
               </button>

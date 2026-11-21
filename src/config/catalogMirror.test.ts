@@ -5,10 +5,16 @@ import { SHOP_CATALOG, SHOP_SLOTS } from './shopCatalog';
 import { QUIZ_PASS_BITAWARD, PHRASE_REPEAT_BITPHRASE, CURRENCIES } from './currencies';
 import {
   CURRENCY,
+  TRACK_PRICE_MINOR,
+  SET_TRACK_PRICE_MINOR,
+  LEVEL_PRICE_MINOR,
   FREE_PARTS_LONG_STORY,
   LONG_STORY_MIN_PARTS,
   PREVIEW_SECONDS,
   freeAllowanceFor,
+  setSku,
+  storySku,
+  levelSku,
   NBSP,
   formatPrice,
 } from './priceCatalog';
@@ -34,13 +40,16 @@ import {
   BUILT_IN_CATALOG as SERVER_CATALOG,
   buildCatalog,
   CURRENCY as SERVER_CURRENCY,
-  ALL_SUBSCRIPTION_PRICE_MINOR,
-  LEVEL_SUBSCRIPTION_PRICE_MINOR,
-  SUBSCRIPTION_DAYS,
+  TRACK_PRICE_MINOR as SERVER_TRACK_PRICE_MINOR,
+  SET_TRACK_PRICE_MINOR as SERVER_SET_TRACK_PRICE_MINOR,
+  LEVEL_PRICE_MINOR as SERVER_LEVEL_PRICE_MINOR,
   FREE_PARTS_LONG_STORY as SERVER_FREE_PARTS_LONG_STORY,
   LONG_STORY_MIN_PARTS as SERVER_LONG_STORY_MIN_PARTS,
   PREVIEW_SECONDS as SERVER_PREVIEW_SECONDS,
   freeAllowanceFor as serverFreeAllowanceFor,
+  storySku as serverStorySku,
+  setSku as serverSetSku,
+  levelSku as serverLevelSku,
 } from '../../backend/src/config/priceCatalog.js';
 
 /**
@@ -167,18 +176,28 @@ describe('catalog integrity', () => {
  * that gap is what made those stories free on a logged-out shelf and unbuyable
  * in the shop.
  *
- * Since 2026-10-05 everything sold is a subscription, and the client does not
- * even spell a SKU itself: it picks plans out of the catalog by kind. So the
- * only things still duplicated are the free-allowance constants, which are
- * policy rather than data. The subscriptions are checked against the server's
- * built-in rows, which remain the fallback catalog.
+ * So these tests guard the two things that ARE still duplicated, because they
+ * are policy rather than data: the pricing constants, and the SKU spelling. The
+ * arithmetic is checked against the server's built-in rows, which remain the
+ * fallback catalog.
  */
 describe('pricing policy matches the server', () => {
-  it('agrees on every policy constant', () => {
+  it('agrees on every price constant', () => {
     expect(CURRENCY).toBe(SERVER_CURRENCY);
+    expect(TRACK_PRICE_MINOR).toBe(SERVER_TRACK_PRICE_MINOR);
+    expect(SET_TRACK_PRICE_MINOR).toBe(SERVER_SET_TRACK_PRICE_MINOR);
+    expect(LEVEL_PRICE_MINOR).toBe(SERVER_LEVEL_PRICE_MINOR);
     expect(FREE_PARTS_LONG_STORY).toBe(SERVER_FREE_PARTS_LONG_STORY);
     expect(LONG_STORY_MIN_PARTS).toBe(SERVER_LONG_STORY_MIN_PARTS);
     expect(PREVIEW_SECONDS).toBe(SERVER_PREVIEW_SECONDS);
+  });
+
+  it('spells every SKU the same way', () => {
+    // A mismatch here is unrecoverable at runtime: the client would add a SKU
+    // the server has never heard of and checkout would refuse the basket.
+    expect(storySku('easy/leo')).toBe(serverStorySku('easy/leo'));
+    expect(setSku('leo')).toBe(serverSetSku('leo'));
+    expect(levelSku('easy')).toBe(serverLevelSku('easy'));
   });
 
   it('derives the same free allowance from a story length', () => {
@@ -187,10 +206,10 @@ describe('pricing policy matches the server', () => {
     }
   });
 
-  it('gives the first 3 parts free, capped at the story length, and no timed preview', () => {
+  it('gives long stories free parts and short ones a timed preview', () => {
     expect(freeAllowanceFor(10)).toEqual({ freeParts: 3, previewSeconds: null });
-    expect(freeAllowanceFor(5)).toEqual({ freeParts: 3, previewSeconds: null });
-    expect(freeAllowanceFor(2)).toEqual({ freeParts: 2, previewSeconds: null });
+    expect(freeAllowanceFor(5)).toEqual({ freeParts: 0, previewSeconds: 30 });
+    expect(freeAllowanceFor(2)).toEqual({ freeParts: 0, previewSeconds: 30 });
   });
 });
 
@@ -211,33 +230,42 @@ describe('the server catalog prices what it sells', () => {
     }
   });
 
-  it('sells one subscription per level, then one for everything, and nothing else', () => {
-    const kinds = (PRODUCTS as PricedProduct[]).map((p) => `${p.kind}:${p.difficulty ?? ''}`);
-    expect(kinds).toEqual(['level:easy', 'level:medium', 'level:hard', 'all:']);
-    for (const p of PRODUCTS as PricedProduct[]) {
-      expect(p.durationDays, p.sku).toBe(SUBSCRIPTION_DAYS);
-      expect(p.purchasable, p.sku).toBe(true);
+  it('prices a story at 29 RUB a track - a 10-track story is 290 RUB', () => {
+    expect(getProduct(storySku('easy/leo'))?.amountMinor).toBe(29000);
+    for (const p of (PRODUCTS as PricedProduct[]).filter((p) => p.kind === 'story')) {
+      expect(p.amountMinor, p.sku).toBe(p.parts * TRACK_PRICE_MINOR);
     }
   });
 
-  it('makes one level cheaper than all three, and all three cheaper than two levels', () => {
-    for (const p of (PRODUCTS as PricedProduct[]).filter((p) => p.kind === 'level')) {
-      expect(p.amountMinor, p.sku).toBe(LEVEL_SUBSCRIPTION_PRICE_MINOR);
+  it('prices a set at 19 RUB a track, cheaper than its stories one by one', () => {
+    for (const set of (PRODUCTS as PricedProduct[]).filter((p) => p.kind === 'set')) {
+      expect(set.amountMinor, set.sku).toBe(set.parts * SET_TRACK_PRICE_MINOR);
+      const singles = set.storyKeys.reduce(
+        (sum: number, key: string) => sum + (getProduct(storySku(key))?.amountMinor ?? 0),
+        0,
+      );
+      expect(set.amountMinor, set.sku).toBeLessThan(singles);
     }
-    const all = (PRODUCTS as PricedProduct[]).find((p) => p.kind === 'all')!;
-    expect(all.amountMinor).toBe(ALL_SUBSCRIPTION_PRICE_MINOR);
-    expect(LEVEL_SUBSCRIPTION_PRICE_MINOR).toBeLessThan(ALL_SUBSCRIPTION_PRICE_MINOR);
-    expect(ALL_SUBSCRIPTION_PRICE_MINOR).toBeLessThan(2 * LEVEL_SUBSCRIPTION_PRICE_MINOR);
   });
 
-  it('puts every paid story in its level, news included, and all of them in everything', () => {
-    const all = (PRODUCTS as PricedProduct[]).find((p) => p.kind === 'all')!;
-    for (const story of SERVER_CATALOG.stories) {
-      const level = getProduct(`sub-${story.key.split('/')[0]}`);
-      expect(level?.storyKeys, story.key).toContain(story.key);
-      expect(all.storyKeys, story.key).toContain(story.key);
+  it('sells every catalog story individually', () => {
+    for (const { key } of SERVER_CATALOG.stories) {
+      expect(getProduct(storySku(key)), key).not.toBeNull();
     }
-    expect(SERVER_CATALOG.stories.some((s: { category: string }) => s.category === 'news')).toBe(true);
+  });
+
+  it('keeps news out of every character set', () => {
+    for (const set of (PRODUCTS as PricedProduct[]).filter((p) => p.kind === 'set')) {
+      for (const key of set.storyKeys) {
+        expect(getCatalogStory(key)?.category, key).toBe('general');
+      }
+    }
+  });
+
+  it('keeps the level bundle off sale until it has a real price', () => {
+    for (const level of (PRODUCTS as PricedProduct[]).filter((p) => p.kind === 'level')) {
+      expect(level.purchasable, level.sku).toBe(false);
+    }
   });
 
   it('prices the seeded stories at their real length and shelf', () => {
@@ -258,14 +286,13 @@ describe('the server catalog prices what it sells', () => {
     }
   });
 
-  it('keeps a free story out of every subscription - it is already given away', () => {
+  it('refuses to bundle a free story into a set - it is already given away', () => {
     const catalog = buildCatalog([
       { key: 'easy/a', character: 'leo', parts: 4 },
       { key: 'easy/b', character: 'leo', parts: 6, paid: false },
     ]);
-    expect(catalog.getProduct('sub-easy')?.storyKeys).toEqual(['easy/a']);
-    expect(catalog.getProduct('sub-all')?.storyKeys).toEqual(['easy/a']);
-    expect(catalog.skusGranting('easy/b')).toEqual([]);
+    expect(catalog.getProduct(setSku('leo'))?.storyKeys).toEqual(['easy/a']);
+    expect(catalog.getProduct(storySku('easy/b'))).toBeNull();
   });
 });
 

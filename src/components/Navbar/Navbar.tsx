@@ -10,14 +10,16 @@ import {
   // IoPeopleOutline,
   IoBookOutline,
 } from "react-icons/io5";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import BrandMark from "../Brand/BrandMark";
 import { useTranslation } from "react-i18next";
+import { setLanguage } from "../../i18n";
 import { useAuth } from "../../context/AuthContext";
 import { useCharacter } from "../../context/CharacterContext";
 import { useCharacterPortrait } from "../../modules/character/useCharacterPortrait";
 import FeedbackModal from "../Feedback/FeedbackModal";
 import WalletChips from "./WalletChips";
+import { useCart } from "../../context/CartContext";
 import gbFlag from "../../assets/flags/gb.svg";
 import ruFlag from "../../assets/flags/ru.svg";
 
@@ -46,7 +48,7 @@ const Navbar = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { character } = useCharacter();
-  const navigate = useNavigate();
+  const { count: cartCount } = useCart();
   const { pathname } = useLocation();
   const onLanding = pathname === "/";
   // With the hub on, a student's sections are tabs (components/TabBar): here
@@ -71,16 +73,13 @@ const Navbar = () => {
   const toggleDropdown = () => setIsDropdownOpen((prev) => !prev);
 
   const handleLanguageChange = (language: string) => {
-    i18n.changeLanguage(language === "EN" ? "en" : "ru");
+    // setLanguage fetches English first if needed (it is not in the main bundle).
+    void setLanguage(language === "EN" ? "en" : "ru");
     setCurrentLanguage(language);
     setIsDropdownOpen(false);
   };
 
-  const handleLogoClick = () => navigate(user ? (HUB_ENABLED ? "/home" : "/levels") : "/");
-  const handleGuideClick = () => {
-    navigate("/how-to-use");
-    setIsDropdownOpen(false);
-  };
+  const handleGuideClick = () => setIsDropdownOpen(false);
   const handleFeedbackClick = () => {
     setIsFeedbackOpen(true);
     setIsDropdownOpen(false);
@@ -93,8 +92,8 @@ const Navbar = () => {
           <div className="flex items-center justify-between h-13">
 
             <div className="flex items-center">
-              <button
-                onClick={handleLogoClick}
+              <Link
+                to={user ? (HUB_ENABLED ? "/home" : "/levels") : "/"}
                 className="flex items-center gap-2 cursor-pointer text-black hover:text-gray-500 transition-colors duration-200"
                 aria-label={t("brand")}
               >
@@ -107,7 +106,7 @@ const Navbar = () => {
                     {t("brand")}
                   </span>
                 )}
-              </button>
+              </Link>
 
               {hubTabs && (
                 <ul aria-label={t("tabs.label")} className="hidden lg:flex m-0 ml-8 p-0 list-none items-center gap-1">
@@ -140,13 +139,13 @@ const Navbar = () => {
 
               {/* The school is a tab while the hub is on. */}
               {user && !hubTabs && (
-                <button
-                  onClick={() => navigate("/room")}
+                <Link
+                  to="/room"
                   title={t("navbar.room")}
                   className="cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
                 >
                   <IoHomeOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
-                </button>
+                </Link>
               )}
 
               {/* {user && (
@@ -164,26 +163,41 @@ const Navbar = () => {
                   each card and "mine" is a filter, so two buttons would lead to
                   the same page twice.
 
-                  Ungated: a visitor browses the plans before signing up, and
-                  only subscribing needs an account.
+                  Ungated: a visitor browses and fills a basket before signing
+                  up, and only checkout needs an account.
 
                   Kept away from WalletChips deliberately. Those are BitAward /
                   BitWord / BitPhrase, earned by studying; this leads to stories
                   bought with rubles. Adjacency is most of what makes two
                   balances read as one. */}
               {SHOP_ENABLED && (
-              <button
-                onClick={() => navigate("/stories")}
+              <Link
+                to="/stories"
                 title={t("navbar.stories")}
-                aria-label={t("navbar.stories")}
+                aria-label={
+                  cartCount > 0
+                    ? `${t("navbar.stories")} (${cartCount})`
+                    : t("navbar.stories")
+                }
                 className="relative cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
               >
                 <IoBookOutline className="w-6 h-6 text-gray-600 hover:text-black transition-colors" />
-              </button>
+                {/* A basket you cannot see is a basket you forget. The count is
+                    also in the aria-label above, since a badge is decorative to
+                    a screen reader. */}
+                {cartCount > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gray-900 px-1 text-[10px] font-bold leading-none text-white tabular-nums"
+                  >
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
               )}
 
-              <button
-                onClick={() => navigate("/dashboard")}
+              <Link
+                to="/dashboard"
                 title={t("navbar.dashboard")}
                 className="cursor-pointer p-1.5 rounded-[3px] hover:bg-gray-100 transition-colors duration-200"
               >
@@ -196,7 +210,7 @@ const Navbar = () => {
                 ) : (
                   <IoPersonCircleOutline className="w-7 h-7 text-gray-600 hover:text-black transition-colors" />
                 )}
-              </button>
+              </Link>
 
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -229,13 +243,14 @@ const Navbar = () => {
                       </>
                     )}
 
-                    <button
+                    <Link
+                      to="/how-to-use"
                       onClick={handleGuideClick}
                       className="w-full flex cursor-pointer items-center px-4 py-2 text-sm text-black hover:bg-gray-100 transition-colors duration-200"
                     >
                       <IoBookOutline className="w-4 h-4 mr-3" />
                       {t("navbar.guide")}
-                    </button>
+                    </Link>
 
                     <button
                       onClick={handleFeedbackClick}

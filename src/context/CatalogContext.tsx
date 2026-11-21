@@ -4,9 +4,10 @@
 // GET /api/catalog — see that controller for why the catalog stopped being
 // bundled with the frontend.
 //
-// Everything sold is a subscription — one level, or all of them — so the
-// helpers below are lookups, not arithmetic: a subscription's price does not
-// depend on who is buying it. What is NOT here is anything that decides access:
+// The helper surface below (getProduct / getCatalogStory / skusGranting /
+// priceFor / collapseBasket) is deliberately the same shape the bundled
+// config/priceCatalog.ts used to export, so consumers changed where they import
+// from and nothing else. What is NOT here is anything that decides access:
 // `owns` stays in EntitlementsContext, and the audio gate stays on the server.
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
@@ -16,6 +17,7 @@ import {
   type CatalogProduct,
   type CatalogStory,
 } from "../services/catalogServices";
+import { SET_TRACK_PRICE_MINOR } from "../config/priceCatalog";
 
 interface CatalogContextValue {
   currency: string;
@@ -33,12 +35,14 @@ interface CatalogContextValue {
   catalogLoading: boolean;
   getProduct: (sku: string) => CatalogProduct | null;
   getCatalogStory: (key: string) => CatalogStory | null;
-  /** Which SKUs unlock a story — smallest scope first: its level, then all. */
+  /** Which SKUs unlock a story — smallest scope first: story, set, level. */
   skusGranting: (key: string) => string[];
-  /** The subscription to one level, if that level has anything paid on it. */
-  levelSubscription: (difficulty: string) => CatalogProduct | null;
-  /** The subscription to every level. */
-  allSubscription: CatalogProduct | null;
+  /** The character set a story belongs to, if any — the shop's upsell. */
+  setForStory: (key: string) => CatalogProduct | null;
+  /** What a buyer pays, given what they already own. Mirrors the server. */
+  priceFor: (product: CatalogProduct | null, ownedStoryKeys?: readonly string[]) => number;
+  /** Drops basket items another item already covers. Mirrors the server. */
+  collapseBasket: (skus: readonly string[]) => { kept: string[]; dropped: string[] };
   refreshCatalog: () => Promise<void>;
 }
 
@@ -48,8 +52,9 @@ const EMPTY: CatalogContextValue = {
   getProduct: () => null,
   getCatalogStory: () => null,
   skusGranting: () => [],
-  levelSubscription: () => null,
-  allSubscription: null,
+  setForStory: () => null,
+  priceFor: () => 0,
+  collapseBasket: (skus) => ({ kept: [...new Set(skus)], dropped: [] }),
   refreshCatalog: async () => {},
 };
 
@@ -81,6 +86,8 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const byKey = new Map(data.stories.map((s) => [s.key, s]));
 
     const getProduct = (sku: string) => bySku.get(sku) ?? null;
+    const partsOf = (keys: readonly string[]) =>
+      keys.reduce((sum, key) => sum + (byKey.get(key)?.parts ?? 0), 0);
 
     return {
       currency: data.currency,
@@ -95,9 +102,47 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
         byKey.get(key)?.paid === true
           ? data.products.filter((p) => p.storyKeys.includes(key)).map((p) => p.sku)
           : [],
-      levelSubscription: (difficulty: string) =>
-        data.products.find((p) => p.kind === "level" && p.difficulty === difficulty) ?? null,
-      allSubscription: data.products.find((p) => p.kind === "all") ?? null,
+      setForStory: (key: string) =>
+        data.products.find((p) => p.kind === "set" && p.storyKeys.includes(key)) ?? null,
+      // A set charges only for the tracks the buyer does not own yet, so someone
+      // who bought one story and then wants the rest is never sold it twice.
+      priceFor: (product, ownedStoryKeys = []) => {
+        if (!product) return 0;
+        if (product.kind !== "set") return product.amountMinor;
+        const owned = new Set(ownedStoryKeys);
+        return partsOf(product.storyKeys.filter((k) => !owned.has(k))) * SET_TRACK_PRICE_MINOR;
+      },
+      // Widest scope wins; between two items granting the same stories, the
+      // cheaper is kept. Unknown SKUs pass through for the server to reject.
+      collapseBasket: (skus) => {
+        const unique = [...new Set(skus)];
+        const ranked = unique
+          .filter((sku) => getProduct(sku))
+          .sort((a, b) => {
+            const pa = getProduct(a)!;
+            const pb = getProduct(b)!;
+            return (
+              pb.storyKeys.length - pa.storyKeys.length ||
+              pa.amountMinor - pb.amountMinor ||
+              a.localeCompare(b)
+            );
+          });
+
+        const covered = new Set<string>();
+        const dropped = new Set<string>();
+        for (const sku of ranked) {
+          const keys = getProduct(sku)!.storyKeys;
+          if (keys.length > 0 && keys.every((k) => covered.has(k))) {
+            dropped.add(sku);
+            continue;
+          }
+          for (const key of keys) covered.add(key);
+        }
+        return {
+          kept: unique.filter((s) => !dropped.has(s)),
+          dropped: unique.filter((s) => dropped.has(s)),
+        };
+      },
       refreshCatalog: load,
     };
   }, [data, catalogLoading, load]);

@@ -77,6 +77,20 @@
 .ib-intro.ib-go .ib-berg-wrap { animation: ib-enter-berg 1.1s cubic-bezier(.16, 1, .3, 1) 420ms backwards; }
 .ib-intro.ib-go .ib-down { animation-delay: 720ms; }
 .ib-intro.ib-go .ib-q-check { animation-name: ib-enter-dim; }
+/* Phones: the same order on a tighter beat, so all three lines (the two
+   checks and the pain line) are in place within about a second of the start.
+   On desktop the slower cascade has room to breathe; on a phone the pain line
+   used to land last of all, well after the reader had started scrolling. */
+@media (max-width: 640px) {
+  .ib-intro.ib-go :is(.ib-mark, .ib-brand, .ib-slogan, .ib-q-check, .ib-q-pain, .dv-hero-cta, .ib-down) { animation-duration: .6s; }
+  .ib-intro.ib-go .ib-slogan { animation-delay: 40ms; }
+  .ib-intro.ib-go .ib-q-check:nth-child(1) { animation-delay: 80ms; }
+  .ib-intro.ib-go .ib-q-check:nth-child(2) { animation-delay: 130ms; }
+  .ib-intro.ib-go .ib-q-pain { animation-duration: .65s; animation-delay: 200ms; }
+  .ib-intro.ib-go .dv-hero-cta { animation-delay: 300ms; }
+  .ib-intro.ib-go .ib-berg-wrap { animation-delay: 300ms; }
+  .ib-intro.ib-go .ib-down { animation-delay: 450ms; }
+}
 /* not ib-rise: the bubbles below already own that name */
 @keyframes ib-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @keyframes ib-enter-dim { from { opacity: 0; transform: translateY(16px); } to { opacity: .7; transform: none; } }
@@ -478,9 +492,9 @@ button.ib-lk-ex:active { transform: translateY(1px); }
 
 /* the dark bands: the section's own text turns white, the cards keep theirs */
 .dv-dark :is(.ib-h2, .ib-outro, .ib-pc-rtitle) { color: #fff; }
-.dv-dark .ib-sp-ratio { color: #9fd4ff; }
+.dv-dark .ib-sp-ratio { color: #c4e5ff; }
 .dv-dark :is(.ib-link-lead, .ib-pc-rtext) { color: rgba(255, 255, 255, .84); }
-.dv-dark .ib-pc-share:not(.ib-h2 *) { color: #9fd4ff; }
+.dv-dark .ib-pc-share:not(.ib-h2 *) { color: #c4e5ff; }
 .dv-dark .ib-pc-rnum { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .4); }
 .dv-dark :is(.ib-card, .ib-lk-phrase) { color: var(--ink); border-color: transparent; box-shadow: 0 28px 56px -30px rgba(0, 0, 0, .75); }
 .dv-z1 .ib-card { border-color: transparent; box-shadow: 0 18px 40px -26px rgba(13, 58, 92, .55); }
@@ -780,6 +794,10 @@ button.dv-aw-btn:hover { background: #e9eff4; }
 .dv-final-3d { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--sky) * 2); -webkit-mask-image: linear-gradient(180deg, #000 calc(50% + 4px), transparent calc(50% + 34px)); mask-image: linear-gradient(180deg, #000 calc(50% + 4px), transparent calc(50% + 34px)); }
 .dv-final-notes { position: relative; z-index: 1; margin-top: var(--sky); padding: 30px var(--gutter) 28px; display: grid; gap: 10px; justify-items: center; text-align: center; }
 .dv-final-notes .ib-micro { color: var(--sea); }
+/* Footer links: the same mono micro-type as the notes above, in one wrapping row. */
+.ib-footer-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-top: 14px; }
+.ib-footer-nav a { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .15s; }
+.ib-footer-nav a:hover, .ib-footer-nav a:focus-visible { text-decoration-color: currentColor; }
 .dv-final-svg { display: block; width: 100%; height: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -826,4 +844,6 @@ button.dv-aw-btn:hover { background: #e9eff4; }
 }
 /* on the dark water the pane only needs a breath of light, not more dark */
 .ib[data-skin="deep"] .dv-dark :is(.ib-card, .ib-lk-phrase) { background: rgba(255, 255, 255, .08); }
+/* the light pane over #2a6390 is the weakest ground: the greys inside it lighten to stay above 4.5:1 */
+.ib[data-skin="deep"] .dv-dark :is(.ib-card, .ib-lk-phrase) { --dim: rgba(255, 255, 255, .9); --muted: rgba(255, 255, 255, .72); --green-ink: #b8f8d3; }
 .ib[data-skin="deep"] .dv-fix-after .dv-fix-card { background: rgba(6, 46, 44, .72); }

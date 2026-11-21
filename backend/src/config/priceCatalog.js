@@ -17,38 +17,25 @@
 // lock every paying customer out of content they bought. Once the story table
 // is seeded the store prefers it, and edits in /admin take effect immediately.
 //
-// ── The pricing model: subscriptions ─────────────────────────────────────────
+// ── The pricing model ────────────────────────────────────────────────────────
 //
-//   one level     sub-easy · sub-medium · sub-hard   every story on that level
-//   all levels    sub-all                            every story in the catalog
+//   one track            29 ₽   a story costs 29 ₽ × its parts (10 parts = 290 ₽)
+//   in a character set   19 ₽   per track, for every story about one character
+//   a whole level        placeholder — not for sale until a price is decided
 //
-// Each runs for SUBSCRIPTION_DAYS. Buying it again while it is live ADDS the
-// days to the end rather than restarting the clock (helpers/settlePayment.js),
-// so renewing early never costs anyone time. Nothing renews by itself: there
-// is no saved card, and the next period is a new purchase.
+// A row may override any of it: priceMinor replaces the per-track arithmetic,
+// and freeParts/previewSeconds replace the length-derived allowance. Null means
+// "derive it", which is why most rows carry nothing.
 //
-// A subscription covers its stories by LEVEL, not by list, so a story
-// published tomorrow is inside every live subscription the moment it appears —
-// that, and stories not being sold one at a time any more, is the point of the
-// model (2026-10-05). Per-story and per-character purchases are gone; so is
-// the row's priceMinor column as far as pricing goes (it is still stored, and
-// ignored).
-//
-// freeParts/previewSeconds on a row still replace the length-derived free
-// allowance. Null means "derive it", which is why most rows carry nothing.
+// Nothing is dated. Every purchase is permanent; the 90-day all-access pass
+// this file used to sell is gone.
 //
 // ── What is free ─────────────────────────────────────────────────────────────
 //
-// The same for guests and signed-in users: every story gives its first
-// FREE_PARTS_LONG_STORY parts away in full — 3 of a 10-part story, 3 of a
-// 5-part one, and BOTH parts of a 2-part one (a story shorter than the
-// allowance is simply free to listen to). See freeAllowanceFor().
-//
-// There used to be a 30-second preview of part 1 for anything under
-// LONG_STORY_MIN_PARTS. It is gone from the default (2026-09-23): a timed
-// snippet that cuts off mid-sentence was a worse first taste than whole parts.
-// An admin can still set previewSeconds on a row by hand, so the machinery for
-// it (PREVIEW_SECONDS, isPreviewPart, the player's cut-off) stays.
+// The same for guests and signed-in users: a story of LONG_STORY_MIN_PARTS or
+// more gives its first FREE_PARTS_LONG_STORY parts away. A shorter story gives
+// nothing away except a PREVIEW_SECONDS listen of part 1, which the player
+// stops. See freeAllowanceFor().
 //
 // A row with `paid: false` is free outright — every part, to everyone. That is
 // the ONLY way a story becomes free now. A story the catalog has never heard of
@@ -73,27 +60,29 @@ export const CURRENCY = "RUB";
  */
 export const storyKey = (difficulty, storyId) => `${difficulty}/${storyId}`;
 
-/** How long one purchase of a subscription runs. */
-export const SUBSCRIPTION_DAYS = 30;
+export const TRACK_PRICE_MINOR = 2900; // 29 ₽ per track, bought as a story
+export const SET_TRACK_PRICE_MINOR = 1900; // 19 ₽ per track, bought as a set
 /**
- * PLACEHOLDER PRICES — nobody has decided these yet. The only rule they
- * encode is the shape: one level is cheaper than all three, and all three cost
- * less than two levels bought separately, so "everything" is the obvious pick
- * for anyone who wants more than one level.
+ * The whole-level bundle: 999 ₽.
+ *
+ * STILL UNSELLABLE (levelProduct sets purchasable: false), and the reason is
+ * arithmetic rather than policy: at today's content it costs MORE than buying
+ * every story on the level one at a time —
+ *
+ *   easy    33 parts   individually 957 ₽   at the set rate 627 ₽
+ *   medium  25 parts   individually 725 ₽   at the set rate 475 ₽
+ *   hard    25 parts   individually 725 ₽   at the set rate 475 ₽
+ *
+ * A "bundle" that is a worse deal than its parts is one nobody should be sold,
+ * so turning it on wants a price under the set rate for the SMALLEST level
+ * (475 ₽ today), or a per-level price rather than one number for all three.
+ * Recompute before flipping it on: these totals move whenever a story is
+ * published, because the level's storyKeys come from the catalog.
  */
-export const LEVEL_SUBSCRIPTION_PRICE_MINOR = 19900; // 199 ₽ / 30 days, one level
-export const ALL_SUBSCRIPTION_PRICE_MINOR = 34900; // 349 ₽ / 30 days, every level
-
-export const levelSubscriptionSku = (difficulty) => `sub-${difficulty}`;
-export const ALL_SUBSCRIPTION_SKU = "sub-all";
-
-/** Shop order for the level subscriptions; anything else sorts after. */
-const DIFFICULTY_ORDER = ["easy", "medium", "hard"];
+export const LEVEL_PRICE_MINOR = 99900;
 
 export const FREE_PARTS_LONG_STORY = 3;
-/** No longer decides the allowance (see freeAllowanceFor); kept for callers. */
 export const LONG_STORY_MIN_PARTS = 10;
-/** Only used when an admin sets a preview on a row by hand. */
 export const PREVIEW_SECONDS = 30;
 
 /**
@@ -103,22 +92,26 @@ export const PREVIEW_SECONDS = 30;
  *   previewSeconds  when not null, part 1 plays for this long and then stops
  *
  * This is the DEFAULT, applied when a row does not state its own allowance.
- * Capped at the story's length, so a 2-part story reports 2, not 3 — callers
- * compare freeParts against totalParts, and "3 free of 2" would read as a lie.
  */
 export function freeAllowanceFor(totalParts) {
-  const parts = Math.max(0, Number(totalParts) || 0);
-  return { freeParts: Math.min(FREE_PARTS_LONG_STORY, parts), previewSeconds: null };
+  return Number(totalParts) >= LONG_STORY_MIN_PARTS
+    ? { freeParts: FREE_PARTS_LONG_STORY, previewSeconds: null }
+    : { freeParts: 0, previewSeconds: PREVIEW_SECONDS };
 }
+
+export const storySku = (key) => `story-${key.replace("/", "-")}`;
+export const setSku = (character) => `set-${character}`;
+export const levelSku = (difficulty) => `level-${difficulty}`;
 
 const difficultyOf = (key) => key.split("/")[0];
 
 /**
  * One catalog row, with every optional field resolved.
  *
- * `ready: false` marks content whose audio does not exist yet. It is still
- * inside its level's subscription — so it opens for every subscriber the day
- * it is released — but a subscription with nothing ready in it is not sold.
+ * `ready: false` is the safety catch on content whose audio does not exist yet.
+ * The server refuses to price a SKU that is not purchasable, so a placeholder
+ * cannot be sold by accident. Staging opens them via PURCHASABLE_SKUS
+ * (config/env.js). Flip to true only once the audio plays.
  */
 function normalizeRow(row) {
   const parts = Number(row.parts) || 0;
@@ -132,11 +125,14 @@ function normalizeRow(row) {
     ready: row.ready !== false,
     extension: row.extension === true,
     paid,
-    // Total listening time, when every part has been measured. Display only.
-    durationSeconds: Number.isFinite(row.durationSeconds) ? row.durationSeconds : null,
-    // A free story gives everything away, whatever the row says — otherwise a
-    // stale freeParts could resurrect a paywall on content an admin has
-    // deliberately opened up.
+    // A free story has no price and gives everything away, whatever the row
+    // says — otherwise a stale priceMinor could resurrect a paywall on content
+    // an admin has deliberately opened up.
+    amountMinor: paid
+      ? (row.priceMinor ?? null) !== null
+        ? Number(row.priceMinor)
+        : parts * TRACK_PRICE_MINOR
+      : 0,
     freeParts: !paid
       ? parts
       : (row.freeParts ?? null) !== null
@@ -162,55 +158,87 @@ export function buildCatalog(rows) {
   const stories = rows.map(normalizeRow);
   const byKey = new Map(stories.map((s) => [s.key, s]));
 
-  // Every paid story is inside a subscription, news and not-yet-released ones
-  // included. A story whose free parts already cover it whole is in there too:
-  // it adds nothing to the price, which no longer depends on what is inside.
-  const paid = stories.filter((s) => s.paid);
-
   const partsOf = (keys) => keys.reduce((sum, key) => sum + (byKey.get(key)?.parts ?? 0), 0);
-  const anyReady = (keys) => keys.some((key) => byKey.get(key)?.ready === true);
+  const setPriceOf = (keys) =>
+    keys.reduce((sum, key) => sum + (byKey.get(key)?.parts ?? 0) * SET_TRACK_PRICE_MINOR, 0);
+  const allReady = (keys) => keys.every((key) => byKey.get(key)?.ready === true);
 
-  const subscription = (fields, storyKeys, amountMinor) => ({
-    ...fields,
-    storyKeys,
-    parts: partsOf(storyKeys),
-    amountMinor,
-    durationDays: SUBSCRIPTION_DAYS,
-    // Sold once there is something in it to listen to.
-    purchasable: anyReady(storyKeys),
+  const storyProduct = (s) => ({
+    sku: storySku(s.key),
+    kind: "story",
+    storyKey: s.key,
+    storyKeys: [s.key],
+    parts: s.parts,
+    amountMinor: s.amountMinor,
+    durationDays: null,
+    purchasable: s.ready && s.paid,
   });
 
-  const rank = (difficulty) => {
-    const i = DIFFICULTY_ORDER.indexOf(difficulty);
-    return i === -1 ? DIFFICULTY_ORDER.length : i;
+  // A set is a character's STORIES, never the news that happens to feature
+  // them: the news shelf is sold separately. Free stories are left out too —
+  // a bundle must not charge for something already given away.
+  const sellable = stories.filter((s) => s.paid);
+  const characters = [...new Set(sellable.map((s) => s.character))].filter(Boolean);
+  const setProduct = (character) => {
+    const storyKeys = sellable
+      .filter((s) => s.character === character && s.category === "general")
+      .map((s) => s.key);
+    return {
+      sku: setSku(character),
+      kind: "set",
+      character,
+      storyKeys,
+      parts: partsOf(storyKeys),
+      amountMinor: setPriceOf(storyKeys),
+      durationDays: null,
+      purchasable: storyKeys.length > 0 && allReady(storyKeys),
+    };
   };
-  const difficulties = [...new Set(paid.map((s) => difficultyOf(s.key)))].sort(
-    (a, b) => rank(a) - rank(b),
-  );
 
-  const levelProducts = difficulties.map((difficulty) =>
-    subscription(
-      { sku: levelSubscriptionSku(difficulty), kind: "level", difficulty },
-      paid.filter((s) => difficultyOf(s.key) === difficulty).map((s) => s.key),
-      LEVEL_SUBSCRIPTION_PRICE_MINOR,
-    ),
-  );
-  const allProduct = subscription(
-    { sku: ALL_SUBSCRIPTION_SKU, kind: "all" },
-    paid.map((s) => s.key),
-    ALL_SUBSCRIPTION_PRICE_MINOR,
-  );
+  const difficulties = [...new Set(sellable.map((s) => difficultyOf(s.key)))];
+  const levelProduct = (difficulty) => {
+    const storyKeys = sellable.filter((s) => difficultyOf(s.key) === difficulty).map((s) => s.key);
+    return {
+      sku: levelSku(difficulty),
+      kind: "level",
+      difficulty,
+      storyKeys,
+      parts: partsOf(storyKeys),
+      amountMinor: LEVEL_PRICE_MINOR,
+      durationDays: null,
+      // Off until the price is decided: at the placeholder it costs more than
+      // buying the whole level track by track.
+      purchasable: false,
+    };
+  };
 
-  // Smallest scope first, so skusGranting() reads "this level, or everything".
-  const products = paid.length > 0 ? [...levelProducts, allProduct] : [];
+  const products = [
+    ...sellable.map(storyProduct),
+    ...characters.map(setProduct),
+    ...difficulties.map(levelProduct),
+  ];
   const bySku = new Map(products.map((p) => [p.sku, p]));
 
   const getProduct = (sku) => bySku.get(sku) ?? null;
 
   /**
-   * Drops basket items that another item in the same basket already covers —
-   * a level next to the all-levels subscription. Charging for both is the
-   * overcharge that ends in a chargeback.
+   * What this buyer pays for a product, given the stories they already own.
+   *
+   * A set charges only for the tracks the buyer does not have yet, so someone
+   * who bought one story and then wants the rest is never sold that story
+   * twice. Everything else is its catalog price.
+   */
+  const priceFor = (product, ownedStoryKeys = []) => {
+    if (!product) return 0;
+    if (product.kind !== "set") return product.amountMinor;
+    const owned = new Set(ownedStoryKeys);
+    return setPriceOf(product.storyKeys.filter((key) => !owned.has(key)));
+  };
+
+  /**
+   * Drops basket items that another item in the same basket already covers — a
+   * story alongside its set, a set alongside its level. Charging for both is
+   * the overcharge that ends in a chargeback.
    *
    * Widest scope wins; between two items granting the same stories, the cheaper
    * one is kept. Unknown SKUs are passed through untouched for the caller to
@@ -252,6 +280,8 @@ export function buildCatalog(rows) {
     getCatalogStory: (key) => byKey.get(key) ?? null,
     /** Every story the catalog knows, sold or free. */
     storyKeys: stories.map((s) => s.key),
+    /** Only the ones that cost money. */
+    paidStoryKeys: sellable.map((s) => s.key),
     /** A story nobody sells — explicitly marked free — is free to everyone. */
     isPaidStory: (key) => byKey.get(key)?.paid === true,
     /** Does the catalog know this story at all? Unknown means refused. */
@@ -259,18 +289,15 @@ export function buildCatalog(rows) {
     getProduct,
     /**
      * Which SKUs unlock a given story — what the paywall offers. Smallest
-     * scope first: its level, then everything.
+     * scope first: the story, then its set, then its level.
      */
     skusGranting: (key) =>
       byKey.get(key)?.paid === true
         ? products.filter((p) => p.storyKeys.includes(key)).map((p) => p.sku)
         : [],
-    /**
-     * The story keys a SKU grants. A row for a SKU the catalog no longer sells
-     * — the per-story and per-character purchases before 2026-10-05 — grants
-     * nothing.
-     */
+    /** The story keys a SKU grants. */
     storiesGrantedBy: (sku) => getProduct(sku)?.storyKeys ?? [],
+    priceFor,
     collapseBasket,
   };
 }
@@ -282,7 +309,8 @@ export function buildCatalog(rows) {
  * here means a fresh checkout, a fresh database, or a failed DB read still
  * prices the content that actually exists rather than refusing all of it.
  *
- * `parts` must match the real part count: it sets the free allowance.
+ * `parts` must match the real part count: it sets the price and the free
+ * allowance.
  */
 const entry = (key, character, parts, options = {}) => ({ key, character, parts, ...options });
 

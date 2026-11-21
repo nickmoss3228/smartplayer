@@ -79,6 +79,7 @@ const sameDraft = (a: Draft, b: Draft) => JSON.stringify(a) === JSON.stringify(b
 
 const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorProps) => {
   const { i18n } = useTranslation();
+  const { t: ts } = useTranslation("studio");
 
   const saved = part.intro ?? null;
   const baseline = useMemo(() => toDraft(saved), [saved]);
@@ -128,9 +129,9 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
     grammarLines(draft.grammar[id]).some((line) => line.length > LIMITS.grammarLine),
   );
   const grammarProblem = tooManyGrammar
-    ? `${tooManyGrammar.label}: at most ${LIMITS.grammarLines} grammar points.`
+    ? ts("content.intro.grammarMax", { lang: ts(`common.languages.${tooManyGrammar.id}`), max: LIMITS.grammarLines })
     : longGrammar
-      ? `${longGrammar.label}: a grammar point is longer than ${LIMITS.grammarLine} characters.`
+      ? ts("content.intro.grammarLong", { lang: ts(`common.languages.${longGrammar.id}`), max: LIMITS.grammarLine })
       : "";
 
   const setField = (field: "title" | "description" | "grammar" | "tip", locale: PreviewLocale, value: string) =>
@@ -144,7 +145,7 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
       onPartUpdated(await savePartIntro(token, story._id, part.partNumber, intro));
       setNotice(message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the preview card.");
+      setError(err instanceof Error ? err.message : ts("content.intro.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -157,7 +158,7 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
       const url = await uploadPartAsset(token, story._id, part.partNumber, file, "intro");
       setDraft((d) => ({ ...d, imageUrl: url }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Image upload failed.");
+      setError(err instanceof Error ? err.message : ts("content.intro.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -166,12 +167,12 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
   // What the header image will be, in the dialog's own order.
   const effectiveImage = draft.imageUrl || part.comicUrl || story.coverUrl || "";
   const imageSource = draft.imageUrl
-    ? "Its own image"
+    ? ts("content.intro.sourceOwn")
     : part.comicUrl
-      ? "This part's comic page"
+      ? ts("content.intro.sourceComic")
       : story.coverUrl
-        ? "The story's card image"
-        : "No image yet — the card shows the level colour";
+        ? ts("content.intro.sourceCover")
+        : ts("content.intro.sourceNone");
 
   // The dialog exactly as the level page will draw it, from the form as it
   // stands — unsaved edits included, so the check comes before the save.
@@ -194,30 +195,26 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
   return (
     <div className="space-y-4">
       <p className="text-xs text-gray-500 max-w-2xl">
-        Opens when a student taps part {part.partNumber} on the level page, before they start
-        listening. Anything left empty is filled in for them: the title from the part name, the
-        description from the story&rsquo;s.
+        {ts("content.intro.help", { n: part.partNumber })}
       </p>
 
       {/* A draft is invisible to students, its cards included. Said here so an
           edit that "did nothing" is not a mystery. */}
       {!story.published && (
         <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-3 text-xs text-gray-600 max-w-2xl">
-          This story is a draft, so students do not see this card yet. It goes live when the story
-          is published.
-          &ldquo;See it as students do&rdquo; below shows it now.
+          {ts("content.intro.draftNote")}
         </div>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {LOCALES.map(({ id, label }) => (
+        {LOCALES.map(({ id }) => (
           <fieldset key={id} className="bg-white rounded-[3px] border border-gray-200 p-3 space-y-3 min-w-0">
             <legend className="font-mono text-[11px] uppercase tracking-[0.18em] text-gray-500 px-1">
-              {label}
+              {ts(`common.languages.${id}`)}
             </legend>
 
             <label className="block">
-              <span className="block text-xs text-gray-500 mb-1">Title</span>
+              <span className="block text-xs text-gray-500 mb-1">{ts("content.intro.title")}</span>
               <input
                 type="text"
                 value={draft.title[id]}
@@ -229,12 +226,12 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
             </label>
 
             <label className="block">
-              <span className="block text-xs text-gray-500 mb-1">What happens in this part</span>
+              <span className="block text-xs text-gray-500 mb-1">{ts("content.intro.description")}</span>
               <textarea
                 value={draft.description[id]}
                 maxLength={LIMITS.description}
                 onChange={(e) => setField("description", id, e.target.value)}
-                placeholder={storyDescription(id) || "Empty: the dialog shows the story description."}
+                placeholder={storyDescription(id) || ts("content.intro.descriptionPlaceholder")}
                 rows={4}
                 className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
               />
@@ -242,24 +239,24 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
 
             <label className="block">
               <span className="block text-xs text-gray-500 mb-1">
-                Grammar points <span className="text-gray-400">— one per line</span>
+                {ts("content.intro.grammar")} <span className="text-gray-400">{ts("content.intro.grammarHint")}</span>
               </span>
               <textarea
                 value={draft.grammar[id]}
                 onChange={(e) => setField("grammar", id, e.target.value)}
-                placeholder={"Past Simple (he went, she saw)\nArticles (a / the)"}
+                placeholder={ts("content.intro.grammarPlaceholder")}
                 rows={4}
                 className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm font-mono"
               />
             </label>
 
             <label className="block">
-              <span className="block text-xs text-gray-500 mb-1">Tip</span>
+              <span className="block text-xs text-gray-500 mb-1">{ts("content.intro.tip")}</span>
               <textarea
                 value={draft.tip[id]}
                 maxLength={LIMITS.tip}
                 onChange={(e) => setField("tip", id, e.target.value)}
-                placeholder="What to listen out for"
+                placeholder={ts("content.intro.tipPlaceholder")}
                 rows={2}
                 className="w-full text-black px-3 py-1.5 border border-gray-300 rounded-[3px] text-sm"
               />
@@ -277,7 +274,7 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
           )}
         </div>
         <div className="min-w-0 space-y-1">
-          <div className="text-sm font-semibold text-black">Header image</div>
+          <div className="text-sm font-semibold text-black">{ts("content.intro.headerImage")}</div>
           <p className="text-xs text-gray-500">{imageSource}</p>
           <div className="flex flex-wrap items-center gap-3">
             <label className="cursor-pointer text-xs text-blue-600 underline">
@@ -292,7 +289,7 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
                   e.target.value = "";
                 }}
               />
-              {uploading ? "Uploading…" : draft.imageUrl ? "Replace" : "Use a different image"}
+              {uploading ? ts("common.uploading") : draft.imageUrl ? ts("common.replace") : ts("content.intro.useOther")}
             </label>
             {draft.imageUrl && (
               <button
@@ -300,20 +297,22 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
                 onClick={() => setDraft((d) => ({ ...d, imageUrl: null }))}
                 className="text-xs text-gray-500 hover:text-black"
               >
-                {part.comicUrl ? "Use the comic page instead" : "Remove"}
+                {part.comicUrl ? ts("content.intro.useComic") : ts("common.remove")}
               </button>
             )}
           </div>
         </div>
         <div className="text-xs text-gray-500 md:ml-auto">
-          <div className="text-sm font-semibold text-black">Length</div>
+          <div className="text-sm font-semibold text-black">{ts("content.intro.length")}</div>
           {durationSeconds
-            ? `${formatPreviewDuration(durationSeconds, i18n.getFixedT("en"))}${measured ? " — measured from the audio" : ""}`
+            ? measured
+            ? ts("content.intro.measured", { duration: formatPreviewDuration(durationSeconds, i18n.getFixedT("en")) })
+            : formatPreviewDuration(durationSeconds, i18n.getFixedT("en"))
             : part.audioUrl
-              ? "Measuring…"
-              : "Upload this part's audio to show it"}
+              ? ts("content.intro.measuring")
+              : ts("content.intro.needAudio")}
           {staleDuration && (
-            <p className="text-amber-700 mt-0.5">The audio changed since this was saved — save to update.</p>
+            <p className="text-amber-700 mt-0.5">{ts("content.intro.stale")}</p>
           )}
         </div>
       </div>
@@ -325,11 +324,11 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => save(fromDraft(draft, durationSeconds), "Saved — this is what students see now.")}
+          onClick={() => save(fromDraft(draft, durationSeconds), ts("content.intro.savedNotice"))}
           disabled={saving || uploading || !dirty || Boolean(grammarProblem)}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-1.5 disabled:opacity-40"
         >
-          {saving ? "Saving…" : dirty ? "Save" : "Saved"}
+          {saving ? ts("common.saving") : dirty ? ts("common.saveChanges") : ts("common.saved")}
         </button>
         {dirty && (
           <button
@@ -338,13 +337,13 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
             disabled={saving}
             className="text-sm text-gray-500 hover:text-black"
           >
-            Discard changes
+            {ts("common.discard")}
           </button>
         )}
 
         <span className="inline-flex items-center gap-1 text-xs text-gray-500 ml-auto">
           <IoEyeOutline aria-hidden="true" />
-          See it as students do:
+          {ts("content.intro.seeAs")}
           {LOCALES.map(({ id }) => (
             <button
               key={id}
@@ -361,15 +360,15 @@ const PartIntroEditor = ({ token, story, part, onPartUpdated }: PartIntroEditorP
           <button
             type="button"
             onClick={() => {
-              const question = `Clear the preview card for part ${part.partNumber}? Students will see the part name and the story description.`;
+              const question = ts("content.intro.confirmClear", { n: part.partNumber });
               if (confirm(question)) {
-                void save(null, "Cleared.");
+                void save(null, ts("content.intro.cleared"));
               }
             }}
             disabled={saving}
             className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 w-full text-left"
           >
-            Clear this card
+            {ts("content.intro.clear")}
           </button>
         )}
       </div>

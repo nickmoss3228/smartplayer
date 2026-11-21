@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -34,6 +35,7 @@ const ACCEPTED = "image/jpeg,image/png,image/webp,image/avif,image/gif";
  * uploaded files are in the bucket straight away either way.
  */
 const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: VocabPicturesPanelProps) => {
+  const { t } = useTranslation("studio");
   const comicUrl = part.comicUrl ?? null;
   const [uploadedSheets, setUploadedSheets] = useState<string[]>([]);
   const sources = useMemo(() => {
@@ -64,10 +66,10 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
     setMessage("");
     const { matched, unmatched } = matchPictureFiles(files, words.map((w) => w.audioKey));
     if (matched.size === 0) {
-      setError(`None of those files is named after a word in this list (e.g. "${words[0]?.audioKey ?? "flat"}.png").`);
+      setError(t("practice.pictures.errors.noneMatch", { context: kind, example: words[0]?.audioKey ?? "flat" }));
       return;
     }
-    setBusy(`Uploading ${matched.size} picture${matched.size === 1 ? "" : "s"}…`);
+    setBusy(t("practice.pictures.uploadingN", { count: matched.size }));
     const urls = new Map<string, string>();
     const failed: string[] = [];
     try {
@@ -86,9 +88,11 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
     );
     setMessage(
       [
-        `Attached ${urls.size} picture${urls.size === 1 ? "" : "s"} — save the list to keep them.`,
-        unmatched.length ? `No word called: ${unmatched.map((f) => f.name).join(", ")}.` : "",
-        failed.length ? `Upload failed: ${failed.join(", ")}.` : "",
+        t("practice.pictures.attached", { count: urls.size }),
+        unmatched.length
+          ? t("practice.pictures.noWordCalled", { context: kind, files: unmatched.map((f) => f.name).join(", ") })
+          : "",
+        failed.length ? t("practice.pictures.uploadFailedFiles", { files: failed.join(", ") }) : "",
       ]
         .filter(Boolean)
         .join(" "),
@@ -99,14 +103,14 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
 
   const uploadSheet = async (file: File) => {
     setError("");
-    setBusy("Uploading the sheet…");
+    setBusy(t("practice.pictures.uploadingSheet"));
     try {
       const url = await uploadPartAsset(token, story._id, part.partNumber, file, "pictureSheet");
       setUploadedSheets((s) => [...s, url]);
       setSource(url);
       setNatural(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("practice.pictures.errors.uploadFailed"));
     } finally {
       setBusy("");
     }
@@ -119,7 +123,7 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
 
   const handleDraw = (box: Box) => {
     if (target === null) {
-      setError("Pick the word this picture is for first.");
+      setError(t("practice.pictures.errors.pickFirst", { context: kind }));
       return;
     }
     setError("");
@@ -137,14 +141,16 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
     const cells = gridBoxes(gridRows, gridCols);
     const without = [...words.keys()].filter((i) => !words[i].image);
     if (without.length === 0) {
-      setError("Every word already has a picture. Remove one to re-cut it.");
+      setError(t("practice.pictures.errors.allHave", { context: kind }));
       return;
     }
     const assigned = new Map(without.slice(0, cells.length).map((wordIndex, n) => [wordIndex, cells[n]]));
     onWordsChange(words.map((w, i) => (assigned.has(i) ? { ...w, image: crop(assigned.get(i)!) } : w)));
     setMessage(
-      `Cut ${assigned.size} cell${assigned.size === 1 ? "" : "s"} for the words without a picture, in list order.` +
-        (without.length > cells.length ? ` ${without.length - cells.length} still have none.` : ""),
+      t("practice.pictures.cutCells", { context: kind, count: assigned.size }) +
+        (without.length > cells.length
+          ? ` ${t("practice.pictures.stillNone", { count: without.length - cells.length })}`
+          : ""),
     );
     setTarget(null);
   };
@@ -155,23 +161,23 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
     <details className="group bg-gray-50 rounded-[3px] border border-gray-200" open={pictureCount > 0 || undefined}>
       <summary className="cursor-pointer list-none select-none px-3 py-2 text-sm font-semibold text-black flex items-center gap-2">
         <span className="text-gray-400 group-open:rotate-90 transition-transform">▸</span>
-        Pictures — {pictureCount}/{words.length} words have one
-        <span className="font-normal text-xs text-gray-500">
-          (stored with the words for a picture game — the player does not show them yet)
-        </span>
+        {t("practice.pictures.title", { context: kind, have: pictureCount, total: words.length })}
+        <span className="font-normal text-xs text-gray-500">{t("practice.pictures.titleNote")}</span>
       </summary>
 
       <div className="px-3 pb-3 space-y-4">
         {words.length === 0 ? (
-          <p className="text-xs text-gray-500">Add words first.</p>
+          <p className="text-xs text-gray-500">{t("practice.pictures.empty", { context: kind })}</p>
         ) : (
           <>
             <div className="space-y-1">
-              <div className="text-xs font-semibold text-gray-700">Many at once — named after the words</div>
+              <div className="text-xs font-semibold text-gray-700">{t("practice.pictures.batchTitle", { context: kind })}</div>
               <label className="flex flex-col items-center justify-center gap-0.5 rounded-[3px] border-2 border-dashed border-gray-300 bg-white px-4 py-3 cursor-pointer hover:border-gray-400">
-                <span className="text-sm text-black">Choose pictures for several words</span>
+                <span className="text-sm text-black">{t("practice.pictures.batchChoose", { context: kind })}</span>
                 <span className="text-xs text-gray-500">
-                  file names = the English keys: {words.slice(0, 3).map((w) => `"${w.audioKey}.png"`).join(", ")}…
+                  {t("practice.pictures.batchHint", {
+                    examples: words.slice(0, 3).map((w) => `"${w.audioKey}.png"`).join(", "),
+                  })}
                 </span>
                 <input
                   type="file"
@@ -189,7 +195,7 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
             </div>
 
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-gray-700">Cut out of one image</div>
+              <div className="text-xs font-semibold text-gray-700">{t("practice.pictures.cutTitle")}</div>
               <div className="flex flex-wrap items-center gap-2">
                 {sources.map((url, n) => (
                   <button
@@ -203,11 +209,13 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
                       source === url ? "bg-black text-white border-black" : "bg-white text-gray-700 border-gray-300"
                     }`}
                   >
-                    {url === comicUrl ? "Comic page" : `Sheet ${n + (comicUrl ? 0 : 1)}`}
+                    {url === comicUrl
+                      ? t("practice.pictures.comicPage")
+                      : t("practice.pictures.sheetN", { n: n + (comicUrl ? 0 : 1) })}
                   </button>
                 ))}
                 <label className="text-xs rounded-[3px] px-2 py-1 border border-dashed border-gray-400 text-gray-600 cursor-pointer hover:border-gray-600">
-                  + Upload a picture sheet
+                  {t("practice.pictures.uploadSheet")}
                   <input
                     type="file"
                     accept={ACCEPTED}
@@ -225,13 +233,13 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
               {source && (
                 <>
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="text-gray-600">Next box is for</span>
+                    <span className="text-gray-600">{t("practice.pictures.nextBoxFor")}</span>
                     <select
                       value={target ?? ""}
                       onChange={(e) => setTarget(e.target.value === "" ? null : Number(e.target.value))}
                       className="text-black text-xs px-2 py-1 border border-gray-300 rounded-[3px] bg-white"
                     >
-                      <option value="">— pick a word —</option>
+                      <option value="">{t("practice.pictures.pickPlaceholder", { context: kind })}</option>
                       {words.map((w, i) => (
                         <option key={w.audioKey} value={i}>
                           {w.image ? "✓ " : ""}
@@ -240,7 +248,7 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
                       ))}
                     </select>
                     <span className="text-gray-400">·</span>
-                    <span className="text-gray-600">or split as a grid</span>
+                    <span className="text-gray-600">{t("practice.pictures.orGrid")}</span>
                     <input
                       type="number"
                       min={1}
@@ -248,7 +256,7 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
                       value={gridRows}
                       onChange={(e) => setGridRows(Math.min(8, Math.max(1, Number(e.target.value) || 1)))}
                       className="w-12 text-black px-1.5 py-0.5 border border-gray-300 rounded-[3px]"
-                      aria-label="Rows"
+                      aria-label={t("practice.pictures.rows")}
                     />
                     ×
                     <input
@@ -258,7 +266,7 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
                       value={gridCols}
                       onChange={(e) => setGridCols(Math.min(8, Math.max(1, Number(e.target.value) || 1)))}
                       className="w-12 text-black px-1.5 py-0.5 border border-gray-300 rounded-[3px]"
-                      aria-label="Columns"
+                      aria-label={t("practice.pictures.columns")}
                     />
                     <button
                       type="button"
@@ -266,11 +274,11 @@ const VocabPicturesPanel = ({ token, story, part, kind, words, onWordsChange }: 
                       disabled={!natural}
                       className="bg-white border border-gray-300 hover:border-gray-500 rounded-[3px] px-2 py-0.5 text-gray-700 disabled:opacity-40"
                     >
-                      Fill the words without a picture
+                      {t("practice.pictures.fill", { context: kind })}
                     </button>
                   </div>
                   <p className="text-xs text-gray-400">
-                    Drag a box around the word&apos;s picture. Drag a box to move it, its corners to resize.
+                    {t("practice.pictures.drawHint", { context: kind })}
                   </p>
                   <BoxCanvas
                     key={source}

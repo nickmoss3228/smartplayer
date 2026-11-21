@@ -17,6 +17,7 @@ import { sharingScore } from "../config/sessions.js";
 import { getCatalog } from "../helpers/catalogStore.js";
 import { ownedStoryKeys } from "../config/entitlements.js";
 import { resetSchool, serializeSchool } from "./school.controller.js";
+import { liveStreak } from "../helpers/moscowDay.js";
 
 const PLAYERS_PAGE_LIMIT = 25;
 const AUDIT_PAGE_LIMIT = 50;
@@ -140,8 +141,8 @@ export const grantEntitlement = async (req, res) => {
     return res.status(404).json({ error: "No matching user." });
   }
 
-  // Every catalog SKU is a subscription and defaults to its own length;
-  // `days` overrides it, so support can hand out a week of a level as a trial.
+  // Every catalog SKU is perpetual; `days` turns a grant into a trial, so
+  // support can hand out a week of a set rather than the set itself.
   //
   // Validated BEFORE deciding whether the grant is dated. `Number("abc")` is
   // NaN, which is not finite, so a mistyped trial length used to fall through
@@ -302,7 +303,11 @@ export const getPlayerProgress = async (req, res) => {
     email: user.email,
     nickname: user.nickname ?? user.username,
     wallet: user.wallet,
-    streak: user.streak,
+    // `current` is the live streak (0 once a day was missed); the stored count
+    // only changes on a pass, so it would show a streak long since broken.
+    streak: user.streak
+      ? { ...user.streak, current: liveStreak(user.streak.current, user.streak.lastSubmittedDate) }
+      : user.streak,
     achievements: user.achievements,
     totalListeningSeconds: user.totalListeningSeconds,
     learnedWordsCount: user.learnedWords.length,

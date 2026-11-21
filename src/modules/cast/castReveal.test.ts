@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { castCards, reachedPart } from './castReveal';
+import { castCards, castTimeline, defaultCastFocus, reachedPart } from './castReveal';
 import type { CastMember } from '../../services/storyServices';
 
 const member = (key: string, firstPart: number, extra: Partial<CastMember> = {}): CastMember => ({
@@ -64,5 +64,42 @@ describe('castCards', () => {
     expect(leo.name).toBe('leo-ru');
     expect(leo.role).toBe('leo role'); // ru empty → en
     expect(leo.bio).toBe('leo био');
+  });
+});
+
+describe('castTimeline', () => {
+  const cast = [member('leo', 1), member('sam', 9), member('ginger', 1), member('mum', 3), member('dad', 3)];
+
+  it('has a column per arrival part, plus the part the student is on', () => {
+    const columns = castTimeline(castCards(cast, 5, 'en'), 5);
+    expect(columns.map((c) => c.part)).toEqual([1, 3, 5, 9]);
+    expect(columns.map((c) => c.cards.map((card) => card.key))).toEqual([['leo', 'ginger'], ['mum', 'dad'], [], ['sam']]);
+    expect(columns.map((c) => c.reached)).toEqual([true, true, true, false]);
+    expect(columns.map((c) => c.isNow)).toEqual([false, false, true, false]);
+  });
+
+  it('does not add a second column when someone arrives in the current part', () => {
+    const columns = castTimeline(castCards(cast, 3, 'en'), 3);
+    expect(columns.map((c) => c.part)).toEqual([1, 3, 9]);
+    expect(columns[1].isNow).toBe(true);
+  });
+
+  it('is empty for a story without a cast', () => {
+    expect(castTimeline([], 4)).toEqual([]);
+  });
+});
+
+describe('defaultCastFocus', () => {
+  it('picks the newest character met', () => {
+    const cast = [member('leo', 1), member('mum', 3), member('dad', 3), member('sam', 9)];
+    expect(defaultCastFocus(castCards(cast, 4, 'en'))).toBe('mum');
+  });
+
+  it('falls back to the first card when nobody is met yet', () => {
+    expect(defaultCastFocus(castCards([member('sam', 2)], 1, 'en'))).toBe('sam');
+  });
+
+  it('is null without a cast', () => {
+    expect(defaultCastFocus([])).toBeNull();
   });
 });

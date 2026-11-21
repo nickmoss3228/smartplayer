@@ -5,9 +5,10 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { motionEnter, STAGGER } from '../components/ui/motion';
 import MilkGlass from '../components/Levels/MilkGlass';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
-import { buttonPrimary } from '../components/ui/buttonStyles';
 import { saveShelfBack } from '../services/shelfBack';
 import { firstPartPath, isTryIt, PLAYER_FROM_TRY_IT_STATE } from '../components/IcebergLanding/tryIt';
+
+const MotionLink = motion.create(Link);
 
 /**
  * Level picker, told as three glasses of milk.
@@ -22,10 +23,10 @@ import { firstPartPath, isTryIt, PLAYER_FROM_TRY_IT_STATE } from '../components/
  * the real thing: skim milk is genuinely blue-tinged, cream genuinely yellow.
  * So the colour ramp doubles as the difficulty ramp.
  *
- * Two steps on purpose: a tap pours the glass and only selects it, and the
- * Continue button under the shelf moves on. The last level picked is
- * remembered on this device and comes back already poured, so a returning
- * learner only has to press Continue.
+ * One tap opens the level: each glass is a link to that level's stories, with
+ * its CEFR band under the title. The level picked is remembered on this device
+ * and comes back already poured and lifted, so a returning learner sees where
+ * they were.
  */
 
 const LAST_LEVEL_KEY = 'malako:lastLevel';
@@ -45,14 +46,15 @@ type Level = {
   fat: string;
   /** 0–1, how full the glass sits. */
   fill: number;
+  cefr: string;
 };
 
 const Levels = () => {
   const [selectedLevel, setSelectedLevel] = useState(readLastLevel);
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
-  // Arrived from the landing's «Попробуй сам»: «Продолжить» opens the level's
-  // first story in the player instead of its shelf (components/IcebergLanding/tryIt.ts).
+  // Arrived from the landing's «Попробуй сам»: a glass opens the level's first
+  // story in the player instead of its shelf (components/IcebergLanding/tryIt.ts).
   const tryIt = isTryIt(useLocation().state);
 
   const choose = (id: string) => {
@@ -62,15 +64,15 @@ const Levels = () => {
     } catch {
       // private mode: the choice simply isn't remembered
     }
+    // The shelf this opens goes back here, not to the hub.
+    saveShelfBack('/levels');
   };
 
   const levels: Level[] = [
-    { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28 },
-    { id: 'medium', title: t('levels.medium'), fat: t('levels.fatMedium'), fill: 0.58 },
-    { id: 'hard', title: t('levels.hard'), fat: t('levels.fatHard'), fill: 0.92 },
+    { id: 'easy', title: t('levels.easy'), fat: t('levels.fatEasy'), fill: 0.28, cefr: t('levels.cefrEasy') },
+    { id: 'medium', title: t('levels.medium'), fat: t('levels.fatMedium'), fill: 0.58, cefr: t('levels.cefrMedium') },
+    { id: 'hard', title: t('levels.hard'), fat: t('levels.fatHard'), fill: 0.92, cefr: t('levels.cefrHard') },
   ];
-
-  const chosen = levels.find((l) => l.id === selectedLevel);
 
   return (
     // Plain white, same as every other page. White milk stays readable because
@@ -104,11 +106,11 @@ const Levels = () => {
             const isSelected = selectedLevel === level.id;
 
             return (
-              <motion.button
+              <MotionLink
                 key={level.id}
-                type="button"
+                to={tryIt ? firstPartPath(level.id) : `/levels/${level.id}`}
+                state={tryIt ? PLAYER_FROM_TRY_IT_STATE : undefined}
                 onClick={() => choose(level.id)}
-                aria-pressed={isSelected}
                 className="group flex flex-col items-center cursor-pointer rounded-card
                   px-1 pt-2 pb-3 sm:px-3
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-black/60
@@ -158,35 +160,14 @@ const Levels = () => {
                   >
                     {level.title}
                   </span>
+
+                  <span className="mt-1 font-mono text-[10px] tracking-[0.16em] text-dim">
+                    {level.cefr}
+                  </span>
                 </motion.div>
-              </motion.button>
+              </MotionLink>
             );
           })}
-        </div>
-
-        {/* ── Continue ── */}
-        <div className="mt-7 sm:mt-12 w-full max-w-xs px-4 sm:px-0">
-          {chosen ? (
-            <motion.div
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={motionEnter}
-            >
-              <Link
-                to={tryIt ? firstPartPath(chosen.id) : `/levels/${chosen.id}`}
-                state={tryIt ? PLAYER_FROM_TRY_IT_STATE : undefined}
-                // The shelf this opens goes back here, not to the hub.
-                onClick={() => saveShelfBack('/levels')}
-                className={`${buttonPrimary} w-full`}
-              >
-                {t('levels.continue')}
-              </Link>
-            </motion.div>
-          ) : (
-            <button disabled className={`${buttonPrimary} w-full`}>
-              {t('levels.continue')}
-            </button>
-          )}
         </div>
 
       </div>

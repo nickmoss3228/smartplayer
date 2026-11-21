@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   MIN_SCALE,
@@ -24,6 +25,7 @@ interface ModalProps {
 }
 
 export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
+  const { t } = useTranslation();
   // ── zoom / pan state ──────────────────────────────────────────────────────
   /**
    * viewRef is the source of truth. Gestures update it and the transform is
@@ -297,7 +299,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
       ref={containerRef}
       role="dialog"
       aria-modal
-      aria-label={title ?? "Comic"}
+      aria-label={title ?? t("player.aria.comic")}
       onClick={() => {
         if (viewRef.current.s <= MIN_SCALE && !movedRef.current) onClose();
       }}
@@ -323,7 +325,7 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
           e.stopPropagation();
           onClose();
         }}
-        aria-label="Close"
+        aria-label={t("player.aria.close")}
         style={{ top: "calc(0.5rem + env(safe-area-inset-top))" }}
         className="absolute right-2 z-20 w-9 h-9 rounded-full bg-black/50 hover:bg-black/75 text-white text-xl leading-none flex items-center justify-center transition-colors"
       >
@@ -353,8 +355,8 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
               e.stopPropagation();
               reset();
             }}
-            aria-label="Reset zoom"
-            title="Reset zoom (0)"
+            aria-label={t("player.aria.resetZoom")}
+            title={`${t("player.aria.resetZoom")} (0)`}
             className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white text-base flex items-center justify-center transition-colors"
           >
             ↺
@@ -366,8 +368,8 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
             jumpTo(viewRef.current.s - STEP);
           }}
           disabled={scale <= MIN_SCALE}
-          aria-label="Zoom out"
-          title="Zoom out (−)"
+          aria-label={t("player.aria.zoomOut")}
+          title={`${t("player.aria.zoomOut")} (−)`}
           className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xl flex items-center justify-center transition-colors"
         >
           −
@@ -378,8 +380,8 @@ export const ComicsModal: React.FC<ModalProps> = ({ src, title, onClose }) => {
             jumpTo(viewRef.current.s + STEP);
           }}
           disabled={scale >= MAX_SCALE}
-          aria-label="Zoom in"
-          title="Zoom in (+)"
+          aria-label={t("player.aria.zoomIn")}
+          title={`${t("player.aria.zoomIn")} (+)`}
           className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-30 disabled:cursor-not-allowed text-white text-xl flex items-center justify-center transition-colors"
         >
           +

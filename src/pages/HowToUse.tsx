@@ -2,109 +2,217 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   IoChevronBack,
-  IoEarOutline,
   IoArrowForward,
+  IoArrowDown,
+  IoTimeOutline,
   IoMicOutline,
   IoRepeatOutline,
   IoHeadsetOutline,
   IoShareSocialOutline,
   IoLockClosedOutline,
+  IoCheckmark,
+  IoClose,
+  IoVolumeHighOutline,
 } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 import MilkGlass from '../components/Levels/MilkGlass';
+// The guide's colours, kicker and card live in guideKit so /welcome shares them.
+import { Eyebrow, GREEN, GREEN_INK, WATER, guideCard } from '../components/Guide/guideKit';
 import { themes } from '../modules/levelprogress/themes.levelprogress';
-import { METHOD_GROUPS, groupByScene } from '../components/Homepage/WhyClouds/whyCloudsData';
-import { LoopSteps } from '../components/Method/LoopSteps';
-import { MethodBlock } from '../components/Method/MethodBlock';
-import { ScenePanel } from '../components/Method/MethodScene';
-import { RepeatDrawing } from '../components/Method/RepeatDrawing';
-import { buttonPrimary } from '../components/ui/buttonStyles';
+import { METHOD_GROUPS, type WhyQuestionId } from '../components/Homepage/WhyClouds/whyCloudsData';
+import playerShot from '../assets/landing/d3-player.webp';
+import repeatShot from '../assets/landing/d5-repeat.webp';
+import quizShot from '../assets/landing/d4-quiz.webp';
+import wordsShot from '../assets/landing/steps/step1-d.webp';
+import waveShot from '../assets/landing/steps/step2-d.webp';
+import controlsShot from '../assets/landing/steps/step34-d.webp';
+import repeatBarShot from '../assets/landing/steps/step5-d.webp';
 
 /**
- * The guide, told as the six cloud questions opened up.
+ * The guide, drawn in the landing's language (2026-11-14).
  *
- * This page used to be five evenly-spaced sections of cards — Philosophy, The
- * Player, Vocabulary, Engagement, Story Design — numbered 01…05. Two things
- * were wrong with that. The numbering implied a sequence these topics do not
- * have (a reader could start at 03 and lose nothing), and the even spacing
- * claimed all five mattered equally, which put "how stories are authored"
- * beside "how the player repeats a sentence" at the same weight. Only one of
- * those is needed before pressing play.
+ * The page before this one was a grey documentation page: hairlines, 3px
+ * corners, a fixed rail on the left that phones never saw. It said the right
+ * things in the right order (the loop first, then the recording, then the six
+ * cloud questions in their three groups, then the level) but looked like it
+ * belonged to a different product than the landing a visitor had just read.
  *
- * What replaced it is already in the product: the six question-clouds from the
- * homepage hero. Each one is a question students actually ask, and each already
- * owns a visualization that answers it — but on the homepage they are locked
- * behind a modal you have to tap. Here they are unfolded, all six, grouped into
- * the argument they actually make:
+ * The order is unchanged. What changed is how it is shown:
  *
- *   in the player   → what happens to one sentence (3 repetitions, 3 speeds)
- *   what we take    → the three crutches removed on purpose
- *   what you get    → the one crutch handed back (comics / visual memory)
+ *   surface        the claim, the way in, the player itself
+ *   shallow water  the six steps on a rope, as on the landing, each beside the
+ *                  real screen it happens on
+ *   the deep       «Повторяй вслух»: how the recording works
+ *   surface again  the six questions as cards, grouped into the argument they
+ *                  make (METHOD_GROUPS, shared with the onboarding slides)
+ *   the glasses    the level picker's own glasses and the way in
  *
- * Above them sits the thing the old page never said plainly: the six steps a
- * student physically performs. The clouds explain *why*; the loop explains
- * *what you do*, and it comes first. Right after it, «Повторяй вслух»: how the
- * recording works («Повтори за мной», «Послушай себя», sharing), with the
- * landing's listen-and-repeat drawing.
- *
- * The pictures are the login screen's five method scenes (Method/MethodScene),
- * the same ones the homepage pop-ups and the onboarding slides show. Questions
- * that share a picture are told under one drawing (MethodBlock), so no
- * animation plays twice in a row.
+ * The rail became a bar of anchors under the navbar, so phones get it too.
+ * The screenshots are the landing's captures (assets/landing): recapture them
+ * there and both pages follow.
  */
 
-// The groups and their order — the argument — are METHOD_GROUPS in
-// whyCloudsData.ts, shared with the onboarding slides.
-
 const LEVEL_IDS = ['easy', 'medium', 'hard'] as const;
-
-/** The recording, in the order it is used: howToUse.repeat.steps[0..3]. */
-const REPEAT_ICONS = [IoMicOutline, IoRepeatOutline, IoHeadsetOutline, IoShareSocialOutline];
 const LEVEL_FILL: Record<(typeof LEVEL_IDS)[number], number> = {
   easy: 0.28,
   medium: 0.58,
   hard: 0.92,
 };
+const levelKey = (id: string, prefix = '') =>
+  prefix ? `levels.${prefix}${id.charAt(0).toUpperCase()}${id.slice(1)}` : `levels.${id}`;
 
-// ─── Rail ─────────────────────────────────────────────────────────────────
-const RailLink: React.FC<{ href: string; label: string; active: boolean }> = ({
-  href,
-  label,
-  active,
-}) => (
-  <a
-    href={href}
-    className={`flex items-center gap-2.5 rounded-[3px] border-l-2 px-2.5 py-1.5 text-[13px] transition
-      ${
-        active
-          ? 'border-signal font-semibold text-gray-900'
-          : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-  >
-    <span
+/** The recording, in the order it is used: howToUse.repeat.steps[0..3]. */
+const REPEAT_ICONS = [IoMicOutline, IoRepeatOutline, IoHeadsetOutline, IoShareSocialOutline];
+
+/** The bar's anchors, in page order; the ids are the sections' ids. */
+const ANCHORS = [
+  { id: 'do', label: 'howToUse.nav.doIt' },
+  { id: 'repeat', label: 'howToUse.nav.repeat' },
+  { id: 'why', label: 'howToUse.nav.why' },
+  { id: 'levels', label: 'howToUse.pick.navLabel' },
+] as const;
+
+const DEEP = '#0d2c47';
+const ROOM = '#f5f8fa';
+
+const card = guideCard;
+const shot = 'block h-auto w-full rounded-[14px]';
+
+// ─── Pieces ───────────────────────────────────────────────────────────────
+
+/** A still waterline between two bands: `to` rises into `from` (or hangs down from it when `down`). */
+const Waterline: React.FC<{ from: string; to: string; down?: boolean }> = ({ from, to, down }) => {
+  let d = down ? 'M0 14' : 'M0 18';
+  for (let x = 0; x < 1200; x += 200) d += down ? ' q50 16 100 0 t100 0' : ' q50 -16 100 0 t100 0';
+  d += down ? ' V0 H0Z' : ' V32 H0Z';
+  return (
+    <svg
       aria-hidden
-      className={`h-1.5 w-1.5 flex-shrink-0 rounded-full transition-colors
-        ${active ? 'bg-signal' : 'bg-gray-300'}`}
-    />
-    {label}
-  </a>
+      viewBox="0 0 1200 32"
+      preserveAspectRatio="none"
+      className="-my-px block h-8 w-full"
+      style={{ background: from }}
+    >
+      <path d={d} fill={to} />
+    </svg>
+  );
+};
+
+/** A step's "in the app" line, as on the landing's steps. */
+const AppNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="mt-4 flex items-start gap-2 text-sm font-semibold" style={{ color: GREEN_INK }}>
+    <IoCheckmark aria-hidden className="mt-0.5 h-[18px] w-[18px] flex-none" />
+    {children}
+  </p>
 );
+
+/** The small drawing inside each question's card. */
+const QuestionDiagram: React.FC<{ id: WhyQuestionId }> = ({ id }) => {
+  const { t } = useTranslation();
+  const chip = 'rounded-tile px-3.5 py-2 text-sm font-bold';
+
+  switch (id) {
+    case 'repetition':
+      return (
+        <div aria-hidden className="flex h-[72px] items-end gap-2 text-sm font-extrabold">
+          <span className="grid h-[34%] flex-1 place-items-center rounded-tile bg-gray-100">
+            {t('homepage.why.repetition.tag1')}
+          </span>
+          <span className="grid h-[66%] flex-1 place-items-center rounded-tile bg-gray-300">
+            {t('homepage.why.repetition.tag2')}
+          </span>
+          <span className="grid h-full flex-1 place-items-center rounded-tile" style={{ background: GREEN }}>
+            {t('homepage.why.repetition.tag3')}
+          </span>
+        </div>
+      );
+    case 'speeds':
+      return (
+        <div aria-hidden className="flex min-h-[72px] flex-wrap items-center gap-1.5 text-[15px] font-extrabold">
+          <span className="grid h-11 place-items-center rounded-full px-4" style={{ background: GREEN }}>
+            {t('homepage.why.speeds.tagSlow')}
+          </span>
+          <span className="grid h-11 place-items-center rounded-full bg-gray-100 px-4">
+            {t('homepage.why.speeds.tagMid')}
+          </span>
+          <span className="grid h-11 place-items-center rounded-full bg-gray-100 px-4">
+            {t('homepage.why.speeds.tagFast')}
+          </span>
+        </div>
+      );
+    case 'noSubtitles':
+      return (
+        <p className={`m-0 inline-flex items-center gap-2 border border-dashed border-line-strong text-signal-ink ${chip}`}>
+          <IoClose aria-hidden className="h-4 w-4" />
+          {t('homepage.why.noSubtitles.offLabel')}
+        </p>
+      );
+    case 'earsOnly':
+      return (
+        <p className="m-0 flex flex-wrap items-center gap-2">
+          <span className={`border border-dashed border-line-strong text-signal-ink ${chip}`}>
+            {t('homepage.why.earsOnly.leftLabel')}
+          </span>
+          <IoArrowForward aria-hidden className="h-4 w-4" />
+          <span className={chip} style={{ background: '#effbf4', color: GREEN_INK }}>
+            {t('homepage.why.earsOnly.rightLabel')}
+          </span>
+        </p>
+      );
+    case 'vocabLanguage':
+      return (
+        <p
+          lang="ru"
+          className="m-0 inline-flex items-center gap-2.5 rounded-full py-2 pl-2 pr-3.5 text-[15px] font-bold"
+          style={{ background: '#effbf4' }}
+        >
+          <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full" style={{ background: GREEN }}>
+            <IoVolumeHighOutline className="h-4 w-4" />
+          </span>
+          {t('howToUse.taken.wordExample')}
+        </p>
+      );
+    case 'visualMemory': {
+      const steps = [
+        t('howToUse.given.hear'),
+        t('homepage.why.visualMemory.searchPrompt'),
+        t('homepage.why.visualMemory.foundLabel'),
+      ];
+      return (
+        <ol className="m-0 flex list-none flex-wrap gap-2 p-0 text-[15px] font-extrabold">
+          {steps.map((label, i) => (
+            <li key={label} className="inline-flex items-center gap-2.5 rounded-full bg-room py-2 pl-2 pr-4">
+              <span
+                aria-hidden
+                className="grid h-7 w-7 place-items-center rounded-full text-[13px]"
+                style={{ background: GREEN }}
+              >
+                {i + 1}
+              </span>
+              {label}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    default:
+      return null;
+  }
+};
 
 // ─── Main ─────────────────────────────────────────────────────────────────
 const HowToUse: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [active, setActive] = useState('do');
+  const [active, setActive] = useState<string>('');
 
-  // Scrollspy for the rail. rootMargin picks the band just under the navbar so
-  // the highlighted entry is the section actually being read, not merely the
-  // first one intersecting the viewport at all.
+  // Scrollspy for the anchor bar. rootMargin picks the band just under the
+  // navbar and the bar, so the highlighted entry is the section being read.
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') return;
-    const ids = ['do', 'repeat', ...METHOD_GROUPS.flatMap((g) => g.ids), 'levels'];
-    const nodes = ids
-      .map((id) => document.getElementById(id))
-      .filter((n): n is HTMLElement => n !== null);
+    const nodes = ANCHORS.map(({ id }) => document.getElementById(id)).filter(
+      (n): n is HTMLElement => n !== null,
+    );
     if (!nodes.length) return;
 
     const io = new IntersectionObserver(
@@ -113,232 +221,325 @@ const HowToUse: React.FC = () => {
           if (e.isIntersecting) setActive(e.target.id);
         });
       },
-      { rootMargin: '-18% 0px -70% 0px' },
+      { rootMargin: '-25% 0px -65% 0px' },
     );
     nodes.forEach((n) => io.observe(n));
     return () => io.disconnect();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* ═══════════════ RAIL ═══════════════
-          Desktop only. `top-13` clears the fixed navbar from Layout.tsx; on
-          narrow screens the rail is dropped entirely rather than folded into
-          a drawer — the page is short enough to scroll. */}
-      <aside
-        className="fixed left-0 top-13 bottom-0 z-40 hidden w-60 flex-col gap-5
-          overflow-y-auto border-r border-gray-200 bg-white px-4 py-6 lg:flex"
-      >
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-extrabold lowercase tracking-tighter">
-            {t('brand')}
-          </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
-            {t('howToUse.nav.title')}
-          </span>
-        </div>
+  const repeatSteps = t('howToUse.repeat.steps', { returnObjects: true }) as { title: string; text: string }[];
 
-        <nav className="flex flex-col gap-0.5" aria-label={t('howToUse.nav.title')}>
-          <RailLink href="#do" label={t('howToUse.nav.doIt')} active={active === 'do'} />
-          <RailLink href="#repeat" label={t('howToUse.nav.repeat')} active={active === 'repeat'} />
-
-          {METHOD_GROUPS.map((g) => (
-            <React.Fragment key={g.key}>
-              <span className="px-2.5 pb-1 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
-                {t(`howToUse.groups.${g.key}.label`)}
-              </span>
-              {g.ids.map((id) => (
-                <RailLink
-                  key={id}
-                  href={`#${id}`}
-                  label={t(`homepage.why.${id}.slogan`)}
-                  active={active === id}
-                />
-              ))}
-            </React.Fragment>
+  /** What sits beside each of the six steps (howToUse.loop.s1..s6): its place in the app. */
+  const loopExtras: { note?: React.ReactNode; media?: React.ReactNode; narrow?: boolean }[] = [
+    {
+      media: (
+        <div className="flex flex-wrap gap-2.5">
+          {LEVEL_IDS.map((id) => (
+            <span key={id} className="inline-flex items-baseline gap-2 rounded-card border border-line bg-room px-4 py-2.5">
+              <b className="text-[22px] font-extrabold tabular-nums tracking-tight">{t(levelKey(id, 'fat'))}</b>
+              <span className="text-sm font-semibold text-dim">{t(levelKey(id))}</span>
+            </span>
           ))}
+        </div>
+      ),
+    },
+    {
+      note: <AppNote>{t('howToUse.loop.wordsNote')}</AppNote>,
+      media: <img src={wordsShot} alt={t('howToUse.shots.words')} loading="lazy" width={720} height={820} className={shot} />,
+      narrow: true,
+    },
+    {
+      note: <AppNote>{t('howToUse.loop.speedsNote')}</AppNote>,
+      media: (
+        <div className="flex flex-col gap-2.5">
+          <img src={waveShot} alt={t('howToUse.shots.wave')} loading="lazy" width={1312} height={192} className={shot} />
+          <img src={controlsShot} alt={t('howToUse.shots.controls')} loading="lazy" width={1312} height={380} className={shot} />
+        </div>
+      ),
+    },
+    {
+      note: (
+        <a
+          href="#repeat"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-ink underline underline-offset-4"
+        >
+          {t('howToUse.loop.repeatLink')}
+          <IoArrowDown aria-hidden className="h-4 w-4" />
+        </a>
+      ),
+      media: <img src={repeatBarShot} alt={t('howToUse.shots.repeatBar')} loading="lazy" width={944} height={144} className={shot} />,
+    },
+    {
+      media: <img src={playerShot} alt={t('howToUse.shots.comic')} loading="lazy" width={1440} height={999} className={shot} />,
+    },
+    {
+      media: <img src={quizShot} alt={t('howToUse.shots.quiz')} loading="lazy" width={921} height={849} className={shot} />,
+      narrow: true,
+    },
+  ];
 
-          <span className="px-2.5 pb-1 pt-3 font-mono text-[9px] uppercase tracking-[0.16em] text-gray-400">
-            {t('howToUse.nav.then')}
-          </span>
-          <RailLink
-            href="#levels"
-            label={t('howToUse.pick.navLabel')}
-            active={active === 'levels'}
-          />
-        </nav>
-      </aside>
+  return (
+    <div className="min-h-screen bg-room pt-13 text-ink">
+      {/* ═══════════════ ANCHOR BAR ═══════════════
+          Under the fixed navbar (Layout.tsx, `top-13`) at every width. On a
+          phone it scrolls sideways rather than wrapping, so it stays one row. */}
+      <div className="sticky top-13 z-30 border-b border-line bg-room/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1180px] items-center gap-1 overflow-x-auto px-2 sm:px-6 lg:px-12">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex h-11 flex-none cursor-pointer items-center gap-1 px-2 text-sm font-semibold text-dim transition-colors
+              hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal"
+          >
+            <IoChevronBack aria-hidden className="h-4 w-4" />
+            {t('howToUse.back')}
+          </button>
+          <span aria-hidden className="mx-1 h-5 w-px flex-none bg-line-strong" />
+          <nav aria-label={t('howToUse.nav.onPage')} className="flex flex-none">
+            {ANCHORS.map(({ id, label }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                aria-current={active === id ? 'true' : undefined}
+                className={`relative flex h-11 flex-none items-center whitespace-nowrap px-3 text-sm font-semibold no-underline transition-colors
+                  focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-signal
+                  ${active === id ? 'text-ink' : 'text-dim hover:text-ink'}`}
+              >
+                {t(label)}
+                {active === id && (
+                  <span aria-hidden className="absolute inset-x-3 bottom-0 h-[3px] rounded-full" style={{ background: GREEN }} />
+                )}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </div>
 
-      <main className="lg:ml-60">
-        <div className="mx-auto max-w-3xl px-5 pt-13 sm:px-8">
-          {/* ═══════════════ HERO ═══════════════ */}
-          <header className="pt-8 pb-12 sm:pt-12 sm:pb-16">
-            <button
-              onClick={() => navigate(-1)}
-              className="mb-8 flex items-center gap-1.5 rounded-[3px] border border-gray-200 bg-white
-                px-4 py-2 text-sm text-gray-600 transition
-                hover:border-gray-300 hover:text-gray-900"
+      {/* ═══════════════ HERO: the surface ═══════════════ */}
+      <header className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-x-14 gap-y-10 px-4 pb-12 pt-10 sm:px-8 sm:pb-16 sm:pt-16 lg:px-14">
+        <div className="min-w-0 flex-[1_1_440px]">
+          <p className="m-0 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
+            {t('howToUse.intro.eyebrow')}
+          </p>
+          <h1 className="mt-4 text-balance text-[clamp(44px,7.4vw,84px)] font-extrabold leading-[0.98] tracking-[-0.05em]">
+            <span className="text-dim">{t('howToUse.intro.title1')}</span>{' '}
+            {/* the landing's underline on the line that matters, in green instead of red */}
+            <span className="inline-block bg-[linear-gradient(transparent_68%,rgba(0,201,81,0.35)_68%)]">
+              {t('howToUse.intro.title2')}
+            </span>
+          </h1>
+          <p className="mt-6 max-w-[34em] text-lg leading-relaxed text-dim">{t('howToUse.intro.text')}</p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-4">
+            <Link
+              to="/levels"
+              className="inline-flex h-14 items-center justify-center gap-2.5 rounded-[14px] bg-ink px-7 text-sm font-bold uppercase
+                tracking-[0.2em] text-white no-underline transition-colors hover:bg-gray-800
+                focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
             >
-              <IoChevronBack className="h-4 w-4" />
-              {t('howToUse.back')}
-            </button>
-
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-              {t('howToUse.intro.eyebrow')}
-            </p>
-            {/* Two-tone in ink rather than a brand colour: the page's own
-                emphasis, without a hue that means nothing elsewhere. */}
-            <h1 className="mt-3 text-4xl font-extrabold leading-[1.02] tracking-tight text-gray-500 sm:text-6xl">
-              {t('howToUse.intro.title1')}{' '}
-              <span className="text-gray-900">{t('howToUse.intro.title2')}</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
-              {t('howToUse.intro.text')}
-            </p>
-            <span className="mt-6 inline-flex items-center gap-2 rounded-[2px] border border-gray-200 bg-white px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-gray-500">
-              <IoEarOutline className="h-3.5 w-3.5" />
+              {t('howToUse.pick.cta')}
+              <IoArrowForward aria-hidden className="h-[18px] w-[18px]" />
+            </Link>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-dim">
+              <IoTimeOutline aria-hidden className="h-[18px] w-[18px]" />
               {t('howToUse.intro.readTime')}
             </span>
-          </header>
+          </div>
+        </div>
+        <figure className="m-0 min-w-0 flex-[1_1_400px]">
+          <img
+            src={playerShot}
+            alt={t('howToUse.shots.player')}
+            width={1440}
+            height={999}
+            className="block h-auto w-full rounded-[22px] shadow-[0_40px_80px_-50px_rgba(13,58,92,0.7)]"
+          />
+        </figure>
+      </header>
 
-          {/* ═══════════════ THE LOOP ═══════════════
-              Numbered, unlike the old section labels — this genuinely is a
-              sequence, so the numbers carry information. */}
-          <section id="do" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-              {t('howToUse.loop.label')}
-            </p>
-            <h2 className="mt-3 mb-8 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
-              {t('howToUse.loop.title')}
-            </h2>
+      <Waterline from={ROOM} to={WATER} />
 
-            <ScenePanel scene="loop" caption={false} className="mb-6" />
-            <LoopSteps />
-          </section>
+      {/* ═══════════════ THE LOOP: shallow water ═══════════════
+          Numbered, because this genuinely is a sequence. The rope and its
+          knots are the landing's (Steps.tsx), standing still. */}
+      <section id="do" className="scroll-mt-24" style={{ background: WATER }}>
+        <div className="mx-auto max-w-[1180px] px-4 pb-14 pt-9 sm:px-8 sm:pb-24 sm:pt-14 lg:px-14">
+          <Eyebrow className="text-gray-700">{t('howToUse.loop.label')}</Eyebrow>
+          <h2 className="mt-3.5 max-w-[16em] text-balance text-[clamp(30px,5vw,52px)] font-extrabold leading-[1.06] tracking-[-0.04em]">
+            {t('howToUse.loop.title')}
+          </h2>
 
-          {/* ═══════════════ REPEAT OUT LOUD ═══════════════
-              The recording: what to press, what happens, where it goes. */}
-          <section id="repeat" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-              {t('howToUse.repeat.label')}
-            </p>
-            <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
-              {t('howToUse.repeat.title')}
-            </h2>
-            <p className="mt-3 mb-8 max-w-xl text-sm leading-relaxed text-gray-500">
-              {t('howToUse.repeat.text')}
-            </p>
-
-            <div className="relative mb-6 aspect-[16/10] overflow-hidden rounded-[3px] border border-gray-200 bg-gradient-to-b from-white to-room">
-              <RepeatDrawing />
-            </div>
-
-            <ol className="grid gap-3 sm:grid-cols-2">
-              {(t('howToUse.repeat.steps', { returnObjects: true }) as { title: string; text: string }[]).map((step, i) => {
-                const Icon = REPEAT_ICONS[i] ?? IoMicOutline;
-                return (
-                  <li key={step.title} className="flex gap-4 rounded-[3px] border border-gray-200 bg-white p-5">
+          <ol className="m-0 mt-11 flex list-none flex-col p-0">
+            {loopExtras.map(({ note, media, narrow }, i) => {
+              const last = i === loopExtras.length - 1;
+              return (
+                <li key={i} className="flex gap-3 sm:gap-6">
+                  <div aria-hidden className="flex w-[46px] flex-none flex-col items-center">
                     <span
-                      aria-hidden
-                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[3px] border border-line bg-room text-ink"
+                      className="grid h-[46px] w-[46px] flex-none place-items-center rounded-full text-[17px] font-extrabold"
+                      style={{ background: GREEN }}
                     >
-                      <Icon className="h-5 w-5" />
+                      {i + 1}
                     </span>
-                    <div>
-                      <p className="font-mono text-[10px] tracking-[0.16em] text-gray-400">{String(i + 1).padStart(2, '0')}</p>
-                      <h3 className="mt-0.5 text-[15px] text-gray-900">{step.title}</h3>
-                      <p className="mt-1 text-sm leading-relaxed text-gray-600">{step.text}</p>
+                    {!last && <span className="w-[3px] flex-1" style={{ background: GREEN }} />}
+                  </div>
+                  <article className={`${card} ${last ? '' : 'mb-6'} flex min-w-0 flex-1 flex-wrap items-center gap-x-10 gap-y-5`}>
+                    <div className="min-w-0 flex-[1_1_280px]">
+                      <h3 className="m-0 text-[22px] font-extrabold leading-tight tracking-[-0.02em]">
+                        {t(`howToUse.loop.s${i + 1}.title`)}
+                      </h3>
+                      <p className="mt-2 leading-relaxed text-dim">{t(`howToUse.loop.s${i + 1}.text`)}</p>
+                      {note}
                     </div>
-                  </li>
-                );
-              })}
-            </ol>
+                    {media && (
+                      <div className={`min-w-0 ${narrow ? 'flex-[0_1_300px]' : 'flex-[1_1_360px]'}`}>{media}</div>
+                    )}
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </section>
 
-            <p className="mt-4 flex items-start gap-2.5 text-sm leading-relaxed text-gray-500">
-              <IoLockClosedOutline aria-hidden className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              {t('howToUse.repeat.note')}
-            </p>
-          </section>
+      <Waterline from={WATER} to={DEEP} />
 
-          {/* ═══════════════ THE SIX QUESTIONS ═══════════════ */}
-          {METHOD_GROUPS.map((g) => (
-            <section
-              key={g.key}
-              className="border-t border-gray-200 py-12 sm:py-16"
-            >
-              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-                {t(`howToUse.groups.${g.key}.label`)}
-              </p>
-              <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
-                {t(`howToUse.groups.${g.key}.title`)}
+      {/* ═══════════════ REPEAT OUT LOUD: the deep ═══════════════
+          The recording: what to press, what happens, where it goes. */}
+      <section id="repeat" className="scroll-mt-24 text-white" style={{ background: DEEP }}>
+        <div className="mx-auto max-w-[1180px] px-4 pb-14 pt-9 sm:px-8 sm:pb-24 sm:pt-14 lg:px-14">
+          <div className="flex flex-wrap items-center gap-x-14 gap-y-8">
+            <div className="min-w-0 flex-[1_1_400px]">
+              <Eyebrow className="text-[#9fd4ff]">{t('howToUse.repeat.label')}</Eyebrow>
+              <h2 className="mt-3.5 text-balance text-[clamp(30px,5vw,52px)] font-extrabold leading-[1.06] tracking-[-0.04em]">
+                {t('howToUse.repeat.title')}
               </h2>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-gray-500">
-                {t(`howToUse.groups.${g.key}.text`)}
-              </p>
+              <p className="mt-5 max-w-[32em] text-[17px] leading-relaxed text-white/85">{t('howToUse.repeat.text')}</p>
+            </div>
+            <figure className="m-0 min-w-0 flex-[1_1_400px]">
+              <img
+                src={repeatShot}
+                alt={t('howToUse.shots.repeatMode')}
+                loading="lazy"
+                width={1440}
+                height={999}
+                className="block h-auto w-full rounded-[22px] shadow-[0_28px_56px_-30px_rgba(0,0,0,0.75)]"
+              />
+            </figure>
+          </div>
 
-              <div className="mt-10 flex flex-col gap-16">
-                {groupByScene(g.ids).map(({ scene, ids }) => (
-                  <MethodBlock key={scene} scene={scene} ids={ids} anchors startWhenSeen />
+          <ol className="m-0 mt-12 grid list-none grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4 p-0">
+            {repeatSteps.map((step, i) => {
+              const Icon = REPEAT_ICONS[i] ?? IoMicOutline;
+              return (
+                <li key={step.title} className="rounded-2xl border border-white/30 bg-white/[0.08] p-[22px]">
+                  <div className="flex items-center justify-between">
+                    <Icon aria-hidden className="h-[26px] w-[26px]" />
+                    <span className="font-mono text-xs tracking-[0.16em] text-[#9fd4ff]">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <h3 className="mt-[18px] text-lg font-extrabold leading-tight tracking-[-0.015em]">{step.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-white/85">{step.text}</p>
+                </li>
+              );
+            })}
+          </ol>
+
+          <p className="mt-6 flex max-w-[46em] items-start gap-2.5 text-[15px] leading-relaxed text-white/85">
+            <IoLockClosedOutline aria-hidden className="mt-1 h-[18px] w-[18px] flex-none" />
+            {t('howToUse.repeat.note')}
+          </p>
+        </div>
+      </section>
+
+      <Waterline from={ROOM} to={DEEP} down />
+
+      {/* ═══════════════ THE SIX QUESTIONS: back on the surface ═══════════════
+          The groups and their order are METHOD_GROUPS, shared with onboarding. */}
+      <section id="why" className="scroll-mt-24">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-12 px-4 pb-10 pt-9 sm:gap-20 sm:px-8 sm:pb-16 sm:pt-14 lg:px-14">
+          {METHOD_GROUPS.map((g) => (
+            <div key={g.key} className="flex flex-wrap gap-x-14 gap-y-7">
+              <div className="min-w-0 flex-[1_1_280px]">
+                {/* red only where something is taken away; it is a marker here, never a fill behind text */}
+                <Eyebrow bar={g.key === 'taken' ? 'var(--color-signal-ink)' : GREEN}>
+                  {t(`howToUse.groups.${g.key}.label`)}
+                </Eyebrow>
+                <h2 className="mt-3.5 text-balance text-[clamp(26px,3.6vw,38px)] font-extrabold leading-[1.1] tracking-[-0.035em]">
+                  {t(`howToUse.groups.${g.key}.title`)}
+                </h2>
+                <p className="mt-3.5 leading-relaxed text-dim">{t(`howToUse.groups.${g.key}.text`)}</p>
+              </div>
+              <div className="grid min-w-0 flex-[999_1_520px] grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+                {g.ids.map((id) => (
+                  <article key={id} id={id} className={`${card} scroll-mt-28 border border-line`}>
+                    <p className="m-0 text-sm font-bold text-dim">{t(`homepage.why.${id}.cloud`)}</p>
+                    <h3 className="mt-1.5 text-xl font-extrabold leading-tight tracking-[-0.02em]">
+                      {t(`homepage.why.${id}.title`)}
+                    </h3>
+                    <div className="mt-5">
+                      <QuestionDiagram id={id} />
+                    </div>
+                    <p className="mt-5 max-w-[40em] text-[15px] leading-relaxed text-dim">
+                      {t(`homepage.why.${id}.takeaway`)}
+                    </p>
+                  </article>
                 ))}
               </div>
-            </section>
+            </div>
           ))}
+        </div>
+      </section>
 
-          {/* ═══════════════ LEVELS ═══════════════ */}
-          <section id="levels" className="scroll-mt-20 border-t border-gray-200 py-12 sm:py-16">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-              {t('howToUse.pick.label')}
-            </p>
-            <h2 className="mt-3 text-2xl font-extrabold leading-tight text-gray-900 sm:text-3xl">
-              {t('howToUse.pick.title')}
-            </h2>
-            <p className="mt-3 mb-8 max-w-xl text-sm leading-relaxed text-gray-500">
-              {t('howToUse.pick.text')}
-            </p>
-
-            {/* The same glasses the level picker uses, so the guide and /levels
-                show one object rather than two drawings of it. */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-6">
-              {LEVEL_IDS.map((id) => (
-                <div
-                  key={id}
-                  className="flex flex-col items-center rounded-[3px] border border-gray-200 bg-white p-4"
+      {/* ═══════════════ LEVELS ═══════════════
+          The same glasses the level picker uses, so the guide and /levels
+          show one object rather than two drawings of it. */}
+      <section id="levels" className="scroll-mt-24">
+        <div className="mx-auto max-w-[1180px] px-4 pb-12 sm:px-8 sm:pb-20 lg:px-14">
+          <div className="flex flex-wrap items-center gap-x-14 gap-y-9 rounded-[28px] border border-line bg-white p-6 sm:p-10 lg:p-14">
+            <div className="min-w-0 flex-[1_1_340px]">
+              <Eyebrow>{t('howToUse.pick.label')}</Eyebrow>
+              <h2 className="mt-3.5 text-balance text-[clamp(30px,5vw,52px)] font-extrabold leading-[1.06] tracking-[-0.04em]">
+                {t('howToUse.pick.title')}
+              </h2>
+              <p className="mt-4 max-w-[30em] text-[17px] leading-relaxed text-dim">{t('howToUse.pick.text')}</p>
+              <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3.5">
+                <Link
+                  to="/levels"
+                  className="inline-flex h-14 items-center justify-center gap-2.5 rounded-[14px] bg-ink px-7 text-sm font-bold uppercase
+                    tracking-[0.2em] text-white no-underline transition-colors hover:bg-gray-800
+                    focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
                 >
+                  {t('howToUse.pick.cta')}
+                  <IoArrowForward aria-hidden className="h-[18px] w-[18px]" />
+                </Link>
+                <span className="text-sm text-dim">{t('howToUse.pick.note')}</span>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 flex-[1_1_340px] grid-cols-3 gap-2 sm:gap-6">
+              {LEVEL_IDS.map((id) => (
+                <div key={id} className="flex flex-col items-center text-center">
                   <MilkGlass
                     fill={LEVEL_FILL[id]}
                     selected={false}
-                    className="h-auto w-full max-w-[92px]"
+                    className="h-auto w-full max-w-[120px]"
                     style={{ color: themes[id].accent }}
                   />
-                  <span className="mt-3 text-xl font-extrabold tabular-nums leading-none text-gray-900">
-                    {t(`levels.fat${id.charAt(0).toUpperCase()}${id.slice(1)}`)}
+                  <span className="mt-3 text-[clamp(22px,3vw,30px)] font-extrabold tabular-nums leading-none tracking-[-0.02em]">
+                    {t(levelKey(id, 'fat'))}
                   </span>
-                  <span className="mt-1 text-center text-xs font-bold text-gray-500">
-                    {t(`levels.${id}`)}
-                  </span>
+                  <span className="mt-1.5 text-sm font-bold text-dim">{t(levelKey(id))}</span>
                 </div>
               ))}
             </div>
-
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link
-                to="/levels"
-                className={buttonPrimary}
-              >
-                {t('howToUse.pick.cta')}
-                <IoArrowForward className="h-4 w-4" />
-              </Link>
-              <span className="text-xs text-gray-400">{t('howToUse.pick.note')}</span>
-            </div>
-          </section>
-
-          <footer className="border-t border-gray-200 py-10 text-center">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-gray-400">
-              {t('howToUse.footer')}
-            </p>
-          </footer>
+          </div>
         </div>
-      </main>
+      </section>
+
+      <footer className="border-t border-line py-8 text-center">
+        <p className="m-0 px-4 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">{t('howToUse.footer')}</p>
+      </footer>
     </div>
   );
 };

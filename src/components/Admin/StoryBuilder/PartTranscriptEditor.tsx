@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -46,6 +47,7 @@ const withAnchors = (entries: VocabEntry[], anchors: string[]): VocabEntry[] =>
   entries.map((entry, i) => ({ ...entry, anchor: anchors[i]?.trim() || null }));
 
 const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscriptEditorProps) => {
+  const { t } = useTranslation("studio");
   const savedText = part.transcript ?? "";
   const baselineAnchors = useMemo(() => anchorsOf(part), [part]);
 
@@ -98,14 +100,14 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
         setPreviewError("");
       } catch (err) {
         if (cancelled) return;
-        setPreviewError(err instanceof Error ? err.message : "Could not check the transcript.");
+        setPreviewError(err instanceof Error ? err.message : t("content.transcript.checkFailed"));
       }
     }, PREVIEW_DELAY_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [text, anchors, rows, token, story._id, part.partNumber]);
+  }, [text, anchors, rows, token, story._id, part.partNumber, t]);
 
   const matchFor = (audioKey: string) => report?.matches.find((m) => m.key === audioKey.toLowerCase());
   const placed = rows.filter(({ entry }) => matchFor(entry.audioKey)).length;
@@ -129,9 +131,9 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
         );
       }
       onPartUpdated(latest);
-      setNotice(text.trim() ? "Saved." : "Cleared.");
+      setNotice(text.trim() ? t("content.transcript.saved") : t("content.transcript.cleared"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save the transcript.");
+      setError(err instanceof Error ? err.message : t("content.transcript.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -141,8 +143,7 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
     <div className="space-y-4">
       <label className="block max-w-3xl">
         <span className="block text-xs text-gray-500 mb-1">
-          Paste what is said in this part. [Stage directions] in square brackets are ignored. A blank
-          line starts a new paragraph. The player never shows this text, only its shape.
+          {t("content.transcript.help")}
         </span>
         <textarea
           value={text}
@@ -158,13 +159,13 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
 
       <div className="bg-white rounded-[3px] border border-gray-200 p-3 max-w-3xl space-y-2">
         <div className="flex items-baseline justify-between gap-2">
-          <div className="text-sm font-semibold text-black">Words in this part</div>
+          <div className="text-sm font-semibold text-black">{t("content.transcript.words")}</div>
           <div className="text-xs text-gray-500">
             {rows.length === 0
-              ? "No words yet"
+              ? t("content.transcript.noWords")
               : report
-                ? `${placed} of ${rows.length} words placed`
-                : "Paste a transcript to see where the words land"}
+                ? t("content.transcript.placed", { placed, total: rows.length })
+                : t("content.transcript.pasteToSee")}
           </div>
         </div>
         {previewError && <p className="text-red-600 text-xs">{previewError}</p>}
@@ -180,14 +181,14 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
                     {!report ? null : match ? (
                       <span className="text-gray-700">&ldquo;{match.text}&rdquo;</span>
                     ) : (
-                      <span className="text-signal-ink">not found</span>
+                      <span className="text-signal-ink">{t("content.transcript.notFound")}</span>
                     )}
                   </span>
                   <input
                     type="text"
                     value={anchors[list][index] ?? ""}
                     onChange={(e) => setAnchor(list, index, e.target.value)}
-                    placeholder="exact text in the transcript"
+                    placeholder={t("content.transcript.anchorPlaceholder")}
                     className="w-56 text-black px-2 py-1 border border-gray-300 rounded-[3px] text-xs"
                   />
                 </li>
@@ -207,7 +208,7 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
           disabled={saving || !dirty}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-1.5 disabled:opacity-40"
         >
-          {saving ? "Saving…" : dirty ? "Save" : "Saved"}
+          {saving ? t("common.saving") : dirty ? t("common.saveChanges") : t("common.saved")}
         </button>
         {dirty && (
           <button
@@ -219,7 +220,7 @@ const PartTranscriptEditor = ({ token, story, part, onPartUpdated }: PartTranscr
             disabled={saving}
             className="text-sm text-gray-500 hover:text-black"
           >
-            Discard changes
+            {t("common.discard")}
           </button>
         )}
       </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -50,6 +51,7 @@ const canonical = (quiz: PanelQuizData | null) =>
  * the player repeats. A line left unmatched is simply not asked.
  */
 const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQuizEditorProps) => {
+  const { t } = useTranslation("studio");
   const saved = part.panelQuiz ?? null;
   const [panels, setPanels] = useState<Box[]>(saved?.panels ?? []);
   const [assignments, setAssignments] = useState<(number | null)[] | null>(null);
@@ -114,7 +116,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
   };
 
   const applyGrid = () => {
-    if (panels.length && !confirm("Replace the panels with an even grid? Lines matched to panels are unmatched.")) {
+    if (panels.length && !confirm(t("practice.panels.confirmGrid"))) {
       return;
     }
     remapPanels(gridBoxes(gridRows, gridCols), () => null);
@@ -176,7 +178,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
   // ── save ─────────────────────────────────────────────────────────────────
 
   const handleSave = async (remove = false) => {
-    if (remove && !confirm(`Remove the comic quiz from part ${part.partNumber}?`)) return;
+    if (remove && !confirm(t("practice.panels.confirmRemove", { n: part.partNumber }))) return;
     setSaving(true);
     setError("");
     setSavedNote("");
@@ -188,9 +190,9 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
         setAssignments(segments.map(() => null));
       }
       setOrphans(0);
-      setSavedNote(remove ? "Removed." : "Saved.");
+      setSavedNote(remove ? t("practice.panels.status.removedNote") : t("practice.panels.status.savedNote"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
+      setError(err instanceof Error ? err.message : t("practice.panels.errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -199,16 +201,16 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
   // ── what is missing ──────────────────────────────────────────────────────
 
   const missing = [
-    !part.comicUrl && "a comic page",
-    !part.audioUrl && "audio",
-    part.timeMarkers.length < 2 && "at least two markers",
+    !part.comicUrl && t("practice.panels.missing.comic"),
+    !part.audioUrl && t("practice.panels.missing.audio"),
+    part.timeMarkers.length < 2 && t("practice.panels.missing.markers"),
   ].filter(Boolean);
   if (missing.length) {
     return (
       <div className="bg-gray-50 rounded-[3px] border border-dashed border-gray-300 p-8 text-center">
-        <p className="text-sm text-gray-600">This part needs {missing.join(", ")} before it can have a comic quiz.</p>
+        <p className="text-sm text-gray-600">{t("practice.panels.missingTitle", { list: missing.join(", ") })}</p>
         <p className="text-xs text-gray-400 mt-1">
-          The game plays the part&apos;s marker lines and asks which panel of the comic page each one happens in.
+          {t("practice.panels.missingHint")}
         </p>
       </div>
     );
@@ -242,13 +244,16 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
               mode === m ? "bg-black text-white border-black" : "bg-white text-gray-700 border-gray-300 hover:border-gray-500"
             }`}
           >
-            {n + 1}. {m === "panels" ? `Panels (${panels.length})` : `Lines → panels (${matchedCount}/${segments.length})`}
+            {n + 1}.{" "}
+            {m === "panels"
+              ? t("practice.panels.tabPanels", { count: panels.length })
+              : t("practice.panels.tabMatch", { matched: matchedCount, total: segments.length })}
           </button>
         ))}
         <span className="text-xs text-gray-500 ml-2">
           {mode === "panels"
-            ? "Drag on the page to add a panel; drag a panel to move it, its corners to resize; Delete removes the selected one."
-            : "Click a line to hear it, then click its panel — the next line plays. Keys: 1–9 panel, 0 none, space replay, ↑↓."}
+            ? t("practice.panels.hintPanels")
+            : t("practice.panels.hintMatch")}
         </span>
       </div>
 
@@ -278,7 +283,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
           {mode === "panels" ? (
             <div className="space-y-3 text-sm">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-gray-600">Even grid</span>
+                <span className="text-gray-600">{t("practice.panels.evenGrid")}</span>
                 <input
                   type="number"
                   min={1}
@@ -286,9 +291,9 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                   value={gridRows}
                   onChange={(e) => setGridRows(Math.min(6, Math.max(1, Number(e.target.value) || 1)))}
                   className="w-14 text-black px-2 py-1 border border-gray-300 rounded-[3px]"
-                  aria-label="Rows"
+                  aria-label={t("practice.panels.rows")}
                 />
-                <span className="text-gray-400">rows ×</span>
+                <span className="text-gray-400">{t("practice.panels.rowsTimes")}</span>
                 <input
                   type="number"
                   min={1}
@@ -296,19 +301,19 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                   value={gridCols}
                   onChange={(e) => setGridCols(Math.min(4, Math.max(1, Number(e.target.value) || 1)))}
                   className="w-14 text-black px-2 py-1 border border-gray-300 rounded-[3px]"
-                  aria-label="Columns"
+                  aria-label={t("practice.panels.columns")}
                 />
-                <span className="text-gray-400">columns</span>
+                <span className="text-gray-400">{t("practice.panels.columnsLabel")}</span>
                 <button
                   type="button"
                   onClick={applyGrid}
                   className="text-xs bg-white border border-gray-300 hover:border-gray-500 rounded-[3px] px-2 py-1 text-gray-700"
                 >
-                  Apply
+                  {t("practice.panels.apply")}
                 </button>
               </div>
               <p className="text-xs text-gray-400">
-                A starting point for regular pages — then drag the edges onto the real gutters.
+                {t("practice.panels.gridHint")}
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -317,7 +322,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                   disabled={panels.length < 2}
                   className="text-xs bg-white border border-gray-300 hover:border-gray-500 rounded-[3px] px-2 py-1 text-gray-700 disabled:opacity-40"
                 >
-                  Number in reading order
+                  {t("practice.panels.sortPanels")}
                 </button>
                 <button
                   type="button"
@@ -325,39 +330,36 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                   disabled={selected === null}
                   className="text-xs bg-white border border-gray-300 hover:border-red-400 rounded-[3px] px-2 py-1 text-red-600 disabled:opacity-40"
                 >
-                  Delete panel {selected !== null ? selected + 1 : ""}
+                  {selected !== null ? t("practice.panels.deletePanelN", { n: selected + 1 }) : t("practice.panels.deletePanel")}
                 </button>
               </div>
               <p className="text-xs text-gray-500">
-                Panels don&apos;t all need lines — one with none still counts as a wrong answer to tap.
+                {t("practice.panels.emptyPanelNote")}
               </p>
             </div>
           ) : !assignments ? (
-            <p className="text-sm text-gray-500">Loading the audio to measure the last line…</p>
+            <p className="text-sm text-gray-500">{t("practice.panels.loadingAudio")}</p>
           ) : (
             <>
               {/* The game is only as clear as its lines. "I am 22 years old"
                   happens in no panel; asked anyway, the student cannot know
                   what the question is about. */}
               <p className="text-xs text-gray-600 bg-amber-50 border border-amber-200 rounded-[3px] px-2 py-1.5">
-                Match only lines that describe something <b>drawn</b> in a panel — leave the rest on
-                &ldquo;no panel&rdquo;, they are not asked. Neighbouring lines on the same panel are asked
-                as one question.
+                <Trans t={t} i18nKey="practice.panels.matchRule" components={{ b: <b /> }} />
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className="flex items-center gap-2 text-xs text-gray-600">
                   <input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} />
-                  Play the next line after each match
+                  {t("practice.panels.autoPlay")}
                 </label>
                 <span className="text-xs text-gray-500">
-                  {matchedCount} line{matchedCount === 1 ? "" : "s"} → {questionCount} question
-                  {questionCount === 1 ? "" : "s"}
+                  {t("practice.panels.lines", { count: matchedCount })} →{" "}
+                  {t("practice.panels.questions", { count: questionCount })}
                 </span>
               </div>
               {orphans > 0 && (
                 <p className="text-xs text-amber-700">
-                  {orphans} saved line{orphans === 1 ? "" : "s"} no longer line{orphans === 1 ? "s" : ""} up with a
-                  marker (the markers moved) and will be dropped on save.
+                  {t("practice.panels.orphans", { count: orphans })}
                 </p>
               )}
               <ol className="max-h-[60vh] overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-[3px]">
@@ -378,17 +380,17 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                       <span className="font-mono text-xs text-gray-500 w-28">
                         {formatTime(s.start)}–{formatTime(s.end)}
                       </span>
-                      {isActive && state === "playing" && <span className="text-xs text-sky-700">▶ playing</span>}
+                      {isActive && state === "playing" && <span className="text-xs text-sky-700">{t("practice.panels.playing")}</span>}
                       {i > 0 && panel !== null && assignments[i - 1] === panel && (
-                        <span className="text-xs text-gray-400">↳ asked with the line above</span>
+                        <span className="text-xs text-gray-400">{t("practice.panels.askedWithAbove")}</span>
                       )}
                       <span className="ml-auto flex items-center gap-1">
                         {panel === null ? (
-                          <span className="text-xs text-gray-300">no panel</span>
+                          <span className="text-xs text-gray-300">{t("practice.panels.noPanel")}</span>
                         ) : (
                           <>
                             <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-[2px] px-1.5">
-                              panel {panel + 1}
+                              {t("practice.panels.panelN", { n: panel + 1 })}
                             </span>
                             <button
                               type="button"
@@ -397,7 +399,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
                                 setAssignments(assignments.map((p, j) => (j === i ? null : p)));
                               }}
                               className="text-xs text-gray-400 hover:text-red-600 px-1"
-                              aria-label={`Unmatch line ${i + 1}`}
+                              aria-label={t("practice.panels.unmatchLine", { n: i + 1 })}
                             >
                               ×
                             </button>
@@ -420,10 +422,10 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
           type="button"
           onClick={() => handleSave(false)}
           disabled={saving || !dirty || panels.length === 0 || matchedCount === 0}
-          title={matchedCount === 0 ? "Match at least one line to a panel first" : undefined}
+          title={matchedCount === 0 ? t("practice.panels.saveNeedsMatch") : undefined}
           className="text-sm bg-black text-white rounded-[3px] px-4 py-2 disabled:opacity-40"
         >
-          {saving ? "Saving..." : "Save comic quiz"}
+          {saving ? t("common.saving") : t("practice.panels.save")}
         </button>
         <button
           type="button"
@@ -434,7 +436,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
           disabled={panels.length === 0 || matchedCount === 0}
           className="text-sm bg-white border border-gray-300 hover:border-gray-500 rounded-[3px] px-4 py-2 text-gray-700 disabled:opacity-40"
         >
-          Try it
+          {t("practice.panels.tryIt")}
         </button>
         {saved && (
           <button
@@ -443,11 +445,13 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
             disabled={saving}
             className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
           >
-            Remove from this part
+            {t("practice.panels.removeFromPart")}
           </button>
         )}
         <span className="text-xs text-gray-500">
-          {dirty ? "Unsaved changes" : savedNote || (saved ? "Saved — students see it after the part ends" : "Not made yet")}
+          {dirty
+            ? t("common.unsaved")
+            : savedNote || (saved ? t("practice.panels.status.saved") : t("practice.panels.status.notMade"))}
         </span>
       </div>
 
@@ -467,7 +471,7 @@ const PartPanelQuizEditor = ({ token, story, part, onPartUpdated }: PartPanelQui
               onClick={() => setTrying(false)}
               className="self-end text-sm text-black/70 hover:text-black px-2"
             >
-              Close
+              {t("practice.panels.close")}
             </button>
             <div className="flex-1 min-h-0">
               <PanelQuiz

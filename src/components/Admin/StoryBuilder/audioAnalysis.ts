@@ -217,6 +217,8 @@ export interface MarkerIssue {
   /** The marker this is about, so the UI can jump to it. */
   index: number;
   message: string;
+  /** The length the message quotes, in seconds, so the UI can word it in its own language. */
+  seconds: number;
 }
 
 /** Segments shorter than this are almost certainly a double-tap. */
@@ -241,6 +243,7 @@ export function markerIssues(times: readonly number[], duration: number): Marker
     issues.push({
       kind: "no-start",
       index: 0,
+      seconds: times[0],
       message: `The first ${seconds(times[0])} can't be reached — sentence practice starts at the first marker. Move it to 0:00.`,
     });
   }
@@ -251,6 +254,7 @@ export function markerIssues(times: readonly number[], duration: number): Marker
       issues.push({
         kind: "too-close",
         index: i + 1,
+        seconds: length,
         message: `Sentences ${i + 1} and ${i + 2} are only ${seconds(length)} apart — probably a double tap.`,
       });
     }
@@ -262,6 +266,7 @@ export function markerIssues(times: readonly number[], duration: number): Marker
       issues.push({
         kind: "long-segment",
         index: i,
+        seconds: length,
         message: `Sentence ${i + 1} runs ${seconds(length)} — a boundary was probably missed.`,
       });
     }

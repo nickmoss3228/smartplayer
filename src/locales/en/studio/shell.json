@@ -1,0 +1,145 @@
+{
+  "tab": {
+    "chooseAria": "Choose a content workspace",
+    "chooseTitle": "Choose what to work on",
+    "stories": { "title": "Stories to hear", "detail": "Story sets, parts, comics, vocabulary and comprehension quizzes." },
+    "pronunciation": { "title": "Pronunciation", "detail": "Short audio prompts, sentences and tongue twisters. Record and compare." },
+    "sets_one": "{{count}} set",
+    "sets_other": "{{count}} sets",
+    "opening": "Opening the set…",
+    "backToLibrary": "Back to the library",
+    "contentTypes": "Content types",
+    "shelves": "Shelves",
+    "hideShelves": "Hide shelves",
+    "newStory": "New story set",
+    "newPronunciation": "New pronunciation lesson",
+    "continueEditing": "Continue editing «{{name}}»",
+    "loadError": "Could not load stories.",
+    "loadOneError": "Could not load story."
+  },
+  "editor": {
+    "setEditorAria": "Set editor",
+    "breadcrumb": "Breadcrumb",
+    "root": "Story Builder",
+    "switchTitle": "Open another set",
+    "switchSet": "Switch set",
+    "readyChip": {
+      "part": "{{ready}}/{{total}} parts ready",
+      "prompt": "{{ready}}/{{total}} prompts ready"
+    },
+    "previewTitle": {
+      "part": "Open part {{n}} the way a student sees it",
+      "prompt": "Open prompt {{n}} the way a student sees it"
+    },
+    "noAudioYet": {
+      "part": "Part {{n}} has no audio yet",
+      "prompt": "Prompt {{n}} has no audio yet"
+    },
+    "reviewPublish": "Review & publish",
+    "workspaceAria": "Set workspace",
+    "tabs": {
+      "sounds": "Sounds & guide",
+      "script": "Audio script",
+      "editPart": "Edit parts",
+      "editPrompt": "Edit prompts",
+      "overview": "Overview",
+      "settings": "Set settings",
+      "review": "Review & publish"
+    },
+    "onePromptPerClip": "One prompt per audio clip. The script stays in the editor.",
+    "hideSupporting": "Hide supporting tools",
+    "showSupporting": "Supporting tools: words, quizzes & comics",
+    "overviewTitle": "Overview",
+    "overviewHint": {
+      "part": "Every part against every tool. Click a cell to open that part in that tool.",
+      "prompt": "Every prompt against every tool. Click a cell to open that prompt in that tool."
+    },
+    "reviewHint": {
+      "part": "{{ready}} of {{total}} parts ready.",
+      "prompt": "{{ready}} of {{total}} prompts ready."
+    },
+    "isPublished": "This set is published.",
+    "isDraft": "This set is a draft.",
+    "allReady": "All required elements are ready.",
+    "updating": "Updating…",
+    "unpublish": "Unpublish",
+    "publish": "Publish",
+    "publishConfirm": {
+      "part": "Only {{ready}} of {{total}} parts are ready to sell.\n\nStill missing: {{owed}}.\n\nPublish anyway? Students will see the story with those gaps in it.",
+      "prompt": "Only {{ready}} of {{total}} prompts are ready to sell.\n\nStill missing: {{owed}}.\n\nPublish anyway? Students will see the lesson with those gaps in it."
+    },
+    "publishError": "Failed to update publish status.",
+    "addPartError": "Failed to add a part.",
+    "asideAria": { "part": "Story parts", "prompt": "Lesson prompts" },
+    "asideTitle": { "part": "Parts", "prompt": "Prompts" },
+    "freePreview": "Free preview",
+    "addItem": { "part": "Add part", "prompt": "Add prompt" },
+    "adding": "Adding…",
+    "mostItems": "{{max}} is the most",
+    "limitTitle": {
+      "part": "A set has at most {{max}} parts",
+      "prompt": "A set has at most {{max}} prompts"
+    },
+    "audioMarkers": "Audio & markers",
+    "privateScriptTranslation": "Private script & translation",
+    "privateScript": "Private script",
+    "focusMode": "Focus mode",
+    "exitFocus": "Exit focus",
+    "toolsAria": "Part editing tools",
+    "nothingYet": "Nothing here yet for this part",
+    "previous": { "part": "Previous part", "prompt": "Previous prompt" },
+    "next": { "part": "Next part", "prompt": "Next prompt" }
+  },
+  "verdict": {
+    "ready": "ready",
+    "empty": "empty",
+    "notSaved": "{{element}} not saved",
+    "no": "no {{element}}",
+    "missing_one": "{{count}} element missing",
+    "missing_other": "{{count}} elements missing"
+  },
+  "matrix": {
+    "status": "Status",
+    "optional": "{{element}} — optional",
+    "preview": "preview",
+    "previewTitle": "A non-owner hears this part before deciding to buy",
+    "cellState": { "done": "done", "partial": "partial", "empty": "empty", "na": "n/a" },
+    "addTitle": { "part": "Add another part", "prompt": "Add another prompt" },
+    "addItem": { "part": "+ Add part", "prompt": "+ Add prompt" },
+    "legendDone": "✓ complete",
+    "legendPartial": "~ needs a look",
+    "legendEmpty": "· empty",
+    "legendNa": "– not used"
+  },
+  "rail": {
+    "search": "Search stories",
+    "none": "No stories yet.",
+    "noMatch": "Nothing matches that.",
+    "categories": { "general": "Stories", "news": "News & Interesting Things" }
+  },
+  "library": {
+    "aria": "Content library",
+    "searchLabel": "Search this content type",
+    "searchStory": "Search stories",
+    "searchPronunciation": "Search pronunciation lessons",
+    "noMatch": "Nothing matches this search.",
+    "emptyPronunciation": "No pronunciation lessons yet.",
+    "emptyStory": "No story sets yet.",
+    "create": "Create a set",
+    "sectionAria": {
+      "story": "{{level}} stories",
+      "pronunciation": "{{level}} pronunciation lessons"
+    },
+    "news": "News & Interesting Things"
+  },
+  "visibility": {
+    "title": "Shown in the app",
+    "intro": "Unlisting takes a story off the students' list immediately. It does <b>not</b> revoke anything — anyone who bought it keeps access and playback keeps working — but it disappears from their list too, so it is a way to retire a story rather than a way to take one down for repairs. Deleting a story here does not remove it either: the built-in stories ship with the app and come back when their draft is gone, so this is the switch that controls the shelves.",
+    "loadError": "Could not load visibility.",
+    "updateError": "Could not update visibility.",
+    "putBack": "Put this back on the shelf",
+    "takeOff": "Take this off the shelf. Anyone who already owns it keeps access, but it disappears from their list too.",
+    "list": "List",
+    "unlist": "Unlist"
+  }
+}

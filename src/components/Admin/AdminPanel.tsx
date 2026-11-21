@@ -1,31 +1,41 @@
 import { useState, useEffect } from "react";
+import { Trans, useTranslation } from "react-i18next";
+// Registers the "studio" strings; they ship in this lazy chunk, not the main bundle.
+import "../../i18nStudio";
 import FeedbackTab from "./FeedbackTab";
 import PlayersTab from "./PlayersTab";
 import StoryBuilderTab from "./StoryBuilder/StoryBuilderTab";
 import AuditTab from "./AuditTab";
+import StatsTab from "./StatsTab";
 import { ADMIN_UNAUTHORIZED_EVENT } from "../../services/adminServices";
 import { API_BASE as API_URL } from "../../services/apiClient";
 
 const TOKEN_KEY = "admin_token";
 
-type Tab = "feedback" | "players" | "story-builder" | "audit";
+type Tab = "stats" | "feedback" | "players" | "story-builder" | "audit";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "feedback", label: "Feedback" },
-  { id: "players", label: "Players" },
-  { id: "story-builder", label: "Story Builder" },
-  { id: "audit", label: "Audit Log" },
+const TABS: { id: Tab; labelKey: string }[] = [
+  { id: "stats", labelKey: "admin.tabs.stats" },
+  { id: "feedback", labelKey: "admin.tabs.feedback" },
+  { id: "players", labelKey: "admin.tabs.players" },
+  { id: "story-builder", labelKey: "admin.tabs.storyBuilder" },
+  { id: "audit", labelKey: "admin.tabs.audit" },
 ];
 
 /** `initialTab` lets /admin/studio (the old Content Studio link) open the Story Builder directly. */
 const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
+  const { t } = useTranslation("studio");
   const [token, setToken] = useState<string | null>(() =>
     sessionStorage.getItem(TOKEN_KEY)
   );
   const [code, setCode] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    // A Story Builder link (?set=… or ?new) opens on the Story Builder tab.
+    const search = new URLSearchParams(window.location.search);
+    return search.has("set") || search.has("new") ? "story-builder" : initialTab;
+  });
   // Set by adminLogin's response so the header can show which code word is in
   // use — the same name the audit log attributes actions to.
   const [adminName, setAdminName] = useState<string | null>(null);
@@ -39,11 +49,11 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       setToken(null);
       setCode("");
       setAdminName(null);
-      setLoginError("Session expired. Enter the code word again.");
+      setLoginError(t("admin.login.expired"));
     };
     window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
     return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onExpired);
-  }, []);
+  }, [t]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +69,11 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       if (res.status === 429) {
         // The login endpoint is throttled to 5 failed attempts per 15 minutes
         // (backend middleware/rateLimit.js) — say so rather than looking broken.
-        setLoginError(data.error ?? "Too many attempts. Try again in 15 minutes.");
+        setLoginError(data.error ?? t("admin.login.tooMany"));
         return;
       }
       if (!res.ok) {
-        setLoginError(data.error ?? "Invalid code word.");
+        setLoginError(data.error ?? t("admin.login.invalid"));
         return;
       }
       sessionStorage.setItem(TOKEN_KEY, data.token);
@@ -71,7 +81,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       setAdminName(data.admin ?? null);
     } catch (err) {
       console.error(err);
-      setLoginError("Something went wrong.");
+      setLoginError(t("admin.login.failed"));
     } finally {
       setLoading(false);
     }
@@ -86,7 +96,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 ym-hide-content">
         {/* See the note on the same tag in the authenticated return below. */}
         <meta name="robots" content="noindex, nofollow" />
         <form
@@ -94,15 +104,15 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
           className="bg-white rounded-[3px] shadow-lg p-8 w-full max-w-sm"
         >
           <h1 className="text-xl font-bold text-black mb-4 text-center">
-            Admin Access
+            {t("admin.login.title")}
           </h1>
           <input
             type="password"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter code word"
+            placeholder={t("admin.login.placeholder")}
             required
-            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full black text-black px-3 py-2 border border-gray-300 rounded-[3px] mb-3 focus:outline-none focus:ring-2 focus:ring-black ym-disable-keys"
           />
           {loginError && (
             <p className="text-sm text-red-600 mb-3">{loginError}</p>
@@ -112,7 +122,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
             disabled={loading}
             className="w-full bg-black text-white py-2 rounded-[3px] hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            {loading ? "Checking..." : "Enter"}
+            {loading ? t("admin.login.checking") : t("admin.login.enter")}
           </button>
         </form>
       </div>
@@ -120,7 +130,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10">
+    <div className="min-h-screen bg-gray-50 pt-20 px-4 sm:px-8 pb-10 ym-hide-content">
       {/* /admin is listed as a public route in App.tsx, so it is reachable and
           therefore indexable. robots.txt disallows it, but Disallow only stops
           crawling — a URL linked from anywhere else can still be indexed
@@ -134,11 +144,10 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
       <div className="max-w-[1500px] mx-auto">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-black">Admin Panel</h1>
+            <h1 className="text-2xl font-bold text-black">{t("admin.title")}</h1>
             {adminName && (
               <p className="text-xs text-gray-500 mt-0.5">
-                Acting as <span className="font-semibold">{adminName}</span> — actions
-                are recorded in the audit log
+                <Trans t={t} i18nKey="admin.actingAs" values={{ name: adminName }} components={{ b: <span className="font-semibold" /> }} />
               </p>
             )}
           </div>
@@ -146,7 +155,7 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
             onClick={handleLogout}
             className="px-4 py-2 text-sm rounded-[3px] text-gray-600 hover:bg-gray-200 transition-colors"
           >
-            Log out
+            {t("admin.logOut")}
           </button>
         </div>
 
@@ -161,11 +170,12 @@ const AdminPanel = ({ initialTab = "feedback" }: { initialTab?: Tab }) => {
                   : "text-gray-500 hover:text-black"
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>
 
+        {activeTab === "stats" && <StatsTab token={token} />}
         {activeTab === "feedback" && <FeedbackTab token={token} />}
         {activeTab === "players" && <PlayersTab token={token} />}
         {activeTab === "story-builder" && <StoryBuilderTab token={token} />}

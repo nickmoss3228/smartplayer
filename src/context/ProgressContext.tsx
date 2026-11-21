@@ -56,13 +56,19 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
   const [storyProgress, setStoryProgress] = useState<StoryProgressMap>({});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const hasFetched = useRef(false);
+  const userId = user ? user.id : null;
+  // Lets an in-flight request notice the account changed under it.
+  const userIdRef = useRef<string | null>(userId);
+  userIdRef.current = userId;
 
   const getToken = (): string | null => localStorage.getItem("token");
 
+  // Resolves to null when the request failed, so callers can decide whether to
+  // keep what they already have instead of overwriting it with defaults.
   const fetchSingleStory = useCallback(
-    async (difficulty: string, storySlug: string): Promise<StoryProgressData> => {
+    async (difficulty: string, storySlug: string): Promise<StoryProgressData | null> => {
       const token = getToken();
-      if (!token) return { ...defaultStoryData, loading: false };
+      if (!token) return null;
 
       try {
         const res = await axios.get(
@@ -78,11 +84,7 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
         };
       } catch (err) {
         console.error(`Failed to fetch progress for ${difficulty}:${storySlug}`, err);
-        return {
-          ...defaultStoryData,
-          loading: false,
-          error: "Failed to load progress",
-        };
+        return null;
       }
     },
     []
@@ -90,7 +92,8 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Fetch all stories on mount
   const fetchAll = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
+    const requestedFor = userId;
 
     const entries = Object.entries(STORY_SLUGS).flatMap(([difficulty, slugs]) =>
       slugs.map((slug) => ({ difficulty, slug }))
@@ -111,26 +114,34 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
       })
     );
 
+    // Logged out or switched account while this was in flight: discard it, and
+    // leave hasFetched alone so the new account fetches for itself.
+    if (userIdRef.current !== requestedFor) return;
+
     const finalState: StoryProgressMap = {};
     results.forEach(({ key, data }) => {
-      finalState[key] = data;
+      finalState[key] = data ?? {
+        ...defaultStoryData,
+        loading: false,
+        error: "Failed to load progress",
+      };
     });
 
     setStoryProgress(finalState);
     setIsInitialLoad(false);
     hasFetched.current = true;
-  }, [user, fetchSingleStory]);
+  }, [userId, fetchSingleStory]);
 
   useEffect(() => {
-    if (user && !hasFetched.current) {
+    if (userId && !hasFetched.current) {
       fetchAll();
     }
-    if (!user) {
+    if (!userId) {
       setStoryProgress({});
       setIsInitialLoad(false);
       hasFetched.current = false;
     }
-  }, [user, fetchAll]);
+  }, [userId, fetchAll]);
 
   // AuthContext migrates a guest's local trial progress into the account via
   // a fire-and-forget POST that resolves after the initial fetchAll() above
@@ -140,13 +151,13 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
   // correct, up-to-date state.
   useEffect(() => {
     const handleMigrated = () => {
-      if (!user) return;
+      if (!userId) return;
       hasFetched.current = false;
       fetchAll();
     };
     window.addEventListener("guest-progress-migrated", handleMigrated);
     return () => window.removeEventListener("guest-progress-migrated", handleMigrated);
-  }, [user, fetchAll]);
+  }, [userId, fetchAll]);
 
   // Called by Player after a quiz is submitted
   const refreshStoryProgress = useCallback(
@@ -159,11 +170,18 @@ export const ProgressProvider: React.FC<{ children: React.ReactNode }> = ({
         [key]: { ...(prev[key] ?? defaultStoryData), loading: true },
       }));
 
+      const requestedFor = userIdRef.current;
       const data = await fetchSingleStory(difficulty, storySlug);
+      if (userIdRef.current !== requestedFor) return;
 
       setStoryProgress((prev) => ({
         ...prev,
-        [key]: data,
+        // A failed refetch must not wipe the ticks we already have.
+        [key]: data ?? {
+          ...(prev[key] ?? defaultStoryData),
+          loading: false,
+          error: "Failed to load progress",
+        },
       }));
 
       // Also invalidate Dashboard cache so it re-fetches

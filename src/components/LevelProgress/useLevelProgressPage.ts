@@ -8,6 +8,7 @@ import { useCatalog } from '../../context/CatalogContext';
 import { useProgress } from '../../context/ProgressContext';
 import { useLevelProgress } from '../../hooks/useLevelProgress';
 import { usePreloadStoryAssets } from '../../hooks/usePreloadStoryAssets';
+import { markCongratsShown, shouldShowCongrats } from './congratsFlags';
 
 import {
   loadLastListened,
@@ -25,13 +26,6 @@ import { castCards as buildCastCards, reachedPart } from '../../modules/cast/cas
 /** Just past the preview dialog's 320ms entrance (App.css dialog-panel-in). */
 const PRELOAD_AFTER_OPEN_MS = 400;
 
-// ── Congrats localStorage helpers ─────────────────────────────────────────
-const getCongratsKey = (diff: string) => `congrats_shown_${diff}`;
-const hasShownCongrats = (diff: string) =>
-  localStorage.getItem(getCongratsKey(diff)) === 'true';
-const markCongratsShown = (diff: string) =>
-  localStorage.setItem(getCongratsKey(diff), 'true');
-
 export function useLevelProgressPage(props: LevelProgressProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,6 +42,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   const [showPaywall, setShowPaywall] = useState(
     () => Boolean((location.state as { openPaywall?: boolean } | null)?.openPaywall),
   );
+  const [showSignupWall, setShowSignupWall] = useState(false);
   const [lastListenedLevel, setLastListenedLevel] = useState<number | null>(
     () => loadLastListened(props.difficulty ?? 'easy'),
   );
@@ -117,6 +112,7 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     difficulty,
     storyTitle,
     handleLevelClick,
+    getLevelHref,
     goToDifficulty,
     getLevelData,
     progressPercentage,
@@ -149,14 +145,16 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   }, [comics]);
 
   useEffect(() => {
-    if (isAllCompleted && !hasShownCongrats(difficulty)) {
+    // 0 of 0 counts as all completed, so wait for the page to load first.
+    if (isLoading) return;
+    if (shouldShowCongrats(difficulty, storySlug, user?.id, isAllCompleted)) {
       const timer = setTimeout(() => {
         setShowCongrats(true);
-        markCongratsShown(difficulty);
+        markCongratsShown(difficulty, storySlug, user?.id);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isAllCompleted, difficulty]);
+  }, [isLoading, isAllCompleted, difficulty, storySlug, user?.id]);
 
   // ── Access ────────────────────────────────────────────────────────────
   /**
@@ -170,7 +168,9 @@ export function useLevelProgressPage(props: LevelProgressProps) {
    * While the paywall is off there IS a "sign up to continue" gate, and it is
    * the only one: a guest keeps the taster, and an account opens the rest.
    */
-  const { getCatalogStory, paywallEnabled, signupWallEnabled } = useCatalog();
+  const { getCatalogStory, paywallEnabled, signupWallEnabled, catalogLoading } = useCatalog();
+  // Why a locked part is locked, when nothing is sold: only the sign-up wall.
+  const signupLock = !paywallEnabled && !user && signupWallEnabled;
   const catalogEntry = getCatalogStory(storyKey(difficulty, storySlug));
   // A story the catalog does not list is NOT open. This read `!catalogEntry ||
   // owns(...)`, which called every unlisted story owned — the client half of
@@ -222,14 +222,13 @@ export function useLevelProgressPage(props: LevelProgressProps) {
   // The characters, revealed up to the part this student has reached in THIS
   // story. Recomputed from progress, so finishing a part reveals whoever
   // arrives in the next one without a reload.
+  const castReached = useMemo(
+    () => reachedPart({ completedParts: completedLevels, currentPart: currentLevel, totalParts: totalLevels }),
+    [completedLevels, currentLevel, totalLevels],
+  );
   const castCards = useMemo(
-    () =>
-      buildCastCards(
-        dbStory?.cast ?? [],
-        reachedPart({ completedParts: completedLevels, currentPart: currentLevel, totalParts: totalLevels }),
-        locale,
-      ),
-    [dbStory, completedLevels, currentLevel, totalLevels, locale],
+    () => buildCastCards(dbStory?.cast ?? [], castReached, locale),
+    [dbStory, castReached, locale],
   );
   // Open sheet: undefined = closed, null = opened from "All", a key = that character.
   const [castFocus, setCastFocus] = useState<string | null | undefined>(undefined);
@@ -239,13 +238,20 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     if (isPartLocked(level)) {
       // While nothing is sold, the only thing standing between this learner and
       // the rest of the story is an account — so ask for one, rather than
-      // opening an offer for something that is not for sale. `returnTo` brings
-      // them back to this exact grid once they are in.
+      // opening an offer for something that is not for sale. The sheet says
+      // why and carries `returnTo`, which brings them back to this exact grid.
       if (!paywallEnabled) {
-        if (!user) navigate('/login', { state: { returnTo: location.pathname } });
+        if (signupLock) setShowSignupWall(true);
         return;
       }
       setShowPaywall(true);
+      return;
+    }
+    // Part 1 opens the player at once; the other parts keep the preview.
+    if (level === 1) {
+      setLastListenedLevel(level);
+      saveLastListened(difficulty, level);
+      handleLevelClick(level);
       return;
     }
     setPreviewLevel(level);
@@ -287,12 +293,18 @@ export function useLevelProgressPage(props: LevelProgressProps) {
     isLoading,
     getLevelData,
     isPartLocked,
+    getLevelHref,
     storyOwned,
     freeParts,
     previewSeconds,
     showPaywall,
     setShowPaywall,
+    signupLock,
+    catalogLoading,
+    showSignupWall,
+    setShowSignupWall,
     castCards,
+    castReached,
     castFocus,
     // modal state
     showCongrats,

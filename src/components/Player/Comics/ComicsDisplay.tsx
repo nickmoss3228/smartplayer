@@ -86,7 +86,7 @@ export const ComicsDisplay: React.FC<ComicsDisplayProps> = ({
     <>
       <button
         onClick={handleOpen}
-        aria-label="Open comic"
+        aria-label={t("player.aria.openComic")}
         className="
         h-full max-h-full w-auto max-w-full aspect-square rounded-[3px] overflow-hidden
         bg-white/10 border border-white/15 cursor-pointer group relative block

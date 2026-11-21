@@ -1,6 +1,7 @@
 // components/Dashboard/AchievementsRow.tsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { IoMedalOutline } from "react-icons/io5";
 import AchievementCard from "./AchievementCard";
 import AchievementDetailModal from "./AchievementDetailModal";
 import {
@@ -14,9 +15,20 @@ import {
 } from "../../services/achievementServices";
 import { getTotalListeningSeconds } from "../../hooks/useListeningTimer";
 import { useListeningTimeSync } from "../../hooks/useListeningTimeSync";
+import { ListRow } from "./SectionKit";
 
-const AchievementsRow: React.FC = () => {
+interface AchievementsRowProps {
+  /**
+   * One row with the tally that opens the five cards in place, for a card
+   * that holds other rows too (the Dashboard's «Награды»). Without it, the
+   * headed grid of five cards.
+   */
+  collapsible?: boolean;
+}
+
+const AchievementsRow: React.FC<AchievementsRowProps> = ({ collapsible = false }) => {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [data, setData] = useState<AchievementsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [openCategory, setOpenCategory] = useState<AchievementCategory | null>(
@@ -73,6 +85,67 @@ const AchievementsRow: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, localListeningSeconds]);
 
+  // Collapsed into a row, the cards open inside a card that is at most half
+  // the page wide, so they stay two to a row even on desktop.
+  const cardsGrid = (
+    <div
+      className={
+        collapsible
+          ? "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:[&>*:last-child]:col-span-2"
+          : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4
+             sm:[&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1`
+      }
+    >
+      {ACHIEVEMENT_CATEGORIES.map((category, index) => (
+        <AchievementCard
+          key={category.key}
+          category={category}
+          value={valueMap[category.key] ?? 0}
+          index={index}
+          onOpen={setOpenCategory}
+        />
+      ))}
+    </div>
+  );
+
+  const detail = openCategory && (
+    <AchievementDetailModal
+      category={openCategory}
+      value={valueMap[openCategory.key] ?? 0}
+      onClose={() => setOpenCategory(null)}
+    />
+  );
+
+  if (collapsible) {
+    return (
+      <div>
+        <ListRow
+          icon={IoMedalOutline}
+          title={t("dashboard.achievements.title")}
+          hint={
+            loading ? (
+              <span className="inline-block h-3 w-32 bg-gray-200 rounded-[3px] animate-pulse" />
+            ) : (
+              t("dashboard.home.achievementsHint", { earned: tally.earned, total: tally.total })
+            )
+          }
+          expanded={open}
+          controls="achievements-cards"
+          onClick={() => setOpen((v) => !v)}
+        />
+        {open && !loading && (
+          <div
+            id="achievements-cards"
+            className="px-3 pb-3 pt-1 bg-white"
+          >
+            {cardsGrid}
+          </div>
+        )}
+        {detail}
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="mb-6">
@@ -119,28 +192,8 @@ const AchievementsRow: React.FC = () => {
 
       {/* Five cards into a two-column grid leaves the last one orphaned, so it
           takes the full row at that breakpoint. */}
-      <div
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4
-                   sm:[&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1"
-      >
-        {ACHIEVEMENT_CATEGORIES.map((category, index) => (
-          <AchievementCard
-            key={category.key}
-            category={category}
-            value={valueMap[category.key] ?? 0}
-            index={index}
-            onOpen={setOpenCategory}
-          />
-        ))}
-      </div>
-
-      {openCategory && (
-        <AchievementDetailModal
-          category={openCategory}
-          value={valueMap[openCategory.key] ?? 0}
-          onClose={() => setOpenCategory(null)}
-        />
-      )}
+      {cardsGrid}
+      {detail}
     </div>
   );
 };

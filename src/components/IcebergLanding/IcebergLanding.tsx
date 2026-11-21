@@ -16,12 +16,12 @@ import Fish from './Fish';
 import Lazy3D, { prefersStill } from './Lazy3D';
 import StickyCta from './StickyCta';
 import HeroMark from './HeroMark';
+import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 // three.js scenes, in their own chunks: fetched only when the first one nears the screen
 const MarineSnow = lazy(() => import('./three/MarineSnow'));
 const Iceberg3D = lazy(() => import('./three/Iceberg3D'));
 import './icebergLanding.css';
-import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 /**
  * The landing (/), built as one argument and drawn as a dive down the iceberg
@@ -47,7 +47,7 @@ import { TRY_IT_PATH, TRY_IT_STATE } from './tryIt';
 
 /** The water of each band, top to bottom; the first is the page's own background. */
 const ROOM = '#f5f8fa';
-const WATER = ['#cfe6f3', '#2a6390', '#1b4b72', '#0d2c47'] as const;
+export const WATER = ['#cfe6f3', '#2a6390', '#1b4b72', '#0d2c47'] as const;
 /**
  * How far the fade into each band reaches, in px: [above the line where the band
  * starts (so into the band before), below it]. Longer the deeper the band, so the
@@ -61,7 +61,7 @@ const FADE_STEPS = 6;
 const mix = (a: string, b: string, t: number) => `color-mix(in oklab, ${a} ${Math.round((1 - t * t * (3 - 2 * t)) * 100)}%, ${b})`;
 
 /** A band's water: the end of the fade from the band above, its own colour, then the start of the fade into the band below. */
-function water(i: number) {
+export function water(i: number) {
   const stops: string[] = [];
   const [above, below] = FADES[i];
   const start = above / (above + below);
@@ -79,13 +79,13 @@ function water(i: number) {
   return `linear-gradient(180deg, ${stops.join(', ')})`;
 }
 
-const LAYER_KEYS = ['spelling', 'speed', 'perception', 'linking'] as const;
+export const LAYER_KEYS = ['spelling', 'speed', 'perception', 'linking'] as const;
 
 /** The page's bands: each one's loops (waves, bubbles, rays, floes) run only while it is on screen. */
-const BANDS = '.ib-hero, .dv-wave, .dv-zone, .dv-ascent, .dv-air, .ib-sec, .ib-final';
+export const BANDS = '.ib-hero, .dv-wave, .dv-zone, .dv-ascent, .dv-air, .ib-sec, .ib-final';
 
 /** The flat berg, shown until the 3D one loads and wherever WebGL is missing: tip above the middle line, body below. */
-function BergDrawing() {
+export function BergDrawing() {
   return (
     <svg className="dv-final-svg" viewBox="0 0 600 440" preserveAspectRatio="xMidYMid meet">
       <polygon points="240,220 286,140 312,100 350,220" fill="#ffffff" />
@@ -106,7 +106,7 @@ let introPlayed = false;
 const FONT_WAIT = 600;
 const BERG_AFTER = 650;
 
-function useHeroIntro() {
+export function useHeroIntro() {
   const [intro] = useState(() => !introPlayed && !prefersStill());
   const [go, setGo] = useState(false);
   const [bergReady, setBergReady] = useState(!intro);
@@ -237,6 +237,13 @@ export default function IcebergLanding() {
           <div className="dv-final-notes">
             <footer>
               <p className="ib-micro">{t('howToUse.footer')}</p>
+              <nav className="ib-footer-nav" aria-label={t('iceberg.footer.label')}>
+                <Link to="/how-to-use" className="ib-micro">{t('iceberg.footer.howToUse')}</Link>
+                <Link to="/levels" className="ib-micro">{t('iceberg.footer.levels')}</Link>
+                <Link to="/legal/terms" className="ib-micro">{t('iceberg.footer.terms')}</Link>
+                <Link to="/legal/privacy" className="ib-micro">{t('iceberg.footer.privacy')}</Link>
+                <Link to="/legal/consent" className="ib-micro">{t('iceberg.footer.consent')}</Link>
+              </nav>
             </footer>
           </div>
         </div>

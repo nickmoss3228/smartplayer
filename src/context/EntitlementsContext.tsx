@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import {
@@ -18,10 +19,8 @@ import { useCatalog } from "./CatalogContext";
 
 interface EntitlementsContextValue extends Entitlements {
   entitlementsLoading: boolean;
-  /** Does a live subscription of this account cover this story? */
+  /** Has the signed-in account bought this story (directly, or via a set or level)? */
   owns: (difficulty: string, slug: string) => boolean;
-  /** When this account's subscription to `sku` ends, or null when none is running. */
-  activeUntil: (sku: string) => Date | null;
   /** Would the server actually sell this SKU in THIS environment? */
   canBuy: (sku: string) => boolean;
   refreshEntitlements: () => Promise<void>;
@@ -31,7 +30,6 @@ const EntitlementsContext = createContext<EntitlementsContextValue>({
   ...NO_ENTITLEMENTS,
   entitlementsLoading: true,
   owns: () => false,
-  activeUntil: () => null,
   canBuy: () => false,
   refreshEntitlements: async () => {},
 });
@@ -56,28 +54,40 @@ export const EntitlementsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const { getProduct } = useCatalog();
   const [data, setData] = useState<Entitlements>(NO_ENTITLEMENTS);
-  const [entitlementsLoading, setEntitlementsLoading] = useState(true);
+  const userKey = user ? user.id : "guest";
+  // Whose entitlements `data` holds. Loading is DERIVED from it: the render in
+  // which `user` first arrives must already read as loading, before any effect
+  // has had a chance to flip a flag (Player's redirect effect runs first).
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const entitlementsLoading = loadedFor !== userKey;
+  const currentKeyRef = useRef(userKey);
+  currentKeyRef.current = userKey;
 
   const load = useCallback(async () => {
-    if (!user) {
+    const key = userKey;
+    if (key === "guest") {
       // A guest owns nothing. Not an error state, and not worth a request.
       setData(NO_ENTITLEMENTS);
-      setEntitlementsLoading(false);
+      setLoadedFor(key);
       return;
     }
+    let next: Entitlements;
     try {
-      setData(await fetchEntitlements());
+      next = await fetchEntitlements();
     } catch (err) {
       // Fail CLOSED — see NO_ENTITLEMENTS.
       console.error("[EntitlementsContext] Failed to load entitlements:", err);
-      setData(NO_ENTITLEMENTS);
-    } finally {
-      setEntitlementsLoading(false);
+      next = NO_ENTITLEMENTS;
     }
-  }, [user]);
+    // The account changed while this was in flight: its answer is not ours.
+    if (currentKeyRef.current !== key) return;
+    setData(next);
+    setLoadedFor(key);
+  }, [userKey]);
 
   useEffect(() => {
-    setEntitlementsLoading(true);
+    // Account switch: drop the previous account's ownership while we fetch.
+    setData(NO_ENTITLEMENTS);
     load();
   }, [load]);
 
@@ -92,13 +102,6 @@ export const EntitlementsProvider: React.FC<{ children: React.ReactNode }> = ({
       ...data,
       entitlementsLoading,
       owns: (difficulty: string, slug: string) => ownedSet.has(storyKey(difficulty, slug)),
-      activeUntil: (sku: string) => {
-        // Every subscription is dated, so a row with no end is not one.
-        const row = data.entitlements.find((e) => e.sku === sku);
-        if (!row?.expiresAt) return null;
-        const ends = new Date(row.expiresAt);
-        return ends.getTime() > Date.now() ? ends : null;
-      },
       // A guest has no entitlements response to read this from, but still has
       // to see real prices and buy buttons — buying is what signs them in.
       // /api/catalog is public precisely so this question has an answer for

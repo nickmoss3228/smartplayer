@@ -22,6 +22,7 @@ import {
   SubmitButton,
   TextField,
 } from '../authKit'
+import { MIN_PASSWORD_LENGTH } from '../passwordRules'
 
 const SignUp = () => {
   const { t } = useTranslation()
@@ -74,7 +75,7 @@ const SignUp = () => {
       return
     }
 
-    if (password.length < 6) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       setError(t('signup.errors.passwordLength'))
       return
     }

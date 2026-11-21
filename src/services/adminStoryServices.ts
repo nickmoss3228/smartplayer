@@ -277,7 +277,8 @@ export type UploadKind =
   | "phrasalImage"
   | "pictureSheet"
   | "quizFast"
-  | "quizSlow";
+  | "quizSlow"
+  | "help";
 
 export const uploadPartAsset = async (
   token: string,
@@ -334,6 +335,24 @@ export const saveComic = async (
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders(token) },
     body: JSON.stringify({ comicUrl }),
+  });
+  const data = await parseOrThrow(res);
+  return data.part;
+};
+
+// Replaces the part's SOS clips whole: slot i is the clip for marker i, ""
+// where that sentence has none yet. The backend refuses clips on a part with
+// no markers, and more clips than markers.
+export const saveHelpAudio = async (
+  token: string,
+  id: string,
+  partNumber: number,
+  helpAudio: string[]
+): Promise<StoryPart> => {
+  const res = await fetch(`${API_URL}/api/admin/stories/${id}/parts/${partNumber}/help-audio`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders(token) },
+    body: JSON.stringify({ helpAudio }),
   });
   const data = await parseOrThrow(res);
   return data.part;

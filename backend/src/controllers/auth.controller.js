@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { sessions, userDocs, users as usersRepo } from "../db/index.js";
 import { attachSession, signDeviceTicket } from "../helpers/sessionStore.js";
 import { config } from "../config/env.js";
+import { MIN_PASSWORD_LENGTH } from "../config/password.js";
 import { sendVerificationSms } from "../services/sms.service.js";
 import {
   normalizePhoneNumber,
@@ -23,6 +24,22 @@ function hash(value) {
 
 function makeTicket() {
   return crypto.randomBytes(32).toString("hex");
+}
+
+// A real bcrypt hash of a random secret nobody knows, made once per process.
+// Comparing against it when no account matches makes "no such user" cost the
+// same bcrypt round as "wrong password". Without it the unknown-user answer
+// came back ~70 ms faster, which told anyone timing the login form which
+// usernames, emails and phone numbers have accounts.
+const DUMMY_HASH = bcrypt.hash(crypto.randomBytes(16).toString("hex"), 10);
+
+/** bcrypt.compare that spends the same time whether or not `user` exists. */
+async function passwordMatches(user, password) {
+  if (!user?.password) {
+    await bcrypt.compare(password, await DUMMY_HASH);
+    return false;
+  }
+  return bcrypt.compare(password, user.password);
 }
 
 /**
@@ -171,10 +188,10 @@ export async function signup(req, res) {
       });
     }
 
-    if (password.length < 6) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
       return res
         .status(400)
-        .json({ message: "Password must be at least 6 characters long" });
+        .json({ message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`, code: "PASSWORD_TOO_SHORT" });
     }
 
     // Email remains optional for password recovery; phone is the verified
@@ -313,12 +330,9 @@ export async function login(req, res) {
         ? await userDocs.loadUserBy("phoneNumber", normalizedPhone)
         : await userDocs.loadUserBy("username", usernameOrEmail);
 
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    // One check for both "no such account" and "wrong password", taking the
+    // same time either way — see passwordMatches.
+    if (!(await passwordMatches(user, password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -527,7 +541,7 @@ export async function startPhoneVerification(req, res) {
     const user = usernameOrEmail.includes("@")
       ? await userDocs.loadUserBy("email", usernameOrEmail)
       : await userDocs.loadUserBy("username", usernameOrEmail);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!(await passwordMatches(user, password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     if (user.banned) {

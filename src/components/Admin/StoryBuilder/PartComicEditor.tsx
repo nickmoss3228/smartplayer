@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AdminStory,
   StoryPart,
@@ -37,6 +38,7 @@ const PartComicEditor = ({
   part,
   onPartUpdated,
 }: PartComicEditorProps) => {
+  const { t } = useTranslation("studio");
   const [comicUrl, setComicUrl] = useState<string | null>(part.comicUrl ?? null);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -53,12 +55,12 @@ const PartComicEditor = ({
   const uploadFile = async (file: File) => {
     setError("");
     if (!file.type.startsWith("image/")) {
-      setError(`${file.name} is not an image.`);
+      setError(t("content.comic.notImage", { name: file.name }));
       return;
     }
     setNotice(
       file.size > HEAVY_FILE_BYTES
-        ? `That page is ${formatSize(file.size)}. It will work, but students load it on a phone — consider flattening it first.`
+        ? t("content.comic.heavy", { size: formatSize(file.size) })
         : ""
     );
 
@@ -79,14 +81,14 @@ const PartComicEditor = ({
       // Drop the local preview too — leaving it up would imply the page saved.
       URL.revokeObjectURL(localUrl);
       setComicUrl(part.comicUrl ?? null);
-      setError(err instanceof Error ? err.message : "Upload failed.");
+      setError(err instanceof Error ? err.message : t("content.comic.uploadFailed"));
     } finally {
       setUploading(false);
     }
   };
 
   const handleRemove = async () => {
-    if (!confirm(`Remove the comic page for part ${part.partNumber}?`)) return;
+    if (!confirm(t("content.comic.confirmRemove", { n: part.partNumber }))) return;
     setRemoving(true);
     setError("");
     setNotice("");
@@ -95,7 +97,7 @@ const PartComicEditor = ({
       setComicUrl(null);
       onPartUpdated(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove the comic page.");
+      setError(err instanceof Error ? err.message : t("content.comic.removeFailed"));
     } finally {
       setRemoving(false);
     }
@@ -129,10 +131,10 @@ const PartComicEditor = ({
         >
           <IoImageOutline className="text-2xl text-gray-400" aria-hidden="true" />
           <span className="text-sm font-semibold text-black">
-            {comicUrl ? "Replace" : "Drop"} the comic page for part {part.partNumber}
+            {t(comicUrl ? "content.comic.dropReplace" : "content.comic.dropNew", { n: part.partNumber })}
           </span>
           <span className="text-xs text-gray-500">
-            or click to choose a file — JPEG, PNG, WebP, AVIF or GIF
+            {t("content.comic.orClick")}
           </span>
           <input
             type="file"
@@ -146,9 +148,9 @@ const PartComicEditor = ({
             }}
           />
         </label>
-        {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+        {uploading && <p className="text-xs text-gray-500 mt-1">{t("common.uploading")}</p>}
         <p className="text-xs text-gray-400 mt-1">
-          One page per part — it opens from the Comics button while this part is playing.
+          {t("content.comic.onePerPart")}
         </p>
       </div>
 
@@ -160,7 +162,7 @@ const PartComicEditor = ({
           <div className="bg-gray-50 rounded-[3px] border border-gray-200 p-2 inline-block max-w-full">
             <img
               src={comicUrl}
-              alt={`Comic page for part ${part.partNumber}`}
+              alt={t("content.comic.alt", { n: part.partNumber })}
               className="max-h-96 w-auto max-w-full rounded-[3px]"
             />
           </div>
@@ -171,7 +173,7 @@ const PartComicEditor = ({
               rel="noreferrer"
               className="text-xs text-gray-500 hover:text-black underline"
             >
-              Open full size
+              {t("content.comic.openFull")}
             </a>
             <button
               type="button"
@@ -179,21 +181,21 @@ const PartComicEditor = ({
               disabled={removing || uploading}
               className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
             >
-              {removing ? "Removing..." : "Remove"}
+              {removing ? t("common.removing") : t("common.remove")}
             </button>
           </div>
         </div>
       ) : (
         <div className="bg-gray-50 rounded-[3px] border border-dashed border-gray-300 p-8 text-center">
-          <p className="text-sm text-gray-500">No comic page for this part yet.</p>
+          <p className="text-sm text-gray-500">{t("content.comic.empty")}</p>
           <p className="text-xs text-gray-400 mt-1">
-            Parts without one show the players an empty &ldquo;Comics&rdquo; placeholder.
+            {t("content.comic.emptyHint")}
           </p>
         </div>
       )}
 
       <p className="text-xs text-gray-400 border-t border-gray-100 pt-3">
-        {partsWithComics}/{story.parts.length} parts in this story have a comic page.
+        {t("content.comic.summary", { count: partsWithComics, total: story.parts.length })}
       </p>
     </div>
   );

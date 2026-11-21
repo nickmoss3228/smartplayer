@@ -5,11 +5,15 @@ import { IoClose, IoLockClosed, IoPause, IoPlay } from 'react-icons/io5';
 import type { DifficultySlug, StoryGroup } from '../../types/storyGroups';
 import { fetchPublishedStory } from '../../services/storyServices';
 import { resolveStory, type ResolvedStory } from '../../modules/story/resolveStory';
+import { useCart } from '../../context/CartContext';
 import { useEntitlements } from '../../context/EntitlementsContext';
-import { formatPrice, storyKey, PREVIEW_SECONDS } from '../../config/priceCatalog';
+import {
+  formatPrice,
+  storyKey,
+  storySku,
+  PREVIEW_SECONDS,
+} from '../../config/priceCatalog';
 import { useCatalog } from '../../context/CatalogContext';
-import { useSubscribe } from '../../hooks/useSubscribe';
-import type { CatalogProduct } from '../../services/catalogServices';
 
 interface Props {
   difficulty: DifficultySlug;
@@ -21,7 +25,7 @@ interface Props {
 const WORDS_SHOWN = 6;
 
 /**
- * "What's inside" — a spoiler of a story before subscribing to it.
+ * "What's inside" — a spoiler of a story before it is bought.
  *
  * Built only from what the server already hands everyone: part 1 is always
  * audible to a non-owner (in full for a long story, as a timed preview for a
@@ -36,9 +40,9 @@ const WORDS_SHOWN = 6;
 export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { canBuy } = useEntitlements();
-  const { getProduct, skusGranting } = useCatalog();
-  const { subscribe, busySku, error, paymentsEnabled, signedIn } = useSubscribe();
+  const { has, add } = useCart();
+  const { canBuy, ownedStories } = useEntitlements();
+  const { getProduct, setForStory, priceFor } = useCatalog();
 
   const [resolved, setResolved] = useState<ResolvedStory | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -73,10 +77,9 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
   const firstTrack = resolved?.tracks[0];
   const words = (firstTrack?.vocabulary ?? []).slice(0, WORDS_SHOWN);
 
-  // The subscriptions that open this story: its level, then all levels.
-  const plans = skusGranting(key)
-    .map((sku) => getProduct(sku))
-    .filter((p): p is CatalogProduct => p !== null && canBuy(p.sku));
+  const single = getProduct(storySku(key));
+  const set = story.category === 'general' ? setForStory(key) : null;
+  const setPrice = set ? priceFor(set, ownedStories) : 0;
   const canListenFree = freeParts > 0 || previewSeconds !== null;
 
   const partOpen = (n: number) =>
@@ -93,6 +96,11 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
     } else {
       el.pause();
     }
+  };
+
+  const buy = (sku: string) => {
+    add(sku);
+    onClose();
   };
 
   return (
@@ -250,31 +258,30 @@ export const ShopStoryPreview = ({ difficulty, story, onClose }: Props) => {
             </button>
           ) : (
             <>
-              {plans.map((plan, index) => (
+              {single && canBuy(single.sku) && (
                 <button
-                  key={plan.sku}
                   type="button"
-                  onClick={() => subscribe(plan.sku)}
-                  // A guest can always press it: that is what signs them in.
-                  disabled={busySku !== null || (signedIn && !paymentsEnabled)}
-                  className={`w-full cursor-pointer rounded-[2px] text-sm font-semibold transition-opacity disabled:cursor-default disabled:opacity-40 ${
-                    index === 0
-                      ? 'bg-gray-900 py-3 text-white hover:opacity-90'
-                      : 'border-2 border-gray-900 py-2.5 text-gray-900 hover:bg-gray-50'
-                  }`}
+                  onClick={() => buy(single.sku)}
+                  disabled={has(single.sku)}
+                  className="w-full cursor-pointer rounded-[2px] bg-gray-900 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-default disabled:opacity-40"
                 >
-                  {plan.kind === 'level'
-                    ? t('shopPreview.subscribeLevel', {
-                        level: t(`list.difficultyTitle.${plan.difficulty}`),
-                      })
-                    : t('shopPreview.subscribeAll')}
-                  {' · '}
-                  {formatPrice(plan.amountMinor)}
-                  {' / '}
-                  {t('shopPreview.days', { count: plan.durationDays ?? 0 })}
+                  {has(single.sku)
+                    ? t('shop.inCart')
+                    : `${t('shopPreview.buyStory')} · ${formatPrice(single.amountMinor)}`}
                 </button>
-              ))}
-              {error && <p className="text-xs text-red-600">{error}</p>}
+              )}
+              {set && canBuy(set.sku) && setPrice > 0 && (
+                <button
+                  type="button"
+                  onClick={() => buy(set.sku)}
+                  disabled={has(set.sku)}
+                  className="w-full cursor-pointer rounded-[2px] border-2 border-gray-900 py-2.5 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:opacity-40"
+                >
+                  {has(set.sku)
+                    ? t('shop.inCart')
+                    : `${t(`shelf.sets.${set.character}`)} · ${formatPrice(setPrice)}`}
+                </button>
+              )}
               {canListenFree && (
                 <button
                   type="button"

@@ -12,7 +12,8 @@ import { LEGACY_VOCAB_KEYS as VOCAB_KEY_SET } from "../../src/config/vocabKeys.j
 const LEGACY_VOCAB_KEYS = [...VOCAB_KEY_SET];
 import { SHOP_CATALOG as SHOP_ITEMS } from "../../src/config/shopCatalog.js";
 import { CHARACTER_CATALOG as CHARACTER_ITEMS } from "../../src/config/characterCatalog.js";
-import { QUIZ_PASS_BITAWARD } from "../../src/config/currency.js";
+import { PHRASE_REPEAT_DAILY_BITPHRASE_CAP, QUIZ_PASS_BITAWARD } from "../../src/config/currency.js";
+import { grantPhraseRepeat, resetPhraseRepeatCap } from "../../src/helpers/phraseRepeatCap.js";
 import {
   buyBlocker,
   getExteriorStyle,
@@ -22,8 +23,10 @@ import {
 import {
   adminToken,
   api,
+  db,
   fundWallet,
   registerUser,
+  schema,
   setUserColumns,
   startServer,
   stopServer,
@@ -95,6 +98,32 @@ describe("quiz endpoints", () => {
   });
 });
 
+describe("GET /api/progress/:difficulty", () => {
+  const progressRows = async (userId) => {
+    const { eq } = await import("drizzle-orm");
+    return db().select().from(schema.progress).where(eq(schema.progress.userId, userId));
+  };
+
+  it("is read-only: defaults for a fresh user, no row written, still works after a completion", async () => {
+    const u = await registerUser();
+    const fresh = await api("GET", "/api/progress/easy", { token: u.token });
+    assert.equal(fresh.status, 200);
+    assert.deepEqual(fresh.body, { completedLevels: [], currentLevel: 1, levelResults: {}, totalLevels: 0 });
+    assert.equal((await progressRows(u.id)).length, 0);
+
+    const done = await api("POST", "/api/progress/complete", {
+      token: u.token,
+      body: { ...FREE, answers: answers(FREE, { correct: true }) },
+    });
+    assert.equal(done.status, 200, JSON.stringify(done.body));
+    assert.equal((await progressRows(u.id)).length, 1);
+
+    const after = await api("GET", "/api/progress/easy", { token: u.token });
+    assert.equal(after.status, 200);
+    assert.equal(after.body.levelResults[`${FREE.storyId}:${FREE.partNumber}`].completed, true);
+  });
+});
+
 describe("POST /api/progress/complete", () => {
   it("a passing submission completes the part, pays BitAward and starts a streak", async () => {
     const u = await registerUser();
@@ -134,7 +163,33 @@ describe("POST /api/progress/complete", () => {
     assert.equal((await userRow(u.id)).bitAward, 0);
   });
 
-  it("refuses a locked part until an admin grants the level", async () => {
+  // check-answer reveals the right option once a question is answered, so a
+  // script could learn a quiz and resubmit it forever. A part pays once.
+  it("a part's second pass still counts but pays nothing", async () => {
+    const u = await registerUser();
+    const body = { ...FREE, answers: answers(FREE, { correct: true }) };
+    const first = await api("POST", "/api/progress/complete", { token: u.token, body });
+    const again = await api("POST", "/api/progress/complete", { token: u.token, body });
+
+    assert.equal(first.body.wallet.bitAward, QUIZ_PASS_BITAWARD);
+    assert.equal(again.status, 200);
+    assert.equal(again.body.completed, true);
+    assert.equal(again.body.wallet, null);
+    assert.equal((await userRow(u.id)).bitAward, QUIZ_PASS_BITAWARD);
+  });
+
+  it("two simultaneous first passes of one part pay once", async () => {
+    const u = await registerUser();
+    const body = { ...FREE, answers: answers(FREE, { correct: true }) };
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () => api("POST", "/api/progress/complete", { token: u.token, body })),
+    );
+    assert.ok(results.every((r) => r.status === 200), JSON.stringify(results.map((r) => r.status)));
+    assert.equal(results.filter((r) => r.body.wallet).length, 1);
+    assert.equal((await userRow(u.id)).bitAward, QUIZ_PASS_BITAWARD);
+  });
+
+  it("refuses a locked part until an admin grants the story", async () => {
     const u = await registerUser();
     const body = { ...LOCKED, answers: answers(LOCKED, { correct: true }) };
 
@@ -144,7 +199,7 @@ describe("POST /api/progress/complete", () => {
 
     const grant = await api("POST", "/api/admin/grant-entitlement", {
       token: await adminToken(),
-      body: { userId: u.id, sku: "sub-easy" },
+      body: { userId: u.id, sku: "story-easy-leo" },
     });
     assert.equal(grant.status, 200, JSON.stringify(grant.body));
 
@@ -317,10 +372,29 @@ describe("vocabulary and phrase rewards", () => {
     const thrice = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
     assert.equal(once.body.wallet.bitPhrase, 0);
     assert.equal(thrice.body.wallet.bitPhrase, 2);
+    assert.equal(once.body.bitPhraseAwarded, 0);
+    assert.equal(thrice.body.bitPhraseAwarded, 2);
     for (const repeatCount of [0, 4, "2", null]) {
       const res = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount } });
       assert.equal(res.status, 400);
     }
+  });
+
+  it("phrase repeats stop paying at the daily cap, paying only what is left", async () => {
+    resetPhraseRepeatCap();
+    const u = await registerUser();
+    // The API runs in this process, so the cap can be filled through the helper.
+    grantPhraseRepeat(u.id, PHRASE_REPEAT_DAILY_BITPHRASE_CAP - 1);
+
+    const partial = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
+    assert.equal(partial.body.bitPhraseAwarded, 1);
+    assert.equal(partial.body.wallet.bitPhrase, 1);
+
+    const capped = await api("POST", "/api/progress/phrase-repeat", { token: u.token, body: { repeatCount: 3 } });
+    assert.equal(capped.status, 200);
+    assert.equal(capped.body.bitPhraseAwarded, 0);
+    assert.equal(capped.body.wallet.bitPhrase, 1);
+    resetPhraseRepeatCap();
   });
 
   it("listening time only ever goes up", async () => {
@@ -333,6 +407,20 @@ describe("vocabulary and phrase rewards", () => {
       const bad = await api("PATCH", "/api/progress/listening-time", { token: u.token, body: { totalSeconds } });
       assert.equal(bad.status, 400);
     }
+  });
+
+  it("listening time cannot exceed the account's age plus a day of guest listening", async () => {
+    const u = await registerUser();
+    const res = await api("PATCH", "/api/progress/listening-time", {
+      token: u.token,
+      body: { totalSeconds: 10_000_000 },
+    });
+    assert.equal(res.status, 200);
+    const day = 24 * 60 * 60;
+    // A brand-new account: the ceiling is the 24 h grace plus a few seconds of age.
+    assert.ok(res.body.totalListeningSeconds >= day, String(res.body.totalListeningSeconds));
+    assert.ok(res.body.totalListeningSeconds < day + 120, String(res.body.totalListeningSeconds));
+    assert.equal((await userRow(u.id)).totalListeningSeconds, res.body.totalListeningSeconds);
   });
 });
 

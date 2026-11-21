@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { IoBookOutline, IoNewspaperOutline, IoLockClosed, IoCheckmark, IoPlay } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import type { StoryGroup, DifficultySlug } from '../../types/storyGroups';
+import { formatPrice } from '../../config/priceCatalog';
+import { useCatalog } from '../../context/CatalogContext';
+import { SHOP_ENABLED } from '../../config/features';
 
 /**
  * One story on the shelf.
@@ -88,25 +92,31 @@ interface BaseProps {
   completed: number;
   /** Entrance stagger only — capped by the caller. */
   index: number;
-  onOpen: () => void;
+  /** The story page this card opens: the card is then a real link (new tab, crawlable). */
+  href?: string;
+  /** Without `href`, what a press does instead (the shop opens a preview). */
+  onOpen?: () => void;
 }
 
 /**
- * Every card says how long it is underneath. Once owned, that row turns into a
- * green "available". No card sells anything: stories are not bought one at a
- * time — a subscription opens a whole level — so the shop's plans do the
- * selling and a card only previews.
+ * Every locked card shows what it is and what it costs underneath — parts,
+ * price, and a buy button when the caller passes `onBuy`. Once owned, that row
+ * turns into a green "available".
  *
- * 'shop'   — the shelf at /stories · /shop · /library. A locked card keeps its
- *            padlock and offers "what's inside".
+ * 'shop'   — the shelf at /stories · /shop · /library. The buy button toggles
+ *            the basket, so it reflects `inCart`.
  * 'browse' — the level shelf at /levels/:difficulty, i.e. the learner's own
- *            library. A story that is locked but has free parts is drawn as
- *            an open one — no padlock, no dimmed art — because it CAN be
- *            heard. A padlock on a card that plays was reading as "you can't
- *            open this". The free allowance is named under the card instead.
+ *            library. It never sells: List.tsx passes no `onBuy`, and a
+ *            story that is locked but has free parts is drawn as an open
+ *            one — no padlock, no dimmed art — because it CAN be heard. A
+ *            padlock on a card that plays was reading as "you can't open
+ *            this". The free allowance is named under the card instead.
  */
 interface Props extends BaseProps {
   variant?: 'browse' | 'shop';
+  inCart?: boolean;
+  /** Omit to show the price without a button (e.g. not sellable here). */
+  onBuy?: () => void;
   /** Opens the "what's inside" preview. */
   onPreview?: () => void;
 }
@@ -117,7 +127,10 @@ export const StoryCard = ({
   completed,
   index,
   variant = 'browse',
+  inCart = false,
+  href,
   onOpen,
+  onBuy,
   onPreview,
 }: Props) => {
   const { t } = useTranslation();
@@ -130,10 +143,13 @@ export const StoryCard = ({
 
   // Decided by the server and carried on the list response — the client never
   // works out entitlement for itself.
+  const { getProduct } = useCatalog();
   const isLocked = story.locked === true;
   const isShop = variant === 'shop';
   // Locked, but its first parts play — in the library that is not a lock.
   const showLock = isLocked && !(!isShop && (story.freeParts ?? 0) > 0);
+  // The story on its own — the smallest purchase that unlocks it.
+  const product = isLocked ? getProduct(story.requiredSkus?.[0] ?? '') : null;
   const freeHint = !isLocked
     ? null
     : story.previewSeconds
@@ -145,6 +161,14 @@ export const StoryCard = ({
   const FallbackIcon = story.category === 'news' ? IoNewspaperOutline : IoBookOutline;
 
   const revealRef = useRevealOnScroll<HTMLDivElement>();
+  // A link when the card leads to a page, a button when it opens something in place.
+  // (Typed loosely on purpose: TypeScript cannot infer children for a Link | 'button' union.)
+  const Card = (href ? Link : 'button') as unknown as React.ElementType<{
+    className?: string;
+    children?: React.ReactNode;
+    [prop: string]: unknown;
+  }>;
+  const cardProps: Record<string, unknown> = href ? { to: href } : { type: 'button', onClick: onOpen };
 
   return (
     <div
@@ -158,9 +182,8 @@ export const StoryCard = ({
       }
       data-list-reveal="out"
     >
-      <button
-        type="button"
-        onClick={onOpen}
+      <Card
+        {...cardProps}
         className={`group relative block w-full cursor-pointer overflow-hidden rounded-card text-left aspect-[4/5] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--level-accent)] focus-visible:ring-offset-2 ${
           story.cover ? 'bg-gray-900' : 'bg-white border border-gray-200'
         }`}
@@ -244,15 +267,20 @@ export const StoryCard = ({
             />
           </span>
         )}
-      </button>
+      </Card>
 
-      {/* Below the panel: "available", or the free allowance, and the length. */}
+      {/* Below the panel: "available", or parts · price · buy. Kept outside
+          the card button so "open" and "buy" are two separate targets —
+          nesting them would make the whole card ambiguous to a keyboard. */}
       <div className="font-mono mt-1.5 flex items-center justify-between gap-2 text-[10px] uppercase tracking-[0.16em]">
         {!isShop && isLocked ? (
           <>
-            {/* "3 parts free" — the green hint under a locked card. */}
+            {/* "3 parts free" only means something next to a shop that sells
+                the rest. With the shop off it is just a number that reads
+                like a limit, so the row keeps its parts count and nothing
+                else. Comes back by itself when SHOP_ENABLED does. */}
             <span className="min-w-0 truncate font-semibold text-green-600">
-              {freeHint}
+              {SHOP_ENABLED ? freeHint : null}
             </span>
             <span className="shrink-0 tabular-nums text-gray-400">
               {t('shelf.parts', { count: total })}
@@ -266,9 +294,30 @@ export const StoryCard = ({
             </span>
           </>
         ) : (
-          <span className="min-w-0 truncate tabular-nums text-gray-500">
-            {t('shelf.parts', { count: total })}
-          </span>
+          <>
+            <span className="min-w-0 truncate tabular-nums text-gray-500">
+              {t('shelf.parts', { count: total })}
+              {product && (
+                <>
+                  <span className="mx-1 text-gray-300">·</span>
+                  <span className="font-bold text-gray-900">{formatPrice(product.amountMinor)}</span>
+                </>
+              )}
+            </span>
+            {onBuy && product && (
+              <button
+                type="button"
+                onClick={onBuy}
+                className={`font-mono shrink-0 cursor-pointer rounded-chip px-2 py-1 text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                  isShop && inCart
+                    ? 'border border-gray-300 text-gray-500 hover:bg-gray-50'
+                    : 'bg-gray-900 text-white hover:bg-gray-700'
+                }`}
+              >
+                {isShop && inCart ? t('shop.inCart') : t('shop.buy')}
+              </button>
+            )}
+          </>
         )}
       </div>
       {isLocked && isShop && (freeHint || onPreview) && (

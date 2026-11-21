@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { TimeMarker } from "../../../types";
 
 interface MobileProgressBarProps {
@@ -22,6 +23,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
   duration,
   isLoading,
 }) => {
+  const { t } = useTranslation();
   const [isDragging, setIsDragging] = useState(false);
   const rafRef = useRef<number>(0);
   const barRef = useRef<HTMLDivElement>(null);
@@ -99,7 +101,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
     return (
       <div className="w-full flex items-center justify-center gap-2 py-6">
         <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-        <span className="text-white/50 text-xs">Loading audio…</span>
+        <span className="text-black/70 text-xs">Loading audio…</span>
       </div>
     );
   }
@@ -114,7 +116,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
       <div
         ref={barRef}
         role="slider"
-        aria-label="Audio progress"
+        aria-label={t("player.aria.audioProgress")}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={0}
@@ -138,7 +140,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
           {/* ── Segment / time-marker dots ── */}
           {durationSeconds > 0 &&
             timeMarkers.map((marker, idx) => {
-              const t =
+              const markerTime =
                 typeof marker === "object"
                   ? marker.time
                   : (marker as unknown as number);
@@ -146,12 +148,12 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
                 <button
                   key={idx}
                   type="button"
-                  aria-label={`Jump to segment ${idx + 1}`}
+                  aria-label={t("controls.jumpToPhrase", { n: idx + 1 })}
                   // Stop the bar's seek handler from also firing
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onMarkerClick(t);
+                    onMarkerClick(markerTime);
                   }}
                   // White is set explicitly. These used `bg-red/30 ring-red/25`,
                   // which are not Tailwind classes (red needs a shade), so the
@@ -162,7 +164,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
                              ring-1 ring-white/80
                              active:bg-white active:scale-125
                              transition-transform touch-manipulation"
-                  style={{ left: `${(t / durationSeconds) * 100}%` }}
+                  style={{ left: `${(markerTime / durationSeconds) * 100}%` }}
                 />
               );
             })}
@@ -196,7 +198,7 @@ export const MobileProgressBar: React.FC<MobileProgressBarProps> = ({
       <div
         className="flex justify-between -mt-2 px-0.5
                    text-[11px] font-medium
-                   tabular-nums text-white/45"
+                   tabular-nums text-black/80"
       >
         <span>{currentTime}</span>
         <span>{duration}</span>

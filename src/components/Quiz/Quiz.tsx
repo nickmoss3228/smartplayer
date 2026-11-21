@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IoCheckmark, IoClose, IoLockClosedOutline, IoPlay, IoRefresh, IoTimerOutline, IoVolumeHigh } from "react-icons/io5";
+import { IoCheckmark, IoChevronDown, IoClose, IoLockClosedOutline, IoPlay, IoRefresh, IoTimerOutline, IoVolumeHigh } from "react-icons/io5";
 import { QuizProps } from "../../types/Quiz";
 import { useQuestionAudio } from "./useQuestionAudio";
 import QuizConfetti from "./QuizConfetti";
@@ -38,12 +38,13 @@ const secondaryOnInk =
  *
  * Each question is a recording: the big button plays it and its ring fills
  * with the playhead; the answers unlock once it has been heard to the end.
- * After an answer the question appears in writing — heard first, read second
- * — and a miss marks the right option. A right answer moves on by itself; a
+ * The question is never written out during the round: it is a listening
+ * quiz. A miss marks the right option; a right answer moves on by itself, a
  * miss waits for «Дальше», so the correction can be read.
  *
  * The result says what the round means (the next part is open, or how many
- * answers it takes) and leads there, with every question listed to hear again.
+ * answers it takes) and leads there. Every question is listed by number, to
+ * hear again or to open and read with its answers.
  * Scoring stays on the server: checkQuizAnswer for each answer, and the
  * authoritative re-grade in onQuizComplete.
  */
@@ -58,6 +59,7 @@ const Quiz: React.FC<QuizProps> = ({
   onClose,
   onNextPart,
   isSubmitting = false,
+  rewardAvailable = true,
   autoPlay = true,
   checkAnswer,
 }) => {
@@ -71,7 +73,11 @@ const Quiz: React.FC<QuizProps> = ({
   const [current, setCurrent] = useState<Answer | null>(null);
   const [checking, setChecking] = useState(false);
   const [finished, setFinished] = useState(false);
+  /** The last answer could not be checked (network); the question stays open. */
+  const [checkFailed, setCheckFailed] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  /** The result row opened to read its question and answers. */
+  const [openRow, setOpenRow] = useState<number | null>(null);
 
   const question = questions[index];
   const total = questions.length;
@@ -127,6 +133,7 @@ const Quiz: React.FC<QuizProps> = ({
     const all = [...answers, current];
     setAnswers(all);
     setCurrent(null);
+    setCheckFailed(false);
     if (index + 1 < total) {
       setIndex(index + 1);
       return;
@@ -161,14 +168,19 @@ const Quiz: React.FC<QuizProps> = ({
     if (locked || current || checking || isSubmitting) return;
     audio.stop();
     setChecking(true);
-    let result: Answer = { picked: option, correct: false };
+    setCheckFailed(false);
+    let result: Answer;
     try {
       const check = checkAnswer
         ? await checkAnswer(index, option)
         : await checkQuizAnswer(difficulty, storyId, partNumber, index, option);
       result = { picked: option, correct: check.correct, correctOption: check.correctOption };
     } catch (error) {
+      // Not an answer: leave the question open so the student can try again.
       console.error("Failed to check quiz answer:", error);
+      setChecking(false);
+      setCheckFailed(true);
+      return;
     }
     setChecking(false);
     setCurrent(result);
@@ -178,9 +190,11 @@ const Quiz: React.FC<QuizProps> = ({
   const restart = () => {
     setAnswers([]);
     setCurrent(null);
+    setCheckFailed(false);
     setIndex(0);
     setFinished(false);
     setCelebrate(false);
+    setOpenRow(null);
     setRound((n) => n + 1);
   };
 
@@ -235,18 +249,36 @@ const Quiz: React.FC<QuizProps> = ({
         <h2 className="mt-3 text-balance text-center text-[23px] font-extrabold leading-tight tracking-[-0.02em]">{head}</h2>
         <p className="mt-1 text-balance text-center text-sm text-panel-dim">{sub}</p>
 
-        {passed && user && (
+        {passed && user && rewardAvailable && (
           <span className="mt-3 inline-flex h-8 items-center gap-1.5 self-center rounded-chip bg-amber-400/15 px-2.5 text-[13px] font-bold text-amber-300">
             <BitAwardIcon size={15} />
             {t("quiz.end.reward", { amount: QUIZ_PASS_BITAWARD })}
           </span>
         )}
 
-        <ul className="mt-5 border-t border-panel-line">
-          {questions.map((q, i) => (
-            <li key={i} className="flex min-h-11 items-center gap-2.5 border-b border-panel-line py-1 text-[13.5px]">
-              <span className="w-4 shrink-0 font-mono text-[11px] text-panel-dim">{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate">{q.question}</span>
+        <p className="mt-5 text-center text-[12.5px] text-panel-dim">{t("quiz.end.showText")}</p>
+        <ul className="mt-2 border-t border-panel-line">
+          {questions.map((q, i) => {
+            const a = answers[i];
+            const right = a ? (a.correct ? a.picked : a.correctOption) : undefined;
+            const open = openRow === i;
+            return (
+            <li key={i} className="border-b border-panel-line text-[13.5px]">
+              <div className="flex min-h-11 items-center gap-2.5 py-1">
+              <button
+                type="button"
+                onClick={() => setOpenRow(open ? null : i)}
+                aria-expanded={open}
+                className="flex min-h-9 min-w-0 flex-1 items-center gap-2.5 text-left font-semibold focus-visible:outline-2 focus-visible:outline-signal"
+              >
+                <span className="w-4 shrink-0 font-mono text-[11px] text-panel-dim">{i + 1}</span>
+                <span className="min-w-0 flex-1">{t("quiz.end.questionN", { n: i + 1 })}</span>
+                <IoChevronDown
+                  size={15}
+                  aria-hidden="true"
+                  className={`shrink-0 text-panel-dim transition-transform ${open ? "rotate-180" : ""}`}
+                />
+              </button>
               {q.audio?.fast && (
                 <button
                   type="button"
@@ -263,8 +295,38 @@ const Quiz: React.FC<QuizProps> = ({
                 {answers[i]?.correct ? <IoCheckmark size={12} /> : <IoClose size={12} />}
                 <span className="sr-only">{answers[i]?.correct ? t("quiz.end.right") : t("quiz.end.wrong")}</span>
               </span>
+              </div>
+              {open && (
+                <div className="flex flex-col gap-1.5 pb-3 pl-[26px] quiz-reveal-in">
+                  <p className="text-[15px] font-bold leading-snug">{q.question}</p>
+                  {q.options.map((option, j) => {
+                    const isPicked = a?.picked === j;
+                    const isRight = right === j;
+                    const tone = isRight
+                      ? "border-green-500 text-panel-text"
+                      : isPicked
+                        ? "border-red-500 text-panel-text"
+                        : "border-panel-line text-panel-dim";
+                    return (
+                      <div key={j} className={`flex items-start gap-2 rounded-tile border px-2.5 py-2 leading-snug ${tone}`}>
+                        <span className="mt-px w-4 shrink-0 font-mono text-[11px]">
+                          {isRight ? (
+                            <IoCheckmark size={14} className="text-green-400" aria-label={t("quiz.end.right")} />
+                          ) : isPicked ? (
+                            <IoClose size={14} className="text-red-400" aria-label={t("quiz.end.wrong")} />
+                          ) : (
+                            String.fromCharCode(65 + j)
+                          )}
+                        </span>
+                        <span className="flex-1">{option}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         <div className="mt-auto flex flex-col gap-2 pt-5">
@@ -308,13 +370,23 @@ const Quiz: React.FC<QuizProps> = ({
   const last = index === total - 1;
 
   let caption: React.ReactNode;
+  // The question is never shown in writing during the round — it is a
+  // listening quiz. The result lists every question to read afterwards.
   if (current) {
-    caption = (
-      <div className="flex max-w-[22rem] flex-col items-center gap-1 quiz-reveal-in">
-        <span className={micro}>{t("quiz.question")}</span>
-        <p className="text-balance text-center text-[16.5px] font-bold leading-snug">{question.question}</p>
+    caption = hasAudio ? (
+      <div className="flex gap-2">
+        <button type="button" className={chip} onClick={() => audio.play("fast")}>
+          <IoRefresh size={15} aria-hidden="true" />
+          {t("quiz.listen.again")}
+        </button>
+        {audio.hasSlow && (
+          <button type="button" className={chip} onClick={() => audio.play("slow")}>
+            <IoTimerOutline size={15} aria-hidden="true" />
+            {t("quiz.listen.slower")}
+          </button>
+        )}
       </div>
-    );
+    ) : null;
   } else if (audio.playing) {
     caption = (
       <>
@@ -412,6 +484,11 @@ const Quiz: React.FC<QuizProps> = ({
         </div>
       </div>
 
+      {checkFailed && !current && (
+        <p role="alert" className="mb-2 text-center text-[13px] font-semibold text-red-300">
+          {t("quiz.checkFailed", "Could not check your answer. Check your connection and pick again.")}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         {question.options.map((option, i) => {
           let tone = "border-panel-line bg-white/[0.04]";

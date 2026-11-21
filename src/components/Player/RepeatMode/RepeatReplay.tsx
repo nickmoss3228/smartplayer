@@ -15,6 +15,7 @@ interface RepeatReplayProps {
   /** Uploads this version and resolves to the link that plays it; absent = no sharing. */
   share?: (kind: TrackKind) => Promise<{ url: string; expiresAt: string }>;
   onClose: () => void;
+  initialKind?: TrackKind;
 }
 
 type ShareState =
@@ -35,10 +36,10 @@ const panelButton = `inline-flex min-h-11 items-center justify-center gap-2 roun
  *
  * Same ink card as the word game, so it reads as one of the practice games.
  */
-export const RepeatReplay: React.FC<RepeatReplayProps> = ({ part, count, build, share, onClose }) => {
+export const RepeatReplay: React.FC<RepeatReplayProps> = ({ part, count, build, share, onClose, initialKind = "me" }) => {
   const { t, i18n } = useTranslation();
   const titleId = useId();
-  const [kind, setKind] = useState<TrackKind>("me");
+  const [kind, setKind] = useState<TrackKind>(initialKind);
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   // One link per version, kept while the view is open.

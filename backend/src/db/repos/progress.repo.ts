@@ -137,8 +137,13 @@ export async function upsertLevelResult(
   },
   now = new Date(),
   tx: Tx = db(),
-): Promise<void> {
-  await tx
+): Promise<boolean> {
+  // Returns whether a row was written. With the guard below, "written AND
+  // completed" is exactly "this submission is the part's first pass": a part
+  // already passed is never touched again, so a re-pass writes nothing. The
+  // unique index serialises racing submissions, so two parallel passes cannot
+  // both see a write — the second waits, then finds `completed` already true.
+  const written = await tx
     .insert(progressLevelResult)
     .values({
       progressId: input.progressId,
@@ -164,7 +169,9 @@ export async function upsertLevelResult(
       // The guard. Without it, failing a part you had already passed would
       // erase the pass.
       setWhere: eq(progressLevelResult.completed, false),
-    });
+    })
+    .returning({ partNumber: progressLevelResult.partNumber });
+  return written.length > 0;
 }
 
 /**

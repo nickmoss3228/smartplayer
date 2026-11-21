@@ -12,6 +12,7 @@ import Homepage from "./pages/Homepage";
 // has to fetch its own chunk before it can tell you it is a 404 spends a
 // network round-trip to display an error.
 import NotFound from "./pages/NotFound";
+import RouteMeta from "./seo/RouteMeta";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import "./App.css";
@@ -22,8 +23,10 @@ import { WalletProvider } from './context/WalletContext';
 import { CatalogProvider } from './context/CatalogContext';
 import { HUB_ENABLED, SHOP_ENABLED } from './config/features';
 import { EntitlementsProvider } from './context/EntitlementsContext';
+import { CartProvider } from './context/CartContext';
 import { CharacterProvider } from './context/CharacterContext';
 import { Layout } from "./Layout"
+import PageLoader from "./components/PageLoader/PageLoader";
 
 // Lazy-loaded — each becomes its own chunk, fetched only when its route is
 // actually visited, instead of shipping in the single main bundle everyone
@@ -33,6 +36,7 @@ const Levels = lazy(() => import("./pages/Levels"));
 const HowToUse = lazy(() => import("./pages/HowToUse"));
 // The previous landing (the short guide), kept for comparison in dev only.
 const OldLanding = lazy(() => import("./components/Landing/Landing"));
+const LandingDemo = lazy(() => import("./components/IcebergLanding/IcebergLandingDemo"));
 const Login = lazy(() => import("./auth/Login/Login"));
 const SignUp = lazy(() => import("./auth/SignUp/SignUp"));
 const Dashboard = lazy(() => import("./auth/Dashboard/Dashboard"));
@@ -65,7 +69,7 @@ interface ProtectedRouteProps {
 /** Hard gate — user must be authenticated. */
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <PageLoader />;
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -85,8 +89,7 @@ const hasStoredToken = (): boolean => {
 const LandingOrHub = () => {
   const { user, loading } = useAuth();
   if (user) return <Navigate to="/home" replace />;
-  // Blank rather than the landing while a stored token is checked.
-  if (loading && hasStoredToken()) return null;
+  if (loading && hasStoredToken()) return <PageLoader />;
   return <Homepage />;
 };
 
@@ -99,6 +102,7 @@ function App() {
         <WalletProvider>
         <CatalogProvider>
         <EntitlementsProvider>
+        <CartProvider>
         <CharacterProvider>
         <ProgressProvider>
           <Provider store={store}>
@@ -110,12 +114,15 @@ function App() {
               <MotionConfig reducedMotion="user">
               <Layout>
               {/* <Navbar /> */}
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<PageLoader />}>
+              <RouteMeta />
               <Routes>
                 {/* ── Fully public ── */}
                 <Route path="/"                element={HUB_ENABLED ? <LandingOrHub /> : <Homepage />} />
                 <Route path="/how-to-use" element={<HowToUse />} />
                 {import.meta.env.DEV && <Route path="/landing-old" element={<OldLanding />} />}
+                {/* A reordered landing to compare: hidden, not linked, noindex (see the component) */}
+                <Route path="/landing-demo" element={<LandingDemo />} />
                 <Route path="/legal/:docId" element={<Legal />} />
                 <Route path="/listen/:shareId" element={<ListenShared />} />
                 {/* The storefront, switched off while the idea is being tested
@@ -224,6 +231,7 @@ function App() {
           </Provider>
         </ProgressProvider>
         </CharacterProvider>
+        </CartProvider>
         </EntitlementsProvider>
         </CatalogProvider>
         </WalletProvider>

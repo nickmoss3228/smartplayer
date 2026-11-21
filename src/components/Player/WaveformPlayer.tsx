@@ -50,7 +50,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     timeMarkers,
     onAudioComplete,
     onWavesurferMount,
-    level,
     difficulty,
     comicUrl,
     trackTitle,
@@ -127,8 +126,6 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
       if (!token) return;
       submitPhraseRepeat(token, repeatCount).then(setWalletDirect).catch(() => {});
     }, [setWalletDirect, isPreview]);
-
-    console.log("[Player] level:", level, "difficulty:", difficulty);
 
     // Reset marker/time/subtitle state (and the enhanced-mode session) on track change
     useTrackReset(audioUrl, setIsEnhancedSessionActive);
@@ -353,16 +350,16 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
     ) : (
       <div
         aria-disabled="true"
-        className="flex items-center gap-3.5 rounded-card bg-black/15 px-4 py-3.5 text-white/90"
+        className="flex items-center gap-3.5 rounded-card bg-black/15 px-4 py-3.5 text-black/90"
       >
         <IoLockClosedOutline size={18} className="shrink-0" aria-hidden="true" />
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="text-[15px] font-bold">{t("practice.button")}</span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/70">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-black/90">
             {t("practice.locked")}
           </span>
         </span>
-        <span className="ml-auto inline-flex gap-1.5 text-white/60" aria-hidden="true">
+        <span className="ml-auto inline-flex gap-1.5 text-black/70" aria-hidden="true">
           {practiceIcons}
         </span>
       </div>
@@ -385,7 +382,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
               flex-1, so it doesn't force itself to consume the leftover space that
               justify-between needs to push the group down. */}
           <div className="flex-1 min-h-0 flex flex-col justify-between gap-3 px-4 overflow-y-auto">
-            <div
+            {comicUrl && <div
               data-tour="tour-comics"
               className="min-h-[56px] max-h-[32vh] flex items-center justify-center py-1"
             >
@@ -395,7 +392,7 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = React.memo(
                 title={trackTitle}
                 difficulty={difficulty}
               />
-            </div>
+            </div>}
 
             <div className="shrink-0 flex flex-col gap-2">
               {windowWords.length > 0 && (

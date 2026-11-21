@@ -1,7 +1,10 @@
 import { IoMusicalNotesOutline } from 'react-icons/io5';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { isPlainClick } from '../../utils/plainClick';
 import type { Theme } from '../../types/LevelProgress';
+import { useComicFocus } from '../../modules/comics/useComicFocus';
 
 interface Props {
   level: number;
@@ -9,6 +12,8 @@ interface Props {
   status: string;
   isCompleted: boolean;
   isLocked: boolean;
+  /** The lock is the sign-up wall: say so instead of a bare "Locked". */
+  signupLock?: boolean;
   /**
    * How many parts play in full without owning the story. Drives the FREE
    * badge, for guests and signed-in non-owners alike — both get the same
@@ -20,6 +25,8 @@ interface Props {
   trackTitle: string;
   comicSrc: string | undefined;
   theme: Theme;
+  /** The part's player URL. */
+  href: string;
   onClick: (level: number) => void;
 }
 
@@ -32,33 +39,67 @@ const getStatusRingClass = (status: string) => {
 };
 
 export const LevelCard: React.FC<Props> = ({
-  level, index, status, isCompleted, isLocked,
-  freeParts, previewSeconds, trackTitle, comicSrc, theme, onClick,
+  level, index, status, isCompleted, isLocked, signupLock = false,
+  freeParts, previewSeconds, trackTitle, comicSrc, theme, href, onClick,
 }) => {
   const { t } = useTranslation();
 
   const isFree = level <= freeParts;
   const isPreview = !isFree && previewSeconds !== null && level === 1;
+  // Phone tiles show one whole panel, so no gutter runs under the caption
+  // (App.css .comic-focus); desktop keeps the whole-page crop.
+  const { focus, ready } = useComicFocus(comicSrc);
+  const focusVars = focus
+    ? ({
+        '--fx': focus.x,
+        '--fy': focus.y,
+        '--fw': focus.w,
+        '--fh': focus.h,
+        '--fr': focus.aspect,
+      } as React.CSSProperties)
+    : undefined;
 
   return (
-    <div
-      onClick={() => onClick(level)}
-      className="group cursor-pointer animate-scale-in flex flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95"
+    // A real link to the part's player URL, so it can be opened in a new tab
+    // and crawled. A plain click keeps the old behaviour (preview, paywall or
+    // login sheet); the player and server handle a locked part opened directly.
+    <Link
+      to={href}
+      onClick={(e) => {
+        if (!isPlainClick(e)) return;
+        e.preventDefault();
+        onClick(level);
+      }}
+      className="group w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left animate-scale-in flex min-h-0 flex-col gap-2 transition-transform duration-300 hover:-translate-y-1 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      {/* Square cover */}
+      {/* Cover — fills the grid cell, whatever shape the screen leaves it */}
       <div
         className={`
-          relative w-full aspect-square rounded-card overflow-hidden
+          comic-focus relative w-full flex-1 min-h-0 rounded-card overflow-hidden
           bg-gradient-to-br from-white/30 to-white/10 transition-shadow duration-300
           ${getStatusRingClass(status)}
         `}
       >
-        {/* Blinking highlight for the last story listened to but not yet finished — colored to the difficulty, not a fixed color */}
+        {/* The part to pick up from: a steady border in the difficulty's colour
+            and a "Continue" badge (below). It used to blink without end. */}
         {status === 'lastListened' && (
           <div
             aria-hidden
-            className={`absolute inset-0 rounded-card z-20 pointer-events-none border-4 ${theme.lastListenedBorder} animate-blink-ring`}
+            className={`absolute inset-0 rounded-card z-20 pointer-events-none border-[3px] ${theme.lastListenedBorder}`}
+          />
+        )}
+
+        {/* The panel again, blurred, behind the edges the fitted panel leaves */}
+        {comicSrc && focus && (
+          <img
+            src={comicSrc}
+            alt=""
+            aria-hidden
+            draggable={false}
+            data-focus="bg"
+            style={focusVars}
+            className="absolute"
           />
         )}
 
@@ -68,10 +109,13 @@ export const LevelCard: React.FC<Props> = ({
             src={comicSrc}
             alt={trackTitle}
             draggable={false}
+            data-focus={focus ? 'fg' : undefined}
+            style={focusVars}
             className={`
               w-full h-full object-cover object-center
-              scale-[1.65] group-hover:scale-[1.82]
-              transition-transform duration-500 ease-out
+              ${focus ? '' : 'scale-[1.35]'} md:scale-[1.65] md:group-hover:scale-[1.82]
+              transition-[scale,opacity] duration-500 ease-out
+              ${ready ? 'opacity-100' : 'opacity-0'}
               ${isLocked ? 'brightness-50' : ''}
             `}
           />
@@ -85,10 +129,12 @@ export const LevelCard: React.FC<Props> = ({
 
         {/* Lock overlay */}
         {isLocked && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-card z-10 gap-1.5">
+          // On phones the part's title sits on the art (up to two lines at the
+          // bottom), so the lock centres in the space above it, not over it.
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-card z-10 gap-1.5 max-md:pb-9">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-7 h-7 text-white/95 drop-shadow"
+              className="w-6 h-6 md:w-7 md:h-7 text-white/95 drop-shadow"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -99,14 +145,29 @@ export const LevelCard: React.FC<Props> = ({
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            <span className="font-mono text-white/90 text-[10px] tracking-[0.16em] uppercase drop-shadow">
-              {t('paywall.locked')}
-            </span>
+            {signupLock ? (
+              <span className="max-w-[90%] text-center text-[11px] font-semibold leading-tight text-white drop-shadow">
+                {t('signupWall.lockLabel')}
+              </span>
+            ) : (
+              <span className="font-mono text-white/90 text-[10px] tracking-[0.16em] uppercase drop-shadow">
+                {t('paywall.locked')}
+              </span>
+            )}
           </div>
         )}
 
-        {/* Number / checkmark badge */}
-        {!isLocked && (
+        {/* Number / checkmark badge; on the part to resume it widens into "N · Continue" */}
+        {!isLocked && status === 'lastListened' && !isCompleted && (
+          <div className="absolute top-2 left-2 z-30 flex h-7 items-center gap-1.5 rounded-full bg-white px-2.5 text-xs font-bold text-black">
+            <span className="tabular-nums">{level}</span>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3" aria-hidden>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {t('levelProgress.continue')}
+          </div>
+        )}
+        {!isLocked && !(status === 'lastListened' && !isCompleted) && (
           <div
             className={`
               absolute top-2 left-2 w-7 h-7 rounded-full z-10
@@ -139,16 +200,24 @@ export const LevelCard: React.FC<Props> = ({
             {isFree ? t('trial.free') : t('shelf.previewBadge', { seconds: previewSeconds })}
           </div>
         )}
+        {/* Title on the art — phone tiles are too short for a line under them */}
+        <div
+          className={`md:hidden absolute inset-x-0 bottom-0 z-10 px-2 pt-5 pb-1.5
+            bg-gradient-to-t from-black/80 to-transparent
+            text-xs font-bold leading-tight line-clamp-2 ${isLocked ? 'text-white/60' : 'text-white'}`}
+        >
+          {trackTitle}
+        </div>
       </div>
 
       {/* Title */}
       <div
-        className={`text-sm font-medium leading-tight line-clamp-2 px-0.5 transition-colors ${
+        className={`max-md:hidden flex-none text-sm font-medium leading-tight line-clamp-2 min-h-[2lh] px-0.5 transition-colors ${
           isLocked ? 'text-black/35' : 'text-black/80'
         }`}
       >
         {trackTitle}
       </div>
-    </div>
+    </Link>
   );
 };

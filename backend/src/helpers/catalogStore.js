@@ -37,6 +37,8 @@ let cached = null;
 let cachedAt = 0;
 /** De-duplicates concurrent misses so a cold cache is one query, not N. */
 let inFlight = null;
+/** Bumped by invalidate(); a load only caches if no invalidate happened since it began. */
+let generation = 0;
 
 /**
  * Rows the database does not have yet.
@@ -66,10 +68,16 @@ export async function getCatalog() {
   if (cached && now - cachedAt < CATALOG_TTL_MS) return cached;
   if (inFlight) return inFlight;
 
-  inFlight = load()
+  // A load that started before the latest invalidate() may have read rows from
+  // before the admin's write. It still answers the callers that were already
+  // waiting on it, but it must not become the cache (see `generation`).
+  const startedAt = generation;
+  const promise = load()
     .then((catalog) => {
-      cached = catalog;
-      cachedAt = Date.now();
+      if (startedAt === generation) {
+        cached = catalog;
+        cachedAt = Date.now();
+      }
       return catalog;
     })
     .catch((error) => {
@@ -79,23 +87,30 @@ export async function getCatalog() {
       return BUILT_IN_CATALOG;
     })
     .finally(() => {
-      inFlight = null;
+      // Only clear our own slot: invalidate() may already have replaced it.
+      if (inFlight === promise) inFlight = null;
     });
+  inFlight = promise;
 
-  return inFlight;
+  return promise;
 }
 
 /**
  * Drop the cache. Every admin write that can change what is sold, listed or
- * priced must call this — creating, editing, publishing or deleting a story.
+ * priced must call this — creating, editing, publishing or deleting a story —
+ * AFTER the write has committed, or a request in between rebuilds the cache
+ * from the old rows and keeps it for a TTL.
  */
 export function invalidateCatalog() {
   cached = null;
   cachedAt = 0;
+  // A load already in flight began before this write: bump the generation so
+  // it cannot set the cache, and forget it so later callers start a fresh one.
+  generation += 1;
+  inFlight = null;
 }
 
 /** Tests only: forget the cache AND any in-flight load. */
 export function resetCatalogStoreForTests() {
   invalidateCatalog();
-  inFlight = null;
 }

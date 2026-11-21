@@ -5,6 +5,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useAuth } from "./AuthContext";
 import { fetchWallet } from "../services/walletServices";
@@ -40,21 +41,29 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [walletLoading, setWalletLoading] = useState(true);
 
+  const userId = user ? user.id : null;
+  // Lets an in-flight request notice the account changed under it.
+  const userIdRef = useRef<string | null>(userId);
+  userIdRef.current = userId;
+
   const loadWallet = useCallback(async () => {
     const token = localStorage.getItem("token");
-    if (!token || !user) {
+    if (!token || !userId) {
       setWallet(null);
       setWalletLoading(false);
       return;
     }
     try {
-      setWallet(await fetchWallet(token));
+      const fetched = await fetchWallet(token);
+      // Another account is signed in by now; this wallet is not theirs.
+      if (userIdRef.current !== userId) return;
+      setWallet(fetched);
     } catch (err) {
       console.error("[WalletContext] Failed to load wallet:", err);
     } finally {
-      setWalletLoading(false);
+      if (userIdRef.current === userId) setWalletLoading(false);
     }
-  }, [user]);
+  }, [userId]);
 
   // Re-fetch whenever the logged-in user changes (login/logout/switch)
   useEffect(() => {

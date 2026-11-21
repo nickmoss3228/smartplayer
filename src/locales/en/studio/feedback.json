@@ -1,0 +1,8 @@
+{
+  "title": "Feedback Messages",
+  "loadError": "Could not load messages.",
+  "deleteError": "Could not delete message.",
+  "empty": "No messages yet.",
+  "delete": "Delete",
+  "deleting": "Deleting…"
+}

@@ -1,0 +1,54 @@
+name: Uptime check
+
+# Probes production from outside every 10 minutes. The monitoring stack runs ON
+# the VM, so it cannot report the VM being gone; this runs on GitHub's runners
+# instead. A failed run is the alert: GitHub emails the account that last edited
+# this schedule (Settings -> Notifications -> Actions: failed workflows only).
+#
+# Scheduled runs can start a few minutes late, and GitHub pauses schedules after
+# 60 days without commits to the repo; re-enable from the Actions tab if so.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE: https://xn--80aa4acdq.xn--p1ai
+    steps:
+      # Each probe gets 3 tries 20 s apart, so one dropped packet or a deploy
+      # restarting a container does not page anyone.
+      - name: Site answers /healthz
+        run: |
+          for i in 1 2 3; do
+            body=$(curl -fsS --max-time 15 "$SITE/healthz") && [ "$body" = "ok" ] && exit 0
+            echo "attempt $i failed: ${body:-no response}"; sleep 20
+          done
+          echo "::error::$SITE/healthz is down"; exit 1
+
+      - name: API answers /api/catalog
+        run: |
+          for i in 1 2 3; do
+            curl -fsS --max-time 15 "$SITE/api/catalog" | grep -q '"stories"' && exit 0
+            echo "attempt $i failed"; sleep 20
+          done
+          echo "::error::$SITE/api/catalog is down (backend or database)"; exit 1
+
+      # Caddy renews ~30 days before expiry; under 14 days left means renewal
+      # has been failing (DNS moved, port 80/443 blocked, rate limit).
+      - name: TLS certificate has 14+ days left
+        run: |
+          host=${SITE#https://}
+          end=$(echo | openssl s_client -connect "$host:443" -servername "$host" 2>/dev/null \
+                | openssl x509 -noout -enddate | cut -d= -f2)
+          [ -n "$end" ] || { echo "::error::could not read the certificate"; exit 1; }
+          days=$(( ($(date -d "$end" +%s) - $(date +%s)) / 86400 ))
+          echo "certificate expires $end ($days days)"
+          [ "$days" -ge 14 ] || { echo "::error::certificate expires in $days days"; exit 1; }

@@ -92,10 +92,12 @@ describe("change password dialog", () => {
     expect(changePassword).not.toHaveBeenCalled();
   });
 
-  it("does not send a new password under 6 characters", async () => {
+  it("does not send a new password under 8 characters", async () => {
     await mount();
-    await fillAndSubmit("old-password", "12345");
-    expect(alertText()).toContain("at least 6 characters");
+    // Seven characters: long enough for the old 6-character rule, so this also
+    // catches the client falling back behind the server's MIN_PASSWORD_LENGTH.
+    await fillAndSubmit("old-password", "1234567");
+    expect(alertText()).toContain("at least 8 characters");
     expect(changePassword).not.toHaveBeenCalled();
   });
 

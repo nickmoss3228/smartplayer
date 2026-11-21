@@ -1,0 +1,26 @@
+{
+  "title": "Admin audit log",
+  "hint": "Every mutating admin action. Attribution comes from which code word was used, not a verified identity.",
+  "allActions": "All actions",
+  "loadError": "Failed to load audit log.",
+  "loading": "Loading…",
+  "empty": "No entries yet — the log fills as admin actions are performed.",
+  "cols": {
+    "time": "Time",
+    "actor": "Admin",
+    "action": "Action",
+    "target": "Target",
+    "status": "Status",
+    "took": "Took"
+  },
+  "ms": "{{n}} ms",
+  "detail": {
+    "request": "Request:",
+    "ip": "IP:",
+    "session": "Session:",
+    "agent": "Agent:"
+  },
+  "previous": "Previous",
+  "next": "Next",
+  "page": "Page {{page}}"
+}

@@ -22,6 +22,19 @@
       name="description"
       content="малако — тренажёр английского аудирования: слушай настоящие истории без субтитров."
     />
+    <!-- Defaults for every route without a static copy (see
+         scripts/build-static-pages.mjs). No canonical or og:url here: this
+         shell is served for many URLs, so any single value would be wrong. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="малако" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:title" content="малако — тренажёр английского на слух" />
+    <meta
+      property="og:description"
+      content="малако — тренажёр английского аудирования: слушай настоящие истории без субтитров."
+    />
+    <meta property="og:image" content="https://xn--80aa4acdq.xn--p1ai/icons/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
 
     <!-- ── Installable web app ──────────────────────────────────────────
          The manifest is what makes "Add to Home Screen" produce a real app
@@ -52,22 +65,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="малако" />
 
-    <title>малако</title>
+    <title>малако — тренажёр английского на слух</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Yandex.Metrika counter -->
-<script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=112301518', 'ym');
-
-    ym(112301518, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-</script>
+    <!-- Yandex.Metrika counter (an external file, so the CSP needs no inline scripts) -->
+<script src="/metrika.js"></script>
 <noscript><div><img src="https://mc.yandex.ru/watch/112301518" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
   </body>

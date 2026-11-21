@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sessions, userDocs, users as usersRepo } from "../db/index.js";
 import { sendPasswordResetEmail } from "../services/email.service.js";
+import { MIN_PASSWORD_LENGTH } from "../config/password.js";
 
 export async function requestPasswordReset(req, res) {
 
@@ -61,7 +62,13 @@ export async function requestPasswordReset(req, res) {
     // Send email with plain token
     // Deliberately NOT logged: the URL carries a live, unhashed reset token.
     // Anyone with container log access could use it to take over the account.
-    const resetUrl = `${BASE_URL}/forgot-password?token=${resetToken}`;
+    // The token rides in the fragment (#token=), not the query: a browser never
+    // sends the fragment to a server, so it stays out of the nginx/Caddy access
+    // logs and out of the Referer of anything the page loads. The page reads
+    // it, then strips it from the address bar (ForgetPassword.tsx), and
+    // public/metrika.js scrubs it from the URL Metrika records. Old ?token=
+    // links mailed before this change still work: the page reads both.
+    const resetUrl = `${BASE_URL}/forgot-password#token=${resetToken}`;
 
     try {
       await sendPasswordResetEmail(user.email, resetUrl, user.username);
@@ -97,9 +104,9 @@ export async function resetPassword(req, res) {
         .json({ message: "Token and new password are required" });
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters long",
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`,
       });
     }
 
@@ -167,9 +174,9 @@ export async function changePassword(req, res) {
     }
 
     // Same rule as signup and reset.
-    if (newPassword.length < 6) {
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters long",
+        message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long`,
         code: "PASSWORD_TOO_SHORT",
       });
     }

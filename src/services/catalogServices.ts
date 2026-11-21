@@ -24,23 +24,20 @@ export interface CatalogStory {
   durationSeconds?: number | null;
 }
 
-/**
- * A subscription: one level (`sub-easy` …) or every level (`sub-all`). Buying
- * one again while it runs adds `durationDays` to the end of it.
- */
 export interface CatalogProduct {
   sku: string;
-  kind: "level" | "all";
+  kind: "story" | "set" | "level";
   /** Integer kopecks. Divide by 100 only at the point of display. */
   amountMinor: number;
   parts: number;
-  /** Every story this SKU unlocks — released or not yet. */
+  /** Every story this SKU unlocks. */
   storyKeys: string[];
   durationDays: number | null;
   /** Whether THIS environment will sell it — already folds in PURCHASABLE_SKUS. */
   purchasable: boolean;
-  /** Set on a level subscription. */
+  character?: string;
   difficulty?: string;
+  storyKey?: string;
 }
 
 export interface Catalog {

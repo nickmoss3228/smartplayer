@@ -177,7 +177,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const seedListeningTimeFromServer = async (token: string): Promise<void> => {
     try {
       const { stats } = await fetchAchievements(token);
-      setTotalListeningSeconds(stats.listeningSeconds ?? 0);
+      // max(): keep guest time and seconds heard before this response landed.
+      setTotalListeningSeconds(Math.max(getTotalListeningSeconds(), stats.listeningSeconds ?? 0));
     } catch (error) {
       console.error('Failed to seed listening time on login:', error);
     }
@@ -211,13 +212,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkTokenValidity = async (): Promise<void> => {
     try {
-      // No skipAuthRedirect: a 401 here genuinely IS a dead session, and
-      // letting the interceptor fire keeps the teardown in one place.
-      const response = await api.get<TokenValidationResponse>('/api/validate-token');
-      setUser(response.data.user);
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      localStorage.removeItem('token');
+      // Only a 401/403 means the session is dead. Timeouts, offline and 5xx say
+      // nothing about the token, so it stays put and the next load recovers.
+      const retryDelaysMs = [500, 1500];
+      for (let attempt = 0; ; attempt++) {
+        try {
+          // No skipAuthRedirect: a 401 here genuinely IS a dead session, and
+          // letting the interceptor fire keeps the teardown in one place.
+          const response = await api.get<TokenValidationResponse>('/api/validate-token');
+          setUser(response.data.user);
+          return;
+        } catch (error) {
+          const status = (error as AxiosError).response?.status;
+          if (status === 401 || status === 403) {
+            console.error('Token validation failed:', error);
+            localStorage.removeItem('token');
+            return;
+          }
+          if (attempt >= retryDelaysMs.length) {
+            console.error('Token validation failed, keeping the token:', error);
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, retryDelaysMs[attempt]));
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -342,7 +360,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           localStorage.setItem('progressData', JSON.stringify(progressData));
           localStorage.setItem('progressCacheTime', Date.now().toString());
-          console.log('✅ Progress data prefetched and cached');
         } catch (error) {
           console.error('Failed to prefetch progress:', error);
         }
@@ -413,9 +430,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Flush the final unsynced seconds before wiping the counter below —
       // independent of the /api/logout call so a logout-endpoint failure
       // can't also swallow this user's last few minutes of listening time.
-      await syncListeningTime(token, getTotalListeningSeconds()).catch((error) => {
-        console.error('Failed to flush listening time on logout:', error);
-      });
+      // Best-effort: capped at 3 s so signing out offline doesn't look hung.
+      await Promise.race([
+        syncListeningTime(token, getTotalListeningSeconds()).catch((error) => {
+          console.error('Failed to flush listening time on logout:', error);
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+      ]);
       try {
         // skipAuthRedirect: if the token is already dead this 401s, and
         // firing the forced-logout path from inside a deliberate logout would

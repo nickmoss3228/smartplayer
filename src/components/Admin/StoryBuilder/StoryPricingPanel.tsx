@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AdminStory, updateStoryMeta } from "../../../services/adminStoryServices";
+import { SaveBar, Segmented } from "./studioUi";
+import { fieldHint, fieldLabel, textInput, inputBase } from "./studioStyles";
 
 /**
  * Whether this story is behind the subscription, and how much of it is free.
@@ -15,14 +18,15 @@ import { AdminStory, updateStoryMeta } from "../../../services/adminStoryService
  *
  * ── The empty-means-derive rule ─────────────────────────────────────────────
  *
- * Free parts and preview seconds are optional, and blank is a real value
+ * Free parts and preview seconds are optional, and null is a real value
  * meaning "work it out from the length" — the first three parts free (every
- * part, on a story of three or fewer). No timed preview unless one is typed in
- * here. Almost every story should leave both blank; they exist for the one
- * that should not follow the rule.
+ * part, on a story of three or fewer). No timed preview unless one is set
+ * here. Almost every story should keep both on "Automatic" / "None"; they
+ * exist for the one that should not follow the rule.
  *
- * Note 0 is NOT blank. A freeParts of 0 means "nothing plays free", which is a
- * deliberate and different thing from leaving it empty.
+ * Note 0 is NOT automatic. A freeParts of 0 means "nothing plays free", which
+ * is a deliberate and different thing from leaving it to the rule. That is why
+ * the form asks "automatic or a number?" first instead of reading a blank box.
  */
 interface Props {
   token: string;
@@ -30,173 +34,210 @@ interface Props {
   onStoryUpdated: (story: AdminStory) => void;
 }
 
-/** "" for null/undefined, so a blank input round-trips back to "derive it". */
-const toField = (value: number | null | undefined) =>
-  value === null || value === undefined ? "" : String(value);
+/** What the form edits — strings for the number boxes so typing stays free. */
+interface Draft {
+  paid: boolean;
+  ready: boolean;
+  character: string;
+  freeMode: "auto" | "custom";
+  freeParts: string;
+  previewMode: "none" | "custom";
+  previewSeconds: string;
+}
 
-/** "" back to null. Anything unparseable is rejected by the caller. */
-const toValue = (field: string): number | null | undefined => {
+const isSet = (value: number | null | undefined): value is number => value !== null && value !== undefined;
+
+const draftOf = (story: AdminStory): Draft => ({
+  paid: story.paid !== false,
+  ready: story.ready !== false,
+  character: story.character ?? "",
+  freeMode: isSet(story.freeParts) ? "custom" : "auto",
+  freeParts: isSet(story.freeParts) ? String(story.freeParts) : "",
+  previewMode: isSet(story.previewSeconds) ? "custom" : "none",
+  previewSeconds: isSet(story.previewSeconds) ? String(story.previewSeconds) : "",
+});
+
+/** A whole number ≥ 0, or undefined when the box holds anything else. */
+const wholeNumber = (field: string): number | undefined => {
   const trimmed = field.trim();
-  if (trimmed === "") return null;
+  if (trimmed === "") return undefined;
   const n = Number(trimmed);
   return Number.isInteger(n) && n >= 0 ? n : undefined;
 };
 
 const StoryPricingPanel = ({ token, story, onStoryUpdated }: Props) => {
-  const [character, setCharacter] = useState(story.character ?? "");
-  const [paid, setPaid] = useState(story.paid !== false);
-  const [ready, setReady] = useState(story.ready !== false);
-  const [freeParts, setFreeParts] = useState(toField(story.freeParts));
-  const [previewSeconds, setPreviewSeconds] = useState(toField(story.previewSeconds));
+  const { t } = useTranslation("studio");
+  const [draft, setDraft] = useState<Draft>(() => draftOf(story));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
 
-  // Switching stories in the rail reuses this component, so the fields have to
-  // follow the story rather than keep the first one's values.
+  // A saved story (or another set opened in the same pane) is the new baseline.
   useEffect(() => {
-    setCharacter(story.character ?? "");
-    setPaid(story.paid !== false);
-    setReady(story.ready !== false);
-    setFreeParts(toField(story.freeParts));
-    setPreviewSeconds(toField(story.previewSeconds));
+    setDraft(draftOf(story));
     setError("");
-    setSaved(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story._id, story.character, story.paid, story.ready, story.freeParts, story.previewSeconds]);
+  useEffect(() => setSaved(false), [story._id]);
+
+  const baseline = draftOf(story);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }));
+    setSaved(false);
+    setError("");
+  };
+
+  const total = story.totalParts;
+  const autoFree = Math.min(3, total);
+  const customFree = wholeNumber(draft.freeParts);
+  const customPreview = wholeNumber(draft.previewSeconds);
+  const freeCount = draft.freeMode === "auto" ? autoFree : Math.min(customFree ?? 0, total);
+
+  const problem = !draft.paid
+    ? ""
+    : draft.freeMode === "custom" && customFree === undefined
+      ? t("settings.access.freeCountInvalid")
+      : draft.freeMode === "custom" && customFree !== undefined && customFree > total
+        ? t("settings.access.freeCountTooMany", { count: total })
+        : draft.previewMode === "custom" && !customPreview
+          ? t("settings.access.previewInvalid")
+          : "";
 
   const save = async () => {
-    const free = toValue(freeParts);
-    const preview = toValue(previewSeconds);
-    if (free === undefined) return setError("Free parts must be a whole number, or blank.");
-    if (preview === undefined) return setError("Preview seconds must be a whole number, or blank.");
-    if (free !== null && free > story.totalParts) {
-      return setError(`Free parts can't exceed the story's ${story.totalParts} parts.`);
-    }
-
+    if (problem) return setError(problem);
     setSaving(true);
     setError("");
     try {
       onStoryUpdated(
         await updateStoryMeta(token, story._id, {
-          character: character.trim().toLowerCase(),
-          paid,
-          ready,
-          freeParts: free,
-          previewSeconds: preview,
+          character: draft.character.trim().toLowerCase(),
+          paid: draft.paid,
+          ready: draft.ready,
+          freeParts: draft.freeMode === "auto" ? null : customFree ?? null,
+          previewSeconds: draft.previewMode === "none" ? null : customPreview ?? null,
         }),
       );
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save access settings.");
+      setError(err instanceof Error ? err.message : t("settings.access.saveFailed"));
     } finally {
       setSaving(false);
     }
   };
 
-  const field = "w-full text-black px-3 py-2 border border-gray-300 rounded-[3px] text-sm";
-  const label = "block text-xs text-gray-500 mb-1";
+  // The whole form, said back as one plain paragraph.
+  const summary: string[] = !draft.paid
+    ? [t("settings.access.summary.allFree", { count: total })]
+    : [
+        freeCount > 1
+          ? t("settings.access.summary.freeRange", { from: 1, to: freeCount })
+          : freeCount === 1
+            ? t("settings.access.summary.freeOne", { n: 1 })
+            : t("settings.access.summary.freeNone"),
+        freeCount >= total
+          ? t("settings.access.summary.everyPartFree")
+          : freeCount + 1 === total
+            ? t("settings.access.summary.paidOne", { n: total })
+            : t("settings.access.summary.paidRange", { from: freeCount + 1, to: total }),
+        ...(draft.previewMode === "custom" && customPreview ? [t("settings.access.summary.preview", { count: customPreview })] : []),
+        draft.ready ? t("settings.access.summary.onSale") : t("settings.access.summary.comingSoon"),
+      ];
 
   return (
-    <div className="bg-white rounded-[3px] shadow p-4 border border-gray-200 space-y-4">
-      <div>
-        <h3 className="font-semibold text-black">Access</h3>
-        <p className="mt-0.5 text-xs text-gray-500">
-          Leave a number blank to work it out from the story&apos;s length. These take effect as
-          soon as the story is published.
-        </p>
+    <div className="space-y-6">
+      <div className="rounded-tile border border-line bg-room px-4 py-3" aria-live="polite">
+        <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">{t("settings.access.summaryTitle")}</p>
+        <p className="text-sm leading-relaxed text-ink">{summary.join(" ")}</p>
+        {!story.published && <p className="mt-1 text-xs text-dim">{t("settings.access.summary.takesEffect")}</p>}
       </div>
 
-      <label className="flex items-start gap-2.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={paid}
-          onChange={(e) => setPaid(e.target.checked)}
-          className="mt-0.5 h-4 w-4 cursor-pointer"
-        />
-        <span className="text-sm text-black">
-          Behind the subscription
-          <span className="block text-xs text-gray-500">
-            Ticked, it is inside its level&apos;s subscription and the all-levels one. Unticked,
-            the whole story is free to everyone and in no subscription.
-          </span>
-        </span>
-      </label>
+      <Segmented
+        label={t("settings.access.whoCanListen")}
+        name={`access-${story._id}`}
+        value={draft.paid ? "paid" : "free"}
+        onChange={(value) => set("paid", value === "paid")}
+        options={[
+          { value: "paid", label: t("settings.access.subscribers"), hint: t("settings.access.subscribersHint") },
+          { value: "free", label: t("settings.access.everyone"), hint: t("settings.access.everyoneHint") },
+        ]}
+      />
 
-      {paid && (
+      {draft.paid && (
         <>
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={ready}
-              onChange={(e) => setReady(e.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer"
-            />
-            <span className="text-sm text-black">
-              Released
-              <span className="block text-xs text-gray-500">
-                Unticked, the shop counts it as &ldquo;coming soon&rdquo;; a level with nothing
-                released is not sold. Use this until the audio is actually uploaded.
-              </span>
-            </span>
-          </label>
+          <Segmented
+            label={t("settings.access.inShop")}
+            name={`ready-${story._id}`}
+            value={draft.ready ? "ready" : "soon"}
+            onChange={(value) => set("ready", value === "ready")}
+            options={[
+              { value: "ready", label: t("settings.access.onSale"), hint: t("settings.access.onSaleHint") },
+              { value: "soon", label: t("settings.access.soon"), hint: t("settings.access.soonHint") },
+            ]}
+          />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={label}>Character</label>
-              <input
-                type="text"
-                value={character}
-                onChange={(e) => setCharacter(e.target.value)}
-                placeholder="leo"
-                className={field}
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              <Segmented
+                label={t("settings.access.freeParts")}
+                name={`free-${story._id}`}
+                value={draft.freeMode}
+                onChange={(value) => set("freeMode", value)}
+                options={[
+                  { value: "auto", label: t("settings.access.auto"), hint: autoFree === total ? t("settings.access.autoAll", { count: total }) : t("settings.access.autoRange", { to: autoFree }) },
+                  { value: "custom", label: t("settings.access.setNumber") },
+                ]}
               />
-              <p className="mt-1 text-[11px] text-gray-400">
-                Who the story is about. Names the level in the shop.
-              </p>
+              {draft.freeMode === "custom" && (
+                <div>
+                  <label htmlFor={`free-n-${story._id}`} className="sr-only">{t("settings.access.freeNumberLabel")}</label>
+                  <div className="flex items-center gap-2">
+                    <input id={`free-n-${story._id}`} type="number" min={0} max={total} step={1} inputMode="numeric"
+                      value={draft.freeParts} onChange={(e) => set("freeParts", e.target.value)} className={`${inputBase} w-28`} />
+                    <span className="text-sm text-dim">{t("settings.access.ofParts", { count: total })}</span>
+                  </div>
+                  <p className={fieldHint}>{t("settings.access.zeroHint")}</p>
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className={label}>Free parts</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={freeParts}
-                onChange={(e) => setFreeParts(e.target.value)}
-                placeholder={`${Math.min(3, story.totalParts)} (from length)`}
-                className={field}
+            <div className="space-y-3">
+              <Segmented
+                label={t("settings.access.timedPreview")}
+                name={`preview-${story._id}`}
+                value={draft.previewMode}
+                onChange={(value) => set("previewMode", value)}
+                options={[
+                  { value: "none", label: t("settings.access.previewNone"), hint: t("settings.access.recommended") },
+                  { value: "custom", label: t("settings.access.previewCustom") },
+                ]}
               />
-              <p className="mt-1 text-[11px] text-gray-400">Parts 1…n play in full. 0 means none.</p>
+              {draft.previewMode === "custom" && (
+                <div>
+                  <label htmlFor={`preview-n-${story._id}`} className="sr-only">{t("settings.access.previewLabel")}</label>
+                  <div className="flex items-center gap-2">
+                    <input id={`preview-n-${story._id}`} type="number" min={1} step={1} inputMode="numeric" placeholder="30"
+                      value={draft.previewSeconds} onChange={(e) => set("previewSeconds", e.target.value)} className={`${inputBase} w-28`} />
+                    <span className="text-sm text-dim">{t("settings.access.seconds")}</span>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div>
-              <label className={label}>Preview seconds</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={previewSeconds}
-                onChange={(e) => setPreviewSeconds(e.target.value)}
-                placeholder="none"
-                className={field}
-              />
-              <p className="mt-1 text-[11px] text-gray-400">
-                Part 1 stops after this long. Blank for no preview.
-              </p>
-            </div>
+          <div className="max-w-sm">
+            <label htmlFor={`character-${story._id}`} className={fieldLabel}>{t("settings.access.mainCharacter")}</label>
+            <input id={`character-${story._id}`} type="text" value={draft.character} onChange={(e) => set("character", e.target.value)}
+              placeholder="leo" className={textInput} />
+            <p className={fieldHint}>{t("settings.access.mainCharacterHint")}</p>
           </div>
         </>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && !error && <p className="text-sm text-green-700">Saved.</p>}
-
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="px-3 py-2 rounded-[3px] bg-black text-white text-sm disabled:opacity-50 cursor-pointer"
-      >
-        {saving ? "Saving…" : "Save access"}
-      </button>
+      <div className="border-t border-line pt-4">
+        <SaveBar dirty={dirty} saving={saving} saved={saved} error={error || (dirty ? problem : "")} onSave={save}
+          onDiscard={() => { setDraft(baseline); setError(""); }} saveLabel={t("settings.access.save")} />
+      </div>
     </div>
   );
 };
