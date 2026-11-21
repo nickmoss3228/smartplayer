@@ -164,6 +164,9 @@
 .ib-tap-off { background: #eef2f5; color: var(--dim); }
 .ib-tap-ico { width: 16px; height: 16px; }
 .ib-letter-grid { margin-top: 14px; display: grid; gap: 14px; }
+/* the small line under the letter section's title: every word in the cards plays */
+.ib-letter-tap { margin-top: 8px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--dim); }
+.ib-letter-tap svg { width: 16px; height: 16px; flex: none; stroke-width: 2; }
 /* the 3rd point fits one screen: compact cards, the eight words on a wide, low grid */
 .ib-letter-grid .ib-card { gap: 10px; padding: 18px 20px; }
 .ib-letter .ib-outro { margin-top: 18px; }
