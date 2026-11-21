@@ -7,8 +7,8 @@
 /**
  * Is the storefront reachable?
  *
- * ON again since 2026-10-01 (it was off 2026-09-20 → 2026-10-01 for idea
- * testing). When false, the shop, the basket, the checkout and the paywall
+ * OFF again since 2026-11-21 (user: hide the shop for now). Was off
+ * 2026-09-20 → 2026-10-01, on 2026-10-01 → 2026-11-21. When false, the shop, the basket, the checkout and the paywall
  * modal stay built but unlinked, and their routes redirect to the level picker.
  *
  * ── This flag does NOT decide access ─────────────────────────────────────────
@@ -33,7 +33,7 @@
  *   4. re-seed the placeholder stories if you want them back:
  *        node --import tsx src/scripts/seedExtensionPacks.js
  */
-export const SHOP_ENABLED = true;
+export const SHOP_ENABLED = false;
 
 /**
  * The signed-in hub (/home, pages/Home.tsx) and the tab bar under it
