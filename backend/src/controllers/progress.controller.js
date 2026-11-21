@@ -823,8 +823,9 @@ export async function completeVocabQuiz(req, res) {
 }
 
 /**
- * The golden words among `keys` (words this student has just learned), as the
- * word to show for each: the story's own spelling when it has one.
+ * The golden words among `keys` (words this student has just learned). Each is
+ * shown as its key, the English word the student guessed: a place's `word` is
+ * the Russian prompt, not what they found.
  */
 async function goldenWordsAmong(userId, keys, tx) {
   if (keys.length === 0) return [];
@@ -835,8 +836,7 @@ async function goldenWordsAmong(userId, keys, tx) {
     byKey.get(place.key).push(place);
   }
   return keys
-    .filter((key) => isGoldenWord(userId, key, isHardWord(key, byKey.get(key))))
-    .map((key) => byKey.get(key)?.[0]?.word?.trim() || key);
+    .filter((key) => isGoldenWord(userId, key, isHardWord(key, byKey.get(key))));
 }
 
 // ── POST /progress/phrase-repeat ────────────────────────────────────────────
