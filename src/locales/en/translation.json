@@ -2284,6 +2284,14 @@
           "text": "Besides, in English the length of a sound changes the meaning of a word. A Russian-speaking brain doesn’t pick up such details, so the meaning of the word changes completely."
         }
       ],
+      "sentences": {
+        "title": "The same sounds, two meanings",
+        "a": "The ship is sinking.",
+        "b": "The sheep is thinking.",
+        "heard": "Both times, a Russian ear hears:",
+        "play": "Play",
+        "stop": "Stop"
+      },
       "outro": "To recognise and take in such details clearly, you need strong, new neural connections."
     },
     "letter": {
@@ -2383,6 +2391,22 @@
           "text": "A comic for every part: you can see who is where and what is happening, so it’s easier to follow."
         }
       }
+    },
+    "cast": {
+      "kicker": "It won't be boring",
+      "title": "Our stories are alive: humour, drama, quarrels and love. Like a TV series, only in English.",
+      "leo": { "name": "Leo", "tr": "" },
+      "mia": { "name": "Mia, his sister", "tr": "" },
+      "ginger": { "name": "Ginger, the cat", "tr": "" },
+      "katrin": { "name": "Katrin, his girlfriend", "tr": "" },
+      "parents": { "name": "Mark and Anna, his parents", "tr": "" },
+      "greg": { "name": "Uncle Greg", "tr": "" },
+      "car": { "name": "The red Fiat", "tr": "" },
+      "friends": { "name": "Friends", "tr": "" },
+      "bye": { "name": "", "tr": "" },
+      "tags": { "leo": "Leo", "mia": "Mia", "ginger": "Ginger", "katrin": "Katrin", "mark": "Mark", "anna": "Anna", "greg": "Uncle Greg" },
+      "endTitle": "This is only the beginning. The rest is in the stories.",
+      "cta": "Start with the first story"
     },
     "rivals": {
       "micro": "What about…",

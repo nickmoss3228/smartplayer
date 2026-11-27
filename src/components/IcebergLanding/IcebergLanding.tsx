@@ -9,6 +9,7 @@ import Perception from './Perception';
 import LetterO from './LetterO';
 import Linking from './Linking';
 import Rivals from './Rivals';
+import StoryCast from './StoryCast';
 import Bubbles from './Bubbles';
 import LayerBar from './LayerBar';
 import Steps from './Steps';
@@ -217,6 +218,8 @@ export default function IcebergLanding() {
 
       {/* the way up: the steps rise out of the deep and break the surface */}
       <Steps />
+      {/* the stories themselves: Leo introduces his people, so the page sells the fun before the rivals */}
+      <StoryCast />
       <Rivals />
 
       {/* the whole iceberg at last: the tip in the air, the body under the waterline */}

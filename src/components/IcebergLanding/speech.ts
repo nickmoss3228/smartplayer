@@ -61,8 +61,8 @@ export function say(text: string, lang: Lang, onEnd: () => void, rate = 0.8): vo
   };
   u.onend = end;
   u.onerror = end;
-  // Some engines never fire onend for a cancelled utterance.
-  window.setTimeout(end, 4000);
+  // Some engines never fire onend for a cancelled utterance; slower speech gets longer.
+  window.setTimeout(end, 4000 / Math.min(rate, 1));
   synth.speak(u);
 }
 
