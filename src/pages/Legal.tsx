@@ -6,8 +6,8 @@ import { LEGAL_DOC_IDS, LegalDocId, legalPath, LEGAL_VERSION } from '../config/l
 /**
  * One legal document, at /legal/:docId.
  *
- * The three documents are a set — someone who opened the consent from the
- * signup form usually wants the policy it refers to next — so all three are
+ * The two documents are a pair — someone who opened the consent from the
+ * signup form usually wants the policy it refers to next — so the other one is
  * always reachable from the footer of whichever one is open, and the page is
  * public: 152-ФЗ art. 18.1 requires the privacy policy to be readable without
  * an account, and a document you have to sign up to read cannot be the one you
@@ -18,7 +18,7 @@ const Legal = () => {
   const { i18n, t } = useTranslation();
 
   if (!docId || !LEGAL_DOC_IDS.includes(docId as LegalDocId)) {
-    return <Navigate to="/legal/terms" replace />;
+    return <Navigate to="/legal/privacy" replace />;
   }
 
   const id = docId as LegalDocId;

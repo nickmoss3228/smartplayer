@@ -454,11 +454,11 @@
     "haveAccount": "Already have an account?",
     "signInLink": "Sign in",
     "agreements": {
-      "terms": "I accept the <terms>User Agreement</terms> and have read the <privacy>Privacy Policy</privacy>.",
+      "privacy": "I have read the <privacy>Privacy Policy</privacy>.",
       "dataConsent": "I give my <consent>consent to the processing of my personal data</consent> under Federal Law No. 152-FZ."
     },
     "errors": {
-      "agreementsRequired": "Please accept the User Agreement and the personal-data consent to continue.",
+      "agreementsRequired": "Please confirm you have read the Privacy Policy and give your personal-data consent to continue.",
       "passwordMismatch": "Passwords do not match",
       "passwordLength": "Password must be at least 8 characters long",
       "invalidEmail": "Please enter a valid email address",
@@ -2478,7 +2478,6 @@
       "label": "Site links",
       "howToUse": "How to use",
       "levels": "Levels",
-      "terms": "Terms of use",
       "privacy": "Privacy policy",
       "consent": "Data consent"
     }
