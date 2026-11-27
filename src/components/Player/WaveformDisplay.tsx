@@ -100,10 +100,10 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = React.memo(
             </div>
 
             {/* Under the waveform rather than hung off its corners. */}
-            <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-black/80">
+            <div className="flex items-center justify-between font-mono text-[11px] tabular-nums text-white/80">
               <span id="time">{currentTime}</span>
               {activeMarkerIndex != null && timeMarkers.length > 0 && (
-                <span className="text-black/75">
+                <span className="text-white/65">
                   {t("player.phraseOf", { n: activeMarkerIndex + 1, total: timeMarkers.length })}
                 </span>
               )}

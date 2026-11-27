@@ -845,12 +845,12 @@ const Player = React.memo(() => {
           )}
 
           {fromLanding && playerVisible && (
-            <p className="shrink-0 px-4 text-center text-xs text-black/70 md:text-left md:px-0">
+            <p className="shrink-0 px-4 text-center text-xs text-white/70 md:text-left md:px-0">
               {t("player.tooEasy")}{" "}
               <Link
                 to={TRY_IT_PATH}
                 state={TRY_IT_STATE}
-                className="font-semibold text-black underline underline-offset-2 hover:text-black/70"
+                className="font-semibold text-white underline underline-offset-2 hover:text-white/70"
               >
                 {t("player.changeLevel")}
               </Link>
