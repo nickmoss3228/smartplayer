@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useTranslation, Trans } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { formatPhoneInput, isValidPhoneNumber } from '../../utils/phone'
-import { legalPath } from '../../config/legal'
+import { legalPdfPath } from '../../config/legal'
 import { forwardedState, returnPathFrom } from '../returnTo'
 import {
   AuthShell,
@@ -37,8 +37,10 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   // Two boxes, not one. 152-ФЗ treats consent to processing personal data as a
   // separate act that has to be given knowingly and specifically, so bundling
-  // it into "I accept the terms" would not be consent at all. Both start
+  // it into "I have read the policy" would not be consent at all. Both start
   // unticked — a pre-ticked consent box is exactly what the law does not count.
+  // acceptedTerms is now the privacy-policy tick; the name stays because it is
+  // the field the server checks and records.
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [acceptedDataConsent, setAcceptedDataConsent] = useState(false)
   const [error, setError] = useState('')
@@ -290,14 +292,15 @@ const SignUp = () => {
         </PasswordField>
 
         {/* ── Agreements ──
-            The links open in a new tab so reading one does not throw away a
-            half-filled form. handleSubmit re-checks both flags rather than
-            relying on the disabled button alone: `disabled` is a UI state, and
+            The links open the PDFs in a new tab, in the browser's own viewer,
+            so reading one does not throw away a half-filled form.
+            handleSubmit re-checks both flags rather than relying on the
+            disabled button alone: `disabled` is a UI state, and
             the account is created by the request, not by the button. */}
         <div className="flex flex-col gap-3 bg-room border border-line rounded-[3px] p-4">
-          <label htmlFor="terms" className="flex items-start gap-3 text-[13px] leading-relaxed text-[#47586a] cursor-pointer">
+          <label htmlFor="privacy" className="flex items-start gap-3 text-[13px] leading-relaxed text-[#47586a] cursor-pointer">
             <input
-              id="terms"
+              id="privacy"
               type="checkbox"
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
@@ -305,19 +308,11 @@ const SignUp = () => {
             />
             <span>
               <Trans
-                i18nKey="signup.agreements.terms"
+                i18nKey="signup.agreements.privacy"
                 components={{
-                  terms: (
-                    <Link
-                      to={legalPath('terms')}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-ink underline underline-offset-2 hover:text-signal"
-                    />
-                  ),
                   privacy: (
-                    <Link
-                      to={legalPath('privacy')}
+                    <a
+                      href={legalPdfPath('privacy')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-ink underline underline-offset-2 hover:text-signal"
@@ -341,8 +336,8 @@ const SignUp = () => {
                 i18nKey="signup.agreements.dataConsent"
                 components={{
                   consent: (
-                    <Link
-                      to={legalPath('consent')}
+                    <a
+                      href={legalPdfPath('consent')}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-ink underline underline-offset-2 hover:text-signal"

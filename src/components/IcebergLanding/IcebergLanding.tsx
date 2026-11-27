@@ -243,7 +243,6 @@ export default function IcebergLanding() {
               <nav className="ib-footer-nav" aria-label={t('iceberg.footer.label')}>
                 <Link to="/how-to-use" className="ib-micro">{t('iceberg.footer.howToUse')}</Link>
                 <Link to="/levels" className="ib-micro">{t('iceberg.footer.levels')}</Link>
-                <Link to="/legal/terms" className="ib-micro">{t('iceberg.footer.terms')}</Link>
                 <Link to="/legal/privacy" className="ib-micro">{t('iceberg.footer.privacy')}</Link>
                 <Link to="/legal/consent" className="ib-micro">{t('iceberg.footer.consent')}</Link>
               </nav>

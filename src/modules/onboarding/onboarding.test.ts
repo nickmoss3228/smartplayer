@@ -74,7 +74,7 @@ describe('shouldRedirectToOnboarding', () => {
       '/signup',
       '/forgot-password',
       '/admin',
-      '/legal/terms',
+      '/legal/privacy',
       '/checkout/return',
     ]) {
       expect(shouldRedirectToOnboarding(user(null), path), path).toBe(false);
